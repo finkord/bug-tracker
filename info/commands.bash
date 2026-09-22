@@ -36,13 +36,24 @@ cd backend && npm test
 # Start development server with live reload:
 cd backend && npm run start:dev
 
+# 4. Frontend Development (React 19 + Vite + Tailwind CSS)
+# Install frontend dependencies:
+cd frontend && npm install
+
+# Build frontend production bundle:
+cd frontend && npm run build
+
+# Start frontend dev server on port 5173:
+cd frontend && npm run dev
+
 # Access developer interfaces:
+# - Frontend Application:  http://localhost:5173
+# - Backend API & Swagger: http://localhost:3000/api/docs
 # - Mailpit Web Dashboard: http://localhost:8025
 # - SeaweedFS Master UI:   http://localhost:9333
 # - SeaweedFS S3 Endpoint: http://localhost:8333
-# - Backend API & Swagger: http://localhost:3000/api/docs
 
-# 4. SDSecurity Lab 6 Demonstration & Verification Commands (All 7 Tasks)
+# 5. SDSecurity Lab 6 Demonstration & Verification Commands (All 7 Tasks)
 
 # Task 1: Registration with Password Policy Enforcement
 curl -s -X POST http://localhost:3000/api/v1/auth/register \
