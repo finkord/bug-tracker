@@ -29,6 +29,7 @@ This repository directory contains the production implementation of a lightweigh
 
 ## Documentation Index
 
+- **[info/services/auth/README.md](file:///home/finkord/dev/PPofSE/software/info/services/auth/README.md)** — **Authentication & Security Service**: Complete technical specification (dependencies, database schema, module architecture, sequence diagrams, all 7 SDSecurity Lab 6 tasks).
 - **[info/default_instructions.md](file:///home/finkord/dev/PPofSE/software/info/default_instructions.md)** — Core AI agent context, strict engineering standards, and stack reference.
 - **[info/TECH_STACK_AND_AUTH_PREPARATION.md](file:///home/finkord/dev/PPofSE/software/info/TECH_STACK_AND_AUTH_PREPARATION.md)** — Architectural design, backend & frontend evaluation, SDSecurity mapping, and capacity planning.
 - **[info/commands.bash](file:///home/finkord/dev/PPofSE/software/info/commands.bash)** — Reference CLI commands and operational scripts.
@@ -45,7 +46,10 @@ PPofSE/software/
 ├── info/                                   # Project documentation, guides, and commands
 │   ├── commands.bash                       # Reference CLI commands
 │   ├── default_instructions.md             # Agent context and coding standards
-│   └── TECH_STACK_AND_AUTH_PREPARATION.md  # Deep architecture & tech evaluation
+│   ├── TECH_STACK_AND_AUTH_PREPARATION.md  # Deep architecture & tech evaluation
+│   └── services/                           # Dedicated service technical documentation
+│       └── auth/                           # Authentication & Security service documentation
+│           └── README.md                   # Full spec: dependencies, tables, structure, flows
 ├── backend/                                # NestJS 12 REST & WebSocket API application
 └── frontend/                               # React + Vite Single Page Application
 ```

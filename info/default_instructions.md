@@ -99,23 +99,25 @@ All AI agents must ensure that the authentication service maintains complete com
 ```
 PPofSE/software/
 ├── README.md                               # Project overview and quick start guide
-├── default_instructions.md                 # This file: AI agent instructions & stack context
-├── TECH_STACK_AND_AUTH_PREPARATION.md      # Comprehensive architecture & evaluation document
 ├── docker-compose.yml                      # Local infrastructure: PostgreSQL, Redis, Mailpit, SeaweedFS
-├── backend/                                # NestJS 10 REST & WebSocket API application
+├── info/                                   # Documentation and operational context
+│   ├── default_instructions.md             # This file: AI agent instructions & stack context
+│   ├── TECH_STACK_AND_AUTH_PREPARATION.md  # Comprehensive architecture & evaluation document
+│   ├── commands.bash                       # CLI cheat-sheet for running and testing
+│   └── services/                           # Dedicated service technical documentation
+│       └── auth/                           # Authentication & Security service documentation
+│           └── README.md                   # Full spec: dependencies, tables, structure, flows
+├── backend/                                # NestJS 12 REST & WebSocket API application
 │   ├── package.json
 │   ├── tsconfig.json
 │   ├── src/
 │   │   ├── main.ts                         # Application entrypoint, Swagger, CORS, ValidationPipe
 │   │   ├── app.module.ts                   # Root application module
 │   │   ├── common/                         # Shared decorators, guards, filters, interceptors
-│   │   ├── config/                         # Environment configuration (.env validation)
-│   │   ├── database/                       # TypeORM configuration, migrations, seeds
 │   │   └── modules/
 │   │       ├── auth/                       # Register, login, 2FA, OAuth, activation, password reset
 │   │       ├── users/                      # User profile, RBAC management, admin controls
 │   │       ├── security-audit/             # Login attempts logging, brute force tracking
-│   │       ├── mail/                       # Mailpit / SMTP client for transactional emails
 │   │       ├── captcha/                    # CAPTCHA verification service
 │   │       ├── attachments/                # S3 file uploads via SeaweedFS
 │   │       ├── projects/                   # Project workspace management (PPofSE)
