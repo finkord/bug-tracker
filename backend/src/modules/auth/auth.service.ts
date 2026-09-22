@@ -33,7 +33,9 @@ export interface AuthTokens {
     email: string;
     systemRole: SystemRole;
     isActivated: boolean;
+    isBlocked: boolean;
     twoFactorEnabled: boolean;
+    oauthProvider: OAuthProvider;
   };
 }
 
@@ -553,7 +555,9 @@ export class AuthService {
         email: user.email,
         systemRole: user.systemRole,
         isActivated: user.isActivated,
+        isBlocked: user.isBlocked,
         twoFactorEnabled: user.twoFactorEnabled,
+        oauthProvider: user.oauthProvider || OAuthProvider.LOCAL,
       },
     };
   }

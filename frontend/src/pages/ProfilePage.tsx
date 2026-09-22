@@ -87,7 +87,7 @@ export const ProfilePage: React.FC = () => {
             </span>
 
             <span className="px-3.5 py-1.5 rounded-full bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] border border-[var(--md-sys-color-outline-variant)]">
-              Auth: <strong className="text-[var(--md-sys-color-primary)]">{user.oauthProvider}</strong>
+              Auth: <strong className="text-[var(--md-sys-color-primary)]">{user.oauthProvider || 'LOCAL'}</strong>
             </span>
           </div>
         </div>
