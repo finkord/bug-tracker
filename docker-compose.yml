@@ -1,0 +1,86 @@
+services:
+  # 1. Relational Database Tier: PostgreSQL 15
+  postgres:
+    image: postgres:15-alpine
+    container_name: bugtracker-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-bug_tracker}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-bug_tracker}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bugtracker-network
+
+  # 2. In-Memory Cache, Rate Limiting & WebSocket Bus: Redis 7
+  redis:
+    image: redis:7-alpine
+    container_name: bugtracker-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - bugtracker-network
+
+  # 3. Local Transactional Email Testing Server: Mailpit
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: bugtracker-mailpit
+    restart: unless-stopped
+    environment:
+      MP_MAX_MESSAGES: 5000
+      MP_DATABASE: /data/mailpit.db
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+    ports:
+      - "${MAIL_SMTP_PORT:-1025}:1025"   # SMTP port
+      - "${MAIL_UI_PORT:-8025}:8025"     # Web UI dashboard
+    volumes:
+      - mailpit_data:/data
+    networks:
+      - bugtracker-network
+
+  # 4. S3-Compatible Distributed Object Storage: SeaweedFS (Apache 2.0, Go)
+  seaweedfs:
+    image: chrislusf/seaweedfs:latest
+    container_name: bugtracker-seaweedfs
+    restart: unless-stopped
+    command: "server -s3 -dir=/data -s3.port=8333 -ip.bind=0.0.0.0"
+    ports:
+      - "${S3_PORT:-8333}:8333"           # S3 API endpoint
+      - "${SEAWEED_MASTER_PORT:-9333}:9333" # Master status & management UI
+      - "${SEAWEED_VOLUME_PORT:-8080}:8080" # Volume server endpoint
+    volumes:
+      - seaweedfs_data:/data
+    networks:
+      - bugtracker-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  mailpit_data:
+    driver: local
+  seaweedfs_data:
+    driver: local
+
+networks:
+  bugtracker-network:
+    driver: bridge

@@ -29,8 +29,9 @@ This repository directory contains the production implementation of a lightweigh
 
 ## Documentation Index
 
-- **[default_instructions.md](file:///home/finkord/dev/PPofSE/software/default_instructions.md)** — Core AI agent context, strict engineering standards, and stack reference.
-- **[TECH_STACK_AND_AUTH_PREPARATION.md](file:///home/finkord/dev/PPofSE/software/TECH_STACK_AND_AUTH_PREPARATION.md)** — Architectural design, backend & frontend evaluation, SDSecurity mapping, and capacity planning.
+- **[info/default_instructions.md](file:///home/finkord/dev/PPofSE/software/info/default_instructions.md)** — Core AI agent context, strict engineering standards, and stack reference.
+- **[info/TECH_STACK_AND_AUTH_PREPARATION.md](file:///home/finkord/dev/PPofSE/software/info/TECH_STACK_AND_AUTH_PREPARATION.md)** — Architectural design, backend & frontend evaluation, SDSecurity mapping, and capacity planning.
+- **[info/commands.bash](file:///home/finkord/dev/PPofSE/software/info/commands.bash)** — Reference CLI commands and operational scripts.
 - **[Root Project Context](file:///home/finkord/dev/PPofSE/default_instructions.md)** — Historical lab records (Labs 1–5), UML diagrams, and academic passports.
 
 ---
@@ -40,10 +41,12 @@ This repository directory contains the production implementation of a lightweigh
 ```
 PPofSE/software/
 ├── README.md                               # Project overview and quick start guide (this file)
-├── default_instructions.md                 # Agent context, coding standards, and SDSecurity specs
-├── TECH_STACK_AND_AUTH_PREPARATION.md      # Detailed technical stack evaluation & design doc
 ├── docker-compose.yml                      # PostgreSQL 15, Redis 7, Mailpit, SeaweedFS
-├── backend/                                # NestJS 10 REST & WebSocket API application
+├── info/                                   # Project documentation, guides, and commands
+│   ├── commands.bash                       # Reference CLI commands
+│   ├── default_instructions.md             # Agent context and coding standards
+│   └── TECH_STACK_AND_AUTH_PREPARATION.md  # Deep architecture & tech evaluation
+├── backend/                                # NestJS 12 REST & WebSocket API application
 └── frontend/                               # React + Vite Single Page Application
 ```
 
