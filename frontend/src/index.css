@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-:root {
+:root, html.light {
   /* ========================================================================= */
   /* Material Design 3 Expressive - Light Theme (Google Pixel OS Style)         */
   /* ========================================================================= */
@@ -8,18 +8,25 @@
   --md-sys-color-on-background: #191c20;
   
   --md-sys-color-surface: #ffffff;
-  --md-sys-color-surface-dim: #d9dbdf;
-  --md-sys-color-surface-bright: #f8f9fd;
+  --md-sys-color-surface-dim: #e1e3e9;
+  --md-sys-color-surface-bright: #ffffff;
   --md-sys-color-surface-container-lowest: #ffffff;
-  --md-sys-color-surface-container-low: #f1f3f9;
-  --md-sys-color-surface-container: #eaedf4;
-  --md-sys-color-surface-container-high: #e3e7ee;
-  --md-sys-color-surface-container-highest: #dde0e8;
+  --md-sys-color-surface-container-low: #f4f6fa;
+  --md-sys-color-surface-container: #ffffff;
+  --md-sys-color-surface-container-high: #f0f3f8;
+  --md-sys-color-surface-container-highest: #e4e8f0;
   
   --md-sys-color-on-surface: #191c20;
   --md-sys-color-on-surface-variant: #44474f;
-  --md-sys-color-outline: #74777f;
+  --md-sys-color-outline: #5f6368;
   --md-sys-color-outline-variant: #d8dce6;
+
+  /* Input fields in Light Mode - High Contrast & Crystal Clear Readability */
+  --md-sys-color-input-bg: #f3f5fa;
+  --md-sys-color-input-focus-bg: #ffffff;
+  --md-sys-color-input-text: #111318;
+  --md-sys-color-input-border: #c4c8d2;
+  --md-sys-color-input-placeholder: #5f6368;
 
   /* Primary Tonal: Google Pixel Blue */
   --md-sys-color-primary: #0b57d0;
@@ -53,10 +60,10 @@
   --md-sys-shape-input: 18px;
   --md-sys-shape-pill: 9999px;
 
-  color-scheme: light dark;
+  color-scheme: light;
 }
 
-.dark {
+html.dark {
   /* ========================================================================= */
   /* Material Design 3 Expressive - Dark Theme (Google Pixel Android 14/15)     */
   /* ========================================================================= */
@@ -76,6 +83,13 @@
   --md-sys-color-on-surface-variant: #c4c6d0;
   --md-sys-color-outline: #8e9099;
   --md-sys-color-outline-variant: #2e313a;
+
+  /* Input fields in Dark Mode */
+  --md-sys-color-input-bg: #22252c;
+  --md-sys-color-input-focus-bg: #282b33;
+  --md-sys-color-input-text: #e2e2e8;
+  --md-sys-color-input-border: #3b3e47;
+  --md-sys-color-input-placeholder: #8e9099;
 
   /* Primary Tonal: Google Pixel Periwinkle / Pastel Sky */
   --md-sys-color-primary: #a8c7fa;
@@ -103,6 +117,8 @@
   --md-sys-color-error-container: #93000a;
   --md-sys-color-on-error: #690005;
   --md-sys-color-on-error-container: #ffdad6;
+
+  color-scheme: dark;
 }
 
 @layer base {
@@ -133,6 +149,7 @@
   color: var(--md-sys-color-on-surface);
   border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: var(--md-sys-shape-card);
+  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.05);
   transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
 }
 
@@ -164,24 +181,42 @@
   transform: translateY(-2px);
 }
 
-/* Material Design 3 Filled Tonal Inputs */
+/* Material Design 3 Filled Tonal Inputs with High Contrast */
 .m3-input {
-  background-color: var(--md-sys-color-surface-container-high);
-  color: var(--md-sys-color-on-surface);
-  border: 1px solid var(--md-sys-color-outline-variant);
+  background-color: var(--md-sys-color-input-bg);
+  color: var(--md-sys-color-input-text) !important;
+  -webkit-text-fill-color: var(--md-sys-color-input-text) !important;
+  border: 1.5px solid var(--md-sys-color-input-border);
   border-radius: var(--md-sys-shape-input);
+  font-weight: 500;
   transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
 }
 
 .m3-input::placeholder {
-  color: var(--md-sys-color-outline);
+  color: var(--md-sys-color-input-placeholder) !important;
+  -webkit-text-fill-color: var(--md-sys-color-input-placeholder) !important;
+  opacity: 1;
 }
 
 .m3-input:focus {
-  background-color: var(--md-sys-color-surface-container-highest);
-  border-color: var(--md-sys-color-primary);
+  background-color: var(--md-sys-color-input-focus-bg);
+  color: var(--md-sys-color-input-text) !important;
+  -webkit-text-fill-color: var(--md-sys-color-input-text) !important;
+  border-color: var(--md-sys-color-primary) !important;
   outline: none;
-  box-shadow: 0 0 0 2px var(--md-sys-color-primary);
+  box-shadow: 0 0 0 3px rgba(11, 87, 208, 0.18);
+}
+
+/* Chrome/Safari/Edge autofill fix */
+.m3-input:-webkit-autofill,
+.m3-input:-webkit-autofill:hover,
+.m3-input:-webkit-autofill:focus,
+.m3-input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--md-sys-color-input-text) !important;
+  caret-color: var(--md-sys-color-input-text) !important;
+  -webkit-box-shadow: 0 0 0px 1000px var(--md-sys-color-input-bg) inset !important;
+  box-shadow: 0 0 0px 1000px var(--md-sys-color-input-bg) inset !important;
+  transition: background-color 5000s ease-in-out 0s;
 }
 
 /* Material Design 3 Pill Button Styles */
