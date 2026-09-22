@@ -26,7 +26,7 @@ export const CaptchaWidget: React.FC<Props> = ({ onVerify, onReset }) => {
   };
 
   return (
-    <div className="w-full p-3 rounded-2xl border border-slate-700/80 bg-slate-900/60 backdrop-blur-md flex items-center justify-between shadow-inner">
+    <div className="w-full p-3.5 rounded-[20px] border border-[var(--md-sys-color-outline-variant)] bg-[var(--md-sys-color-surface-container-high)] flex items-center justify-between shadow-sm transition-colors">
       <div className="flex items-center gap-3">
         <button
           type="button"
@@ -34,43 +34,43 @@ export const CaptchaWidget: React.FC<Props> = ({ onVerify, onReset }) => {
           disabled={status === 'verifying'}
           className={`w-7 h-7 rounded-lg border flex items-center justify-center transition-all ${
             status === 'verified'
-              ? 'bg-emerald-500 border-emerald-400 text-white shadow-md shadow-emerald-500/20'
+              ? 'bg-[var(--md-sys-color-success)] border-transparent text-[var(--md-sys-color-on-primary)] shadow-sm'
               : status === 'verifying'
-              ? 'bg-indigo-950 border-indigo-600 text-indigo-400'
-              : 'border-slate-500 bg-slate-800 hover:border-indigo-400 hover:bg-slate-700/80 active:scale-95'
+              ? 'bg-[var(--md-sys-color-primary-container)] border-[var(--md-sys-color-primary)] text-[var(--md-sys-color-primary)]'
+              : 'border-[var(--md-sys-color-outline)] bg-[var(--md-sys-color-surface)] hover:border-[var(--md-sys-color-primary)] active:scale-95'
           }`}
           title="Click to verify you are human"
         >
           {status === 'verified' && <CheckCircle2 className="w-5 h-5 text-white animate-in zoom-in-50" />}
-          {status === 'verifying' && <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />}
+          {status === 'verifying' && <Loader2 className="w-4 h-4 animate-spin text-[var(--md-sys-color-primary)]" />}
         </button>
 
-        <span className="text-sm font-medium text-slate-300">
+        <span className="text-sm font-medium text-[var(--md-sys-color-on-surface)]">
           {status === 'verified' ? (
-            <span className="text-emerald-400 font-semibold flex items-center gap-1.5">
+            <span className="text-[var(--md-sys-color-success)] font-semibold flex items-center gap-1.5">
               Verification Successful
               <button
                 type="button"
                 onClick={handleReset}
-                className="text-[10px] text-slate-400 hover:text-white underline ml-2"
+                className="text-[10px] text-[var(--md-sys-color-on-surface-variant)] hover:underline ml-2"
               >
                 (Reset)
               </button>
             </span>
           ) : status === 'verifying' ? (
-            <span className="text-indigo-300">Analyzing browser fingerprint...</span>
+            <span className="text-[var(--md-sys-color-primary)]">Verifying security challenge...</span>
           ) : (
-            <span>I am not a robot (SDSecurity Task 2)</span>
+            <span>I'm not a robot</span>
           )}
         </span>
       </div>
 
-      <div className="flex flex-col items-end text-slate-500 text-[10px] pl-2 border-l border-slate-800">
-        <div className="flex items-center gap-1 text-slate-400 font-semibold">
-          <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
-          <span>Turnstile</span>
+      <div className="flex flex-col items-end text-[var(--md-sys-color-outline)] text-[10px] pl-3 border-l border-[var(--md-sys-color-outline-variant)]">
+        <div className="flex items-center gap-1 text-[var(--md-sys-color-on-surface-variant)] font-semibold">
+          <ShieldCheck className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
+          <span>Security Check</span>
         </div>
-        <span>Security Check</span>
+        <span>Privacy Protected</span>
       </div>
     </div>
   );

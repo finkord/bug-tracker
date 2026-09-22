@@ -19,45 +19,45 @@ export const HomePage: React.FC = () => {
   const features = [
     {
       title: 'Argon2id Password Security',
-      task: 'SDSecurity Task 1',
-      description: 'Strict 8+ char policy with uppercase, numbers, and symbols. Hashed using memory-hard Argon2id.',
+      tag: 'Cryptography',
+      description: 'Strict 8+ character policy with uppercase, numbers, and symbols. Hashed using memory-hard Argon2id.',
       icon: Lock,
-      color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20',
+      iconBg: 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)]',
     },
     {
-      title: 'Bot Verification (CAPTCHA)',
-      task: 'SDSecurity Task 2',
-      description: 'Zero-trust registration pipeline with bot analysis and test bypass verification.',
+      title: 'Zero-Trust Bot Verification',
+      tag: 'Anti-Automation',
+      description: 'Interactive challenge analysis ensuring human enrollment and preventing automated brute-force attacks.',
       icon: ShieldCheck,
-      color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+      iconBg: 'bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)]',
     },
     {
-      title: 'Email Account Activation',
-      task: 'SDSecurity Task 3',
-      description: 'Single-use 24h cryptographic token delivered to local Mailpit inbox with one-click verification.',
+      title: 'Single-Use Email Verification',
+      tag: 'Activation',
+      description: 'Cryptographic 24-hour verification token dispatched to local Mailpit inbox with one-click verification.',
       icon: CheckCircle,
-      color: 'text-sky-400 bg-sky-500/10 border-sky-500/20',
+      iconBg: 'bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)]',
     },
     {
       title: 'Brute-Force Lockout & Audit',
-      task: 'SDSecurity Task 4',
-      description: '5 consecutive failed attempts trigger a 15-minute lockout. Forensic logging of IP, agent, and status.',
+      tag: 'Rate Limiting',
+      description: '5 consecutive failed attempts trigger a 15-minute temporary lockout. Forensic audit logs of IP, agent, and status.',
       icon: Clock,
-      color: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
+      iconBg: 'bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)]',
     },
     {
       title: 'Two-Factor TOTP (RFC 6238)',
-      task: 'SDSecurity Task 5',
-      description: 'Google Authenticator / Authy integration with Base64 QR code and dynamic challenge tokens.',
+      tag: 'Two-Step Verification',
+      description: 'Google Authenticator, Authy, and Microsoft Authenticator integration with QR code and dynamic challenge tokens.',
       icon: KeyRound,
-      color: 'text-purple-400 bg-purple-500/10 border-purple-500/20',
+      iconBg: 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)]',
     },
     {
-      title: 'OAuth2 & Password Reset',
-      task: 'SDSecurity Tasks 6 & 7',
-      description: 'GitHub OAuth2 identity federation and 15-minute cryptographic password recovery tokens.',
+      title: 'Federated OAuth2 & Recovery',
+      tag: 'Identity & Tokens',
+      description: 'GitHub OAuth2 identity federation and 15-minute cryptographic password recovery tokens with automatic lockout release.',
       icon: Sparkles,
-      color: 'text-rose-400 bg-rose-500/10 border-rose-500/20',
+      iconBg: 'bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)]',
     },
   ];
 
@@ -65,28 +65,28 @@ export const HomePage: React.FC = () => {
     <div className="max-w-6xl mx-auto px-4 py-12 space-y-12">
       {/* Hero Section */}
       <div className="text-center space-y-5 max-w-3xl mx-auto">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-950/80 border border-indigo-800/60 text-xs font-semibold text-indigo-300 shadow-sm animate-in fade-in slide-in-from-bottom-2">
-          <Shield className="w-3.5 h-3.5 text-indigo-400" />
-          <span>PPofSE Lab 6–7 & SDSecurity Lab 6 Enterprise Platform</span>
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[var(--md-sys-color-surface-container-high)] text-xs font-semibold text-[var(--md-sys-color-primary)] border border-[var(--md-sys-color-outline-variant)] shadow-sm">
+          <Shield className="w-3.5 h-3.5" />
+          <span>Unified Issue Tracking & Security Platform</span>
         </div>
 
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight font-heading text-white">
-          Enterprise Security & <br />
-          <span className="bg-gradient-to-r from-indigo-400 via-purple-300 to-emerald-400 bg-clip-text text-transparent">
-            Issue Tracking System
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-[var(--md-sys-color-on-surface)] leading-tight">
+          Issue Tracking with <br />
+          <span className="text-[var(--md-sys-color-primary)]">
+            Enterprise Security
           </span>
         </h1>
 
-        <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
-          High-performance modular monolith built with <strong>NestJS 12</strong>, <strong>React 19 (Vite)</strong>, and <strong>Tailwind CSS</strong> with Material 3 expressive styling. Fully implements all 7 cybersecurity access controls.
+        <p className="text-[var(--md-sys-color-on-surface-variant)] text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
+          Built with <strong>NestJS</strong>, <strong>React</strong>, and Google Pixel <strong>Material 3 Expressive</strong> styling. Designed for high performance, deep security forensics, and effortless collaboration.
         </p>
 
         {/* Call to Actions */}
-        <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+        <div className="flex flex-wrap items-center justify-center gap-3 pt-3">
           {user ? (
             <Link
               to="/profile"
-              className="px-6 py-3 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm flex items-center gap-2 transition-all shadow-lg shadow-indigo-600/30 active:scale-95"
+              className="px-6 py-3 rounded-full m3-btn-filled text-sm flex items-center gap-2 shadow-sm"
             >
               <span>View Security Profile</span>
               <ArrowRight className="w-4 h-4" />
@@ -95,14 +95,14 @@ export const HomePage: React.FC = () => {
             <>
               <Link
                 to="/register"
-                className="px-6 py-3 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm flex items-center gap-2 transition-all shadow-lg shadow-indigo-600/30 active:scale-95"
+                className="px-6 py-3 rounded-full m3-btn-filled text-sm flex items-center gap-2 shadow-sm"
               >
                 <span>Create Protected Account</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
                 to="/login"
-                className="px-6 py-3 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold text-sm transition-all active:scale-95"
+                className="px-6 py-3 rounded-full m3-btn-outline text-sm"
               >
                 Sign In
               </Link>
@@ -113,33 +113,35 @@ export const HomePage: React.FC = () => {
             href="http://localhost:3000/api/docs"
             target="_blank"
             rel="noreferrer"
-            className="px-5 py-3 rounded-full bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-sm font-medium flex items-center gap-2 transition-all"
+            className="px-5 py-3 rounded-full m3-card-high hover:opacity-90 text-[var(--md-sys-color-on-surface)] text-sm font-medium flex items-center gap-2 transition-all border border-[var(--md-sys-color-outline-variant)]"
           >
-            <span>Interactive Swagger API</span>
-            <ExternalLink className="w-3.5 h-3.5" />
+            <span>Swagger API Docs</span>
+            <ExternalLink className="w-3.5 h-3.5 text-[var(--md-sys-color-outline)]" />
           </a>
         </div>
       </div>
 
-      {/* Feature Grid */}
+      {/* Feature Grid - Google Pixel Squircle Tiles */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {features.map((f, i) => {
           const Icon = f.icon;
           return (
             <div
               key={i}
-              className="p-6 rounded-3xl m3-surface text-slate-200 border border-slate-700/80 shadow-xl space-y-3 hover:border-slate-600 transition-all hover:translate-y-[-2px]"
+              className="p-6 m3-tile space-y-4 shadow-sm"
             >
               <div className="flex items-center justify-between">
-                <div className={`w-10 h-10 rounded-2xl border flex items-center justify-center ${f.color}`}>
-                  <Icon className="w-5 h-5" />
+                <div className={`w-12 h-12 rounded-[18px] flex items-center justify-center ${f.iconBg}`}>
+                  <Icon className="w-6 h-6" />
                 </div>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
-                  {f.task}
+                <span className="text-[11px] font-semibold px-3 py-1 rounded-full bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] border border-[var(--md-sys-color-outline-variant)]">
+                  {f.tag}
                 </span>
               </div>
-              <h3 className="text-base font-bold text-white">{f.title}</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">{f.description}</p>
+              <div className="space-y-1.5">
+                <h3 className="text-base font-bold text-[var(--md-sys-color-on-surface)]">{f.title}</h3>
+                <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] leading-relaxed">{f.description}</p>
+              </div>
             </div>
           );
         })}

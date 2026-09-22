@@ -30,37 +30,37 @@ export const ForgotPasswordPage: React.FC = () => {
 
   return (
     <div className="flex items-center justify-center min-h-[80vh] px-4">
-      <div className="w-full max-w-md p-8 rounded-3xl m3-surface text-slate-200 border border-slate-700/80 shadow-2xl space-y-6">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+      <div className="w-full max-w-md p-8 rounded-[28px] m3-card shadow-lg space-y-6">
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-[18px] bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center">
             <KeyRound className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-white tracking-tight">Forgot Password</h2>
-            <p className="text-xs text-slate-400">SDSecurity Task 7 (Cryptographic Reset Token)</p>
+            <h2 className="text-2xl font-bold text-[var(--md-sys-color-on-surface)] tracking-tight">Forgot Password</h2>
+            <p className="text-xs text-[var(--md-sys-color-on-surface-variant)]">Request a cryptographic recovery link</p>
           </div>
         </div>
 
         {sent ? (
           <div className="space-y-5 animate-in fade-in zoom-in-95">
-            <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/40 text-center space-y-2">
-              <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
-              <h3 className="text-sm font-bold text-emerald-200">Reset Link Dispatched</h3>
-              <p className="text-xs text-emerald-300/80 leading-relaxed">
-                If an account matches <strong>{email}</strong>, a 15-minute reset token has been sent to Mailpit.
+            <div className="p-5 rounded-[22px] bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] text-center space-y-2 border border-transparent">
+              <CheckCircle2 className="w-10 h-10 mx-auto text-[var(--md-sys-color-success)]" />
+              <h3 className="text-base font-bold">Reset Link Dispatched</h3>
+              <p className="text-xs leading-relaxed opacity-90">
+                If an account matches <strong>{email}</strong>, a 15-minute reset token has been dispatched.
               </p>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 text-xs space-y-2">
-              <span className="font-semibold text-slate-300 flex items-center gap-1.5">
-                <Mail className="w-4 h-4 text-indigo-400" />
+            <div className="p-4 rounded-[20px] bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)] text-xs space-y-2.5">
+              <span className="font-semibold text-[var(--md-sys-color-on-surface)] flex items-center gap-1.5">
+                <Mail className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
                 Inspect in Local Mailpit Inbox:
               </span>
               <a
                 href="http://localhost:8025"
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-indigo-600/30 text-indigo-300 hover:bg-indigo-600/50 border border-indigo-500/40 font-medium transition-all"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full m3-btn-tonal text-xs font-semibold"
               >
                 <span>Open Mailpit (port 8025)</span>
                 <ExternalLink className="w-3.5 h-3.5" />
@@ -68,11 +68,11 @@ export const ForgotPasswordPage: React.FC = () => {
             </div>
 
             {resetToken && (
-              <div className="space-y-1">
-                <span className="text-[11px] text-slate-500">Quick-Reset Shortcut:</span>
+              <div className="space-y-1.5 pt-1">
+                <span className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">Instant reset shortcut:</span>
                 <Link
                   to={`/reset-password?token=${encodeURIComponent(resetToken)}`}
-                  className="w-full py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-indigo-600/20"
+                  className="w-full py-3 rounded-full m3-btn-filled text-xs flex items-center justify-center gap-2 shadow-sm"
                 >
                   <span>Reset Password Directly</span>
                   <ArrowRight className="w-4 h-4" />
@@ -81,7 +81,7 @@ export const ForgotPasswordPage: React.FC = () => {
             )}
 
             <div className="pt-2 text-center">
-              <Link to="/login" className="text-xs text-slate-400 hover:text-white transition-colors">
+              <Link to="/login" className="text-xs text-[var(--md-sys-color-primary)] font-medium hover:underline">
                 Return to Sign In
               </Link>
             </div>
@@ -89,28 +89,28 @@ export const ForgotPasswordPage: React.FC = () => {
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="p-3 text-xs rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300">
+              <div className="p-3.5 text-xs rounded-[16px] bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] border border-[var(--md-sys-color-error)]/20 font-medium">
                 {error}
               </div>
             )}
 
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] leading-relaxed">
               Enter your registered email address below. We'll send you a secure, single-use link valid for 15 minutes.
             </p>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
+              <label className="block text-xs font-medium text-[var(--md-sys-color-on-surface-variant)] mb-1.5">
                 Registered Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
+                <Mail className="absolute left-3.5 top-3.5 w-4 h-4 text-[var(--md-sys-color-outline)]" />
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="v.fufalko@example.com"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl m3-input text-sm text-white placeholder:text-slate-600"
+                  className="w-full pl-10 pr-4 py-3 m3-input text-sm"
                 />
               </div>
             </div>
@@ -118,7 +118,7 @@ export const ForgotPasswordPage: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-full text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-50 active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30"
+              className="w-full py-3.5 m3-btn-filled text-sm shadow-sm flex items-center justify-center gap-2"
             >
               {loading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -131,7 +131,7 @@ export const ForgotPasswordPage: React.FC = () => {
             </button>
 
             <div className="text-center pt-2">
-              <Link to="/login" className="text-xs text-slate-400 hover:text-white transition-colors">
+              <Link to="/login" className="text-xs text-[var(--md-sys-color-primary)] font-medium hover:underline">
                 Remember your password? Sign in
               </Link>
             </div>

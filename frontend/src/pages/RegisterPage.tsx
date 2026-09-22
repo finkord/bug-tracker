@@ -20,7 +20,7 @@ export const RegisterPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!captchaToken) {
-      setError('Please complete the bot security verification (SDSecurity Task 2)');
+      setError('Please complete the bot security verification challenge');
       return;
     }
 
@@ -44,44 +44,41 @@ export const RegisterPage: React.FC = () => {
 
   return (
     <div className="flex items-center justify-center min-h-[85vh] px-4 py-8">
-      <div className="w-full max-w-md p-8 rounded-3xl m3-surface text-slate-200 border border-slate-700/80 shadow-2xl relative overflow-hidden">
-        {/* Decorative Top Gradient Accent */}
-        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-400" />
-
+      <div className="w-full max-w-md p-8 m3-card shadow-lg relative overflow-hidden">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+        <div className="flex items-center gap-3.5 mb-6">
+          <div className="w-12 h-12 rounded-[18px] bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center">
             <Shield className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-white tracking-tight">Create Account</h2>
-            <p className="text-xs text-slate-400">Secure Enrollment & Policy Enforcement</p>
+            <h2 className="text-2xl font-bold text-[var(--md-sys-color-on-surface)] tracking-tight">Create Account</h2>
+            <p className="text-xs text-[var(--md-sys-color-on-surface-variant)]">Join BugTracker with protected enrollment</p>
           </div>
         </div>
 
         {successData ? (
           <div className="space-y-5 animate-in fade-in zoom-in-95">
-            <div className="p-5 rounded-2xl bg-emerald-950/40 border border-emerald-500/40 text-center space-y-3">
-              <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto" />
-              <h3 className="text-lg font-bold text-emerald-200">Registration Complete!</h3>
-              <p className="text-xs text-emerald-300/90 leading-relaxed">
+            <div className="p-5 rounded-[22px] bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] text-center space-y-2 border border-transparent">
+              <CheckCircle2 className="w-10 h-10 mx-auto text-[var(--md-sys-color-success)]" />
+              <h3 className="text-lg font-bold">Registration Complete!</h3>
+              <p className="text-xs leading-relaxed opacity-90">
                 {successData.message}
               </p>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 text-xs space-y-2">
-              <span className="font-semibold text-slate-300 flex items-center gap-1.5">
-                <Mail className="w-4 h-4 text-indigo-400" />
+            <div className="p-4 rounded-[20px] bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)] text-xs space-y-2.5">
+              <span className="font-semibold text-[var(--md-sys-color-on-surface)] flex items-center gap-1.5">
+                <Mail className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
                 Testing Environment (Mailpit):
               </span>
-              <p className="text-slate-400">
-                Open your local Mailpit web inbox to inspect the activation email:
+              <p className="text-[var(--md-sys-color-on-surface-variant)]">
+                Inspect the single-use activation email in your local inbox:
               </p>
               <a
                 href="http://localhost:8025"
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-indigo-600/30 text-indigo-300 hover:bg-indigo-600/50 border border-indigo-500/40 font-medium transition-all"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full m3-btn-tonal text-xs font-semibold"
               >
                 <span>Open Mailpit Dashboard</span>
                 <ExternalLink className="w-3.5 h-3.5" />
@@ -89,11 +86,11 @@ export const RegisterPage: React.FC = () => {
             </div>
 
             {successData.activationToken && (
-              <div className="space-y-1">
-                <span className="text-[11px] text-slate-500">Quick-Activation Shortcut:</span>
+              <div className="space-y-1.5 pt-1">
+                <span className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">Instant activation shortcut:</span>
                 <Link
                   to={`/activate?token=${encodeURIComponent(successData.activationToken)}`}
-                  className="w-full py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-emerald-600/20"
+                  className="w-full py-3 rounded-full m3-btn-filled text-xs flex items-center justify-center gap-2 shadow-sm"
                 >
                   <span>Activate Account Directly</span>
                   <ArrowRight className="w-4 h-4" />
@@ -102,7 +99,7 @@ export const RegisterPage: React.FC = () => {
             )}
 
             <div className="pt-2 text-center">
-              <Link to="/login" className="text-xs text-slate-400 hover:text-white transition-colors">
+              <Link to="/login" className="text-xs text-[var(--md-sys-color-primary)] font-medium hover:underline">
                 Return to Sign In
               </Link>
             </div>
@@ -110,61 +107,61 @@ export const RegisterPage: React.FC = () => {
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="p-3 text-xs rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300">
+              <div className="p-3.5 text-xs rounded-[16px] bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] border border-[var(--md-sys-color-error)]/20 font-medium">
                 {error}
               </div>
             )}
 
             {/* Full Name */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
+              <label className="block text-xs font-medium text-[var(--md-sys-color-on-surface-variant)] mb-1.5">
                 Full Display Name
               </label>
               <div className="relative">
-                <User className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
+                <User className="absolute left-3.5 top-3.5 w-4 h-4 text-[var(--md-sys-color-outline)]" />
                 <input
                   type="text"
                   required
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="e.g. Vasyl Fufalko"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl m3-input text-sm text-white placeholder:text-slate-600"
+                  placeholder="e.g. Volodymyr Fufalko"
+                  className="w-full pl-10 pr-4 py-3 m3-input text-sm"
                 />
               </div>
             </div>
 
             {/* Email Address */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
+              <label className="block text-xs font-medium text-[var(--md-sys-color-on-surface-variant)] mb-1.5">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
+                <Mail className="absolute left-3.5 top-3.5 w-4 h-4 text-[var(--md-sys-color-outline)]" />
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@domain.com"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl m3-input text-sm text-white placeholder:text-slate-600"
+                  placeholder="v.fufalko@example.com"
+                  className="w-full pl-10 pr-4 py-3 m3-input text-sm"
                 />
               </div>
             </div>
 
             {/* Password with Real-Time Policy Meter */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
-                Account Password
+              <label className="block text-xs font-medium text-[var(--md-sys-color-on-surface-variant)] mb-1.5">
+                Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
+                <Lock className="absolute left-3.5 top-3.5 w-4 h-4 text-[var(--md-sys-color-outline)]" />
                 <input
                   type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl m3-input text-sm text-white placeholder:text-slate-600"
+                  className="w-full pl-10 pr-4 py-3 m3-input text-sm"
                 />
               </div>
               <PasswordStrengthMeter password={password} />
@@ -179,22 +176,22 @@ export const RegisterPage: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-2 py-3 rounded-full text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-50 active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30"
+              className="w-full mt-3 py-3.5 m3-btn-filled text-sm shadow-sm flex items-center justify-center gap-2"
             >
               {loading ? (
-                <div className="w-5 h-5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                <div className="w-5 h-5 rounded-full border-2 border-current border-t-transparent animate-spin" />
               ) : (
                 <>
-                  <span>Create Protected Account</span>
+                  <span>Create Account</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>
 
             {/* Sign in redirect */}
-            <div className="text-center pt-2 text-xs text-slate-400">
+            <div className="text-center pt-2 text-xs text-[var(--md-sys-color-on-surface-variant)]">
               Already have an account?{' '}
-              <Link to="/login" className="text-indigo-400 hover:text-indigo-300 font-semibold underline underline-offset-4">
+              <Link to="/login" className="text-[var(--md-sys-color-primary)] font-semibold hover:underline">
                 Sign in here
               </Link>
             </div>

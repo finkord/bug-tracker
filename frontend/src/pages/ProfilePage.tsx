@@ -44,50 +44,50 @@ export const ProfilePage: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
-      {/* Profile Overview Card */}
-      <div className="p-8 rounded-3xl m3-surface text-slate-200 border border-slate-700/80 shadow-2xl relative overflow-hidden">
+      {/* Profile Overview Card - Google Pixel Header */}
+      <div className="p-8 rounded-[28px] m3-card shadow-sm relative overflow-hidden">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex items-center gap-5">
-            <div className="w-16 h-16 rounded-3xl bg-indigo-600/30 border border-indigo-500/40 flex items-center justify-center text-indigo-300 text-2xl font-bold font-heading shadow-lg shadow-indigo-600/20">
+            <div className="w-16 h-16 rounded-[22px] bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center text-2xl font-bold font-heading shadow-sm">
               {user.fullName.charAt(0).toUpperCase()}
             </div>
             <div>
               <div className="flex items-center gap-2.5">
-                <h1 className="text-2xl font-bold text-white tracking-tight">{user.fullName}</h1>
+                <h1 className="text-2xl font-bold text-[var(--md-sys-color-on-surface)] tracking-tight">{user.fullName}</h1>
                 <span
-                  className={`text-xs font-bold px-2.5 py-0.5 rounded-full uppercase ${
+                  className={`text-xs font-bold px-3 py-0.5 rounded-full uppercase ${
                     user.systemRole === 'ADMIN'
-                      ? 'bg-purple-900/60 text-purple-300 border border-purple-700/50'
-                      : 'bg-slate-800 text-slate-300 border border-slate-700'
+                      ? 'bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)]'
+                      : 'bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-on-surface-variant)]'
                   }`}
                 >
                   {user.systemRole}
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">{user.email}</p>
+              <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-0.5">{user.email}</p>
             </div>
           </div>
 
           {/* Quick Badges */}
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="px-3 py-1 rounded-full bg-slate-900/80 border border-slate-800 text-slate-400 flex items-center gap-1.5">
+            <span className="px-3.5 py-1.5 rounded-full bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] border border-[var(--md-sys-color-outline-variant)] flex items-center gap-1.5">
               <span>Account ID:</span>
-              <strong className="text-white font-mono">#{user.id}</strong>
+              <strong className="text-[var(--md-sys-color-on-surface)] font-mono">#{user.id}</strong>
             </span>
 
             <span
-              className={`px-3 py-1 rounded-full border flex items-center gap-1.5 font-medium ${
+              className={`px-3.5 py-1.5 rounded-full border flex items-center gap-1.5 font-medium ${
                 user.isActivated
-                  ? 'bg-emerald-950/40 border-emerald-700/50 text-emerald-300'
-                  : 'bg-amber-950/40 border-amber-700/50 text-amber-300'
+                  ? 'bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] border-transparent'
+                  : 'bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] border-transparent'
               }`}
             >
-              {user.isActivated ? <CheckCircle className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
+              {user.isActivated ? <CheckCircle className="w-3.5 h-3.5 text-[var(--md-sys-color-success)]" /> : <Clock className="w-3.5 h-3.5" />}
               <span>{user.isActivated ? 'Activated' : 'Pending Activation'}</span>
             </span>
 
-            <span className="px-3 py-1 rounded-full bg-slate-900/80 border border-slate-800 text-slate-400">
-              Provider: <strong className="text-indigo-300">{user.oauthProvider}</strong>
+            <span className="px-3.5 py-1.5 rounded-full bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] border border-[var(--md-sys-color-outline-variant)]">
+              Auth: <strong className="text-[var(--md-sys-color-primary)]">{user.oauthProvider}</strong>
             </span>
           </div>
         </div>
@@ -95,42 +95,42 @@ export const ProfilePage: React.FC = () => {
 
       {/* Security Controls Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Task 5: Two-Factor Authentication Control Card */}
-        <div className="p-6 rounded-3xl m3-surface text-slate-200 border border-slate-700/80 shadow-xl space-y-4">
+        {/* Two-Factor Authentication Control Card */}
+        <div className="p-6 rounded-[24px] m3-card space-y-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3.5">
               <div
-                className={`w-10 h-10 rounded-2xl flex items-center justify-center border ${
+                className={`w-11 h-11 rounded-[16px] flex items-center justify-center ${
                   user.twoFactorEnabled
-                    ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400'
-                    : 'bg-slate-800 border-slate-700 text-slate-400'
+                    ? 'bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)]'
+                    : 'bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)]'
                 }`}
               >
-                {user.twoFactorEnabled ? <ShieldCheck className="w-5 h-5" /> : <Shield className="w-5 h-5" />}
+                {user.twoFactorEnabled ? <ShieldCheck className="w-5 h-5 text-[var(--md-sys-color-success)]" /> : <Shield className="w-5 h-5" />}
               </div>
               <div>
-                <h3 className="text-base font-bold text-white">Two-Factor Authentication</h3>
-                <p className="text-[11px] text-slate-400">SDSecurity Task 5 (RFC 6238 TOTP)</p>
+                <h3 className="text-base font-bold text-[var(--md-sys-color-on-surface)]">Two-Step Verification</h3>
+                <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">Authenticator app security</p>
               </div>
             </div>
 
             <span
-              className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase ${
+              className={`text-[10px] font-bold px-3 py-1 rounded-full uppercase ${
                 user.twoFactorEnabled
-                  ? 'bg-emerald-950/60 border border-emerald-500/40 text-emerald-300'
-                  : 'bg-slate-800 border border-slate-700 text-slate-400'
+                  ? 'bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)]'
+                  : 'bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)]'
               }`}
             >
               {user.twoFactorEnabled ? 'Active' : 'Disabled'}
             </span>
           </div>
 
-          <p className="text-xs text-slate-400 leading-relaxed">
+          <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] leading-relaxed">
             Protect your account with Time-based One-Time Passcodes (TOTP) from Google Authenticator, Authy, or Microsoft Authenticator.
           </p>
 
           {error && (
-            <div className="p-3 text-xs rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300">
+            <div className="p-3 text-xs rounded-[14px] bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] font-medium">
               {error}
             </div>
           )}
@@ -138,8 +138,8 @@ export const ProfilePage: React.FC = () => {
           {user.twoFactorEnabled ? (
             showDisableForm ? (
               <form onSubmit={handleDisable2Fa} className="space-y-3 pt-2">
-                <label className="block text-xs font-semibold text-slate-300">
-                  Enter 6-digit code to confirm deactivation:
+                <label className="block text-xs font-medium text-[var(--md-sys-color-on-surface-variant)]">
+                  Enter 6-digit passcode to confirm deactivation:
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -148,19 +148,19 @@ export const ProfilePage: React.FC = () => {
                     value={disableCode}
                     onChange={(e) => setDisableCode(e.target.value.replace(/\D/g, ''))}
                     placeholder="000000"
-                    className="w-32 text-center tracking-widest font-mono text-sm py-2 rounded-xl m3-input text-white"
+                    className="w-32 text-center tracking-widest font-mono text-sm py-2 m3-input"
                   />
                   <button
                     type="submit"
                     disabled={disabling || disableCode.length !== 6}
-                    className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold disabled:opacity-50 transition-all"
+                    className="px-4 py-2 rounded-full bg-[var(--md-sys-color-error)] text-[var(--md-sys-color-on-error)] text-xs font-semibold disabled:opacity-50 transition-all"
                   >
                     {disabling ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirm Disable'}
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowDisableForm(false)}
-                    className="px-3 py-2 rounded-xl bg-slate-800 text-slate-400 text-xs font-medium hover:text-white"
+                    className="px-3.5 py-2 rounded-full m3-btn-outline text-xs font-medium"
                   >
                     Cancel
                   </button>
@@ -170,16 +170,16 @@ export const ProfilePage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowDisableForm(true)}
-                className="w-full py-2.5 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-semibold transition-all"
+                className="w-full py-2.5 m3-btn-outline text-xs font-semibold"
               >
-                Disable Two-Factor Auth
+                Disable Two-Step Verification
               </button>
             )
           ) : (
             <button
               type="button"
               onClick={() => setModalOpen(true)}
-              className="w-full py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow-md shadow-indigo-600/20 active:scale-95"
+              className="w-full py-2.5 m3-btn-filled text-xs font-semibold flex items-center justify-center gap-2 shadow-sm"
             >
               <KeyRound className="w-4 h-4" />
               <span>Configure & Enable 2FA</span>
@@ -187,47 +187,47 @@ export const ProfilePage: React.FC = () => {
           )}
         </div>
 
-        {/* Task 4: Administrator Controls & Security Forensics Card */}
+        {/* Administrator Controls or User Status Card */}
         {user.systemRole === 'ADMIN' ? (
-          <div className="p-6 rounded-3xl m3-surface text-slate-200 border border-slate-700/80 shadow-xl space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
-                <ShieldAlert className="w-5 h-5" />
+          <div className="p-6 rounded-[24px] m3-card space-y-4 shadow-sm">
+            <div className="flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-[16px] bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] flex items-center justify-center">
+                <ShieldAlert className="w-5 h-5 text-[var(--md-sys-color-warning)]" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-white">Administrator Security Controls</h3>
-                <p className="text-[11px] text-slate-400">SDSecurity Task 4 (Forensics & RBAC)</p>
+                <h3 className="text-base font-bold text-[var(--md-sys-color-on-surface)]">Security Controls</h3>
+                <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">Forensics & access management</p>
               </div>
             </div>
 
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Review live forensic audit trails (`login_audit_logs`), inspect IP addresses, and manage account lockout suspensions.
+            <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] leading-relaxed">
+              Review live forensic audit trails, inspect client IP addresses and user agents, and manage account security states.
             </p>
 
             <div className="pt-2">
               <Link
                 to="/admin/security-logs"
-                className="w-full py-2.5 rounded-full bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow-md shadow-amber-600/20 active:scale-95"
+                className="w-full py-2.5 rounded-full m3-btn-filled text-xs font-semibold flex items-center justify-center gap-2 shadow-sm"
               >
-                <span>Open Security Audit Dashboard</span>
+                <span>Open Security Center</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
           </div>
         ) : (
-          <div className="p-6 rounded-3xl m3-surface text-slate-200 border border-slate-700/80 shadow-xl space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
-                <CheckCircle className="w-5 h-5" />
+          <div className="p-6 rounded-[24px] m3-card space-y-3 shadow-sm">
+            <div className="flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-[16px] bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-[var(--md-sys-color-primary)]" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-white">Account Status</h3>
-                <p className="text-[11px] text-slate-400">Standard User Access</p>
+                <h3 className="text-base font-bold text-[var(--md-sys-color-on-surface)]">Account Security</h3>
+                <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">Active Protection</p>
               </div>
             </div>
 
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Your account is active and protected by Argon2id cryptographic hashing and brute-force mitigation limits.
+            <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] leading-relaxed">
+              Your account is protected by Argon2id cryptographic hashing, session token controls, and automated rate-limiting protections.
             </p>
           </div>
         )}

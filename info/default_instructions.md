@@ -7,7 +7,7 @@ This document serves as the primary system context, architectural reference, and
 ## 1. Project Identity & Academic Context
 
 * **Project Title:** Bug / Issue Tracking System (*Розроблення системи обліку та супроводу помилок у програмному забезпеченні*).
-* **Developer:** Fufalko V.V. (*Фуфалько В.В.*), Academic Group **IPZ-43** (*ІПЗ-43*).
+* **Developer:** Volodymyr Fufalko (*Володимир Фуфалько*).
 * **Institution:** Vasyl Stefanyk Precarpathian National University (*Карпатський національний університет імені Василя Стефаника*).
 * **Faculty & Department:** Faculty of Mathematics and Computer Science, Department of Information Technology.
 * **Academic Cross-Course Alignment:**

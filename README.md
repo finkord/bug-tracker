@@ -1,8 +1,6 @@
 # Bug / Issue Tracking System (Software Implementation)
 
-> **Academic Programs:** Professional Practice of Software Engineering (**PPofSE**) & Software and Data Security (**SDSecurity**)  
-> **Author:** Fufalko V.V. (*Фуфалько В.В.*), Group IPZ-43  
-> **Course Year:** 2026  
+> **Author:** Volodymyr Fufalko (*Володимир Фуфалько*)  
 
 ---
 

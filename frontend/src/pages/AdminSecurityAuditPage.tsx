@@ -80,18 +80,18 @@ export const AdminSecurityAuditPage: React.FC = () => {
     switch (status) {
       case 'SUCCESS':
       case 'TWO_FACTOR_SUCCESS':
-        return 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300';
+        return 'bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)]';
       case 'ACCOUNT_LOCKED':
-        return 'bg-amber-950/60 border-amber-500/40 text-amber-300 animate-pulse';
+        return 'bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] animate-pulse';
       case 'ACCOUNT_BLOCKED':
-        return 'bg-red-950/80 border-red-500/50 text-red-300';
+        return 'bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)]';
       case 'FAILED_PASSWORD':
       case 'TWO_FACTOR_FAILED':
-        return 'bg-rose-950/60 border-rose-500/40 text-rose-300';
+        return 'bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)]';
       case 'REQUIRE_2FA':
-        return 'bg-indigo-950/60 border-indigo-500/40 text-indigo-300';
+        return 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)]';
       default:
-        return 'bg-slate-800 border-slate-700 text-slate-300';
+        return 'bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)]';
     }
   };
 
@@ -109,24 +109,24 @@ export const AdminSecurityAuditPage: React.FC = () => {
     <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
-            <ShieldAlert className="w-6 h-6" />
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-[18px] bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] flex items-center justify-center">
+            <ShieldAlert className="w-6 h-6 text-[var(--md-sys-color-warning)]" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">Security Audit Center</h1>
-            <p className="text-xs text-slate-400">SDSecurity Task 4 (Forensics, Brute-Force & Access Controls)</p>
+            <h1 className="text-2xl font-bold text-[var(--md-sys-color-on-surface)] tracking-tight">Security Audit Center</h1>
+            <p className="text-xs text-[var(--md-sys-color-on-surface-variant)]">Security forensics, rate limiting & access controls</p>
           </div>
         </div>
 
-        {/* Tab Controls */}
-        <div className="flex items-center gap-2 p-1.5 rounded-full bg-slate-900 border border-slate-800">
+        {/* Tab Controls - M3 Pill Group */}
+        <div className="flex items-center gap-1.5 p-1.5 rounded-full bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]">
           <button
             onClick={() => setTab('logs')}
             className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
               tab === 'logs'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] shadow-sm'
+                : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]'
             }`}
           >
             <ShieldAlert className="w-3.5 h-3.5" />
@@ -136,8 +136,8 @@ export const AdminSecurityAuditPage: React.FC = () => {
             onClick={() => setTab('users')}
             className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
               tab === 'users'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] shadow-sm'
+                : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]'
             }`}
           >
             <Users className="w-3.5 h-3.5" />
@@ -150,23 +150,23 @@ export const AdminSecurityAuditPage: React.FC = () => {
         /* ================= AUDIT LOGS VIEW ================= */
         <div className="space-y-4">
           {/* Filter Bar */}
-          <div className="p-4 rounded-3xl m3-surface flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2 flex-1 min-w-[260px]">
+          <div className="p-4 rounded-[24px] m3-card flex flex-wrap items-center justify-between gap-3 shadow-sm">
+            <div className="flex items-center gap-2.5 flex-1 min-w-[260px]">
               <div className="relative w-full max-w-sm">
-                <Search className="absolute left-3.5 top-2.5 w-4 h-4 text-slate-500" />
+                <Search className="absolute left-3.5 top-3 w-4 h-4 text-[var(--md-sys-color-outline)]" />
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search by email, IP address, or reason..."
-                  className="w-full pl-10 pr-4 py-2 text-xs rounded-xl m3-input text-white placeholder:text-slate-500"
+                  className="w-full pl-10 pr-4 py-2.5 text-xs m3-input"
                 />
               </div>
 
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 text-xs rounded-xl m3-input text-slate-200 bg-[#161c28]"
+                className="px-3.5 py-2.5 text-xs m3-input"
               >
                 <option value="ALL">All Outcomes</option>
                 <option value="SUCCESS">SUCCESS</option>
@@ -181,7 +181,7 @@ export const AdminSecurityAuditPage: React.FC = () => {
             <button
               onClick={fetchLogs}
               disabled={logsLoading}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full m3-btn-tonal text-xs font-semibold"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${logsLoading ? 'animate-spin' : ''}`} />
               <span>Refresh Log</span>
@@ -189,10 +189,10 @@ export const AdminSecurityAuditPage: React.FC = () => {
           </div>
 
           {/* Table Container */}
-          <div className="rounded-3xl m3-surface overflow-hidden border border-slate-700/80 shadow-2xl">
+          <div className="rounded-[24px] m3-card overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-900/80 text-slate-400 font-semibold border-b border-slate-800">
+                <thead className="bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] font-semibold border-b border-[var(--md-sys-color-outline-variant)]">
                   <tr>
                     <th className="px-5 py-3.5">ID</th>
                     <th className="px-5 py-3.5">Timestamp</th>
@@ -203,45 +203,45 @@ export const AdminSecurityAuditPage: React.FC = () => {
                     <th className="px-5 py-3.5">Forensic Context</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/80 text-slate-300">
+                <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)]">
                   {logsLoading ? (
                     <tr>
-                      <td colSpan={7} className="px-5 py-12 text-center text-slate-500">
+                      <td colSpan={7} className="px-5 py-12 text-center text-[var(--md-sys-color-outline)]">
                         Loading security audit trail...
                       </td>
                     </tr>
                   ) : filteredLogs.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-5 py-12 text-center text-slate-500">
+                      <td colSpan={7} className="px-5 py-12 text-center text-[var(--md-sys-color-outline)]">
                         No audit log records match the current filter.
                       </td>
                     </tr>
                   ) : (
                     filteredLogs.map((log) => (
-                      <tr key={log.id} className="hover:bg-white/[0.02] transition-colors">
-                        <td className="px-5 py-3.5 font-mono text-slate-500 font-bold">#{log.id}</td>
-                        <td className="px-5 py-3.5 whitespace-nowrap text-slate-400">
+                      <tr key={log.id} className="hover:bg-[var(--md-sys-color-surface-container-high)]/50 transition-colors">
+                        <td className="px-5 py-3.5 font-mono text-[var(--md-sys-color-outline)] font-bold">#{log.id}</td>
+                        <td className="px-5 py-3.5 whitespace-nowrap text-[var(--md-sys-color-on-surface-variant)]">
                           {new Date(log.createdAt).toLocaleString()}
                         </td>
                         <td className="px-5 py-3.5">
                           <span
-                            className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase border ${getStatusBadge(
+                            className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase ${getStatusBadge(
                               log.status,
                             )}`}
                           >
                             {log.status}
                           </span>
                         </td>
-                        <td className="px-5 py-3.5 font-medium text-white">{log.attemptedEmail}</td>
-                        <td className="px-5 py-3.5 font-mono text-slate-400">{log.ipAddress}</td>
-                        <td className="px-5 py-3.5 max-w-[180px] truncate text-slate-400" title={log.userAgent}>
+                        <td className="px-5 py-3.5 font-medium text-[var(--md-sys-color-on-surface)]">{log.attemptedEmail}</td>
+                        <td className="px-5 py-3.5 font-mono text-[var(--md-sys-color-on-surface-variant)]">{log.ipAddress}</td>
+                        <td className="px-5 py-3.5 max-w-[180px] truncate text-[var(--md-sys-color-on-surface-variant)]" title={log.userAgent}>
                           {log.userAgent || 'Unknown'}
                         </td>
-                        <td className="px-5 py-3.5 text-slate-400">
+                        <td className="px-5 py-3.5 text-[var(--md-sys-color-on-surface-variant)]">
                           {log.failureReason ? (
-                            <span className="text-amber-300/90 font-medium">{log.failureReason}</span>
+                            <span className="text-[var(--md-sys-color-warning)] font-medium">{log.failureReason}</span>
                           ) : (
-                            <span className="text-emerald-400/80 font-medium">—</span>
+                            <span className="text-[var(--md-sys-color-success)] font-medium">—</span>
                           )}
                         </td>
                       </tr>
@@ -254,10 +254,10 @@ export const AdminSecurityAuditPage: React.FC = () => {
         </div>
       ) : (
         /* ================= USER ACCOUNTS & BLOCKING VIEW ================= */
-        <div className="rounded-3xl m3-surface overflow-hidden border border-slate-700/80 shadow-2xl">
+        <div className="rounded-[24px] m3-card overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-900/80 text-slate-400 font-semibold border-b border-slate-800">
+              <thead className="bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] font-semibold border-b border-[var(--md-sys-color-outline-variant)]">
                 <tr>
                   <th className="px-5 py-3.5">ID</th>
                   <th className="px-5 py-3.5">User Profile</th>
@@ -268,27 +268,27 @@ export const AdminSecurityAuditPage: React.FC = () => {
                   <th className="px-5 py-3.5 text-right">Admin Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/80 text-slate-300">
+              <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)]">
                 {usersLoading ? (
                   <tr>
-                    <td colSpan={7} className="px-5 py-12 text-center text-slate-500">
+                    <td colSpan={7} className="px-5 py-12 text-center text-[var(--md-sys-color-outline)]">
                       Loading registered users...
                     </td>
                   </tr>
                 ) : (
                   users.map((u) => (
-                    <tr key={u.id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="px-5 py-3.5 font-mono font-bold text-slate-500">#{u.id}</td>
+                    <tr key={u.id} className="hover:bg-[var(--md-sys-color-surface-container-high)]/50 transition-colors">
+                      <td className="px-5 py-3.5 font-mono font-bold text-[var(--md-sys-color-outline)]">#{u.id}</td>
                       <td className="px-5 py-3.5">
-                        <div className="font-semibold text-white">{u.fullName}</div>
-                        <div className="text-[11px] text-slate-400">{u.email}</div>
+                        <div className="font-semibold text-[var(--md-sys-color-on-surface)]">{u.fullName}</div>
+                        <div className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">{u.email}</div>
                       </td>
                       <td className="px-5 py-3.5">
                         <span
-                          className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase border ${
+                          className={`inline-block px-3 py-0.5 rounded-full text-[10px] font-bold uppercase ${
                             u.systemRole === 'ADMIN'
-                              ? 'bg-purple-950/60 border-purple-500/40 text-purple-300'
-                              : 'bg-slate-800 border-slate-700 text-slate-400'
+                              ? 'bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)]'
+                              : 'bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-on-surface-variant)]'
                           }`}
                         >
                           {u.systemRole}
@@ -296,12 +296,12 @@ export const AdminSecurityAuditPage: React.FC = () => {
                       </td>
                       <td className="px-5 py-3.5">
                         {u.isActivated ? (
-                          <span className="text-emerald-400 flex items-center gap-1 font-medium">
+                          <span className="text-[var(--md-sys-color-success)] flex items-center gap-1 font-medium">
                             <CheckCircle className="w-3.5 h-3.5" />
                             <span>Activated</span>
                           </span>
                         ) : (
-                          <span className="text-amber-400 flex items-center gap-1 font-medium">
+                          <span className="text-[var(--md-sys-color-warning)] flex items-center gap-1 font-medium">
                             <Clock className="w-3.5 h-3.5" />
                             <span>Pending</span>
                           </span>
@@ -309,10 +309,10 @@ export const AdminSecurityAuditPage: React.FC = () => {
                       </td>
                       <td className="px-5 py-3.5">
                         <span
-                          className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                          className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${
                             u.twoFactorEnabled
-                              ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300'
-                              : 'bg-slate-800/80 border-slate-700 text-slate-500'
+                              ? 'bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)]'
+                              : 'bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-outline)]'
                           }`}
                         >
                           {u.twoFactorEnabled ? 'Enabled' : 'Disabled'}
@@ -320,12 +320,12 @@ export const AdminSecurityAuditPage: React.FC = () => {
                       </td>
                       <td className="px-5 py-3.5">
                         {u.isBlocked ? (
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-rose-950/60 border border-rose-500/50 text-rose-300 flex items-center gap-1 w-max">
+                          <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] flex items-center gap-1 w-max">
                             <Ban className="w-3 h-3" />
                             <span>Blocked</span>
                           </span>
                         ) : (
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-emerald-950/40 border border-emerald-700/50 text-emerald-300 flex items-center gap-1 w-max">
+                          <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] flex items-center gap-1 w-max">
                             <CheckCircle className="w-3 h-3" />
                             <span>Active</span>
                           </span>
@@ -335,10 +335,10 @@ export const AdminSecurityAuditPage: React.FC = () => {
                         <button
                           onClick={() => handleToggleBlock(u)}
                           disabled={actionLoadingId === u.id || u.systemRole === 'ADMIN'}
-                          className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ml-auto disabled:opacity-40 ${
+                          className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ml-auto disabled:opacity-40 ${
                             u.isBlocked
-                              ? 'bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/40'
-                              : 'bg-rose-600/30 hover:bg-rose-600/50 text-rose-300 border border-rose-500/40'
+                              ? 'bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)]'
+                              : 'bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)]'
                           }`}
                         >
                           {u.isBlocked ? (

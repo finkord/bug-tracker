@@ -89,7 +89,7 @@ async function request<T>(
 }
 
 export const api = {
-  // Authentication Endpoints (SDSecurity Tasks 1, 2, 3)
+  // Authentication Endpoints
   register: (payload: {
     fullName: string;
     email: string;
@@ -159,7 +159,7 @@ export const api = {
   // User Profile
   getProfile: () => request<UserProfile>('/users/me'),
 
-  // Admin Controls (SDSecurity Task 4)
+  // Admin Security Controls
   getUsers: (page = 1, limit = 50) =>
     request<{ items: UserProfile[]; total: number }>(`/users?page=${page}&limit=${limit}`),
 
