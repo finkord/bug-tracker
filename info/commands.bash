@@ -40,6 +40,10 @@ cd backend && npm test
 # ------------------------------------------------------------------------------
 # 3. Production Regime (Production Build & Serving)
 # ------------------------------------------------------------------------------
+# Note: Ensure the development servers (npm run start:dev / npm run dev) are stopped
+# first, or free ports 3000 and 5173 if you encounter EADDRINUSE:
+# fuser -k 3000/tcp 5173/tcp   (or: npx kill-port 3000 5173)
+
 # Build NestJS backend distribution bundle (outputs to backend/dist):
 cd backend && npm run build
 

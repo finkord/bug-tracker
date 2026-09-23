@@ -9,7 +9,6 @@ import {
   ShieldAlert,
   KeyRound,
   ArrowRight,
-  Sparkles,
   Loader2,
   Clock,
 } from 'lucide-react';
@@ -105,25 +104,6 @@ export const LoginPage: React.FC = () => {
       setError(err.message || 'Invalid two-factor code');
     } finally {
       setTwoFactorSubmitting(false);
-    }
-  };
-
-  const handleMockOAuth = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const tokens = await api.mockOAuthLogin({
-        provider: 'GITHUB',
-        oauthId: 'gh-demo-' + Math.floor(Math.random() * 10000),
-        email: 'github.developer@example.com',
-        fullName: 'GitHub Verified Developer',
-      });
-      login(tokens);
-      navigate('/profile');
-    } catch (err: any) {
-      setError(err.message || 'Mock OAuth login failed');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -335,19 +315,6 @@ export const LoginPage: React.FC = () => {
                 <span>Google</span>
               </a>
             </div>
-
-            {/* Mock OAuth fallback (Development only, stripped in production builds) */}
-            {import.meta.env.DEV && (
-              <button
-                type="button"
-                onClick={handleMockOAuth}
-                className="w-full mt-2.5 py-2 px-3 rounded-full bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] text-[11px] font-medium flex items-center justify-center gap-1.5 transition-all active:scale-95"
-                title="Simulate instant OAuth login for demo & testing"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
-                <span>Simulate Mock OAuth (Demo / Offline)</span>
-              </button>
-            )}
 
             {/* Register Link */}
             <div className="text-center pt-3 text-xs text-[var(--md-sys-color-on-surface-variant)]">
