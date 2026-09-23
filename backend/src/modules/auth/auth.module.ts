@@ -6,6 +6,7 @@ import { AuthService } from './auth.service.js';
 import { AuthController } from './auth.controller.js';
 import { JwtStrategy } from './strategies/jwt.strategy.js';
 import { GithubStrategy } from './strategies/github.strategy.js';
+import { GoogleStrategy } from './strategies/google.strategy.js';
 import { UsersModule } from '../users/users.module.js';
 import { SecurityAuditModule } from '../security-audit/security-audit.module.js';
 import { CaptchaModule } from '../captcha/captcha.module.js';
@@ -31,7 +32,7 @@ import { CaptchaModule } from '../captcha/captcha.module.js';
     CaptchaModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, GithubStrategy],
+  providers: [AuthService, JwtStrategy, GithubStrategy, GoogleStrategy],
   exports: [AuthService, JwtModule, PassportModule],
 })
 export class AuthModule {}

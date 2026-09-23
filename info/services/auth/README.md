@@ -63,9 +63,11 @@ backend/src/
     │   │   ├── oauth-mock.dto.ts         # Simulated OAuth payload for demo & automated testing
     │   │   ├── password-reset.dto.ts     # Forgot password & Reset password payloads
     │   │   ├── register.dto.ts           # Registration payload with password regex & CAPTCHA
+    │   │   ├── set-password.dto.ts       # Set/update password payload (for OAuth or existing users)
     │   │   └── verify-2fa.dto.ts         # TOTP verification and enablement payloads
     │   └── strategies/
     │       ├── github.strategy.ts        # Passport GitHub OAuth2 strategy (passport-github2)
+    │       ├── google.strategy.ts        # Passport Google OAuth2 strategy (passport-google-oauth20)
     │       └── jwt.strategy.ts           # Passport JWT Bearer token validation strategy
     ├── users/                            # User Account Management Domain
     │   ├── entities/
@@ -99,6 +101,7 @@ Below is the complete inventory of libraries utilized by the authentication serv
 | `passport-jwt` | `^4.0.1` | Token Verification | Strategy for extracting and verifying Bearer JSON Web Tokens from HTTP `Authorization` headers. |
 | `@nestjs/jwt` | `^12.0.2` | JWT Lifecycle Management | Manages token signing, claims encoding (`sub`, `email`, `role`), and cryptographic expiration. |
 | `passport-github2` | `^0.2.0` | Federated OAuth2 (Task 6) | Implements GitHub OAuth2 web application flow for external identity delegation. |
+| `passport-google-oauth20` | `^2.0.0` | Federated OAuth2 (Task 6) | Implements Google OAuth2 / OpenID Connect web application flow for external identity delegation. |
 | `otplib` | `^13.5.0` | 2FA / TOTP (Task 5) | Modern RFC 6238 Time-based One-Time Password generator and validator. Uses native crypto and typed APIs. |
 | `qrcode` | `^1.5.4` | QR Code Generation (Task 5)| Generates Data URL QR codes from `otpauth://` URIs for scanning with Google Authenticator or Authy. |
 | `@nestjs-modules/mailer` | `^2.3.7` | Email Dispatch (Tasks 3, 7)| High-level mailer abstraction for sending HTML transactional emails via SMTP. |
@@ -257,11 +260,17 @@ Provides a tamper-evident forensic log of all login attempts (SDSecurity Task 4)
   3. User submits challenge token and 6-digit TOTP code to `POST /api/v1/auth/2fa/verify`.
   4. Server validates passcode via `otplib.verifySync(...)` and issues final access and refresh tokens.
 
-### Task 6: External Identity Providers (OAuth2 / GitHub)
+### Task 6: External Identity Providers (OAuth2: GitHub & Google) & Credential Linking
 * **GitHub Integration:** Built using `passport-github2` strategy.
-* **Flow:**
-  * `GET /api/v1/auth/github`: Initiates OAuth2 flow by redirecting browser to `https://github.com/login/oauth/authorize`.
-  * `GET /api/v1/auth/github/callback`: Receives authorization code, exchanges it for GitHub profile, finds or provisions user with `oauthProvider = GITHUB`, activates account, and issues JWT tokens.
+  * `GET /api/v1/auth/github`: Initiates GitHub OAuth2 flow by redirecting browser to `https://github.com/login/oauth/authorize`.
+  * `GET /api/v1/auth/github/callback`: Receives authorization code, exchanges it for profile claims, provisions or links user (`oauthProvider = GITHUB`), and redirects browser to `${FRONTEND_URL}/oauth/callback?accessToken=...&refreshToken=...`.
+* **Google Integration:** Built using `passport-google-oauth20` strategy.
+  * `GET /api/v1/auth/google`: Initiates Google OAuth2 consent by redirecting to `https://accounts.google.com/o/oauth2/v2/auth` (`scope: ['email', 'profile']`).
+  * `GET /api/v1/auth/google/callback`: Receives authorization code from Google, provisions/links user account (`oauthProvider = GOOGLE`), and redirects to frontend with session tokens.
+* **Account Password Management (`POST /api/v1/auth/set-password`):**
+  * Enables OAuth accounts (`passwordHash: null`) to establish an Argon2id password without entering a current password.
+  * Enables users with existing passwords to change passwords securely by verifying `currentPassword`.
+  * Allows dual-authentication: accounts can be accessed via either OAuth or standard email & password.
 * **Testing & Offline Support:** `POST /api/v1/auth/oauth/mock` accepts provider claims (`provider`, `oauthId`, `email`, `fullName`) and exercises the exact same identity linking and provisioning logic.
 
 ### Task 7: Password Reset Flow
@@ -399,8 +408,11 @@ All endpoints are registered under the global prefix `/api/v1` and documented in
 | `POST` | `/auth/2fa/verify` | Public | 5 | Submit 6-digit TOTP code with challenge token to complete login. |
 | `POST` | `/auth/forgot-password` | Public | 7 | Request single-use 15-minute password reset link via email. |
 | `POST` | `/auth/reset-password` | Public | 7 | Set new password using reset token; clears brute-force lockout. |
+| `POST` | `/auth/set-password` | Bearer JWT | 1, 6 | Establish password on OAuth account or change existing password (Argon2id). |
 | `GET` | `/auth/github` | Public | 6 | Redirect browser to GitHub OAuth2 login. |
-| `GET` | `/auth/github/callback` | Public | 6 | Process GitHub OAuth2 authorization code and issue tokens. |
+| `GET` | `/auth/github/callback` | Public | 6 | Process GitHub OAuth2 authorization code and redirect to frontend with tokens. |
+| `GET` | `/auth/google` | Public | 6 | Redirect browser to Google OAuth2 consent screen. |
+| `GET` | `/auth/google/callback` | Public | 6 | Process Google OAuth2 authorization code and redirect to frontend with tokens. |
 | `POST` | `/auth/oauth/mock` | Public | 6 | Simulated OAuth2 login for demo and automated test pipelines. |
 | `GET` | `/users/me` | Bearer JWT | 1 | Retrieve profile of the currently authenticated user. |
 | `GET` | `/users` | Admin JWT | 4 | List all registered users (paginated). |
@@ -448,6 +460,10 @@ CAPTCHA_SECRET_KEY=placeholder_turnstile_secret_key
 GITHUB_CLIENT_ID=placeholder_github_client_id
 GITHUB_CLIENT_SECRET=placeholder_github_client_secret
 GITHUB_CALLBACK_URL=http://localhost:3000/api/v1/auth/github/callback
+
+GOOGLE_CLIENT_ID=placeholder_google_client_id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=placeholder_google_client_secret
+GOOGLE_CALLBACK_URL=http://localhost:3000/api/v1/auth/google/callback
 ```
 
 ---

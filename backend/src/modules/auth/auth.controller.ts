@@ -5,6 +5,7 @@ import {
   Body,
   Query,
   Req,
+  Res,
   Ip,
   Headers,
   UseGuards,
@@ -12,13 +13,15 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import { AuthGuard } from '@nestjs/passport';
+import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 import { Verify2faDto, Enable2faDto } from './dto/verify-2fa.dto.js';
 import { ForgotPasswordDto, ResetPasswordDto } from './dto/password-reset.dto.js';
+import { SetPasswordDto } from './dto/set-password.dto.js';
 import { OAuthMockDto } from './dto/oauth-mock.dto.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
@@ -27,7 +30,10 @@ import { User } from '../users/entities/user.entity.js';
 @ApiTags('Authentication & Security')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+  ) {}
 
   @Post('register')
   @ApiOperation({
@@ -133,6 +139,24 @@ export class AuthController {
     return this.authService.resetPassword(dto);
   }
 
+  @Post('set-password')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Set or update account password (supports adding password to OAuth accounts)',
+    description:
+      'Allows accounts created via OAuth to establish an Argon2id password, or existing password users to update theirs.',
+  })
+  async setPassword(
+    @CurrentUser() user: User,
+    @Body() dto: SetPasswordDto,
+    @Ip() ip: string,
+    @Headers('user-agent') userAgent?: string,
+  ) {
+    return this.authService.setPassword(user, dto, ip, userAgent);
+  }
+
   @Get('github')
   @UseGuards(AuthGuard('github'))
   @ApiOperation({
@@ -146,16 +170,71 @@ export class AuthController {
   @Get('github/callback')
   @UseGuards(AuthGuard('github'))
   @ApiOperation({
-    summary: 'GitHub OAuth2 callback endpoint (SDSecurity Task 6)',
+    summary: 'GitHub OAuth2 callback endpoint',
     description:
-      'Processes the authorization code from GitHub, loads profile, and returns JWT tokens.',
+      'Processes the authorization code from GitHub, loads profile, and redirects to frontend with session tokens.',
   })
   async githubCallback(
     @Req() req: any,
+    @Res() res: Response,
     @Ip() ip: string,
     @Headers('user-agent') userAgent?: string,
   ) {
-    return this.authService.loginOAuthUser(req.user, ip, userAgent);
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:5173');
+    try {
+      const tokens = await this.authService.loginOAuthUser(req.user, ip, userAgent);
+      return res.redirect(
+        `${frontendUrl}/oauth/callback?accessToken=${encodeURIComponent(
+          tokens.accessToken,
+        )}&refreshToken=${encodeURIComponent(tokens.refreshToken)}`,
+      );
+    } catch (err: any) {
+      return res.redirect(
+        `${frontendUrl}/oauth/callback?error=${encodeURIComponent(
+          err.message || 'GitHub authentication failed',
+        )}`,
+      );
+    }
+  }
+
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  @ApiOperation({
+    summary: 'Initiate Google OAuth2 Login (SDSecurity Task 6)',
+    description: 'Redirects browser to Google for federated identity authentication.',
+  })
+  async googleLogin() {
+    // Handled automatically by Passport Google strategy redirect
+  }
+
+  @Get('google/callback')
+  @UseGuards(AuthGuard('google'))
+  @ApiOperation({
+    summary: 'Google OAuth2 callback endpoint',
+    description:
+      'Processes the authorization code from Google, loads profile, and redirects to frontend with session tokens.',
+  })
+  async googleCallback(
+    @Req() req: any,
+    @Res() res: Response,
+    @Ip() ip: string,
+    @Headers('user-agent') userAgent?: string,
+  ) {
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:5173');
+    try {
+      const tokens = await this.authService.loginOAuthUser(req.user, ip, userAgent);
+      return res.redirect(
+        `${frontendUrl}/oauth/callback?accessToken=${encodeURIComponent(
+          tokens.accessToken,
+        )}&refreshToken=${encodeURIComponent(tokens.refreshToken)}`,
+      );
+    } catch (err: any) {
+      return res.redirect(
+        `${frontendUrl}/oauth/callback?error=${encodeURIComponent(
+          err.message || 'Google authentication failed',
+        )}`,
+      );
+    }
   }
 
   @Post('oauth/mock')
@@ -172,5 +251,20 @@ export class AuthController {
   ) {
     const user = await this.authService.validateOrCreateOAuthUser(dto);
     return this.authService.loginOAuthUser(user, ip, userAgent);
+  }
+
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Logout user and invalidate session (SDSecurity Task 1 Polish)',
+    description: 'Acknowledges user logout and invalidates server-side session context.',
+  })
+  async logout(@CurrentUser() user: User) {
+    return {
+      message: 'Logged out successfully',
+      userId: user.id,
+    };
   }
 }

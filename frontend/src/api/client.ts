@@ -9,13 +9,14 @@ export interface UserProfile {
   isBlocked: boolean;
   twoFactorEnabled: boolean;
   oauthProvider: 'LOCAL' | 'GITHUB' | 'GOOGLE';
+  hasPassword?: boolean;
   createdAt: string;
 }
 
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
-  user: UserProfile;
+  user?: UserProfile;
 }
 
 export interface Login2FaChallenge {
@@ -110,6 +111,11 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 
+  logout: () =>
+    request<{ message: string; userId?: number }>('/auth/logout', {
+      method: 'POST',
+    }),
+
   verify2fa: (payload: { tempToken: string; code: string }) =>
     request<AuthTokens>('/auth/2fa/verify', {
       method: 'POST',
@@ -145,6 +151,12 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 
+  setPassword: (payload: { currentPassword?: string; newPassword: string }) =>
+    request<{ message: string; hasPassword: boolean }>('/auth/set-password', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
   mockOAuthLogin: (payload: {
     provider: 'GITHUB' | 'GOOGLE';
     oauthId: string;
@@ -159,9 +171,74 @@ export const api = {
   // User Profile
   getProfile: () => request<UserProfile>('/users/me'),
 
-  // Admin Security Controls
-  getUsers: (page = 1, limit = 50) =>
-    request<{ items: UserProfile[]; total: number }>(`/users?page=${page}&limit=${limit}`),
+  // Admin Metrics & RBAC Controls
+  getUserStats: () =>
+    request<{
+      totalUsers: number;
+      activeUsers: number;
+      blockedUsers: number;
+      twoFactorAdoptionCount: number;
+      twoFactorPercentage: number;
+    }>('/users/stats'),
+
+  getUsers: (
+    paramsOrPage:
+      | number
+      | {
+          page?: number;
+          limit?: number;
+          search?: string;
+          role?: string;
+          isBlocked?: boolean;
+          isActivated?: boolean;
+        } = {},
+    limitArg = 50,
+  ) => {
+    let params: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      role?: string;
+      isBlocked?: boolean;
+      isActivated?: boolean;
+    };
+    if (typeof paramsOrPage === 'number') {
+      params = { page: paramsOrPage, limit: limitArg };
+    } else {
+      params = paramsOrPage;
+    }
+    const query = new URLSearchParams();
+    if (params.page) query.set('page', String(params.page));
+    if (params.limit) query.set('limit', String(params.limit));
+    if (params.search) query.set('search', params.search);
+    if (params.role) query.set('role', params.role);
+    if (typeof params.isBlocked === 'boolean') query.set('isBlocked', String(params.isBlocked));
+    if (typeof params.isActivated === 'boolean') query.set('isActivated', String(params.isActivated));
+    const qs = query.toString();
+    return request<{
+      items: UserProfile[];
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    }>(`/users${qs ? `?${qs}` : ''}`);
+  },
+
+  updateUserRole: (id: number, role: 'ADMIN' | 'USER') =>
+    request<{ message: string; userId: number; systemRole: 'ADMIN' | 'USER' }>(`/users/${id}/role`, {
+      method: 'PATCH',
+      body: JSON.stringify({ role }),
+    }),
+
+  adminActivateUser: (id: number) =>
+    request<{ message: string; userId: number; isActivated: boolean }>(`/users/${id}/activate`, {
+      method: 'PATCH',
+    }),
+
+  adminResetUser2Fa: (id: number) =>
+    request<{ message: string; userId: number; twoFactorEnabled: boolean }>(`/users/${id}/reset-2fa`, {
+      method: 'PATCH',
+    }),
 
   blockUser: (id: number) =>
     request<{ message: string; userId: number; isBlocked: boolean }>(`/users/${id}/block`, {
@@ -178,3 +255,4 @@ export const api = {
       `/admin/security/login-logs?page=${page}&limit=${limit}`,
     ),
 };
+

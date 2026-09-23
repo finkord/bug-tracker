@@ -12,7 +12,8 @@ import { ActivatePage } from './pages/ActivatePage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { ProfilePage } from './pages/ProfilePage';
-import { AdminSecurityAuditPage } from './pages/AdminSecurityAuditPage';
+import { AdminDashboardPage } from './pages/AdminDashboardPage';
+import { OAuthCallbackPage } from './pages/OAuthCallbackPage';
 import { Shield, ExternalLink } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -31,6 +32,7 @@ export const App: React.FC = () => {
                 <Route path="/activate" element={<ActivatePage />} />
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
+                <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
 
                 {/* Protected Routes */}
                 <Route
@@ -42,12 +44,28 @@ export const App: React.FC = () => {
                   }
                 />
 
-                {/* Admin Routes */}
+                {/* Admin Unified Dashboard Routes */}
+                <Route
+                  path="/admin"
+                  element={
+                    <AdminRoute>
+                      <AdminDashboardPage />
+                    </AdminRoute>
+                  }
+                />
+                <Route
+                  path="/admin/dashboard"
+                  element={
+                    <AdminRoute>
+                      <AdminDashboardPage />
+                    </AdminRoute>
+                  }
+                />
                 <Route
                   path="/admin/security-logs"
                   element={
                     <AdminRoute>
-                      <AdminSecurityAuditPage />
+                      <AdminDashboardPage defaultTab="logs" />
                     </AdminRoute>
                   }
                 />

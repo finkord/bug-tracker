@@ -69,19 +69,19 @@ export const Navbar: React.FC = () => {
                 </span>
               </Link>
 
-              {/* Admin Security Link */}
+              {/* Admin Dashboard Link */}
               {user.systemRole === 'ADMIN' && (
                 <Link
-                  to="/admin/security-logs"
+                  to="/admin/dashboard"
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold transition-all ${
-                    isActive('/admin/security-logs')
+                    location.pathname.startsWith('/admin')
                       ? 'bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)]'
                       : 'text-[var(--md-sys-color-warning)] hover:bg-[var(--md-sys-color-surface-container-high)]'
                   }`}
-                  title="Security Audit Logs"
+                  title="Admin Operations & Security Dashboard"
                 >
                   <ShieldAlert className="w-3.5 h-3.5" />
-                  <span className="hidden lg:inline">Security Log</span>
+                  <span className="hidden lg:inline">Admin Center</span>
                 </Link>
               )}
 

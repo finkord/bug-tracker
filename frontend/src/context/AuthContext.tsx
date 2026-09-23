@@ -4,7 +4,7 @@ import { api, type UserProfile, type AuthTokens } from '../api/client';
 interface AuthContextType {
   user: UserProfile | null;
   loading: boolean;
-  login: (tokens: AuthTokens) => void;
+  login: (tokens: AuthTokens) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
 }
@@ -39,20 +39,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     refreshUser();
   }, []);
 
-  const login = (tokens: AuthTokens) => {
+  const login = async (tokens: AuthTokens) => {
     localStorage.setItem('accessToken', tokens.accessToken);
     localStorage.setItem('refreshToken', tokens.refreshToken);
-    setUser({
-      ...tokens.user,
-      oauthProvider: tokens.user.oauthProvider || 'LOCAL',
-    });
-    refreshUser();
+    if (tokens.user) {
+      setUser({
+        ...tokens.user,
+        oauthProvider: tokens.user.oauthProvider || 'LOCAL',
+      });
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+    await refreshUser();
   };
 
-  const logout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    setUser(null);
+  const logout = async () => {
+    try {
+      await api.logout();
+    } catch {
+      // Proceed with client logout even if backend token is already expired
+    } finally {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      setUser(null);
+    }
   };
 
   return (

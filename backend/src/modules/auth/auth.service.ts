@@ -23,6 +23,7 @@ import { RegisterDto } from './dto/register.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 import { Verify2faDto, Enable2faDto } from './dto/verify-2fa.dto.js';
 import { ForgotPasswordDto, ResetPasswordDto } from './dto/password-reset.dto.js';
+import { SetPasswordDto } from './dto/set-password.dto.js';
 
 export interface AuthTokens {
   accessToken: string;
@@ -36,6 +37,7 @@ export interface AuthTokens {
     isBlocked: boolean;
     twoFactorEnabled: boolean;
     oauthProvider: OAuthProvider;
+    hasPassword: boolean;
   };
 }
 
@@ -97,7 +99,8 @@ export class AuthService {
     });
 
     // 5. Dispatch activation email with token link via Mailpit (SDSecurity Task 3)
-    const activationUrl = `http://localhost:3000/api/v1/auth/activate?token=${activationToken}`;
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:5173');
+    const activationUrl = `${frontendUrl}/activate?token=${activationToken}`;
     try {
       await this.mailerService.sendMail({
         to: newUser.email,
@@ -413,7 +416,8 @@ export class AuthService {
       resetPasswordExpiresAt: resetExpiresAt,
     });
 
-    const resetUrl = `http://localhost:3000/api/v1/auth/reset-password?token=${resetToken}`;
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:5173');
+    const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
     try {
       await this.mailerService.sendMail({
         to: user.email,
@@ -473,6 +477,58 @@ export class AuthService {
     });
 
     return { message: 'Your password has been successfully updated. You can now log in.' };
+  }
+
+  /**
+   * Sets or updates user password (supports adding password to OAuth accounts or changing existing password).
+   */
+  async setPassword(
+    user: User,
+    dto: SetPasswordDto,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<{ message: string; hasPassword: boolean }> {
+    // If account already has a password set, currentPassword is required and verified
+    if (user.passwordHash) {
+      if (!dto.currentPassword) {
+        throw new BadRequestException('Current password is required to change your password');
+      }
+      const isCurrentValid = await argon2.verify(user.passwordHash, dto.currentPassword);
+      if (!isCurrentValid) {
+        throw new BadRequestException('Current password does not match');
+      }
+    }
+
+    const passwordHash = await argon2.hash(dto.newPassword, {
+      type: argon2.argon2id,
+      memoryCost: 2 ** 16,
+      timeCost: 3,
+      parallelism: 1,
+    });
+
+    await this.usersService.update(user.id, {
+      passwordHash,
+      failedLoginAttempts: 0,
+      lockedUntil: null,
+    });
+
+    await this.securityAuditService.recordLoginAttempt({
+      userId: user.id,
+      attemptedEmail: user.email,
+      ipAddress: ipAddress || '::1',
+      userAgent,
+      status: LoginAttemptStatus.SUCCESS,
+      failureReason: user.passwordHash
+        ? 'Password updated successfully'
+        : 'Password established for OAuth account',
+    });
+
+    return {
+      message: user.passwordHash
+        ? 'Your password has been successfully updated.'
+        : 'Password has been set for your account. You can now log in using either OAuth or your email and password.',
+      hasPassword: true,
+    };
   }
 
   /**
@@ -558,6 +614,7 @@ export class AuthService {
         isBlocked: user.isBlocked,
         twoFactorEnabled: user.twoFactorEnabled,
         oauthProvider: user.oauthProvider || OAuthProvider.LOCAL,
+        hasPassword: !!user.passwordHash,
       },
     };
   }
