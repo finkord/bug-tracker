@@ -44,6 +44,8 @@ export interface AuthTokens {
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
+  // Cache of recently activated tokens to gracefully handle duplicate requests and double-clicks
+  private readonly recentlyActivatedTokens = new Map<string, number>();
 
   constructor(
     private readonly usersService: UsersService,
@@ -57,7 +59,7 @@ export class AuthService {
   /**
    * Registers a new user account with complex password policies and CAPTCHA (SDSecurity Tasks 1, 2, 3).
    */
-  async register(dto: RegisterDto, ipAddress: string): Promise<{ message: string; activationToken?: string }> {
+  async register(dto: RegisterDto, ipAddress: string): Promise<{ message: string }> {
     // 1. Validate CAPTCHA (SDSecurity Task 2)
     const isCaptchaValid = await this.captchaService.validateToken(dto.captchaToken, ipAddress);
     if (!isCaptchaValid) {
@@ -127,7 +129,6 @@ export class AuthService {
 
     return {
       message: 'Registration successful! An activation link has been sent to your email address.',
-      activationToken, // Returned in dev mode for easy video demo / testing
     };
   }
 
@@ -135,6 +136,15 @@ export class AuthService {
    * Activates a registered user account via the cryptographic token (SDSecurity Task 3).
    */
   async activateAccount(token: string): Promise<{ message: string; isActivated: boolean }> {
+    // 1. Return success if token was activated very recently (graceful idempotency for React StrictMode / duplicate calls)
+    const recentActivationTime = this.recentlyActivatedTokens.get(token);
+    if (recentActivationTime && Date.now() - recentActivationTime < 5 * 60 * 1000) {
+      return {
+        message: 'Account successfully activated! You can now log into the system.',
+        isActivated: true,
+      };
+    }
+
     const user = await this.usersService.findByActivationToken(token);
     if (!user) {
       throw new BadRequestException('Invalid or expired activation token');
@@ -142,6 +152,17 @@ export class AuthService {
 
     if (user.activationTokenExpiresAt && user.activationTokenExpiresAt < new Date()) {
       throw new BadRequestException('Activation token has expired. Please request a new one.');
+    }
+
+    // Record token in cache to handle duplicate or concurrent requests smoothly
+    this.recentlyActivatedTokens.set(token, Date.now());
+    if (this.recentlyActivatedTokens.size > 1000) {
+      const cutoff = Date.now() - 10 * 60 * 1000;
+      for (const [key, timestamp] of this.recentlyActivatedTokens.entries()) {
+        if (timestamp < cutoff) {
+          this.recentlyActivatedTokens.delete(key);
+        }
+      }
     }
 
     await this.usersService.update(user.id, {
@@ -254,7 +275,22 @@ export class AuthService {
       lockedUntil: null,
     });
 
-    // 6. Handle Two-Factor Authentication (2FA) Challenge (SDSecurity Task 5)
+    // 6. Verify account activation status via email verification link (SDSecurity Task 3)
+    if (!user.isActivated) {
+      await this.securityAuditService.recordLoginAttempt({
+        userId: user.id,
+        attemptedEmail: dto.email,
+        ipAddress,
+        userAgent,
+        status: LoginAttemptStatus.NOT_ACTIVATED,
+        failureReason: 'Account has not been activated via email verification link',
+      });
+      throw new UnauthorizedException(
+        'Your account has not been activated yet. Please check your email for the activation link.',
+      );
+    }
+
+    // 7. Handle Two-Factor Authentication (2FA) Challenge (SDSecurity Task 5)
     if (user.twoFactorEnabled && user.twoFactorSecret) {
       await this.securityAuditService.recordLoginAttempt({
         userId: user.id,
@@ -277,7 +313,7 @@ export class AuthService {
       };
     }
 
-    // 7. Successful login without 2FA
+    // 8. Successful login without 2FA
     await this.securityAuditService.recordLoginAttempt({
       userId: user.id,
       attemptedEmail: dto.email,
@@ -308,6 +344,10 @@ export class AuthService {
     const user = await this.usersService.findById(payload.sub);
     if (!user || !user.twoFactorSecret) {
       throw new UnauthorizedException('Two-factor authentication is not configured for this user');
+    }
+
+    if (!user.isActivated) {
+      throw new UnauthorizedException('Your account has not been activated yet.');
     }
 
     const isCodeValid = verifySync({ secret: user.twoFactorSecret, token: dto.code }).valid;
@@ -399,7 +439,7 @@ export class AuthService {
   /**
    * Initiates password recovery by generating a time-limited token and sending email (SDSecurity Task 7).
    */
-  async forgotPassword(dto: ForgotPasswordDto): Promise<{ message: string; resetToken?: string }> {
+  async forgotPassword(dto: ForgotPasswordDto): Promise<{ message: string }> {
     const user = await this.usersService.findByEmail(dto.email);
     if (!user) {
       // For security, do not disclose whether user exists
@@ -444,7 +484,6 @@ export class AuthService {
 
     return {
       message: 'If an account exists with this email address, a password reset link has been dispatched.',
-      resetToken, // Returned in dev mode for easy video demo
     };
   }
 

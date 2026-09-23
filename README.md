@@ -16,8 +16,8 @@ This repository directory contains the production implementation of a lightweigh
 
 | Component | Technology | Description |
 | :--- | :--- | :--- |
-| **Backend** | **NestJS 10 (TypeScript)** | Modular monolith API, dependency injection, class-validator, Swagger OpenAPI docs |
-| **Frontend** | **React + Vite (TypeScript)** | Single Page Application (SPA), Tailwind CSS, shadcn/ui, TanStack Query |
+| **Backend** | **NestJS 12 (TypeScript)** | Modular monolith API, dependency injection, class-validator, Swagger OpenAPI docs |
+| **Frontend** | **React 19 + Vite 8 (TypeScript)** | Single Page Application (SPA), Tailwind CSS v4, Material Design 3 Expressive theme |
 | **Database** | **PostgreSQL 15+** | Relational 3NF data tier with composite B-Tree indexes for sub-5ms query performance |
 | **In-Memory / Cache** | **Redis 7+** | Rate limiting, session invalidation, and WebSocket real-time event pub/sub |
 | **Object Storage** | **SeaweedFS (Go / S3 API)** | Ultra-fast distributed blob storage (Apache 2.0) for attachments, screenshots, and logs |
@@ -61,14 +61,54 @@ PPofSE/software/
 - **Docker & Docker Compose:** Installed and running
 - **npm:** `v11.x` (or higher)
 
-### Quick Start (Local Development)
+### Development Mode (Local Watch & Hot-Reload)
 1. **Start infrastructure services:**
    ```bash
    docker compose up -d
    ```
-2. **Access local developer portals:**
-   - **PostgreSQL:** `localhost:5432` (`postgres` / `postgres`)
-   - **Redis:** `localhost:6379`
+2. **Start Backend (NestJS watch mode):**
+   ```bash
+   cd backend && npm install && npm run start:dev
+   ```
+3. **Start Frontend (Vite on port 5173):**
+   ```bash
+   cd frontend && npm install && npm run dev
+   ```
+4. **Access local developer portals:**
+   - **Frontend Application:** [`http://localhost:5173`](http://localhost:5173)
+   - **Backend API & Swagger:** [`http://localhost:3000/api/docs`](http://localhost:3000/api/docs)
    - **Mailpit Web UI:** [`http://localhost:8025`](http://localhost:8025)
    - **SeaweedFS S3 API:** [`http://localhost:8333`](http://localhost:8333)
-   - **Backend API & Swagger:** [`http://localhost:3000/api/docs`](http://localhost:3000/api/docs)
+
+---
+
+### Production Regime (Build & Production Execution)
+In production, all developer shortcuts are stripped, mock OAuth is disabled, and CAPTCHA fails closed:
+
+1. **Start Infrastructure Services:**
+   ```bash
+   docker compose up -d
+   ```
+2. **Build and Start Backend in Production Mode:**
+   ```bash
+   cd backend
+   npm install --omit=dev
+   npm run build
+   NODE_ENV=production PORT=3000 npm run start:prod
+   ```
+3. **Build and Serve Frontend in Production Mode:**
+   ```bash
+   cd frontend
+   npm install
+   npm run build
+   npm run preview -- --port 5173
+   ```
+   *(Or serve `frontend/dist` via Nginx, Caddy, or a reverse proxy).*
+
+---
+
+## Security Architecture & Production Hardening
+* **Zero Secret Leakage:** Single-use tokens (`activationToken`, `resetPasswordToken`) are never returned in JSON HTTP responses; they are delivered exclusively via cryptographic email links.
+* **Fail-Closed CAPTCHA:** Cloudflare Turnstile token validation strictly rejects test bypass tokens in production.
+* **Enforced Activation Lock:** Unactivated accounts cannot log in under any circumstances (HTTP `401 Unauthorized`).
+* **Environment-Isolated Mocking:** Simulated OAuth routes (`POST /auth/oauth/mock`) reject requests in production with HTTP `403 Forbidden`. Dev-only UI helpers are automatically eliminated by Vite dead-code tree-shaking in production bundles.

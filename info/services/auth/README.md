@@ -225,15 +225,30 @@ Provides a tamper-evident forensic log of all login attempts (SDSecurity Task 4)
 * **Profile Endpoint:** Protected via `JwtAuthGuard` at `GET /api/v1/users/me`.
 
 ### Task 2: Bot Prevention (CAPTCHA)
-* **Validation:** Mandatory `captchaToken` in `RegisterDto`.
-* **Verification Pipeline:** `CaptchaService.validateToken(token, ip)` sends a POST request to the verification endpoint (`https://challenges.cloudflare.com/turnstile/v0/siteverify` for Cloudflare Turnstile or Google reCAPTCHA).
-* **Development Testing:** Recognizes explicit bypass tokens (`valid-captcha-token`, `test-token`) during local development and testing.
+* **Provider:** Cloudflare Turnstile (privacy-preserving, CAPTCHA-free smart challenge).
+* **Validation Pipeline:**
+  * Mandatory `captchaToken` in `RegisterDto` (length validated between 1 and 2048 characters).
+  * `CaptchaService.validateToken(token, remoteIp, expectedAction)` performs a secure server-to-server POST request to `https://challenges.cloudflare.com/turnstile/v0/siteverify` validating `secret`, `response`, and `remoteip`.
+  * Verifies `success === true` and matching `action === 'signup'`.
+* **Frontend Widget (`CaptchaWidget.tsx`):**
+  * Dynamic theme synchronization via `useTheme()`: renders `theme: 'light'` (clean white widget) in light mode and `theme: 'dark'` (clipped 1px high-contrast border) in dark mode.
+  * Synchronous lifecycle cleanup: utilizes `useLayoutEffect` to trigger `window.turnstile.remove(widgetId)` before React unmounts DOM containers, preventing orphaned widget warnings.
+  * Content Security Policy (CSP): `<meta>` tag in `index.html` permits `https://challenges.cloudflare.com` for `script-src`, `frame-src`, and `connect-src`, and allows `'unsafe-eval'` required by Turnstile's challenge runner.
+* **Development Testing:** Recognizes explicit test tokens (`valid-captcha-token`, `test-token`, `bypass-*`) in `development` and `test` environments.
 
 ### Task 3: Email Account Activation
-* **Token Generation:** 32-byte cryptographically secure token via `crypto.randomBytes(32).toString('hex')`.
+* **Token Generation:** 32-byte cryptographically secure random token via `crypto.randomBytes(32).toString('hex')`.
 * **TTL:** 24 hours (`activationTokenExpiresAt = new Date(Date.now() + 24 * 3600 * 1000)`).
-* **Delivery:** Dispatched via `MailerService` through Mailpit SMTP (port `1025`). Contains HTML email with clickable activation link: `http://localhost:3000/api/v1/auth/activate?token=...`.
-* **Single-Use Enforcement:** Upon successful activation, `isActivated` is set to `true`, and `activationToken` and `activationTokenExpiresAt` are permanently cleared (`null`). Subsequent calls return `400 Bad Request`.
+* **Delivery:** Dispatched via `MailerService` through Mailpit SMTP (port `1025`). Contains HTML email with clickable activation link: `${FRONTEND_URL}/activate?token=${activationToken}`.
+* **Single-Use Enforcement:**
+  * Upon successful activation via `GET /api/v1/auth/activate?token=...`, `isActivated` is set to `true`, and `activationToken` and `activationTokenExpiresAt` are permanently cleared (`null`).
+  * Backend maintains a `recentlyActivatedTokens` cache (5-minute TTL) for graceful idempotency against duplicate requests or fast double-clicks.
+  * Frontend `ActivatePage.tsx` guards against React StrictMode duplicate invocations using `attemptedTokenRef`.
+* **Login & Authentication Block:**
+  * In `AuthService.login()`, if `!user.isActivated`, login is rejected with HTTP `401 Unauthorized` (*"Your account has not been activated yet. Please check your email for the activation link."*).
+  * Records `LoginAttemptStatus.NOT_ACTIVATED` in the security audit logs (`login_audit_logs`).
+  * `verify2fa()` and `JwtStrategy` both enforce `!user.isActivated` checks, preventing unactivated accounts from obtaining or using session tokens.
+* **Profile Status:** Active account status is reflected in `GET /api/v1/users/me` and visually badged on the frontend profile card.
 
 ### Task 4: Brute-Force Protection & Audit Logging
 * **Lockout Rule:** On password mismatch, `failedLoginAttempts` increments by 1. When reaching 5 failed attempts:

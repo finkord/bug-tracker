@@ -166,13 +166,17 @@ input:-webkit-autofill:focus {
 - Displays an animated strength bar (`Weak`, `Moderate`, `Strong & Compliant`) with interactive badge indicators.
 
 ### Task 2: Bot Prevention Widget (`CaptchaWidget.tsx`)
-- Renders an interactive CAPTCHA verification challenge.
-- In development/testing mode, generates a verified token (`valid-captcha-token`) to ensure seamless automated flows without blocking developers.
+- Renders the official **Cloudflare Turnstile** widget (Site Key: `0x4AAAAAAFBDW7LqZnzsV119`).
+- Features dynamic theme synchronization (`theme: 'light' | 'dark'`), automatically adapting widget appearance when the user switches the application theme.
+- Submits generated cryptographic tokens with registration for backend server-side verification against Cloudflare's `/siteverify` API.
+- Fully fail-closed in production mode.
 
 ### Task 3: Email Account Activation (`ActivatePage.tsx`)
 - Handles incoming URL links containing cryptographic tokens (`/activate?token=...`).
 - Communicates with `GET /api/v1/auth/activate`.
+- Strict activation model: unactivated accounts are prevented from signing in (`401 Unauthorized`).
 - Launches a colorful confetti animation upon successful account verification and redirects to `/login`.
+- Zero secret leakage: registration never reveals tokens in responses; real emails are delivered via Mailpit (`http://localhost:8025`).
 
 ### Task 4: Brute-Force Lockout Defense (`LoginPage.tsx`)
 - Listens for HTTP 401 lockout responses (`ACCOUNT_LOCKED`).
@@ -191,7 +195,7 @@ input:-webkit-autofill:focus {
 ### Task 6: Federated OAuth2 & Account Password Setup
 - **Multi-Provider OAuth:**
   - Dedicated buttons for **GitHub OAuth** (`/api/v1/auth/github`) and **Google OAuth** (`/api/v1/auth/google`) using authentic SVG brand icons.
-  - Includes a **Simulate Mock OAuth** button for instant offline and test evaluation.
+  - Development-only **Simulate Mock OAuth** button (`import.meta.env.DEV`), completely excluded from production builds.
 - **OAuth Callback Route (`OAuthCallbackPage.tsx`):**
   - Handles redirects from the backend callback endpoints.
   - Extracts JWT `accessToken` and `refreshToken` from URL query parameters.
@@ -221,7 +225,7 @@ input:-webkit-autofill:focus {
 | :--- | :--- | :--- | :--- |
 | `/` | `HomePage` | Public | System security feature showcase, architecture overview, and quick links. |
 | `/login` | `LoginPage` | Public | Credentials sign-in, lockout timer, 2FA challenge, GitHub, Google & Mock OAuth. |
-| `/register` | `RegisterPage` | Public | User registration with live password policy meter and CAPTCHA widget. |
+| `/register` | `RegisterPage` | Public | User registration with live password policy meter and Turnstile CAPTCHA widget. |
 | `/activate` | `ActivatePage` | Public | Handles email token activation links with celebration animations. |
 | `/forgot-password` | `ForgotPasswordPage`| Public | Requests 15-minute password recovery email. |
 | `/reset-password` | `ResetPasswordPage` | Public | Validates reset token and sets new compliant password. |
@@ -231,7 +235,7 @@ input:-webkit-autofill:focus {
 
 ---
 
-## 7. Development & Build Instructions
+## 7. Development & Production Regimes
 
 ### Prerequisites
 - Node.js v24 LTS (or v20+)
@@ -243,7 +247,7 @@ cd software/frontend
 npm install
 ```
 
-### 2. Start Development Server
+### 2. Start Development Server (Hot-Reload)
 ```bash
 npm run dev
 # Or expose to local network:
@@ -251,9 +255,13 @@ npm run dev -- --host
 ```
 The application will be available at **[http://localhost:5173](http://localhost:5173)**. All requests prefixed with `/api` are automatically forwarded to `http://localhost:3000` via the Vite reverse proxy.
 
-### 3. Build Production Bundle
+### 3. Build & Preview Production Bundle
 ```bash
+# 1. Build optimized distribution bundle:
 npm run build
+
+# 2. Preview production bundle locally:
+npm run preview -- --port 5173
 ```
 Executes `tsc -b` for strict type checking followed by `vite build`. Output assets are optimized and saved to `software/frontend/dist/`.
 
@@ -262,3 +270,4 @@ Executes `tsc -b` for strict type checking followed by `vite build`. Output asse
 npm run lint
 ```
 Runs high-speed linting using `oxlint`.
+

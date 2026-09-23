@@ -37,6 +37,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Account has been blocked by administrator');
     }
 
+    if (!user.isActivated) {
+      throw new UnauthorizedException('Account has not been activated via email');
+    }
+
     return user;
   }
 }

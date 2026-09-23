@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { api } from '../api/client';
 import confetti from 'canvas-confetti';
@@ -11,6 +11,7 @@ export const ActivatePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState(false);
   const [message, setMessage] = useState('');
+  const attemptedTokenRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!token) {
@@ -18,6 +19,12 @@ export const ActivatePage: React.FC = () => {
       setMessage('No activation token provided in URL.');
       return;
     }
+
+    // Prevent duplicate activation requests (e.g. React StrictMode remount or re-renders)
+    if (attemptedTokenRef.current === token) {
+      return;
+    }
+    attemptedTokenRef.current = token;
 
     const performActivation = async () => {
       try {

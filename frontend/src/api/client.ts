@@ -97,7 +97,7 @@ export const api = {
     password: string;
     captchaToken: string;
   }) =>
-    request<{ message: string; activationToken?: string }>('/auth/register', {
+    request<{ message: string }>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),

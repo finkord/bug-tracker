@@ -1,14 +1,12 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Useful CLI Commands for Bug / Issue Tracking System
+# Operational & Verification CLI Commands for Bug / Issue Tracking System
 # ==============================================================================
 
-# 1. Project Scaffolding
-# Scaffolding the NestJS backend application:
-nest new bug-tracker --directory backend --package-manager npm --skip-git --no-observe
-
-# 2. Local Infrastructure (Docker Compose)
-# Start all infrastructure containers (Postgres, Redis, Mailpit, SeaweedFS) in background:
+# ------------------------------------------------------------------------------
+# 1. Local Infrastructure (Docker Compose)
+# ------------------------------------------------------------------------------
+# Start all infrastructure containers (PostgreSQL 15, Redis 7, Mailpit, SeaweedFS):
 docker compose up -d
 
 # Check status of running containers:
@@ -20,53 +18,82 @@ docker compose logs -f
 # Stop all containers:
 docker compose down
 
-# Stop all containers and remove persistent volumes (database reset):
+# Reset database and storage (destroys persistent Docker volumes):
 docker compose down -v
 
-# 3. Backend Development
-# Install backend dependencies:
+# ------------------------------------------------------------------------------
+# 2. Development Mode (Hot-Reload & Local Tooling)
+# ------------------------------------------------------------------------------
+# Install dependencies:
 cd backend && npm install
+cd ../frontend && npm install
 
-# Build the NestJS application:
-cd backend && npm run build
+# Start Backend in Development Watch Mode:
+cd backend && npm run start:dev
+
+# Start Frontend in Development Mode (Vite on port 5173):
+cd frontend && npm run dev
 
 # Run unit tests:
 cd backend && npm test
 
-# Start development server with live reload:
-cd backend && npm run start:dev
+# ------------------------------------------------------------------------------
+# 3. Production Regime (Production Build & Serving)
+# ------------------------------------------------------------------------------
+# Build NestJS backend distribution bundle (outputs to backend/dist):
+cd backend && npm run build
 
-# 4. Frontend Development (React 19 + Vite + Tailwind CSS)
-# Install frontend dependencies:
-cd frontend && npm install
+# Start Backend in Production Mode:
+cd backend && NODE_ENV=production PORT=3000 npm run start:prod
 
-# Build frontend production bundle:
+# Build React SPA production bundle (outputs to frontend/dist):
 cd frontend && npm run build
 
-# Start frontend dev server on port 5173:
-cd frontend && npm run dev
+# Preview Frontend production bundle locally:
+cd frontend && npm run preview -- --port 5173
 
-# Access developer interfaces:
+# Single-command execution from 'software/' directory:
+# (cd backend && npm run build && NODE_ENV=production PORT=3000 npm run start:prod) & (cd frontend && npm run build && npm run preview -- --port 5173)
+
+# Single-command execution from repository root ('PPofSE/'):
+# (cd software/backend && npm run build && NODE_ENV=production PORT=3000 npm run start:prod) & (cd software/frontend && npm run build && npm run preview -- --port 5173)
+
+# Full production launch sequence:
+# 1. cd software && docker compose up -d
+# 2. cd software/backend && npm run build && NODE_ENV=production PORT=3000 npm run start:prod
+# 3. cd software/frontend && npm run build && npm run preview -- --port 5173
+
+# ------------------------------------------------------------------------------
+# 4. Developer Portals & Interface Access
+# ------------------------------------------------------------------------------
 # - Frontend Application:  http://localhost:5173
 # - Backend API & Swagger: http://localhost:3000/api/docs
-# - Mailpit Web Dashboard: http://localhost:8025
+# - Mailpit Web Inbox:     http://localhost:8025
 # - SeaweedFS Master UI:   http://localhost:9333
 # - SeaweedFS S3 Endpoint: http://localhost:8333
 
-# 5. SDSecurity Lab 6 Demonstration & Verification Commands (All 7 Tasks)
+# ------------------------------------------------------------------------------
+# 5. SDSecurity Lab 6 Verification Commands (All 7 Tasks)
+# ------------------------------------------------------------------------------
 
-# Task 1: Registration with Password Policy Enforcement
+# Task 1: Registration with Complex Password Policy
 curl -s -X POST http://localhost:3000/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{"fullName":"Vasyl Fufalko","email":"user@example.com","password":"SecurePassword!2026","captchaToken":"valid-captcha-token"}'
 
-# Task 2: CAPTCHA Verification (Rejection on missing/invalid token)
+# Task 2: Bot Prevention (CAPTCHA)
+# Missing token fails with 400 Bad Request:
 curl -s -X POST http://localhost:3000/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{"fullName":"Bot User","email":"bot@example.com","password":"SecurePassword!2026","captchaToken":""}'
 
-# Task 3: Account Activation via Email Token
-# Retrieve token from Mailpit (http://localhost:8025) and call:
+# Task 3: Email Account Activation (Strict Single-Use Token)
+# Attempting to sign in before activation fails with 401 Unauthorized:
+curl -s -X POST http://localhost:3000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"SecurePassword!2026"}'
+
+# Retrieve the activation token from Mailpit (http://localhost:8025) and activate:
 # curl -s "http://localhost:3000/api/v1/auth/activate?token=<ACTIVATION_TOKEN>"
 
 # Task 4: Brute-Force Protection & Account Lockout (5 failed attempts trigger 15-min lockout)
@@ -77,26 +104,24 @@ for i in {1..5}; do
   echo ""
 done
 
-# Task 4: Admin Audit Log Retrieval
+# Task 4: Admin Security Audit Log Inspection
 # curl -s http://localhost:3000/api/v1/admin/security/login-logs -H "Authorization: Bearer <ADMIN_TOKEN>"
 
-# Task 5: Two-Factor Authentication (TOTP / Google Authenticator)
+# Task 5: Two-Factor Authentication (TOTP RFC 6238)
 # 1. Generate 2FA Secret & QR Code:
 # curl -s -X POST http://localhost:3000/api/v1/auth/2fa/generate -H "Authorization: Bearer <TOKEN>"
 # 2. Confirm and Enable 2FA:
 # curl -s -X POST http://localhost:3000/api/v1/auth/2fa/enable -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" -d '{"code":"<6_DIGIT_CODE>"}'
-# 3. Verify 2FA challenge on login:
+# 3. Complete 2FA login challenge:
 # curl -s -X POST http://localhost:3000/api/v1/auth/2fa/verify -H "Content-Type: application/json" -d '{"tempToken":"<TEMP_TOKEN>","code":"<6_DIGIT_CODE>"}'
 
 # Task 6: External Identity Providers (OAuth2 / GitHub)
 # Initiate OAuth redirect in browser:
 # http://localhost:3000/api/v1/auth/github
-# Or simulate OAuth verification via mock endpoint:
-# curl -s -X POST http://localhost:3000/api/v1/auth/oauth/mock -H "Content-Type: application/json" -d '{"provider":"GITHUB","oauthId":"gh-12345","email":"dev@github.local","fullName":"GitHub Dev"}'
+# Note: Mock OAuth (/auth/oauth/mock) is strictly disabled in production mode.
 
-# Task 7: Password Reset via Email Token
-# 1. Request Reset Link:
+# Task 7: Password Reset Flow via Email
+# 1. Request Reset Link (dispatched exclusively via email):
 # curl -s -X POST http://localhost:3000/api/v1/auth/forgot-password -H "Content-Type: application/json" -d '{"email":"user@example.com"}'
-# 2. Reset Password using token received in Mailpit:
+# 2. Reset Password using token received in Mailpit inbox:
 # curl -s -X POST http://localhost:3000/api/v1/auth/reset-password -H "Content-Type: application/json" -d '{"token":"<RESET_TOKEN>","newPassword":"BrandNewPass!2026"}'
-

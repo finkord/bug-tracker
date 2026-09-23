@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { PasswordStrengthMeter } from '../components/auth/PasswordStrengthMeter';
-import { CaptchaWidget } from '../components/auth/CaptchaWidget';
+import { CaptchaWidget, type CaptchaWidgetHandle } from '../components/auth/CaptchaWidget';
 import { Shield, Mail, Lock, User, CheckCircle2, ArrowRight, ExternalLink } from 'lucide-react';
 
 export const RegisterPage: React.FC = () => {
@@ -10,11 +10,11 @@ export const RegisterPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [captchaToken, setCaptchaToken] = useState('');
+  const captchaRef = useRef<CaptchaWidgetHandle>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successData, setSuccessData] = useState<{
     message: string;
-    activationToken?: string;
   } | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -37,6 +37,9 @@ export const RegisterPage: React.FC = () => {
       setSuccessData(res);
     } catch (err: any) {
       setError(err.message || 'Registration failed');
+      // Single-use token lifecycle: reset widget on failure so user can re-verify
+      captchaRef.current?.reset();
+      setCaptchaToken('');
     } finally {
       setLoading(false);
     }
@@ -66,35 +69,34 @@ export const RegisterPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="p-4 rounded-[20px] bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)] text-xs space-y-2.5">
-              <span className="font-semibold text-[var(--md-sys-color-on-surface)] flex items-center gap-1.5">
-                <Mail className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
-                Testing Environment (Mailpit):
-              </span>
-              <p className="text-[var(--md-sys-color-on-surface-variant)]">
-                Inspect the single-use activation email in your local inbox:
-              </p>
-              <a
-                href="http://localhost:8025"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full m3-btn-tonal text-xs font-semibold"
-              >
-                <span>Open Mailpit Dashboard</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            </div>
-
-            {successData.activationToken && (
-              <div className="space-y-1.5 pt-1">
-                <span className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">Instant activation shortcut:</span>
-                <Link
-                  to={`/activate?token=${encodeURIComponent(successData.activationToken)}`}
-                  className="w-full py-3 rounded-full m3-btn-filled text-xs flex items-center justify-center gap-2 shadow-sm"
+            {import.meta.env.DEV ? (
+              <div className="p-4 rounded-[20px] bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)] text-xs space-y-2.5">
+                <span className="font-semibold text-[var(--md-sys-color-on-surface)] flex items-center gap-1.5">
+                  <Mail className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
+                  Testing Environment (Mailpit):
+                </span>
+                <p className="text-[var(--md-sys-color-on-surface-variant)]">
+                  Inspect the single-use activation email in your local inbox:
+                </p>
+                <a
+                  href="http://localhost:8025"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full m3-btn-tonal text-xs font-semibold"
                 >
-                  <span>Activate Account Directly</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
+                  <span>Open Mailpit Dashboard</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
+            ) : (
+              <div className="p-4 rounded-[20px] bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)] text-xs space-y-2 text-center">
+                <span className="font-semibold text-[var(--md-sys-color-on-surface)] flex items-center justify-center gap-1.5">
+                  <Mail className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
+                  Activation Email Dispatched
+                </span>
+                <p className="text-[var(--md-sys-color-on-surface-variant)] leading-relaxed">
+                  Please check your inbox and click the single-use activation link to verify your email address.
+                </p>
               </div>
             )}
 
@@ -169,7 +171,12 @@ export const RegisterPage: React.FC = () => {
 
             {/* Bot Protection Widget */}
             <div className="pt-1">
-              <CaptchaWidget onVerify={(token) => setCaptchaToken(token)} />
+              <CaptchaWidget
+                ref={captchaRef}
+                action="signup"
+                onVerify={(token) => setCaptchaToken(token)}
+                onReset={() => setCaptchaToken('')}
+              />
             </div>
 
             {/* Submit Button */}

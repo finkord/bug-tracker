@@ -11,6 +11,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
@@ -242,13 +243,18 @@ export class AuthController {
   @ApiOperation({
     summary: 'Simulated OAuth2 login for demonstration and testing (SDSecurity Task 6)',
     description:
-      'Validates or provisions user account based on OAuth provider claims and returns JWT session tokens.',
+      'Validates or provisions user account based on OAuth provider claims and returns JWT session tokens (strictly disabled in production).',
   })
   async mockOAuthLogin(
     @Body() dto: OAuthMockDto,
     @Ip() ip: string,
     @Headers('user-agent') userAgent?: string,
   ) {
+    const nodeEnv = this.configService.get<string>('NODE_ENV', 'development');
+    if (nodeEnv === 'production') {
+      throw new ForbiddenException('Mock OAuth authentication is strictly disabled in production mode.');
+    }
+
     const user = await this.authService.validateOrCreateOAuthUser(dto);
     return this.authService.loginOAuthUser(user, ip, userAgent);
   }

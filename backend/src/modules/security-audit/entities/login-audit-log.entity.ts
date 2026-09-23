@@ -18,6 +18,7 @@ export enum LoginAttemptStatus {
   REQUIRE_2FA = 'REQUIRE_2FA',
   TWO_FACTOR_SUCCESS = 'TWO_FACTOR_SUCCESS',
   TWO_FACTOR_FAILED = 'TWO_FACTOR_FAILED',
+  NOT_ACTIVATED = 'NOT_ACTIVATED',
 }
 
 @Entity('login_audit_logs')

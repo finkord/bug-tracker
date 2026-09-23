@@ -109,37 +109,62 @@ async verifyPassword(hash: string, plain: string): Promise<boolean> {
 
 #### 2.2. Реалізація
 
-##### 1. Клієнтський інтерактивний віджет:
-Створено компонент `software/frontend/src/components/CaptchaWidget.tsx` (інтерактивний drag-and-slide challenge з тактильним відгуком та захистом від автоматичних скриптів):
+##### 1. Клієнтський інтерактивний смарт-віджет (Cloudflare Turnstile):
+Створено компонент `software/frontend/src/components/auth/CaptchaWidget.tsx`, який інтегрує Cloudflare Turnstile (`sitekey = 0x4AAAAAAFBDW7LqZnzsV119`):
+* **Динамічна синхронізація теми:** віджет реагує на світлу або темну тему через хук `useTheme()`:
+  * У світлій темі (`theme: 'light'`) рендериться чистий білий віджет з фірмовими контурами Cloudflare.
+  * У темній темі (`theme: 'dark'`) усунуто артефакт 1px білої рамки за допомогою `clipPath: 'inset(1.5px round 6px)'`.
+* **Синхронне очищення життєвого циклу (`useLayoutEffect`):** виклик `window.turnstile.remove(widgetId)` виконується до від'єднання DOM-вузлів React'ом, що усуває попередження «Cannot find Widget».
+* **Політика безпеки вмісту (CSP):** у `software/frontend/index.html` додано тег `<meta http-equiv="Content-Security-Policy">`, що дозволяє `https://challenges.cloudflare.com` та директиву `'unsafe-eval'` для безпечного виконання челенджу.
 
 ```typescript
-// Emit cryptographically signed verification challenge upon slide completion
-const handleSlideComplete = () => {
-  setIsVerified(true);
-  const challengeToken = `interactive-slide-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-  onVerify(challengeToken);
-};
-```
-
-##### 2. Сервіс валідації на бекенді:
-У `software/backend/src/modules/auth/captcha.service.ts` реалізовано перевірку отриманого токена:
-
-```typescript
-@Injectable()
-export class CaptchaService {
-  async verifyToken(token: string): Promise<boolean> {
-    if (!token) return false;
-    // Support test tokens and interactive challenge prefixes
-    if (token === 'valid-captcha-token' || token.startsWith('interactive-slide-')) {
-      return true;
+// software/frontend/src/components/auth/CaptchaWidget.tsx
+useLayoutEffect(() => {
+  return () => {
+    if (widgetIdRef.current && window.turnstile) {
+      const currentId = widgetIdRef.current;
+      widgetIdRef.current = null;
+      try {
+        window.turnstile.remove(currentId);
+      } catch {}
     }
-    // Remote validation adapter for Turnstile / reCAPTCHA
-    return this.validateExternalProvider(token);
-  }
-}
+  };
+}, []);
+
+const id = window.turnstile.render(containerRef.current, {
+  sitekey: activeSiteKey,
+  action: 'signup',
+  theme: isDark ? 'dark' : 'light',
+  callback: (token: string) => {
+    onVerify(token);
+  },
+});
 ```
 
-При відсутності токена або невдалій перевірці реєстрація негайно блокується з кодом `HTTP 400 Bad Request` («Invalid or expired CAPTCHA challenge»).
+##### 2. Сервіс валідації на бекенді (`CaptchaService`):
+У `software/backend/src/modules/captcha/captcha.service.ts` реалізовано повноцінну серверну верифікацію через Cloudflare Siteverify API:
+
+```typescript
+// POST https://challenges.cloudflare.com/turnstile/v0/siteverify
+const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+  body: new URLSearchParams({
+    secret: secretKey,
+    response: token,
+    remoteip: remoteIp || '',
+  }),
+});
+
+const data = (await response.json()) as TurnstileVerifyResponse;
+if (!data.success) {
+  this.logger.warn(`Turnstile validation failed: ${JSON.stringify(data['error-codes'])}`);
+  return false;
+}
+return true;
+```
+
+При відсутності токена або невдалій перевірці реєстрація негайно блокується з кодом `HTTP 400 Bad Request` («CAPTCHA verification failed. Please try again.»).
 
 ---
 
@@ -148,43 +173,38 @@ export class CaptchaService {
 #### 3.1. Вимоги завдання
 * Надсилання електронного листа з посиланням на активацію після завершення реєстрації.
 * Використання криптографічно стійкого одноразового токена з обмеженим терміном дії (24 години).
-* Обліковий запис створюється у стані `is_activated = false`; спроби входу блокуються.
+* Обліковий запис створюється у стані `is_activated = false`; спроби входу неактивованого акаунта суворо блокуються.
 * Відображення статусу активації у профілі користувача.
 
 #### 3.2. Реалізація
 
 ##### 1. Генерація токена та відправка листа:
-При виклику `POST /api/v1/auth/register` у базі даних зберігається випадковий хеш-токен, а на пошту користувача через Mailpit надсилається HTML-лист:
+При виклику `POST /api/v1/auth/register` у базі даних зберігається 32-байтний випадковий hex-токен (`crypto.randomBytes(32).toString('hex')`) з терміном дії 24 години, а на пошту користувача через Mailpit (SMTP порт 1025) надсилається HTML-лист з унікальним посиланням: `${frontendUrl}/activate?token=${activationToken}`.
 
+##### 2. Блокування входу неактивованих користувачів:
+У методі `login()` сервісу `software/backend/src/modules/auth/auth.service.ts` реалізовано обов'язкову перевірку активації після верифікації пароля:
 ```typescript
-// Generate 24-hour cryptographic random activation token
-const activationToken = crypto.randomBytes(32).toString('hex');
-user.activationToken = activationToken;
-user.activationTokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-user.isActivated = false;
-
-// Send email via local Mailpit SMTP service (port 1025)
-await this.mailerService.sendMail({
-  to: user.email,
-  subject: 'BugTracker Account Activation',
-  template: 'activation',
-  context: {
-    name: user.fullName,
-    activationUrl: `${frontendUrl}/activate?token=${activationToken}`,
-  },
-});
-```
-
-##### 2. Захист від входу неактивованого акаунта:
-У методі `login()` сервісу `auth.service.ts`:
-```typescript
+// 6. Verify account activation status via email verification link (SDSecurity Task 3)
 if (!user.isActivated) {
-  throw new UnauthorizedException('Please activate your account via email before logging in');
+  await this.securityAuditService.recordLoginAttempt({
+    userId: user.id,
+    attemptedEmail: dto.email,
+    ipAddress,
+    userAgent,
+    status: LoginAttemptStatus.NOT_ACTIVATED,
+    failureReason: 'Account has not been activated via email verification link',
+  });
+  throw new UnauthorizedException(
+    'Your account has not been activated yet. Please check your email for the activation link.',
+  );
 }
 ```
+Також перевірку `!user.isActivated` впроваджено у `verify2fa()` та в `JwtStrategy`, що повністю унеможливлює виконання будь-яких автентифікованих дій неактивованим користувачем.
 
-##### 3. Верифікація токена та активація:
-Ендпоінт `GET /api/v1/auth/activate?token=...` перевіряє термін дії токена, змінює статус на `isActivated = true`, зануляє токен (забезпечуючи одноразовість) та перенаправляє користувача на SPA-сторінку `software/frontend/src/pages/ActivatePage.tsx` з анімацією конфеті. У профілі статус підтверджено бейджем «Email Confirmed».
+##### 3. Одноразовість токена та захист від подвійного виклику (React StrictMode):
+* **Ідемпотентність на бекенді:** `AuthService` зберігає кеш нещодавно активованих токенів `recentlyActivatedTokens = new Map<string, number>()` (TTL 5 хв). Якщо запит повторюється через подвійне натискання чи StrictMode, повертається успішна відповідь замість помилки.
+* **Захист на фронтенді:** у `software/frontend/src/pages/ActivatePage.tsx` додано реф-запобіжник `attemptedTokenRef`, який блокує повторний виклик `api.activate(token)` під час подвійного монтування компонента в режимі розробки.
+* **Підтвердження успіху:** користувач бачить екран з анімацією конфеті, а в особистому кабінеті (`/profile`) відображається зелений бейдж «Activated».
 
 ---
 

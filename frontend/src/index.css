@@ -282,3 +282,18 @@ html.dark {
   background: var(--md-sys-color-outline-variant);
   border-radius: 9999px;
 }
+
+/* ========================================================================= */
+/* Cloudflare Turnstile Dark Mode Border Fix                                 */
+/* Clips the internal 1px high-contrast border rendered by Turnstile iframe   */
+/* ========================================================================= */
+iframe[src*="turnstile"],
+iframe[src*="challenges.cloudflare.com"],
+.turnstile-clean iframe {
+  clip-path: inset(1px round 5px) !important;
+  border: 0 !important;
+  border-style: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  border-radius: 5px !important;
+}

@@ -336,16 +336,18 @@ export const LoginPage: React.FC = () => {
               </a>
             </div>
 
-            {/* Mock OAuth fallback */}
-            <button
-              type="button"
-              onClick={handleMockOAuth}
-              className="w-full mt-2.5 py-2 px-3 rounded-full bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] text-[11px] font-medium flex items-center justify-center gap-1.5 transition-all active:scale-95"
-              title="Simulate instant OAuth login for demo & testing"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
-              <span>Simulate Mock OAuth (Demo / Offline)</span>
-            </button>
+            {/* Mock OAuth fallback (Development only, stripped in production builds) */}
+            {import.meta.env.DEV && (
+              <button
+                type="button"
+                onClick={handleMockOAuth}
+                className="w-full mt-2.5 py-2 px-3 rounded-full bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] text-[11px] font-medium flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                title="Simulate instant OAuth login for demo & testing"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
+                <span>Simulate Mock OAuth (Demo / Offline)</span>
+              </button>
+            )}
 
             {/* Register Link */}
             <div className="text-center pt-3 text-xs text-[var(--md-sys-color-on-surface-variant)]">
