@@ -282,9 +282,6 @@ export class AuthController {
     description: 'Acknowledges user logout and invalidates server-side session context.',
   })
   async logout(@CurrentUser() user: User) {
-    return {
-      message: 'Logged out successfully',
-      userId: user.id,
-    };
+    return this.authService.logout(user.id);
   }
 }

@@ -9,6 +9,9 @@ export interface JwtPayload {
   sub: number;
   email: string;
   role: string;
+  is2faPending?: boolean;
+  tokenType?: string;
+  tokenVersion?: number;
 }
 
 @Injectable()
@@ -28,6 +31,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload): Promise<User> {
+    // 1. Immediately reject temporary 2FA challenge tokens to prevent 2FA bypass
+    if (payload.is2faPending || payload.tokenType === '2fa_challenge') {
+      throw new UnauthorizedException(
+        'Two-factor authentication challenge pending. Please complete 2FA verification.',
+      );
+    }
+
     const user = await this.usersService.findById(payload.sub);
     if (!user) {
       throw new UnauthorizedException('User account no longer exists');
@@ -39,6 +49,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     if (!user.isActivated) {
       throw new UnauthorizedException('Account has not been activated via email');
+    }
+
+    // 2. Validate session token version to support instant revocation on logout and password reset
+    if (
+      typeof payload.tokenVersion === 'number' &&
+      typeof user.tokenVersion === 'number' &&
+      payload.tokenVersion < user.tokenVersion
+    ) {
+      throw new UnauthorizedException('Session has been revoked. Please sign in again.');
     }
 
     return user;

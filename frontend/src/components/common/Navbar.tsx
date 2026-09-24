@@ -1,9 +1,16 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useSidebar } from '../../context/SidebarContext';
 import { Avatar } from './Avatar';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '../ui/Dropdown';
 import {
   Shield,
   Sun,
@@ -44,9 +51,6 @@ export const Navbar: React.FC = () => {
   const { toggleSidebar, toggleMobile } = useSidebar();
   const navigate = useNavigate();
 
-  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
   // Header Announcement Banner State
   const [headerConfig, setHeaderConfig] = useState<HeaderMessageConfig>(() => {
     try {
@@ -75,19 +79,7 @@ export const Navbar: React.FC = () => {
     setIsEditingMessage(false);
   };
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setProfileDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   const handleLogout = async () => {
-    setProfileDropdownOpen(false);
     await logout();
     navigate('/');
   };
@@ -235,109 +227,111 @@ export const Navbar: React.FC = () => {
 
           {/* Authenticated User Menu vs Guest Buttons */}
           {user ? (
-            <div className="relative" ref={dropdownRef}>
-              <button
-                type="button"
-                onClick={() => setProfileDropdownOpen((prev) => !prev)}
-                className="flex items-center gap-2 p-1 pl-1.5 pr-2.5 rounded-full bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)] transition-all cursor-pointer"
-                aria-expanded={profileDropdownOpen}
-                aria-haspopup="true"
-              >
-                <Avatar
-                  name={user.fullName || user.email}
-                  avatarUrl={user.avatarUrl}
-                  size="sm"
-                />
-                <div className="hidden sm:flex flex-col text-left">
-                  <span className="text-xs font-semibold text-[var(--md-sys-color-on-surface)] max-w-[110px] truncate leading-tight">
-                    {user.fullName || user.email.split('@')[0]}
-                  </span>
-                  <span className="text-[10px] font-mono text-[var(--md-sys-color-primary)] font-semibold uppercase leading-tight">
-                    {user.systemRole}
-                  </span>
-                </div>
-                <ChevronDown className={`w-3.5 h-3.5 text-[var(--md-sys-color-on-surface-variant)] transition-transform duration-200 ${
-                  profileDropdownOpen ? 'rotate-180' : ''
-                }`} />
-              </button>
-
-              {/* Material 3 Profile Dropdown Menu */}
-              {profileDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] shadow-xl p-2 space-y-1 animate-in fade-in zoom-in-95 duration-150 z-50">
-                  {/* User info card */}
-                  <div className="p-3 rounded-xl bg-[var(--md-sys-color-surface-container-low)] space-y-1">
-                    <p className="text-xs font-bold text-[var(--md-sys-color-on-surface)] truncate">
-                      {user.fullName}
-                    </p>
-                    <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] truncate">
-                      {user.email}
-                    </p>
-                    <div className="pt-1 flex items-center gap-1.5">
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] font-mono">
-                        {user.systemRole}
-                      </span>
-                      {user.twoFactorEnabled && (
-                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
-                          2FA Active
-                        </span>
-                      )}
-                    </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="flex items-center gap-2 p-1 pl-1.5 pr-2.5 rounded-full bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)] transition-all cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--md-sys-color-primary)]"
+                  aria-label="User account menu"
+                >
+                  <Avatar
+                    name={user.fullName || user.email}
+                    avatarUrl={user.avatarUrl}
+                    size="sm"
+                  />
+                  <div className="hidden sm:flex flex-col text-left">
+                    <span className="text-xs font-semibold text-[var(--md-sys-color-on-surface)] max-w-[110px] truncate leading-tight">
+                      {user.fullName || user.email.split('@')[0]}
+                    </span>
+                    <span className="text-[10px] font-mono text-[var(--md-sys-color-primary)] font-semibold uppercase leading-tight">
+                      {user.systemRole}
+                    </span>
                   </div>
+                  <ChevronDown className="w-3.5 h-3.5 text-[var(--md-sys-color-on-surface-variant)] transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                </button>
+              </DropdownMenuTrigger>
 
-                  {/* Dropdown Links */}
-                  <div className="pt-1 space-y-0.5 text-xs font-medium">
+              <DropdownMenuContent
+                align="end"
+                sideOffset={8}
+                className="w-64 p-2 space-y-1 bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] rounded-2xl shadow-xl z-50"
+              >
+                {/* User info card */}
+                <div className="p-3 rounded-xl bg-[var(--md-sys-color-surface-container-low)] space-y-1 select-none">
+                  <p className="text-xs font-bold text-[var(--md-sys-color-on-surface)] truncate">
+                    {user.fullName}
+                  </p>
+                  <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] truncate">
+                    {user.email}
+                  </p>
+                  <div className="pt-1 flex items-center gap-1.5">
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] font-mono">
+                      {user.systemRole}
+                    </span>
+                    {user.twoFactorEnabled && (
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                        2FA Active
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Dropdown Links */}
+                <div className="pt-1 space-y-0.5 text-xs font-medium">
+                  <DropdownMenuItem asChild>
                     <Link
                       to="/profile"
-                      onClick={() => setProfileDropdownOpen(false)}
-                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container-high)] transition-colors"
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container-high)] transition-colors cursor-pointer"
                     >
                       <User className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
                       <span>Profile & Security</span>
                     </Link>
+                  </DropdownMenuItem>
 
+                  <DropdownMenuItem asChild>
                     <Link
                       to="/profile?tab=time"
-                      onClick={() => setProfileDropdownOpen(false)}
-                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container-high)] transition-colors"
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container-high)] transition-colors cursor-pointer"
                     >
                       <Sparkles className="w-4 h-4 text-amber-500" />
                       <span>My Time & Achievements</span>
                     </Link>
+                  </DropdownMenuItem>
 
+                  <DropdownMenuItem asChild>
                     <Link
                       to="/time-tracking"
-                      onClick={() => setProfileDropdownOpen(false)}
-                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container-high)] transition-colors"
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container-high)] transition-colors cursor-pointer"
                     >
                       <Clock className="w-4 h-4 text-emerald-500" />
                       <span>Team Time Tracking</span>
                     </Link>
+                  </DropdownMenuItem>
 
-                    {user.systemRole === 'ADMIN' && (
+                  {user.systemRole === 'ADMIN' && (
+                    <DropdownMenuItem asChild>
                       <Link
                         to="/admin"
-                        onClick={() => setProfileDropdownOpen(false)}
-                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container-high)] transition-colors"
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container-high)] transition-colors cursor-pointer"
                       >
                         <ShieldAlert className="w-4 h-4 text-rose-500" />
                         <span>Admin Center</span>
                       </Link>
-                    )}
-                  </div>
-
-                  <div className="pt-1 border-t border-[var(--md-sys-color-outline-variant)]">
-                    <button
-                      type="button"
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      <span>Sign Out</span>
-                    </button>
-                  </div>
+                    </DropdownMenuItem>
+                  )}
                 </div>
-              )}
-            </div>
+
+                <DropdownMenuSeparator className="my-1 bg-[var(--md-sys-color-outline-variant)]" />
+
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-500/10 cursor-pointer transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Sign Out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
             <div className="flex items-center gap-2">
               <Link

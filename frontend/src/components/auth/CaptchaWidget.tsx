@@ -1,6 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { ShieldCheck, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
-import { useTheme } from '../../context/ThemeContext';
 
 declare global {
   interface Window {
@@ -15,6 +14,7 @@ declare global {
           'expired-callback'?: () => void;
           theme?: 'light' | 'dark' | 'auto';
           size?: 'normal' | 'compact' | 'flexible';
+          appearance?: 'always' | 'execute' | 'interaction-only';
         },
       ) => string;
       reset: (widgetId: string) => void;
@@ -39,11 +39,6 @@ export const CaptchaWidget = forwardRef<CaptchaWidgetHandle, Props>(
   ({ onVerify, onReset, siteKey: propSiteKey, action = 'signup' }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const widgetIdRef = useRef<string | null>(null);
-
-    // Consume active theme from ThemeContext (light vs dark)
-    const { theme } = useTheme();
-    const isDark = theme === 'dark';
-
     // Read sitekey from props or Vite environment variable
     const activeSiteKey =
       propSiteKey || (import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined);
@@ -87,7 +82,8 @@ export const CaptchaWidget = forwardRef<CaptchaWidgetHandle, Props>(
       };
     }, []);
 
-    // Cloudflare Turnstile integration when sitekey is configured
+    // Cloudflare Turnstile integration: Render widget once per lifecycle with official 'auto' theme
+    // Eliminates teardown/reloads when users toggle light/dark theme, preserving verified tokens and preventing spam signals
     useEffect(() => {
       if (!activeSiteKey) return;
 
@@ -96,14 +92,14 @@ export const CaptchaWidget = forwardRef<CaptchaWidgetHandle, Props>(
       const renderWidget = () => {
         if (!window.turnstile || !containerRef.current || !isMounted) return;
 
-        // Clean up previous widget instance if exists (e.g. on theme toggle)
+        // Clean up previous widget instance if exists
         if (widgetIdRef.current && window.turnstile) {
           try {
             const currentId = widgetIdRef.current;
             widgetIdRef.current = null;
             window.turnstile.remove(currentId);
           } catch {
-            // Ignore removal errors during remount
+            // Ignore removal errors
           }
         }
 
@@ -116,7 +112,11 @@ export const CaptchaWidget = forwardRef<CaptchaWidgetHandle, Props>(
           const id = window.turnstile.render(containerRef.current, {
             sitekey: activeSiteKey,
             action,
-            theme: isDark ? 'dark' : 'light',
+            // 'auto' delegates theme adaptation to Cloudflare's internal CSS media queries
+            // ensuring seamless visual harmony without destructive DOM remounting
+            theme: 'auto',
+            appearance: 'always',
+            size: 'flexible',
             callback: (token: string) => {
               if (!isMounted) return;
               setStatus('verified');
@@ -176,37 +176,22 @@ export const CaptchaWidget = forwardRef<CaptchaWidgetHandle, Props>(
           }
         }
       };
-    }, [activeSiteKey, action, isDark]);
+    }, [activeSiteKey, action]);
 
     // If real Cloudflare Turnstile sitekey is configured, render Turnstile container
     if (activeSiteKey) {
       return (
-        <div className="w-full flex flex-col items-center justify-center my-1.5">
-          {/* Container with theme-specific styling: clipped in dark mode to remove white 1px border; natural border in light mode */}
-          <div
-            className="flex items-center justify-center transition-all"
-            style={
-              isDark
-                ? {
-                    width: '300px',
-                    height: '65px',
-                    overflow: 'hidden',
-                    clipPath: 'inset(1.5px round 6px)',
-                    borderRadius: '6px',
-                  }
-                : {
-                    width: '300px',
-                    height: '65px',
-                    overflow: 'hidden',
-                    borderRadius: '6px',
-                  }
-            }
-          >
-            <div ref={containerRef} style={{ width: '300px', height: '65px' }} />
+        <div className="w-full flex flex-col my-2">
+          {/* Responsive full-width container for Cloudflare Turnstile matching input field widths */}
+          <div className="w-full min-h-[65px] transition-all">
+            <div
+              ref={containerRef}
+              className="w-full min-h-[65px] [&>div]:!w-full [&_iframe]:!w-full"
+            />
           </div>
           {status === 'error' && (
-            <div className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-error)] mt-1">
-              <AlertCircle className="w-4 h-4" />
+            <div className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-error)] mt-2 font-medium">
+              <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{errorMessage || 'Verification failed. Please try again.'}</span>
             </div>
           )}

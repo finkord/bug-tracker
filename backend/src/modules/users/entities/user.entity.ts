@@ -84,6 +84,14 @@ export class User {
   @Column({ name: 'two_factor_secret', type: 'varchar', length: 255, nullable: true })
   twoFactorSecret: string | null;
 
+  // Staging secret for unconfirmed 2FA enrollment (prevents overwriting working 2FA secret before confirmation)
+  @Column({ name: 'two_factor_pending_secret', type: 'varchar', length: 255, nullable: true })
+  twoFactorPendingSecret: string | null;
+
+  // Token versioning for session revocation on logout and password reset
+  @Column({ name: 'token_version', type: 'int', default: 0 })
+  tokenVersion: number;
+
   // SDSecurity Task 6: External Identity Providers
   @Column({
     name: 'oauth_provider',

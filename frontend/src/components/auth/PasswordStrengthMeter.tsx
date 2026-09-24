@@ -58,22 +58,22 @@ export const PasswordStrengthMeter: React.FC<Props> = ({ password }) => {
       </div>
 
       {/* Criteria checklist chips */}
-      <div className="grid grid-cols-2 gap-1.5 pt-1 text-[11px]">
+      <div className="flex flex-wrap gap-1.5 pt-1">
         {criteria.map((item, idx) => (
           <div
             key={idx}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-full border transition-all ${
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] transition-all duration-200 ${
               item.met
-                ? 'bg-[var(--md-sys-color-success-container)] border-transparent text-[var(--md-sys-color-on-success-container)] font-medium'
+                ? 'bg-[var(--md-sys-color-success-container)] border-transparent text-[var(--md-sys-color-on-success-container)] font-medium shadow-xs scale-[1.02]'
                 : 'bg-[var(--md-sys-color-surface-container-high)] border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-outline)]'
             }`}
           >
             {item.met ? (
-              <Check className="w-3.5 h-3.5 text-[var(--md-sys-color-success)] shrink-0" />
+              <Check className="w-3.5 h-3.5 text-[var(--md-sys-color-success)] shrink-0 animate-in zoom-in-75" />
             ) : (
               <X className="w-3.5 h-3.5 text-[var(--md-sys-color-outline)] shrink-0" />
             )}
-            <span className="truncate">{item.label}</span>
+            <span>{item.label}</span>
           </div>
         ))}
       </div>

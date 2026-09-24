@@ -73,12 +73,7 @@ export class AuthService {
     }
 
     // 3. Hash password using Argon2id (SDSecurity Task 1)
-    const passwordHash = await argon2.hash(dto.password, {
-      type: argon2.argon2id,
-      memoryCost: 2 ** 16, // 64 MB
-      timeCost: 3,
-      parallelism: 1,
-    });
+    const passwordHash = await this.hashPassword(dto.password);
 
     // 4. Generate single-use, time-limited activation token (SDSecurity Task 3)
     const activationToken = crypto.randomBytes(32).toString('hex');
@@ -302,7 +297,7 @@ export class AuthService {
       });
 
       const tempToken = this.jwtService.sign(
-        { sub: user.id, email: user.email, is2faPending: true },
+        { sub: user.id, email: user.email, is2faPending: true, tokenType: '2fa_challenge' },
         { expiresIn: '5m' },
       );
 
@@ -330,14 +325,14 @@ export class AuthService {
    * Verifies the 6-digit 2FA TOTP code and completes authentication (SDSecurity Task 5).
    */
   async verify2fa(dto: Verify2faDto, ipAddress: string, userAgent?: string): Promise<AuthTokens> {
-    let payload: { sub: number; is2faPending?: boolean };
+    let payload: { sub: number; is2faPending?: boolean; tokenType?: string };
     try {
       payload = this.jwtService.verify(dto.tempToken);
     } catch {
       throw new UnauthorizedException('Invalid or expired 2FA challenge token. Please log in again.');
     }
 
-    if (!payload.is2faPending) {
+    if (!payload.is2faPending || payload.tokenType !== '2fa_challenge') {
       throw new UnauthorizedException('Invalid challenge token');
     }
 
@@ -384,8 +379,8 @@ export class AuthService {
     const otpAuthUrl = generateURI({ issuer: appName, label: user.email, secret });
     const qrCodeDataUrl = await QRCode.toDataURL(otpAuthUrl);
 
-    // Save temporary secret until confirmed by the user
-    await this.usersService.update(user.id, { twoFactorSecret: secret });
+    // Save temporary secret into staging slot to prevent overwriting active 2FA secret before confirmation
+    await this.usersService.update(user.id, { twoFactorPendingSecret: secret });
 
     return { secret, qrCodeDataUrl };
   }
@@ -395,16 +390,21 @@ export class AuthService {
    */
   async enable2fa(user: User, dto: Enable2faDto): Promise<{ message: string; twoFactorEnabled: boolean }> {
     const freshUser = await this.usersService.findById(user.id);
-    if (!freshUser || !freshUser.twoFactorSecret) {
+    const secretToVerify = freshUser?.twoFactorPendingSecret || freshUser?.twoFactorSecret;
+    if (!freshUser || !secretToVerify) {
       throw new BadRequestException('Please generate a 2FA secret before enabling it');
     }
 
-    const isValid = verifySync({ secret: freshUser.twoFactorSecret, token: dto.code }).valid;
+    const isValid = verifySync({ secret: secretToVerify, token: dto.code }).valid;
     if (!isValid) {
       throw new BadRequestException('Invalid confirmation code. Verify that your device clock is synchronized.');
     }
 
-    await this.usersService.update(user.id, { twoFactorEnabled: true });
+    await this.usersService.update(user.id, {
+      twoFactorEnabled: true,
+      twoFactorSecret: secretToVerify,
+      twoFactorPendingSecret: null,
+    });
     return {
       message: 'Two-factor authentication has been successfully enabled for your account.',
       twoFactorEnabled: true,
@@ -428,6 +428,7 @@ export class AuthService {
     await this.usersService.update(user.id, {
       twoFactorEnabled: false,
       twoFactorSecret: null,
+      twoFactorPendingSecret: null,
     });
 
     return {
@@ -500,12 +501,7 @@ export class AuthService {
       throw new BadRequestException('Password reset token has expired. Please request a new one.');
     }
 
-    const passwordHash = await argon2.hash(dto.newPassword, {
-      type: argon2.argon2id,
-      memoryCost: 2 ** 16,
-      timeCost: 3,
-      parallelism: 1,
-    });
+    const passwordHash = await this.hashPassword(dto.newPassword);
 
     await this.usersService.update(user.id, {
       passwordHash,
@@ -513,6 +509,7 @@ export class AuthService {
       resetPasswordExpiresAt: null,
       failedLoginAttempts: 0,
       lockedUntil: null,
+      tokenVersion: (user.tokenVersion ?? 0) + 1,
     });
 
     return { message: 'Your password has been successfully updated. You can now log in.' };
@@ -538,17 +535,13 @@ export class AuthService {
       }
     }
 
-    const passwordHash = await argon2.hash(dto.newPassword, {
-      type: argon2.argon2id,
-      memoryCost: 2 ** 16,
-      timeCost: 3,
-      parallelism: 1,
-    });
+    const passwordHash = await this.hashPassword(dto.newPassword);
 
     await this.usersService.update(user.id, {
       passwordHash,
       failedLoginAttempts: 0,
       lockedUntil: null,
+      tokenVersion: (user.tokenVersion ?? 0) + 1,
     });
 
     await this.securityAuditService.recordLoginAttempt({
@@ -628,7 +621,23 @@ export class AuthService {
    */
   
   /**
-   * Refreshes JWT access token using a valid refresh token.
+   * Logs out user by incrementing token version, immediately revoking all refresh tokens.
+   */
+  async logout(userId: number): Promise<{ message: string; userId: number }> {
+    const user = await this.usersService.findById(userId);
+    if (user) {
+      await this.usersService.update(user.id, {
+        tokenVersion: (user.tokenVersion ?? 0) + 1,
+      });
+    }
+    return {
+      message: 'Logged out successfully',
+      userId,
+    };
+  }
+
+  /**
+   * Refreshes JWT access token using a valid refresh token with token version verification.
    */
   async refreshTokens(refreshToken: string): Promise<AuthTokens> {
     try {
@@ -644,10 +653,30 @@ export class AuthService {
         throw new UnauthorizedException('User account invalid, blocked or inactive.');
       }
 
+      if (
+        typeof payload.tokenVersion === 'number' &&
+        typeof user.tokenVersion === 'number' &&
+        payload.tokenVersion < user.tokenVersion
+      ) {
+        throw new UnauthorizedException('Refresh token has been revoked. Please sign in again.');
+      }
+
       return this.generateTokens(user);
     } catch {
       throw new UnauthorizedException('Invalid or expired refresh token. Please sign in again.');
     }
+  }
+
+  /**
+   * Helper to hash password using Argon2id with strict parameters (SDSecurity Task 1).
+   */
+  private async hashPassword(password: string): Promise<string> {
+    return argon2.hash(password, {
+      type: argon2.argon2id,
+      memoryCost: 2 ** 16, // 64 MB
+      timeCost: 3,
+      parallelism: 1,
+    });
   }
 
   private generateTokens(user: User): AuthTokens {
@@ -655,6 +684,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       role: user.systemRole,
+      tokenVersion: user.tokenVersion ?? 0,
     };
 
     const accessToken = this.jwtService.sign(payload, {
