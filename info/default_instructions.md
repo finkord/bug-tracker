@@ -114,10 +114,15 @@ PPofSE/software/
 ├── info/                                   # Documentation and operational context
 │   ├── default_instructions.md             # This file: AI agent instructions & stack context
 │   ├── TECH_STACK_AND_AUTH_PREPARATION.md  # Comprehensive architecture & evaluation document
+│   ├── PROJECT_EVOLUTION_BEYOND_LABS.md    # Evolutionary features beyond academic syllabus
+│   ├── SYSTEM_EXPANSION_PLAN_AND_CHANGES.md# Plan and detailed architecture changes
+│   ├── SDSECURITY_LAB6_AND_RBAC_PLAN.md    # Authentication and extended RBAC specification
 │   ├── commands.bash                       # CLI cheat-sheet for running and testing
 │   └── services/                           # Dedicated service technical documentation
-│       └── auth/                           # Authentication & Security service documentation
-│           └── README.md                   # Full spec: dependencies, tables, structure, flows
+│       ├── auth/                           # Authentication & Security service docs
+│       ├── frontend/                       # React 19 SPA client architecture docs
+│       ├── projects-issues/                # Workspaces & Kanban FSM service docs
+│       └── time-tracking/                  # Worklogs & analytics service docs
 ├── backend/                                # NestJS 12 REST & WebSocket API application
 │   ├── package.json
 │   ├── tsconfig.json

@@ -12,6 +12,7 @@ import {
   HttpCode,
   HttpStatus,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
@@ -69,6 +70,19 @@ export class AuthController {
     @Headers('user-agent') userAgent?: string,
   ) {
     return this.authService.login(dto, ip, userAgent);
+  }
+
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Refresh JWT access token using valid refresh token',
+    description: 'Issues a fresh 8-hour access token without requiring user to re-enter credentials.',
+  })
+  async refresh(@Body('refreshToken') refreshToken: string) {
+    if (!refreshToken) {
+      throw new BadRequestException('Refresh token is required');
+    }
+    return this.authService.refreshTokens(refreshToken);
   }
 
   @Post('2fa/verify')

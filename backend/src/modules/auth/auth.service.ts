@@ -626,6 +626,30 @@ export class AuthService {
   /**
    * Generates JWT access and refresh token pair.
    */
+  
+  /**
+   * Refreshes JWT access token using a valid refresh token.
+   */
+  async refreshTokens(refreshToken: string): Promise<AuthTokens> {
+    try {
+      const payload = this.jwtService.verify(refreshToken, {
+        secret: this.configService.get<string>(
+          'JWT_REFRESH_SECRET',
+          'super_secret_jwt_refresh_key_change_in_production_min_32_chars',
+        ),
+      });
+
+      const user = await this.usersService.findById(payload.sub);
+      if (!user || user.isBlocked || !user.isActivated) {
+        throw new UnauthorizedException('User account invalid, blocked or inactive.');
+      }
+
+      return this.generateTokens(user);
+    } catch {
+      throw new UnauthorizedException('Invalid or expired refresh token. Please sign in again.');
+    }
+  }
+
   private generateTokens(user: User): AuthTokens {
     const payload = {
       sub: user.id,
@@ -634,10 +658,14 @@ export class AuthService {
     };
 
     const accessToken = this.jwtService.sign(payload, {
-      expiresIn: (this.configService.get<string>('JWT_EXPIRES_IN', '15m') as any),
+      expiresIn: (this.configService.get<string>('JWT_EXPIRES_IN', '8h') as any),
     });
 
     const refreshToken = this.jwtService.sign(payload, {
+      secret: this.configService.get<string>(
+        'JWT_REFRESH_SECRET',
+        'super_secret_jwt_refresh_key_change_in_production_min_32_chars',
+      ),
       expiresIn: (this.configService.get<string>('JWT_REFRESH_EXPIRES_IN', '7d') as any),
     });
 

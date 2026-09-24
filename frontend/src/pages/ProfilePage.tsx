@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import { TwoFactorModal } from '../components/auth/TwoFactorModal';
 import { PasswordStrengthMeter } from '../components/auth/PasswordStrengthMeter';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import { TimeCalendar, type DayWorklog } from '../components/common/TimeCalendar';
+import type { WorklogItem } from '../api/client';
 import {
   Shield,
   ShieldCheck,
@@ -20,10 +22,79 @@ import {
   Mail,
   Send,
   ExternalLink,
+  Sparkles,
+  Flame,
+  Trophy,
+  Award,
 } from 'lucide-react';
 
 export const ProfilePage: React.FC = () => {
   const { user, refreshUser } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') === 'time' ? 'time' : 'account';
+  const setActiveTab = (tab: 'account' | 'time') => setSearchParams({ tab });
+
+  // Personal Time & Achievements state
+  const [myLogs, setMyLogs] = useState<WorklogItem[]>([]);
+  const [calendarDate, setCalendarDate] = useState<Date>(new Date());
+
+  useEffect(() => {
+    if (user) {
+      api.getMyWorklogs()
+        .then((logs) => setMyLogs(logs))
+        .catch(() => {})
+;
+    }
+  }, [user]);
+
+  // Compute daily hours for personal calendar
+  const myDailyHours: Record<string, number> = {};
+  let totalPersonalHours = 0;
+  const currentMonthPrefix = `${calendarDate.getFullYear()}-${String(calendarDate.getMonth() + 1).padStart(2, '0')}`;
+  let thisMonthPersonalHours = 0;
+
+  myLogs.forEach((l) => {
+    const hours = l.timeSpentHours || 0;
+    totalPersonalHours += hours;
+    myDailyHours[l.dateLogged] = Number(((myDailyHours[l.dateLogged] || 0) + hours).toFixed(2));
+    if (l.dateLogged.startsWith(currentMonthPrefix)) {
+      thisMonthPersonalHours += hours;
+    }
+  });
+
+  // Calculate streak (consecutive active days up to today or yesterday)
+  const sortedDates = Object.keys(myDailyHours).filter((d) => myDailyHours[d] > 0).sort().reverse();
+  let streak = 0;
+  if (sortedDates.length > 0) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const latestLoggedDate = new Date(sortedDates[0] + 'T00:00:00');
+    if (latestLoggedDate.getTime() === today.getTime() || latestLoggedDate.getTime() === yesterday.getTime()) {
+      streak = 1;
+      let checkDate = new Date(latestLoggedDate);
+      for (let i = 1; i < sortedDates.length; i++) {
+        checkDate.setDate(checkDate.getDate() - 1);
+        const checkStr = checkDate.toISOString().split('T')[0];
+        if (sortedDates.includes(checkStr)) {
+          streak++;
+        } else {
+          break;
+        }
+      }
+    }
+  }
+
+  const calendarWorklogs: DayWorklog[] = myLogs.map((l) => ({
+    id: l.id,
+    timeSpentHours: l.timeSpentHours,
+    dateLogged: l.dateLogged,
+    description: l.description,
+    issue: l.issue,
+  }));
+
   const [modalOpen, setModalOpen] = useState(false);
   const [disabling, setDisabling] = useState(false);
   const [disableCode, setDisableCode] = useState('');
@@ -131,6 +202,10 @@ export const ProfilePage: React.FC = () => {
                 >
                   {user.systemRole}
                 </span>
+
+                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                  {user.jobTitle || 'Software Developer'}
+                </span>
               </div>
               <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-0.5">
                 {user.email}
@@ -178,8 +253,167 @@ export const ProfilePage: React.FC = () => {
         </div>
       </div>
 
-      {/* Security Controls Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+      {/* Tab Switcher: Account & Security vs Personal Time & Achievements */}
+      <div className="flex items-center gap-2 border-b border-[var(--md-sys-color-outline-variant)] pb-1">
+        <button
+          type="button"
+          onClick={() => setActiveTab('account')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            activeTab === 'account'
+              ? 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] shadow-2xs'
+              : 'text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)]'
+          }`}
+        >
+          <KeyRound className="w-4 h-4" />
+          <span>Security & Account</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('time')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            activeTab === 'time'
+              ? 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] shadow-2xs'
+              : 'text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)]'
+          }`}
+        >
+          <Sparkles className="w-4 h-4 text-amber-500" />
+          <span>Personal Time & Achievements</span>
+        </button>
+      </div>
+
+      {activeTab === 'time' ? (
+        <div className="space-y-6">
+          {/* Achievements Summary Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="p-4 rounded-2xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] shadow-xs flex items-center justify-between">
+              <div className="space-y-1">
+                <span className="text-xs font-medium text-[var(--md-sys-color-on-surface-variant)]">
+                  Total Personal Logged
+                </span>
+                <p className="text-2xl font-bold text-[var(--md-sys-color-primary)]">
+                  {totalPersonalHours.toFixed(1)}h
+                </p>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                <Clock className="w-5 h-5" />
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] shadow-xs flex items-center justify-between">
+              <div className="space-y-1">
+                <span className="text-xs font-medium text-[var(--md-sys-color-on-surface-variant)]">
+                  Logged This Month
+                </span>
+                <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                  {thisMonthPersonalHours.toFixed(1)}h
+                </p>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <Trophy className="w-5 h-5" />
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] shadow-xs flex items-center justify-between">
+              <div className="space-y-1">
+                <span className="text-xs font-medium text-[var(--md-sys-color-on-surface-variant)]">
+                  Active Day Streak
+                </span>
+                <p className="text-2xl font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                  <span>{streak}</span>
+                  <span className="text-xs font-medium text-[var(--md-sys-color-on-surface-variant)]">days</span>
+                </p>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                <Flame className="w-5 h-5" />
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] shadow-xs flex items-center justify-between">
+              <div className="space-y-1">
+                <span className="text-xs font-medium text-[var(--md-sys-color-on-surface-variant)]">
+                  Worklogs Submitted
+                </span>
+                <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                  {myLogs.length}
+                </p>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                <Award className="w-5 h-5" />
+              </div>
+            </div>
+          </div>
+
+          {/* Achievement Badges Showcase */}
+          <div className="p-5 rounded-2xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] space-y-3">
+            <h4 className="text-sm font-bold text-[var(--md-sys-color-on-surface)] flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-500" />
+              <span>Personal Engineering Milestones & Badges</span>
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className={`p-3 rounded-xl border flex items-center gap-3 ${
+                streak >= 3
+                  ? 'border-amber-500/40 bg-amber-500/10'
+                  : 'border-[var(--md-sys-color-outline-variant)] bg-[var(--md-sys-color-surface-container-low)] opacity-60'
+              }`}>
+                <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-xs">
+                  🔥
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">Consistency Hero</p>
+                  <p className="text-[10px] text-[var(--md-sys-color-on-surface-variant)]">
+                    {streak >= 3 ? 'Unlocked! 3+ days streak' : 'Log work 3 days consecutively'}
+                  </p>
+                </div>
+              </div>
+
+              <div className={`p-3 rounded-xl border flex items-center gap-3 ${
+                Object.values(myDailyHours).some((h) => h >= 8)
+                  ? 'border-emerald-500/40 bg-emerald-500/10'
+                  : 'border-[var(--md-sys-color-outline-variant)] bg-[var(--md-sys-color-surface-container-low)] opacity-60'
+              }`}>
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xs">
+                  ⚡
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">Daily 8h Sprinter</p>
+                  <p className="text-[10px] text-[var(--md-sys-color-on-surface-variant)]">
+                    {Object.values(myDailyHours).some((h) => h >= 8) ? 'Unlocked! Reached 8h in 1 day' : 'Log 8 hours in a single day'}
+                  </p>
+                </div>
+              </div>
+
+              <div className={`p-3 rounded-xl border flex items-center gap-3 ${
+                myLogs.length >= 5
+                  ? 'border-blue-500/40 bg-blue-500/10'
+                  : 'border-[var(--md-sys-color-outline-variant)] bg-[var(--md-sys-color-surface-container-low)] opacity-60'
+              }`}>
+                <div className="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs">
+                  🎯
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">Active Contributor</p>
+                  <p className="text-[10px] text-[var(--md-sys-color-on-surface-variant)]">
+                    {myLogs.length >= 5 ? 'Unlocked! 5+ logged tasks' : 'Submit at least 5 worklogs'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Interactive Personal Calendar */}
+          <TimeCalendar
+            currentDate={calendarDate}
+            onDateChange={setCalendarDate}
+            dailyHours={myDailyHours}
+            worklogs={calendarWorklogs}
+            title="My Monthly Worklog Calendar"
+            subtitle="Click on any day to see the exact issues and tasks you worked on"
+            isTeamView={false}
+          />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
         {/* Account Password Card (Lab 6 Task 7: Password Change via Email) */}
         <div className="p-6 rounded-[24px] m3-card flex flex-col justify-between shadow-sm">
           <div className="space-y-4">
@@ -543,6 +777,7 @@ export const ProfilePage: React.FC = () => {
           </div>
         )}
       </div>
+      )}
 
       {/* 2FA Setup Modal */}
       <TwoFactorModal

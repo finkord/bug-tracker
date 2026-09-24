@@ -1,7 +1,9 @@
 import {
   Controller,
   Get,
+  Post,
   Patch,
+  Delete,
   Param,
   Query,
   Body,
@@ -29,9 +31,9 @@ export class UsersController {
 
   @Get('me')
   @ApiOperation({
-    summary: 'Get current user profile (SDSecurity Task 1 & Task 3)',
+    summary: 'Get current user profile',
     description:
-      'Returns current authenticated user details including email activation status and 2FA configuration.',
+      'Returns current authenticated user details including email activation status, 2FA configuration, and avatar URL.',
   })
   async getProfile(@CurrentUser() user: User) {
     return {
@@ -39,6 +41,7 @@ export class UsersController {
       fullName: user.fullName,
       email: user.email,
       systemRole: user.systemRole,
+      avatarUrl: user.avatarUrl,
       isActivated: user.isActivated,
       isBlocked: user.isBlocked,
       twoFactorEnabled: user.twoFactorEnabled,
@@ -48,12 +51,86 @@ export class UsersController {
     };
   }
 
+  @Patch('me/avatar')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Update current user avatar URL or preset',
+  })
+  async updateAvatar(
+    @CurrentUser() user: User,
+    @Body('avatarUrl') avatarUrl: string,
+  ) {
+    const updated = await this.usersService.updateAvatar(user.id, avatarUrl);
+    return {
+      message: 'Avatar updated successfully',
+      avatarUrl: updated.avatarUrl,
+    };
+  }
+
+  @Patch('me/profile')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Update current user profile info (Full name & Coworker job title)',
+  })
+  async updateProfile(
+    @CurrentUser() user: User,
+    @Body() dto: { fullName?: string; jobTitle?: string },
+  ) {
+    const updated = await this.usersService.updateProfile(user.id, dto);
+    return {
+      message: 'Profile updated successfully',
+      user: updated.toJSON(),
+    };
+  }
+
+  @Get('me/filters')
+  @ApiOperation({
+    summary: 'Get saved search filters for current user',
+  })
+  async getMyFilters(@CurrentUser() user: User) {
+    return this.usersService.getSavedFilters(user.id);
+  }
+
+  @Post('me/filters')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Save a new search filter for current user',
+  })
+  async createFilter(
+    @CurrentUser() user: User,
+    @Body() dto: { name: string; criteria: string },
+  ) {
+    return this.usersService.createSavedFilter(user.id, dto.name, dto.criteria);
+  }
+
+  @Delete('me/filters/:id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Delete a saved search filter',
+  })
+  async deleteFilter(
+    @CurrentUser() user: User,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    await this.usersService.deleteSavedFilter(user.id, id);
+    return { message: 'Filter deleted successfully' };
+  }
+
+  @Get('assignees')
+  @ApiOperation({
+    summary: 'Get active users eligible for issue assignment',
+    description: 'Returns active user info (id, fullName, email, avatarUrl, systemRole) for dropdown selects.',
+  })
+  async getAssignees() {
+    return this.usersService.findAssignees();
+  }
+
   @Get('stats')
   @UseGuards(RolesGuard)
   @Roles(SystemRole.ADMIN)
   @ApiOperation({
     summary: 'Get system security and user metrics (Admin Dashboard)',
-    description: 'Returns aggregated user totals, active counts, blocked accounts, and 2FA adoption rates.',
+    description: 'Returns aggregated user totals, active counts, blocked accounts, 2FA adoption rates, and role breakdown.',
   })
   async getStats() {
     return this.usersService.getSystemStats();
@@ -81,9 +158,9 @@ export class UsersController {
   @Roles(SystemRole.ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Change user system role (PPofSE Tier 1 RBAC)',
+    summary: 'Change user system role (Extended RBAC)',
     description:
-      'Promotes or demotes user between ADMIN and USER roles. Prevents administrators from demoting themselves.',
+      'Modifies user role across ADMIN, PROJECT_MANAGER, DEVELOPER, QA_ENGINEER, USER. Prevents administrators from demoting themselves.',
   })
   @ApiResponse({ status: 200, description: 'Role successfully modified' })
   @ApiResponse({ status: 400, description: 'Self-demotion attempt rejected' })
@@ -92,11 +169,12 @@ export class UsersController {
     @Body() dto: UpdateUserRoleDto,
     @CurrentUser() admin: User,
   ) {
-    const updated = await this.usersService.updateRole(id, dto.role, admin.id);
+    const updated = await this.usersService.updateRole(id, dto.role, admin.id, dto.jobTitle);
     return {
       message: `User #${id} role has been updated to ${updated.systemRole}`,
       userId: updated.id,
       systemRole: updated.systemRole,
+      jobTitle: updated.jobTitle,
     };
   }
 
@@ -163,4 +241,3 @@ export class UsersController {
     };
   }
 }
-

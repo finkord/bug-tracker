@@ -23,7 +23,7 @@ import { CaptchaModule } from '../captcha/captcha.module.js';
           'super_secret_jwt_access_key_change_in_production_min_32_chars',
         ),
         signOptions: {
-          expiresIn: (configService.get<string>('JWT_EXPIRES_IN', '15m') as any),
+          expiresIn: (configService.get<string>('JWT_EXPIRES_IN', '8h') as any),
         },
       }),
     }),

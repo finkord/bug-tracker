@@ -2,12 +2,13 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PassportModule } from '@nestjs/passport';
 import { User } from './entities/user.entity.js';
+import { SavedFilter } from './entities/saved-filter.entity.js';
 import { UsersService } from './users.service.js';
 import { UsersController } from './users.controller.js';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([User, SavedFilter]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
   ],
   controllers: [UsersController],
@@ -15,4 +16,3 @@ import { UsersController } from './users.controller.js';
   exports: [UsersService],
 })
 export class UsersModule {}
-

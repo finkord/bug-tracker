@@ -11,6 +11,11 @@ import { LoginAuditLog } from '../../security-audit/entities/login-audit-log.ent
 
 export enum SystemRole {
   ADMIN = 'ADMIN',
+  PROJECT_MANAGER = 'PROJECT_MANAGER',
+  DEVELOPER = 'DEVELOPER',
+  QA_ENGINEER = 'QA_ENGINEER',
+  DEVOPS_ENGINEER = 'DEVOPS_ENGINEER',
+  SECURITY_ENGINEER = 'SECURITY_ENGINEER',
   USER = 'USER',
 }
 
@@ -39,10 +44,18 @@ export class User {
   @Column({
     name: 'system_role',
     type: 'varchar',
-    length: 20,
+    length: 30,
     default: SystemRole.USER,
   })
   systemRole: SystemRole;
+
+  // Coworker work label / job title (e.g. Software Developer, DevOps, QA, Security Engineer)
+  @Column({ name: 'job_title', type: 'varchar', length: 100, nullable: true, default: 'Software Engineer' })
+  jobTitle?: string | null;
+
+  // User profile avatar image URL or preset identifier
+  @Column({ name: 'avatar_url', type: 'varchar', length: 500, nullable: true })
+  avatarUrl: string | null;
 
   // SDSecurity Task 3: Account activation status and token
   @Column({ name: 'is_activated', type: 'boolean', default: false })
@@ -113,4 +126,3 @@ export class User {
     return safeUser;
   }
 }
-

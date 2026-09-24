@@ -2,12 +2,15 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User, SystemRole } from './entities/user.entity.js';
+import { SavedFilter } from './entities/saved-filter.entity.js';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
+    @InjectRepository(SavedFilter)
+    private readonly savedFilterRepository: Repository<SavedFilter>,
   ) {}
 
   async findById(id: number): Promise<User | null> {
@@ -67,6 +70,13 @@ export class UsersService {
   }
 
   /**
+   * Updates user avatar URL or preset identifier.
+   */
+  async updateAvatar(id: number, avatarUrl: string): Promise<User> {
+    return this.update(id, { avatarUrl });
+  }
+
+  /**
    * Blocks user account (SDSecurity Task 4: Admin controls).
    */
   async blockUser(id: number): Promise<User> {
@@ -85,9 +95,9 @@ export class UsersService {
   }
 
   /**
-   * Updates user system role with self-demote protection (PPofSE Tier 1 RBAC).
+   * Updates user system role with self-demote protection (PPofSE Extended RBAC).
    */
-  async updateRole(id: number, role: SystemRole, currentUserId: number): Promise<User> {
+  async updateRole(id: number, role: SystemRole, currentUserId: number, jobTitle?: string): Promise<User> {
     const targetUser = await this.findById(id);
     if (!targetUser) {
       throw new NotFoundException(`User with ID #${id} not found`);
@@ -98,7 +108,24 @@ export class UsersService {
       throw new BadRequestException('Cannot demote your own administrator account');
     }
 
-    return this.update(id, { systemRole: role });
+    const updates: any = { systemRole: role };
+    if (jobTitle !== undefined) {
+      updates.jobTitle = jobTitle.trim();
+    }
+
+    return this.update(id, updates);
+  }
+
+  /**
+   * Updates user profile (Job Title / Work Role label and Full Name).
+   */
+  async updateProfile(userId: number, dto: { fullName?: string; jobTitle?: string }): Promise<User> {
+    const user = await this.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+    const updates: any = {};
+    if (dto.fullName) updates.fullName = dto.fullName.trim();
+    if (dto.jobTitle !== undefined) updates.jobTitle = dto.jobTitle.trim();
+    return this.update(userId, updates);
   }
 
   /**
@@ -131,6 +158,7 @@ export class UsersService {
     blockedUsers: number;
     twoFactorAdoptionCount: number;
     twoFactorPercentage: number;
+    roleBreakdown: Record<string, number>;
   }> {
     const totalUsers = await this.usersRepository.count();
     const activeUsers = await this.usersRepository.count({
@@ -144,17 +172,32 @@ export class UsersService {
     });
     const twoFactorPercentage = totalUsers > 0 ? Math.round((twoFactorAdoptionCount / totalUsers) * 100) : 0;
 
+    // Calculate user distribution per system role
+    const users = await this.usersRepository.find({ select: { systemRole: true } });
+    const roleBreakdown: Record<string, number> = {
+      [SystemRole.ADMIN]: 0,
+      [SystemRole.PROJECT_MANAGER]: 0,
+      [SystemRole.DEVELOPER]: 0,
+      [SystemRole.QA_ENGINEER]: 0,
+      [SystemRole.USER]: 0,
+    };
+    for (const u of users) {
+      const r = u.systemRole || SystemRole.USER;
+      roleBreakdown[r] = (roleBreakdown[r] || 0) + 1;
+    }
+
     return {
       totalUsers,
       activeUsers,
       blockedUsers,
       twoFactorAdoptionCount,
       twoFactorPercentage,
+      roleBreakdown,
     };
   }
 
   /**
-   * Returns list of all users with search and filtering for administrator (SDSecurity Task 4 & RBAC).
+   * Returns list of all users with search and filtering for administrator (Extended RBAC).
    */
   async findAll(
     page = 1,
@@ -197,6 +240,7 @@ export class UsersService {
         'user.fullName',
         'user.email',
         'user.systemRole',
+        'user.avatarUrl',
         'user.isActivated',
         'user.isBlocked',
         'user.twoFactorEnabled',
@@ -216,5 +260,57 @@ export class UsersService {
       totalPages: Math.ceil(total / limit) || 1,
     };
   }
-}
 
+  /**
+   * Returns active, unblocked users for assignment selectors with avatars.
+   */
+  async findAssignees(): Promise<Array<{ id: number; fullName: string; email: string; avatarUrl: string | null; systemRole: SystemRole; jobTitle?: string | null }>> {
+    return this.usersRepository.find({
+      where: { isBlocked: false },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        avatarUrl: true,
+        systemRole: true,
+        jobTitle: true,
+      },
+      order: { fullName: 'ASC' },
+    });
+  }
+
+  /**
+   * Retrieves saved search filters for a given user.
+   */
+  async getSavedFilters(userId: number): Promise<SavedFilter[]> {
+    return this.savedFilterRepository.find({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  /**
+   * Creates a new saved search filter for a given user.
+   */
+  async createSavedFilter(userId: number, name: string, criteria: string): Promise<SavedFilter> {
+    const filter = this.savedFilterRepository.create({
+      userId,
+      name,
+      criteria,
+    });
+    return this.savedFilterRepository.save(filter);
+  }
+
+  /**
+   * Deletes a saved search filter owned by a user.
+   */
+  async deleteSavedFilter(userId: number, filterId: number): Promise<void> {
+    const filter = await this.savedFilterRepository.findOne({
+      where: { id: filterId, userId },
+    });
+    if (!filter) {
+      throw new NotFoundException(`Saved filter #${filterId} not found or unauthorized`);
+    }
+    await this.savedFilterRepository.remove(filter);
+  }
+}
