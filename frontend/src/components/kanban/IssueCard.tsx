@@ -13,8 +13,6 @@ import {
   Zap,
   Flame,
   AlertCircle,
-  ArrowRight,
-  ArrowLeft,
   MessageSquare,
   Clock,
   UserPlus,
@@ -96,7 +94,7 @@ export const IssueCard: React.FC<IssueCardProps> = ({
         );
       case 'MEDIUM':
         return (
-          <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-sky-100 text-sky-950 border border-sky-300 dark:bg-sky-950/80 dark:text-sky-300 dark:border-sky-800">
+          <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-100 text-amber-950 border border-amber-300 dark:bg-amber-950/80 dark:text-amber-300 dark:border-amber-800">
             Med
           </span>
         );
@@ -108,10 +106,6 @@ export const IssueCard: React.FC<IssueCardProps> = ({
         );
     }
   };
-
-  // Order of statuses for step transitions
-  const statusFlow: IssueStatus[] = ['OPEN', 'IN_PROGRESS', 'REVIEW', 'RESOLVED', 'CLOSED'];
-  const currentIndex = statusFlow.indexOf(issue.status);
 
   // Time tracking ratio
   const logged = issue.loggedHours || 0;
@@ -196,7 +190,7 @@ export const IssueCard: React.FC<IssueCardProps> = ({
           )}
         </div>
 
-        {/* Assignee Avatar & Quick Status Buttons */}
+        {/* Assignee Avatar */}
         <div className="flex items-center gap-1.5">
           {issue.assignee ? (
             <Avatar
@@ -224,39 +218,6 @@ export const IssueCard: React.FC<IssueCardProps> = ({
               title="Unassigned"
             >
               ?
-            </div>
-          )}
-
-          {/* Quick Status Advance right after avatar */}
-          {onStatusChange && (
-            <div className="flex items-center gap-0.5 opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-              {currentIndex > 0 && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onStatusChange(issue.id, statusFlow[currentIndex - 1]);
-                  }}
-                  title={`Move to ${statusFlow[currentIndex - 1]}`}
-                  className="p-1 rounded text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-highest)] hover:text-[var(--md-sys-color-primary)] transition-colors"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                </button>
-              )}
-
-              {currentIndex < statusFlow.length - 1 && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onStatusChange(issue.id, statusFlow[currentIndex + 1]);
-                  }}
-                  title={`Move to ${statusFlow[currentIndex + 1]}`}
-                  className="p-1 rounded text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-highest)] hover:text-[var(--md-sys-color-primary)] transition-colors"
-                >
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              )}
             </div>
           )}
         </div>
