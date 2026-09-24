@@ -410,11 +410,11 @@ export const TimeTrackingPage: React.FC = () => {
 
                         let cellBadge = 'text-[var(--md-sys-color-on-surface-variant)] opacity-30';
                         if (hours > 0 && hours < 4) {
-                          cellBadge = 'bg-emerald-600 text-white font-bold dark:bg-emerald-500/25 dark:text-emerald-300';
+                          cellBadge = 'bg-emerald-100 text-emerald-950 font-bold border border-emerald-300 dark:bg-emerald-950/70 dark:text-emerald-300 dark:border-emerald-800';
                         } else if (hours >= 4 && hours < 8) {
-                          cellBadge = 'bg-emerald-700 text-white font-extrabold dark:bg-emerald-500/40 dark:text-emerald-200';
+                          cellBadge = 'bg-emerald-200 text-emerald-950 font-extrabold border border-emerald-400 dark:bg-emerald-900/60 dark:text-emerald-200 dark:border-emerald-700';
                         } else if (hours >= 8) {
-                          cellBadge = 'bg-amber-500 text-slate-950 font-extrabold dark:bg-amber-400 dark:text-slate-950';
+                          cellBadge = 'bg-amber-200 text-amber-950 font-extrabold border border-amber-400 dark:bg-amber-950/70 dark:text-amber-200 dark:border-amber-700';
                         }
 
                         return (

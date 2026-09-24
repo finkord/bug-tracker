@@ -217,11 +217,11 @@ export const TimeCalendar: React.FC<TimeCalendarProps> = ({
               // High-contrast color coding for light and dark themes
               let hoursBadgeClass = 'text-transparent';
               if (hours > 0 && hours < 4) {
-                hoursBadgeClass = 'bg-emerald-600 text-white font-bold shadow-2xs dark:bg-emerald-500/25 dark:text-emerald-300';
+                hoursBadgeClass = 'bg-emerald-100 text-emerald-950 font-bold border border-emerald-300 dark:bg-emerald-950/70 dark:text-emerald-300 dark:border-emerald-800';
               } else if (hours >= 4 && hours < 8) {
-                hoursBadgeClass = 'bg-emerald-700 text-white font-extrabold shadow-xs dark:bg-emerald-500/40 dark:text-emerald-200';
+                hoursBadgeClass = 'bg-emerald-200 text-emerald-950 font-extrabold border border-emerald-400 dark:bg-emerald-900/60 dark:text-emerald-200 dark:border-emerald-700';
               } else if (hours >= 8) {
-                hoursBadgeClass = 'bg-amber-500 text-slate-950 font-extrabold shadow-sm dark:bg-amber-400 dark:text-slate-950';
+                hoursBadgeClass = 'bg-amber-200 text-amber-950 font-extrabold border border-amber-400 dark:bg-amber-950/70 dark:text-amber-200 dark:border-amber-700';
               }
 
               return (

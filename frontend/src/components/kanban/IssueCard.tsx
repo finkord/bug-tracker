@@ -46,29 +46,29 @@ export const IssueCard: React.FC<IssueCardProps> = ({
     switch (type) {
       case 'BUG':
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
-            <Bug className="w-3 h-3" />
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-rose-100 text-rose-950 border border-rose-300 dark:bg-rose-950/80 dark:text-rose-300 dark:border-rose-800">
+            <Bug className="w-3 h-3 text-rose-600 dark:text-rose-400" />
             Bug
           </span>
         );
       case 'TASK':
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-            <CheckSquare className="w-3 h-3" />
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-blue-100 text-blue-950 border border-blue-300 dark:bg-blue-950/80 dark:text-blue-300 dark:border-blue-800">
+            <CheckSquare className="w-3 h-3 text-blue-600 dark:text-blue-400" />
             Task
           </span>
         );
       case 'FEATURE':
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-            <Sparkles className="w-3 h-3" />
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-950 border border-emerald-300 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border-emerald-800">
+            <Sparkles className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
             Feature
           </span>
         );
       case 'IMPROVEMENT':
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
-            <Zap className="w-3 h-3" />
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-purple-100 text-purple-950 border border-purple-300 dark:bg-purple-950/80 dark:text-purple-300 dark:border-purple-800">
+            <Zap className="w-3 h-3 text-purple-600 dark:text-purple-400" />
             Improvement
           </span>
         );
@@ -82,27 +82,27 @@ export const IssueCard: React.FC<IssueCardProps> = ({
     switch (priority) {
       case 'CRITICAL':
         return (
-          <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-red-600 text-white shadow-xs">
-            <Flame className="w-3 h-3" />
+          <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-rose-100 text-rose-950 border border-rose-300 dark:bg-rose-950/80 dark:text-rose-300 dark:border-rose-800 shadow-2xs">
+            <Flame className="w-3 h-3 text-rose-600 dark:text-rose-400" />
             Crit
           </span>
         );
       case 'HIGH':
         return (
-          <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-            <AlertCircle className="w-3 h-3" />
+          <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-orange-100 text-orange-950 border border-orange-300 dark:bg-orange-950/80 dark:text-orange-300 dark:border-orange-800">
+            <AlertCircle className="w-3 h-3 text-orange-600 dark:text-orange-400" />
             High
           </span>
         );
       case 'MEDIUM':
         return (
-          <span className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-600 dark:text-sky-400">
+          <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-sky-100 text-sky-950 border border-sky-300 dark:bg-sky-950/80 dark:text-sky-300 dark:border-sky-800">
             Med
           </span>
         );
       case 'LOW':
         return (
-          <span className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-500/10 text-slate-500 dark:text-slate-400">
+          <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-300 dark:bg-slate-800/80 dark:text-slate-300 dark:border-slate-700">
             Low
           </span>
         );
@@ -196,17 +196,15 @@ export const IssueCard: React.FC<IssueCardProps> = ({
           )}
         </div>
 
-        {/* Assignee Avatar with Quick Assign to Me */}
+        {/* Assignee Avatar & Quick Status Buttons */}
         <div className="flex items-center gap-1.5">
           {issue.assignee ? (
-            <div className="flex items-center gap-1">
-              <Avatar
-                name={issue.assignee.fullName}
-                avatarUrl={issue.assignee.avatarUrl}
-                role={issue.assignee.systemRole}
-                size="xs"
-              />
-            </div>
+            <Avatar
+              name={issue.assignee.fullName}
+              avatarUrl={issue.assignee.avatarUrl}
+              role={issue.assignee.systemRole}
+              size="xs"
+            />
           ) : onAssignToMe && !isAssignedToMe ? (
             <button
               type="button"
@@ -228,41 +226,41 @@ export const IssueCard: React.FC<IssueCardProps> = ({
               ?
             </div>
           )}
+
+          {/* Quick Status Advance right after avatar */}
+          {onStatusChange && (
+            <div className="flex items-center gap-0.5 opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+              {currentIndex > 0 && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onStatusChange(issue.id, statusFlow[currentIndex - 1]);
+                  }}
+                  title={`Move to ${statusFlow[currentIndex - 1]}`}
+                  className="p-1 rounded text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-highest)] hover:text-[var(--md-sys-color-primary)] transition-colors"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                </button>
+              )}
+
+              {currentIndex < statusFlow.length - 1 && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onStatusChange(issue.id, statusFlow[currentIndex + 1]);
+                  }}
+                  title={`Move to ${statusFlow[currentIndex + 1]}`}
+                  className="p-1 rounded text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-highest)] hover:text-[var(--md-sys-color-primary)] transition-colors"
+                >
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Quick Status Advance */}
-      {onStatusChange && (
-        <div className="flex items-center justify-end gap-1.5 mt-2.5 pt-2 border-t border-dashed border-[var(--md-sys-color-outline-variant)]/60 opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-          {currentIndex > 0 && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onStatusChange(issue.id, statusFlow[currentIndex - 1]);
-              }}
-              title={`Move to ${statusFlow[currentIndex - 1]}`}
-              className="p-1 rounded-md text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-highest)] hover:text-[var(--md-sys-color-primary)] transition-colors"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-            </button>
-          )}
-
-          {currentIndex < statusFlow.length - 1 && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onStatusChange(issue.id, statusFlow[currentIndex + 1]);
-              }}
-              title={`Move to ${statusFlow[currentIndex + 1]}`}
-              className="p-1 rounded-md text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-highest)] hover:text-[var(--md-sys-color-primary)] transition-colors"
-            >
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
-      )}
     </div>
   );
 };

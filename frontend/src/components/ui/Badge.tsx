@@ -32,64 +32,64 @@ export const Badge: React.FC<BadgeProps> = ({
 }) => {
   const variantStyles: Record<NonNullable<BadgeProps['variant']>, { badge: string; dot: string }> = {
     neutral: {
-      badge: 'bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] border-[var(--md-sys-color-outline-variant)]',
-      dot: 'bg-[var(--md-sys-color-outline)]',
+      badge: 'bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700',
+      dot: 'bg-slate-500 dark:bg-slate-400',
     },
     primary: {
-      badge: 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] border-transparent',
-      dot: 'bg-[var(--md-sys-color-primary)]',
+      badge: 'bg-blue-100 text-blue-900 border-blue-300 dark:bg-blue-950 dark:text-blue-200 dark:border-blue-800',
+      dot: 'bg-blue-600 dark:bg-blue-400',
     },
     secondary: {
-      badge: 'bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] border-transparent',
-      dot: 'bg-[var(--md-sys-color-secondary)]',
+      badge: 'bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700',
+      dot: 'bg-slate-600 dark:bg-slate-400',
     },
     success: {
-      badge: 'bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] border-transparent',
-      dot: 'bg-[var(--md-sys-color-success)]',
+      badge: 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800',
+      dot: 'bg-emerald-600 dark:bg-emerald-400',
     },
     warning: {
-      badge: 'bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] border-transparent',
-      dot: 'bg-[var(--md-sys-color-warning)]',
+      badge: 'bg-amber-100 text-amber-950 border-amber-300 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800',
+      dot: 'bg-amber-600 dark:bg-amber-400',
     },
     error: {
-      badge: 'bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] border-transparent',
-      dot: 'bg-[var(--md-sys-color-error)]',
+      badge: 'bg-rose-100 text-rose-950 border-rose-300 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-800',
+      dot: 'bg-rose-600 dark:bg-rose-400',
     },
     open: {
-      badge: 'bg-slate-500/10 text-slate-600 dark:text-slate-300 border-slate-500/20',
-      dot: 'bg-slate-500',
+      badge: 'bg-slate-100 text-slate-800 border-slate-300 font-semibold dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700',
+      dot: 'bg-slate-500 dark:bg-slate-400',
     },
     'in-progress': {
-      badge: 'bg-blue-500/10 text-blue-600 dark:text-blue-300 border-blue-500/20',
-      dot: 'bg-blue-500',
+      badge: 'bg-blue-100 text-blue-900 border-blue-300 font-semibold dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800',
+      dot: 'bg-blue-600 dark:bg-blue-400',
     },
     review: {
-      badge: 'bg-purple-500/10 text-purple-600 dark:text-purple-300 border-purple-500/20',
-      dot: 'bg-purple-500',
+      badge: 'bg-purple-100 text-purple-900 border-purple-300 font-semibold dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800',
+      dot: 'bg-purple-600 dark:bg-purple-400',
     },
     resolved: {
-      badge: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border-emerald-500/20',
-      dot: 'bg-emerald-500',
+      badge: 'bg-emerald-100 text-emerald-900 border-emerald-300 font-semibold dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800',
+      dot: 'bg-emerald-600 dark:bg-emerald-400',
     },
     closed: {
-      badge: 'bg-zinc-500/10 text-zinc-500 dark:text-zinc-400 border-zinc-500/20',
-      dot: 'bg-zinc-400',
+      badge: 'bg-zinc-100 text-zinc-800 border-zinc-300 font-semibold dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700',
+      dot: 'bg-zinc-500 dark:bg-zinc-400',
     },
     low: {
-      badge: 'bg-slate-500/10 text-slate-600 dark:text-slate-300 border-slate-500/20',
-      dot: 'bg-slate-400',
+      badge: 'bg-slate-100 text-slate-800 border-slate-300 font-semibold dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
+      dot: 'bg-slate-500 dark:bg-slate-400',
     },
     medium: {
-      badge: 'bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-500/20',
-      dot: 'bg-amber-500',
+      badge: 'bg-amber-100 text-amber-950 border-amber-300 font-semibold dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800',
+      dot: 'bg-amber-600 dark:bg-amber-400',
     },
     high: {
-      badge: 'bg-orange-500/10 text-orange-600 dark:text-orange-300 border-orange-500/20',
-      dot: 'bg-orange-500',
+      badge: 'bg-orange-100 text-orange-950 border-orange-300 font-semibold dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800',
+      dot: 'bg-orange-600 dark:bg-orange-400',
     },
     critical: {
-      badge: 'bg-red-500/15 text-red-600 dark:text-red-300 border-red-500/30 font-semibold',
-      dot: 'bg-red-500 animate-pulse',
+      badge: 'bg-rose-100 text-rose-950 border-rose-300 font-bold dark:bg-rose-950 dark:text-rose-300 dark:border-rose-800',
+      dot: 'bg-rose-600 dark:bg-rose-400 animate-pulse',
     },
   };
 
@@ -103,7 +103,7 @@ export const Badge: React.FC<BadgeProps> = ({
   return (
     <span
       className={cn(
-        'inline-flex items-center font-medium rounded-md border select-none transition-colors',
+        'inline-flex items-center font-semibold rounded-md border select-none transition-colors',
         currentVariant.badge,
         sizeStyles[size],
         className,
