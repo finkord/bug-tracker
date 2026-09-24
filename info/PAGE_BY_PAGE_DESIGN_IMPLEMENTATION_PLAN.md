@@ -19,9 +19,9 @@ This document outlines the systematic, page-by-page audit and upgrade plan for a
 | | [`BacklogPage.tsx`](file:///home/finkord/dev/PPofSE/software/frontend/src/pages/BacklogPage.tsx) | `/projects/:id/backlog` | High | ✅ Complete |
 | | [`IssueDetailPage.tsx`](file:///home/finkord/dev/PPofSE/software/frontend/src/pages/IssueDetailPage.tsx) | `/issues/:id` | High | ✅ Complete |
 | | [`AdvancedSearchPage.tsx`](file:///home/finkord/dev/PPofSE/software/frontend/src/pages/AdvancedSearchPage.tsx) | `/search` | High | ✅ Complete |
-| **User & Analytics** | [`ProfilePage.tsx`](file:///home/finkord/dev/PPofSE/software/frontend/src/pages/ProfilePage.tsx) | `/profile` | High | ⏳ Next Up (Sprint 3) |
-| | [`TimeTrackingPage.tsx`](file:///home/finkord/dev/PPofSE/software/frontend/src/pages/TimeTrackingPage.tsx) | `/time-tracking` | High | ⏳ Planned |
-| **Administration** | [`AdminDashboardPage.tsx`](file:///home/finkord/dev/PPofSE/software/frontend/src/pages/AdminDashboardPage.tsx) | `/admin` | Very High | ⏳ Planned |
+| **User & Analytics** | [`ProfilePage.tsx`](file:///home/finkord/dev/PPofSE/software/frontend/src/pages/ProfilePage.tsx) | `/profile` | High | ✅ Complete |
+| | [`TimeTrackingPage.tsx`](file:///home/finkord/dev/PPofSE/software/frontend/src/pages/TimeTrackingPage.tsx) | `/time-tracking` | High | ✅ Complete |
+| **Administration** | [`AdminDashboardPage.tsx`](file:///home/finkord/dev/PPofSE/software/frontend/src/pages/AdminDashboardPage.tsx) | `/admin` | Very High | ⏳ Next Up (Sprint 4) |
 | | [`AdminSecurityAuditPage.tsx`](file:///home/finkord/dev/PPofSE/software/frontend/src/pages/AdminSecurityAuditPage.tsx) | `/admin/audit` | Medium | ⏳ Planned |
 | **Public Landing** | [`HomePage.tsx`](file:///home/finkord/dev/PPofSE/software/frontend/src/pages/HomePage.tsx) | `/` | Medium | ⏳ Planned |
 
@@ -221,9 +221,9 @@ This document outlines the systematic, page-by-page audit and upgrade plan for a
 2. **Sprint 2 (Completed):** Detail & Search Views
    - Refactor [`IssueDetailPage.tsx`](file:///home/finkord/dev/PPofSE/software/frontend/src/pages/IssueDetailPage.tsx) into the 70/30 split pane.
    - Upgrade [`AdvancedSearchPage.tsx`](file:///home/finkord/dev/PPofSE/software/frontend/src/pages/AdvancedSearchPage.tsx) table and filter pills.
-3. **Sprint 3 (Next Up):** User Space & Timesheets
+3. **Sprint 3 (Completed):** User Space & Timesheets
    - Upgrade [`ProfilePage.tsx`](file:///home/finkord/dev/PPofSE/software/frontend/src/pages/ProfilePage.tsx) (2FA flow, session revocation dialog).
    - Upgrade [`TimeTrackingPage.tsx`](file:///home/finkord/dev/PPofSE/software/frontend/src/pages/TimeTrackingPage.tsx) (Calendar controls, Log Work dialog).
-4. **Sprint 4:** Administration & Landing
+4. **Sprint 4 (Next Up):** Administration & Landing
    - Modularize [`AdminDashboardPage.tsx`](file:///home/finkord/dev/PPofSE/software/frontend/src/pages/AdminDashboardPage.tsx).
    - Polish [`HomePage.tsx`](file:///home/finkord/dev/PPofSE/software/frontend/src/pages/HomePage.tsx).

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../api/client';
-import { ShieldCheck, Copy, Check, X, Loader2, KeyRound } from 'lucide-react';
+import { ShieldCheck, Copy, Check, KeyRound } from 'lucide-react';
+import { Modal } from '../ui/Modal';
+import { Button } from '../ui/Button';
 
 interface Props {
   isOpen: boolean;
@@ -63,118 +65,117 @@ export const TwoFactorModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in-50">
-      <div className="relative w-full max-w-md p-6 sm:p-8 rounded-[28px] m3-card shadow-2xl transition-colors">
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-full text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] transition-all"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        {/* Modal Header */}
-        <div className="flex items-center gap-3.5 mb-5">
-          <div className="w-12 h-12 rounded-[18px] bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center">
-            <ShieldCheck className="w-6 h-6" />
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center">
+            <ShieldCheck className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-[var(--md-sys-color-on-surface)]">Set Up Two-Step Verification</h3>
-            <p className="text-xs text-[var(--md-sys-color-on-surface-variant)]">Protect your account with an authenticator app</p>
+            <h3 className="text-base font-bold text-[var(--md-sys-color-on-surface)]">
+              Two-Step Verification
+            </h3>
+            <p className="text-xs text-[var(--md-sys-color-on-surface-variant)]">
+              Protect your account with an authenticator app
+            </p>
           </div>
         </div>
+      }
+      size="md"
+    >
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-12 gap-3">
+          <div className="w-8 h-8 rounded-full border-2 border-[var(--md-sys-color-primary)] border-t-transparent animate-spin" />
+          <span className="text-xs text-[var(--md-sys-color-on-surface-variant)] font-medium">
+            Generating secure TOTP key...
+          </span>
+        </div>
+      ) : (
+        <form onSubmit={handleConfirm} className="space-y-4 pt-2">
+          {error && (
+            <div className="p-3 text-xs rounded-xl bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] border border-[var(--md-sys-color-error)]/20 font-medium">
+              {error}
+            </div>
+          )}
 
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-12 gap-3">
-            <Loader2 className="w-8 h-8 text-[var(--md-sys-color-primary)] animate-spin" />
-            <span className="text-sm text-[var(--md-sys-color-on-surface-variant)]">Generating secure TOTP key...</span>
-          </div>
-        ) : (
-          <form onSubmit={handleConfirm} className="space-y-4">
-            {error && (
-              <div className="p-3.5 text-xs rounded-[16px] bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] border border-[var(--md-sys-color-error)]/20 font-medium">
-                {error}
+          {/* QR Code Container */}
+          <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]">
+            {qrCodeUrl && (
+              <div className="p-2.5 bg-white rounded-xl shadow-xs">
+                <img src={qrCodeUrl} alt="2FA TOTP QR Code" className="w-40 h-40 block" />
               </div>
             )}
+            <p className="text-xs text-center text-[var(--md-sys-color-on-surface-variant)] mt-2.5 max-w-xs font-medium">
+              Scan with <strong>Google Authenticator</strong>, <strong>Microsoft Authenticator</strong>, or <strong>Authy</strong>.
+            </p>
+          </div>
 
-            {/* QR Code Container */}
-            <div className="flex flex-col items-center justify-center p-5 rounded-[22px] bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]">
-              {qrCodeUrl && (
-                <div className="p-3 bg-white rounded-[16px] shadow-sm">
-                  <img src={qrCodeUrl} alt="2FA TOTP QR Code" className="w-44 h-44 block" />
-                </div>
-              )}
-              <p className="text-xs text-center text-[var(--md-sys-color-on-surface-variant)] mt-3 max-w-xs">
-                Scan with <strong>Google Authenticator</strong>, <strong>Microsoft Authenticator</strong>, or <strong>Authy</strong>.
-              </p>
-            </div>
-
-            {/* Manual Secret Key */}
-            <div>
-              <label className="block text-xs font-medium text-[var(--md-sys-color-on-surface-variant)] mb-1">
-                Manual Key (if camera unavailable):
-              </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  readOnly
-                  value={secret}
-                  className="w-full px-3 py-2 text-xs font-mono rounded-[14px] m3-input text-[var(--md-sys-color-primary)] select-all"
-                />
-                <button
-                  type="button"
-                  onClick={handleCopy}
-                  className="px-3.5 py-2 rounded-[14px] m3-btn-tonal text-xs font-medium flex items-center gap-1.5 transition-all"
-                  title="Copy secret key"
-                >
-                  {copied ? <Check className="w-4 h-4 text-[var(--md-sys-color-success)]" /> : <Copy className="w-4 h-4" />}
-                  <span>{copied ? 'Copied' : 'Copy'}</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Code Verification Input */}
-            <div>
-              <label className="block text-xs font-medium text-[var(--md-sys-color-on-surface-variant)] mb-1.5">
-                Enter 6-digit passcode from app:
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  maxLength={6}
-                  value={code}
-                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-                  placeholder="000000"
-                  className="w-full text-center tracking-[0.5em] text-2xl font-mono py-3 m3-input font-bold"
-                  autoFocus
-                />
-              </div>
-            </div>
-
-            {/* Submit Button */}
-            <div className="flex gap-3 pt-2">
-              <button
+          {/* Manual Secret Key */}
+          <div>
+            <label className="block text-[11px] font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider mb-1">
+              Manual Key (if camera unavailable):
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                readOnly
+                value={secret}
+                className="w-full px-3 py-2 text-xs font-mono rounded-lg bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-primary)] border border-[var(--md-sys-color-outline-variant)] select-all font-semibold"
+              />
+              <Button
                 type="button"
-                onClick={onClose}
-                className="flex-1 py-3 m3-btn-outline text-sm"
+                variant="tonal"
+                size="sm"
+                onClick={handleCopy}
+                leftIcon={copied ? <Check className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" /> : <Copy className="w-3.5 h-3.5" />}
               >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={submitting || code.length !== 6}
-                className="flex-1 py-3 m3-btn-filled text-sm shadow-sm flex items-center justify-center gap-2"
-              >
-                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
-                <span>Activate 2FA</span>
-              </button>
+                {copied ? 'Copied' : 'Copy'}
+              </Button>
             </div>
-          </form>
-        )}
-      </div>
-    </div>
+          </div>
+
+          {/* Code Verification Input */}
+          <div>
+            <label className="block text-[11px] font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider mb-1">
+              Enter 6-digit passcode from app:
+            </label>
+            <input
+              type="text"
+              maxLength={6}
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+              placeholder="000000"
+              className="w-full text-center tracking-[0.4em] text-xl font-mono py-2 rounded-xl bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] font-bold focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)]"
+              autoFocus
+            />
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-[var(--md-sys-color-outline-variant)]">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="filled"
+              size="sm"
+              isLoading={submitting}
+              disabled={code.length !== 6}
+              leftIcon={<KeyRound className="w-3.5 h-3.5" />}
+            >
+              Activate 2FA
+            </Button>
+          </div>
+        </form>
+      )}
+    </Modal>
   );
 };

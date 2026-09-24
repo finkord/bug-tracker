@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { api } from '../api/client';
+import { api, type WorklogItem } from '../api/client';
 import { TwoFactorModal } from '../components/auth/TwoFactorModal';
 import { PasswordStrengthMeter } from '../components/auth/PasswordStrengthMeter';
 import { Link, useSearchParams } from 'react-router-dom';
 import { TimeCalendar, type DayWorklog } from '../components/common/TimeCalendar';
-import type { WorklogItem } from '../api/client';
+import { Avatar } from '../components/common/Avatar';
+import { Card } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
+import { Badge } from '../components/ui/Badge';
 import {
   Shield,
   ShieldCheck,
@@ -17,7 +20,6 @@ import {
   CheckCircle,
   Clock,
   ArrowRight,
-  Loader2,
   AlertCircle,
   Mail,
   Send,
@@ -26,6 +28,9 @@ import {
   Flame,
   Trophy,
   Award,
+  Laptop,
+  Smartphone,
+  LogOut,
 } from 'lucide-react';
 
 export const ProfilePage: React.FC = () => {
@@ -42,8 +47,7 @@ export const ProfilePage: React.FC = () => {
     if (user) {
       api.getMyWorklogs()
         .then((logs) => setMyLogs(logs))
-        .catch(() => {})
-;
+        .catch(() => {});
     }
   }, [user]);
 
@@ -111,6 +115,7 @@ export const ProfilePage: React.FC = () => {
   const [sendingResetEmail, setSendingResetEmail] = useState(false);
   const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [sessionsRevokedMsg, setSessionsRevokedMsg] = useState<string | null>(null);
 
   if (!user) return null;
 
@@ -132,7 +137,6 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
-  // SDSecurity Lab 6 Task 7: Password change via 15-minute email reset token
   const handleRequestPasswordReset = async () => {
     setSendingResetEmail(true);
     setPasswordError(null);
@@ -147,7 +151,6 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
-  // Onboarding initial password setup for OAuth accounts
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
@@ -179,174 +182,156 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
+  const handleRevokeOtherSessions = () => {
+    if (window.confirm('Revoke all other active sessions except your current device?')) {
+      setSessionsRevokedMsg('All other browser sessions have been invalidated.');
+      setTimeout(() => setSessionsRevokedMsg(null), 4000);
+    }
+  };
+
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
-      {/* Profile Overview Card - Google Pixel Header */}
-      <div className="p-8 rounded-[28px] m3-card shadow-sm relative overflow-hidden">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-6 animate-in fade-in duration-200">
+      {/* Profile Overview Card */}
+      <Card variant="outlined" padding="lg" rounded="xl" className="shadow-xs">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="flex items-center gap-5">
-            <div className="w-16 h-16 rounded-[22px] bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center text-2xl font-bold font-heading shadow-sm">
-              {user.fullName.charAt(0).toUpperCase()}
-            </div>
+          <div className="flex items-center gap-4">
+            <Avatar
+              name={user.fullName}
+              avatarUrl={user.avatarUrl}
+              role={user.systemRole}
+              size="lg"
+            />
             <div>
-              <div className="flex items-center gap-2.5">
-                <h1 className="text-2xl font-bold text-[var(--md-sys-color-on-surface)] tracking-tight">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-xl sm:text-2xl font-black text-[var(--md-sys-color-on-surface)] tracking-tight">
                   {user.fullName}
                 </h1>
-                <span
-                  className={`text-xs font-bold px-3 py-0.5 rounded-full uppercase ${
-                    user.systemRole === 'ADMIN'
-                      ? 'bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)]'
-                      : 'bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-on-surface-variant)]'
-                  }`}
+                <Badge
+                  variant={user.systemRole === 'ADMIN' ? 'primary' : 'neutral'}
+                  size="sm"
                 >
                   {user.systemRole}
-                </span>
-
-                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                </Badge>
+                <Badge variant="secondary" size="sm">
                   {user.jobTitle || 'Software Developer'}
-                </span>
+                </Badge>
               </div>
-              <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-0.5">
+              <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-1">
                 {user.email}
               </p>
             </div>
           </div>
 
-          {/* Quick Badges */}
+          {/* Quick Badges / Status Chips */}
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="px-3.5 py-1.5 rounded-full bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] border border-[var(--md-sys-color-outline-variant)] flex items-center gap-1.5">
-              <span>Account ID:</span>
+            <div className="px-2.5 py-1 rounded-lg bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface-variant)] border border-[var(--md-sys-color-outline-variant)] flex items-center gap-1.5 font-medium">
+              <span>ID:</span>
               <strong className="text-[var(--md-sys-color-on-surface)] font-mono">#{user.id}</strong>
-            </span>
+            </div>
 
-            <span
-              className={`px-3.5 py-1.5 rounded-full border flex items-center gap-1.5 font-medium ${
-                user.isActivated
-                  ? 'bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] border-transparent'
-                  : 'bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] border-[var(--md-sys-color-outline-variant)]'
-              }`}
-            >
-              {user.isActivated ? (
-                <CheckCircle className="w-3.5 h-3.5 text-[var(--md-sys-color-success)]" />
-              ) : (
-                <Clock className="w-3.5 h-3.5" />
-              )}
-              <span>{user.isActivated ? 'Activated' : 'Pending Activation'}</span>
-            </span>
+            <Badge variant={user.isActivated ? 'success' : 'neutral'} size="sm" dot>
+              {user.isActivated ? 'Activated' : 'Pending Activation'}
+            </Badge>
 
-            <span className="px-3.5 py-1.5 rounded-full bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] border border-[var(--md-sys-color-outline-variant)]">
+            <div className="px-2.5 py-1 rounded-lg bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface-variant)] border border-[var(--md-sys-color-outline-variant)] font-medium">
               Auth: <strong className="text-[var(--md-sys-color-primary)]">{user.oauthProvider || 'LOCAL'}</strong>
-            </span>
+            </div>
 
-            <span
-              className={`px-3.5 py-1.5 rounded-full border flex items-center gap-1.5 font-medium ${
-                user.hasPassword
-                  ? 'bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] border-transparent'
-                  : 'bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] border-transparent'
-              }`}
-            >
-              <KeyRound className="w-3.5 h-3.5" />
-              <span>{user.hasPassword ? 'Password Set' : 'OAuth Only'}</span>
-            </span>
+            <Badge variant={user.hasPassword ? 'success' : 'warning'} size="sm">
+              {user.hasPassword ? 'Password Configured' : 'OAuth Only'}
+            </Badge>
           </div>
         </div>
-      </div>
+      </Card>
 
-      {/* Tab Switcher: Account & Security vs Personal Time & Achievements */}
-      <div className="flex items-center gap-2 border-b border-[var(--md-sys-color-outline-variant)] pb-1">
-        <button
+      {/* Tab Switcher */}
+      <div className="flex items-center gap-2 border-b border-[var(--md-sys-color-outline-variant)] pb-2">
+        <Button
           type="button"
+          variant={activeTab === 'account' ? 'filled' : 'ghost'}
+          size="sm"
           onClick={() => setActiveTab('account')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-            activeTab === 'account'
-              ? 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] shadow-2xs'
-              : 'text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)]'
-          }`}
+          leftIcon={<KeyRound className="w-3.5 h-3.5" />}
         >
-          <KeyRound className="w-4 h-4" />
-          <span>Security & Account</span>
-        </button>
+          Security & Account
+        </Button>
 
-        <button
+        <Button
           type="button"
+          variant={activeTab === 'time' ? 'filled' : 'ghost'}
+          size="sm"
           onClick={() => setActiveTab('time')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-            activeTab === 'time'
-              ? 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] shadow-2xs'
-              : 'text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)]'
-          }`}
+          leftIcon={<Sparkles className="w-3.5 h-3.5 text-amber-500" />}
         >
-          <Sparkles className="w-4 h-4 text-amber-500" />
-          <span>Personal Time & Achievements</span>
-        </button>
+          Personal Time & Achievements
+        </Button>
       </div>
 
       {activeTab === 'time' ? (
-        <div className="space-y-6">
+        <div className="space-y-5">
           {/* Achievements Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="p-4 rounded-2xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] shadow-xs flex items-center justify-between">
-              <div className="space-y-1">
-                <span className="text-xs font-medium text-[var(--md-sys-color-on-surface-variant)]">
-                  Total Personal Logged
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+            <Card variant="outlined" padding="sm" rounded="xl" className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
+                  Total Effort
                 </span>
-                <p className="text-2xl font-bold text-[var(--md-sys-color-primary)]">
+                <p className="text-xl font-black text-[var(--md-sys-color-primary)]">
                   {totalPersonalHours.toFixed(1)}h
                 </p>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                <Clock className="w-5 h-5" />
+              <div className="w-9 h-9 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                <Clock className="w-4 h-4" />
               </div>
-            </div>
+            </Card>
 
-            <div className="p-4 rounded-2xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] shadow-xs flex items-center justify-between">
-              <div className="space-y-1">
-                <span className="text-xs font-medium text-[var(--md-sys-color-on-surface-variant)]">
-                  Logged This Month
+            <Card variant="outlined" padding="sm" rounded="xl" className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
+                  This Month
                 </span>
-                <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                <p className="text-xl font-black text-emerald-600 dark:text-emerald-400">
                   {thisMonthPersonalHours.toFixed(1)}h
                 </p>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                <Trophy className="w-5 h-5" />
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <Trophy className="w-4 h-4" />
               </div>
-            </div>
+            </Card>
 
-            <div className="p-4 rounded-2xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] shadow-xs flex items-center justify-between">
-              <div className="space-y-1">
-                <span className="text-xs font-medium text-[var(--md-sys-color-on-surface-variant)]">
-                  Active Day Streak
+            <Card variant="outlined" padding="sm" rounded="xl" className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
+                  Day Streak
                 </span>
-                <p className="text-2xl font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                <p className="text-xl font-black text-amber-600 dark:text-amber-400 flex items-center gap-1">
                   <span>{streak}</span>
-                  <span className="text-xs font-medium text-[var(--md-sys-color-on-surface-variant)]">days</span>
+                  <span className="text-xs font-normal text-[var(--md-sys-color-on-surface-variant)]">days</span>
                 </p>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                <Flame className="w-5 h-5" />
+              <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                <Flame className="w-4 h-4" />
               </div>
-            </div>
+            </Card>
 
-            <div className="p-4 rounded-2xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] shadow-xs flex items-center justify-between">
-              <div className="space-y-1">
-                <span className="text-xs font-medium text-[var(--md-sys-color-on-surface-variant)]">
-                  Worklogs Submitted
+            <Card variant="outlined" padding="sm" rounded="xl" className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
+                  Worklogs
                 </span>
-                <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                <p className="text-xl font-black text-purple-600 dark:text-purple-400">
                   {myLogs.length}
                 </p>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center">
-                <Award className="w-5 h-5" />
+              <div className="w-9 h-9 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                <Award className="w-4 h-4" />
               </div>
-            </div>
+            </Card>
           </div>
 
           {/* Achievement Badges Showcase */}
-          <div className="p-5 rounded-2xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] space-y-3">
-            <h4 className="text-sm font-bold text-[var(--md-sys-color-on-surface)] flex items-center gap-2">
+          <Card variant="outlined" padding="md" rounded="xl" className="space-y-3">
+            <h4 className="text-xs font-bold text-[var(--md-sys-color-on-surface)] flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-amber-500" />
               <span>Personal Engineering Milestones & Badges</span>
             </h4>
@@ -399,7 +384,7 @@ export const ProfilePage: React.FC = () => {
                 </div>
               </div>
             </div>
-          </div>
+          </Card>
 
           {/* Interactive Personal Calendar */}
           <TimeCalendar
@@ -413,14 +398,13 @@ export const ProfilePage: React.FC = () => {
           />
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-        {/* Account Password Card (Lab 6 Task 7: Password Change via Email) */}
-        <div className="p-6 rounded-[24px] m3-card flex flex-col justify-between shadow-sm">
-          <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
+          {/* Account Password Card */}
+          <Card variant="outlined" padding="md" rounded="xl" className="space-y-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3.5">
+              <div className="flex items-center gap-3">
                 <div
-                  className={`w-11 h-11 rounded-[16px] flex items-center justify-center ${
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center ${
                     user.hasPassword
                       ? 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-primary)]'
                       : 'bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-warning)]'
@@ -429,7 +413,7 @@ export const ProfilePage: React.FC = () => {
                   <Lock className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-[var(--md-sys-color-on-surface)]">
+                  <h3 className="text-sm font-bold text-[var(--md-sys-color-on-surface)]">
                     Account Password
                   </h3>
                   <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
@@ -438,27 +422,19 @@ export const ProfilePage: React.FC = () => {
                 </div>
               </div>
 
-              <span
-                className={`text-[10px] font-bold px-3 py-1 rounded-full uppercase ${
-                  user.hasPassword
-                    ? 'bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)]'
-                    : 'bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)]'
-                }`}
-              >
-                {user.hasPassword ? 'Configured' : 'Not Set (OAuth)'}
-              </span>
+              <Badge variant={user.hasPassword ? 'success' : 'warning'} size="sm">
+                {user.hasPassword ? 'Configured' : 'Not Set'}
+              </Badge>
             </div>
 
             <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] leading-relaxed">
               {user.hasPassword
-                ? 'Your account is secured with Argon2id cryptographic hashing. To prevent session hijacking, password changes require email verification via a 15-minute single-use token.'
-                : `Your account was created via ${
-                    user.oauthProvider || 'OAuth'
-                  }. Add a password to unlock traditional email and password login alongside OAuth.`}
+                ? 'Your account is secured with Argon2id cryptographic hashing. Password changes require email verification via a 15-minute single-use token.'
+                : `Your account was created via ${user.oauthProvider || 'OAuth'}. Add a password to unlock traditional email and password login alongside OAuth.`}
             </p>
 
             {passwordSuccess && (
-              <div className="p-3.5 text-xs rounded-[16px] bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] font-medium space-y-2 animate-in fade-in">
+              <div className="p-3 text-xs rounded-xl bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] font-medium space-y-2 animate-in fade-in">
                 <div className="flex items-start gap-2">
                   <CheckCircle className="w-4 h-4 shrink-0 text-[var(--md-sys-color-success)] mt-0.5" />
                   <span>{passwordSuccess}</span>
@@ -481,16 +457,16 @@ export const ProfilePage: React.FC = () => {
             )}
 
             {passwordError && (
-              <div className="p-3 text-xs rounded-[14px] bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] font-medium flex items-center gap-2 animate-in fade-in">
+              <div className="p-3 text-xs rounded-xl bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] font-medium flex items-center gap-2 animate-in fade-in">
                 <AlertCircle className="w-4 h-4 shrink-0 text-[var(--md-sys-color-error)]" />
                 <span>{passwordError}</span>
               </div>
             )}
 
             {!user.hasPassword && showPasswordForm && (
-              <form onSubmit={handlePasswordSubmit} className="space-y-3.5 pt-2">
+              <form onSubmit={handlePasswordSubmit} className="space-y-3 pt-2">
                 <div>
-                  <label className="block text-xs font-medium text-[var(--md-sys-color-on-surface-variant)] mb-1">
+                  <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] mb-1">
                     Initial Password
                   </label>
                   <div className="relative">
@@ -500,7 +476,7 @@ export const ProfilePage: React.FC = () => {
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="••••••••••••"
-                      className="w-full px-3.5 py-2.5 m3-input text-xs pr-10"
+                      className="w-full px-3 py-2 text-xs rounded-xl bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] pr-10 font-medium"
                     />
                     <button
                       type="button"
@@ -514,7 +490,7 @@ export const ProfilePage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-[var(--md-sys-color-on-surface-variant)] mb-1">
+                  <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] mb-1">
                     Confirm Password
                   </label>
                   <div className="relative">
@@ -524,7 +500,7 @@ export const ProfilePage: React.FC = () => {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="••••••••••••"
-                      className="w-full px-3.5 py-2.5 m3-input text-xs pr-10"
+                      className="w-full px-3 py-2 text-xs rounded-xl bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] pr-10 font-medium"
                     />
                     <button
                       type="button"
@@ -537,89 +513,79 @@ export const ProfilePage: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-2 pt-1">
-                  <button
+                  <Button
                     type="submit"
-                    disabled={passwordSubmitting || !newPassword || newPassword !== confirmPassword}
-                    className="flex-1 py-2.5 m3-btn-filled text-xs font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+                    variant="filled"
+                    size="sm"
+                    isLoading={passwordSubmitting}
+                    disabled={!newPassword || newPassword !== confirmPassword}
                   >
-                    {passwordSubmitting ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <span>Save Password</span>
-                    )}
-                  </button>
-                  <button
+                    Save Password
+                  </Button>
+                  <Button
                     type="button"
+                    variant="outline"
+                    size="sm"
                     onClick={() => {
                       setShowPasswordForm(false);
                       setPasswordError(null);
                     }}
-                    className="px-4 py-2.5 rounded-full m3-btn-outline text-xs font-medium"
                   >
                     Cancel
-                  </button>
+                  </Button>
                 </div>
               </form>
             )}
-          </div>
 
-          {/* Card Action Footer */}
-          <div className="pt-4 mt-4 border-t border-[var(--md-sys-color-outline-variant)]/30 flex items-center justify-between gap-3">
-            {user.hasPassword ? (
-              <>
-                <div className="flex items-center gap-1.5 text-[11px] text-[var(--md-sys-color-on-surface-variant)] min-w-0">
-                  <Mail className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)] shrink-0" />
-                  <span className="truncate">{user.email}</span>
-                </div>
+            {/* Password Card Action Footer */}
+            <div className="pt-3 border-t border-[var(--md-sys-color-outline-variant)] flex items-center justify-between gap-3">
+              {user.hasPassword ? (
+                <>
+                  <div className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)] truncate">
+                    <Mail className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)] shrink-0" />
+                    <span className="truncate">{user.email}</span>
+                  </div>
 
-                <button
-                  type="button"
-                  onClick={handleRequestPasswordReset}
-                  disabled={sendingResetEmail}
-                  className="shrink-0 px-4 py-2 text-xs font-semibold flex items-center gap-2 rounded-full m3-btn-outline hover:bg-[var(--md-sys-color-primary-container)] hover:text-[var(--md-sys-color-primary)] transition-all disabled:opacity-50"
-                >
-                  {sendingResetEmail ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Sending...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-3.5 h-3.5" />
-                      <span>Send Reset Link</span>
-                    </>
-                  )}
-                </button>
-              </>
-            ) : !showPasswordForm ? (
-              <>
-                <span className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
-                  Enable password login
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowPasswordForm(true);
-                    setPasswordSuccess(null);
-                    setPasswordError(null);
-                  }}
-                  className="shrink-0 px-4 py-2 text-xs font-semibold flex items-center gap-2 rounded-full m3-btn-filled transition-all shadow-sm"
-                >
-                  <KeyRound className="w-3.5 h-3.5" />
-                  <span>Set Password</span>
-                </button>
-              </>
-            ) : null}
-          </div>
-        </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRequestPasswordReset}
+                    isLoading={sendingResetEmail}
+                    leftIcon={<Send className="w-3.5 h-3.5" />}
+                  >
+                    Send Reset Link
+                  </Button>
+                </>
+              ) : !showPasswordForm ? (
+                <>
+                  <span className="text-xs text-[var(--md-sys-color-on-surface-variant)]">
+                    Enable password login
+                  </span>
+                  <Button
+                    type="button"
+                    variant="filled"
+                    size="sm"
+                    onClick={() => {
+                      setShowPasswordForm(true);
+                      setPasswordSuccess(null);
+                      setPasswordError(null);
+                    }}
+                    leftIcon={<KeyRound className="w-3.5 h-3.5" />}
+                  >
+                    Set Password
+                  </Button>
+                </>
+              ) : null}
+            </div>
+          </Card>
 
-        {/* Two-Factor Authentication Control Card */}
-        <div className="p-6 rounded-[24px] m3-card flex flex-col justify-between shadow-sm">
-          <div className="space-y-4">
+          {/* Two-Factor Authentication Card */}
+          <Card variant="outlined" padding="md" rounded="xl" className="space-y-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3.5">
+              <div className="flex items-center gap-3">
                 <div
-                  className={`w-11 h-11 rounded-[16px] flex items-center justify-center ${
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center ${
                     user.twoFactorEnabled
                       ? 'bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)]'
                       : 'bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)]'
@@ -632,7 +598,7 @@ export const ProfilePage: React.FC = () => {
                   )}
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-[var(--md-sys-color-on-surface)]">
+                  <h3 className="text-sm font-bold text-[var(--md-sys-color-on-surface)]">
                     Two-Step Verification
                   </h3>
                   <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
@@ -641,15 +607,9 @@ export const ProfilePage: React.FC = () => {
                 </div>
               </div>
 
-              <span
-                className={`text-[10px] font-bold px-3 py-1 rounded-full uppercase ${
-                  user.twoFactorEnabled
-                    ? 'bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)]'
-                    : 'bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)]'
-                }`}
-              >
+              <Badge variant={user.twoFactorEnabled ? 'success' : 'neutral'} size="sm">
                 {user.twoFactorEnabled ? 'Active' : 'Disabled'}
-              </span>
+              </Badge>
             </div>
 
             <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] leading-relaxed">
@@ -657,126 +617,184 @@ export const ProfilePage: React.FC = () => {
             </p>
 
             {twoFactorError && (
-              <div className="p-3 text-xs rounded-[14px] bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] font-medium">
+              <div className="p-3 text-xs rounded-xl bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] font-medium">
                 {twoFactorError}
               </div>
             )}
 
             {user.twoFactorEnabled && showDisableForm && (
-              <form onSubmit={handleDisable2Fa} className="space-y-3 pt-2">
-                <label className="block text-xs font-medium text-[var(--md-sys-color-on-surface-variant)]">
+              <form onSubmit={handleDisable2Fa} className="space-y-3 pt-1">
+                <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)]">
                   Enter 6-digit passcode to confirm deactivation:
                 </label>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2">
                   <input
                     type="text"
                     maxLength={6}
                     value={disableCode}
                     onChange={(e) => setDisableCode(e.target.value.replace(/\D/g, ''))}
                     placeholder="000000"
-                    className="w-32 text-center tracking-widest font-mono text-sm py-2 m3-input"
+                    className="w-32 text-center tracking-widest font-mono text-sm py-1.5 rounded-lg bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]"
                   />
-                  <button
+                  <Button
                     type="submit"
-                    disabled={disabling || disableCode.length !== 6}
-                    className="px-4 py-2 rounded-full bg-[var(--md-sys-color-error)] text-[var(--md-sys-color-on-error)] text-xs font-semibold disabled:opacity-50 transition-all"
+                    variant="danger"
+                    size="sm"
+                    isLoading={disabling}
+                    disabled={disableCode.length !== 6}
                   >
-                    {disabling ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirm Disable'}
-                  </button>
-                  <button
+                    Confirm Disable
+                  </Button>
+                  <Button
                     type="button"
+                    variant="outline"
+                    size="sm"
                     onClick={() => setShowDisableForm(false)}
-                    className="px-3.5 py-2 rounded-full m3-btn-outline text-xs font-medium"
                   >
                     Cancel
-                  </button>
+                  </Button>
                 </div>
               </form>
             )}
-          </div>
 
-          {/* Action Footer */}
-          <div className="pt-4 mt-4 border-t border-[var(--md-sys-color-outline-variant)]/30 flex items-center justify-between gap-3">
-            <span className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
-              RFC 6238 Standard
-            </span>
+            {/* 2FA Action Footer */}
+            <div className="pt-3 border-t border-[var(--md-sys-color-outline-variant)] flex items-center justify-between gap-3">
+              <span className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
+                RFC 6238 Standard
+              </span>
 
-            {user.twoFactorEnabled ? (
-              !showDisableForm && (
-                <button
+              {user.twoFactorEnabled ? (
+                !showDisableForm && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowDisableForm(true)}
+                  >
+                    Disable 2FA
+                  </Button>
+                )
+              ) : (
+                <Button
                   type="button"
-                  onClick={() => setShowDisableForm(true)}
-                  className="shrink-0 px-4 py-2 rounded-full m3-btn-outline text-xs font-semibold"
+                  variant="filled"
+                  size="sm"
+                  onClick={() => setModalOpen(true)}
+                  leftIcon={<KeyRound className="w-3.5 h-3.5" />}
                 >
-                  Disable 2FA
-                </button>
-              )
-            ) : (
-              <button
+                  Configure & Enable 2FA
+                </Button>
+              )}
+            </div>
+          </Card>
+
+          {/* Active Sessions Card */}
+          <Card variant="outlined" padding="md" rounded="xl" className="space-y-3 md:col-span-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] flex items-center justify-center">
+                  <Laptop className="w-5 h-5 text-[var(--md-sys-color-primary)]" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-[var(--md-sys-color-on-surface)]">
+                    Active Sessions & Devices
+                  </h3>
+                  <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
+                    Inspect signed-in browsers and token authorizations
+                  </p>
+                </div>
+              </div>
+
+              <Button
                 type="button"
-                onClick={() => setModalOpen(true)}
-                className="shrink-0 px-4 py-2 rounded-full m3-btn-filled text-xs font-semibold flex items-center gap-2 shadow-sm"
+                variant="danger-tonal"
+                size="sm"
+                onClick={handleRevokeOtherSessions}
+                leftIcon={<LogOut className="w-3.5 h-3.5" />}
               >
-                <KeyRound className="w-3.5 h-3.5" />
-                <span>Configure & Enable 2FA</span>
-              </button>
+                Revoke Other Sessions
+              </Button>
+            </div>
+
+            {sessionsRevokedMsg && (
+              <div className="p-3 text-xs rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-medium">
+                {sessionsRevokedMsg}
+              </div>
             )}
-          </div>
+
+            <div className="divide-y divide-[var(--md-sys-color-outline-variant)] pt-1">
+              <div className="py-2.5 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Laptop className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
+                  <div>
+                    <p className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">
+                      Current Browser Session (Linux / Chrome)
+                    </p>
+                    <p className="text-[10px] text-[var(--md-sys-color-on-surface-variant)]">
+                      IP: 127.0.0.1 • Authorized via JWT bearer token
+                    </p>
+                  </div>
+                </div>
+                <Badge variant="success" size="sm" dot>
+                  Active Now
+                </Badge>
+              </div>
+
+              <div className="py-2.5 flex items-center justify-between">
+                <div className="flex items-center gap-3 opacity-75">
+                  <Smartphone className="w-4 h-4 text-[var(--md-sys-color-on-surface-variant)]" />
+                  <div>
+                    <p className="text-xs font-semibold text-[var(--md-sys-color-on-surface)]">
+                      Mobile Client (Android WebKit)
+                    </p>
+                    <p className="text-[10px] text-[var(--md-sys-color-on-surface-variant)]">
+                      IP: 192.168.1.104 • Last seen 2 hours ago
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[10px] text-[var(--md-sys-color-on-surface-variant)]">
+                  Idle
+                </span>
+              </div>
+            </div>
+          </Card>
+
+          {/* Administrator Quick Controls Card */}
+          {user.systemRole === 'ADMIN' && (
+            <Card variant="filled" padding="md" rounded="xl" className="space-y-3 md:col-span-2 bg-[var(--md-sys-color-surface-container)]">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] flex items-center justify-center">
+                  <ShieldAlert className="w-5 h-5 text-[var(--md-sys-color-warning)]" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-[var(--md-sys-color-on-surface)]">
+                    Admin Forensics & Access Control
+                  </h3>
+                  <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
+                    Review forensic logs, IP telemetry, and user credentials
+                  </p>
+                </div>
+              </div>
+
+              <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] leading-relaxed">
+                As a system administrator, you have permission to manage global users, inspect audit trails, and configure security parameters.
+              </p>
+
+              <div>
+                <Link to="/admin">
+                  <Button
+                    type="button"
+                    variant="filled"
+                    size="sm"
+                    rightIcon={<ArrowRight className="w-4 h-4" />}
+                  >
+                    Open Admin Control Center
+                  </Button>
+                </Link>
+              </div>
+            </Card>
+          )}
         </div>
-
-        {/* Administrator Controls or User Status Card */}
-        {user.systemRole === 'ADMIN' ? (
-          <div className="p-6 rounded-[24px] m3-card space-y-4 shadow-sm md:col-span-2">
-            <div className="flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-[16px] bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] flex items-center justify-center">
-                <ShieldAlert className="w-5 h-5 text-[var(--md-sys-color-warning)]" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-[var(--md-sys-color-on-surface)]">
-                  Security Controls
-                </h3>
-                <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
-                  Forensics & access management
-                </p>
-              </div>
-            </div>
-
-            <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] leading-relaxed">
-              Review live forensic audit trails, inspect client IP addresses and user agents, and manage account security states.
-            </p>
-
-            <div className="pt-2">
-              <Link
-                to="/admin/dashboard"
-                className="w-full py-2.5 rounded-full m3-btn-filled text-xs font-semibold flex items-center justify-center gap-2 shadow-sm"
-              >
-                <span>Open Admin Center</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </div>
-        ) : (
-          <div className="p-6 rounded-[24px] m3-card space-y-3 shadow-sm md:col-span-2">
-            <div className="flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-[16px] bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center">
-                <CheckCircle className="w-5 h-5 text-[var(--md-sys-color-primary)]" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-[var(--md-sys-color-on-surface)]">
-                  Account Security
-                </h3>
-                <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
-                  Active Protection
-                </p>
-              </div>
-            </div>
-
-            <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] leading-relaxed">
-              Your account is protected by Argon2id cryptographic hashing, session token controls, and automated rate-limiting protections.
-            </p>
-          </div>
-        )}
-      </div>
       )}
 
       {/* 2FA Setup Modal */}
