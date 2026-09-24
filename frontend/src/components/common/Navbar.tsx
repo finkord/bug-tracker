@@ -95,7 +95,7 @@ export const Navbar: React.FC = () => {
                   BugTracker
                 </span>
                 <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] font-semibold">
-                  v2.0
+                  v3
                 </span>
               </div>
             </Link>

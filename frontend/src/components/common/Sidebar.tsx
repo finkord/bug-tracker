@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { NavLink, useLocation, useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { NavLink, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSidebar } from '../../context/SidebarContext';
 import { api, type ProjectItem } from '../../api/client';
@@ -12,10 +12,7 @@ import {
   ShieldAlert,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
-  FolderGit2,
   X,
-  Check,
   Search,
   Shield,
   ExternalLink,
@@ -23,18 +20,14 @@ import {
 
 interface SidebarProps {
   currentProjectId?: number;
-  onProjectChange?: (projectId: number) => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ currentProjectId, onProjectChange }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ currentProjectId }) => {
   const { user } = useAuth();
   const { collapsed, toggleSidebar, mobileOpen, closeMobile } = useSidebar();
   const location = useLocation();
-  const navigate = useNavigate();
 
   const [projects, setProjects] = useState<ProjectItem[]>([]);
-  const [projectDropdownOpen, setProjectDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (user) {
@@ -44,39 +37,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentProjectId, onProjectCha
     }
   }, [user]);
 
-  // Close dropdown on click outside
-  useEffect(() => {
-    const handleOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setProjectDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleOutside);
-    return () => document.removeEventListener('mousedown', handleOutside);
-  }, []);
-
   if (!user) {
     return null;
   }
 
-  // Active project selection
+  // Active project selection for dynamic links
   const selectedProject = projects.find((p) => p.id === currentProjectId) || projects[0];
-
-  const handleSelectProject = (project: ProjectItem) => {
-    setProjectDropdownOpen(false);
-    if (onProjectChange) {
-      onProjectChange(project.id);
-    } else {
-      if (location.pathname.includes('/board')) {
-        navigate(`/projects/${project.id}/board`);
-      } else if (location.pathname.includes('/backlog')) {
-        navigate(`/projects/${project.id}/backlog`);
-      } else {
-        navigate(`/projects/${project.id}/board`);
-      }
-    }
-  };
-
   const boardPath = selectedProject ? `/projects/${selectedProject.id}/board` : '/projects';
   const backlogPath = selectedProject ? `/projects/${selectedProject.id}/backlog` : '/projects';
 
@@ -91,6 +57,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentProjectId, onProjectCha
       label: 'Projects',
       path: '/projects',
       icon: FolderKanban,
+      exact: true,
     },
     {
       label: 'Kanban Board',
@@ -134,122 +101,59 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentProjectId, onProjectCha
         }`}
       >
         {/* Brand & Logo Header backed into Sidebar */}
-        <div className="h-16 px-3.5 flex items-center justify-between border-b border-[var(--md-sys-color-outline-variant)]/40 shrink-0">
-          {collapsed ? (
-            <div className="w-full flex items-center justify-center">
-              <button
-                type="button"
-                onClick={toggleSidebar}
-                className="w-10 h-10 rounded-2xl bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-surface)] hover:text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center shadow-xs transition-all cursor-pointer group"
-                title="Expand sidebar navigation"
-                aria-label="Expand sidebar navigation"
-              >
-                <ChevronRight className="w-5 h-5 transition-transform group-hover:translate-x-0.5" />
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center justify-between w-full">
-              <Link
-                to="/"
-                className="flex items-center gap-2.5 group transition-transform active:scale-95"
-              >
-                <div className="w-9 h-9 rounded-2xl bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] flex items-center justify-center shadow-xs">
-                  <Shield className="w-5 h-5 transition-transform group-hover:rotate-12" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="font-bold text-sm tracking-tight text-[var(--md-sys-color-on-surface)] leading-none">
-                    BugTracker
-                  </span>
-                  <span className="text-[10px] font-mono text-[var(--md-sys-color-on-surface-variant)] mt-0.5">
-                    Enterprise v2.0
-                  </span>
-                </div>
-              </Link>
+        {collapsed ? (
+          /* Collapsed State: Logo on top, expand button BELOW logo */
+          <div className="py-3 px-2 flex flex-col items-center gap-2 border-b border-[var(--md-sys-color-outline-variant)]/30 shrink-0">
+            <Link
+              to="/"
+              className="w-10 h-10 rounded-2xl bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] flex items-center justify-center shadow-xs hover:scale-105 active:scale-95 transition-all"
+              title="BugTracker v3"
+            >
+              <Shield className="w-5 h-5" />
+            </Link>
 
-              <button
-                type="button"
-                onClick={toggleSidebar}
-                className="p-1.5 rounded-full text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)] transition-colors cursor-pointer"
-                title="Collapse sidebar rail"
-                aria-label="Collapse sidebar rail"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Workspace Quick Switcher */}
-        <div className="p-3 border-b border-[var(--md-sys-color-outline-variant)]/40 shrink-0 relative" ref={dropdownRef}>
-          {collapsed ? (
             <button
               type="button"
-              onClick={() => setProjectDropdownOpen((prev) => !prev)}
-              className="w-10 h-10 mx-auto rounded-xl bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-on-surface)] font-bold flex items-center justify-center text-xs transition-colors cursor-pointer shadow-2xs"
-              title={`Switch Workspace (Active: ${selectedProject ? selectedProject.key : 'BT'})`}
+              onClick={toggleSidebar}
+              className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center shadow-2xs transition-all cursor-pointer group"
+              title="Expand sidebar navigation"
+              aria-label="Expand sidebar navigation"
             >
-              {selectedProject ? selectedProject.key : 'BT'}
+              <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
             </button>
-          ) : (
-            <div className="w-full">
-              <div className="flex items-center justify-between mb-1 px-1">
-                <span className="text-[10px] font-bold tracking-wider uppercase text-[var(--md-sys-color-on-surface-variant)]">
-                  Active Workspace
+          </div>
+        ) : (
+          /* Expanded State: Logo on top, collapse button BELOW logo */
+          <div className="p-3.5 flex flex-col gap-2.5 border-b border-[var(--md-sys-color-outline-variant)]/30 shrink-0">
+            <Link
+              to="/"
+              className="flex items-center gap-2.5 group transition-transform active:scale-95 px-0.5"
+            >
+              <div className="w-9 h-9 rounded-2xl bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] flex items-center justify-center shadow-xs">
+                <Shield className="w-5 h-5 transition-transform group-hover:rotate-12" />
+              </div>
+              <div className="flex flex-col">
+                <span className="font-bold text-sm tracking-tight text-[var(--md-sys-color-on-surface)] leading-none">
+                  BugTracker
                 </span>
-                <span className="text-[10px] font-mono text-[var(--md-sys-color-primary)] font-bold">
-                  {selectedProject ? selectedProject.key : 'BT'}
+                <span className="text-[10px] font-mono text-[var(--md-sys-color-primary)] font-bold mt-0.5">
+                  Enterprise v3
                 </span>
               </div>
+            </Link>
 
-              {/* Workspace Selector Button */}
-              <button
-                type="button"
-                onClick={() => setProjectDropdownOpen((prev) => !prev)}
-                className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-2xl bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] text-left transition-colors cursor-pointer"
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <FolderGit2 className="w-4 h-4 text-[var(--md-sys-color-primary)] shrink-0" />
-                  <span className="text-xs font-bold text-[var(--md-sys-color-on-surface)] block truncate">
-                    {selectedProject ? selectedProject.name : 'Select Project'}
-                  </span>
-                </div>
-                <ChevronDown className="w-3.5 h-3.5 text-[var(--md-sys-color-on-surface-variant)] shrink-0" />
-              </button>
-            </div>
-          )}
-
-          {/* Project Switcher Dropdown */}
-          {projectDropdownOpen && (
-            <div className={`absolute top-full ${collapsed ? 'left-18' : 'left-3 right-3'} mt-1.5 rounded-2xl bg-[var(--md-sys-color-surface-container-lowest)] shadow-xl p-1.5 space-y-1 z-50 w-64 animate-in fade-in zoom-in-95 duration-150`}>
-              <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)] border-b border-[var(--md-sys-color-outline-variant)]/30">
-                Switch Project
-              </div>
-              <div className="max-h-56 overflow-y-auto space-y-0.5">
-                {projects.map((p) => {
-                  const isSelected = selectedProject?.id === p.id;
-                  return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => handleSelectProject(p)}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-colors cursor-pointer ${
-                        isSelected
-                          ? 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] font-bold'
-                          : 'text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container-high)]'
-                      }`}
-                    >
-                      <div className="truncate text-left mr-2">
-                        <span className="block truncate">{p.name}</span>
-                        <span className="text-[10px] font-mono opacity-70">{p.key}</span>
-                      </div>
-                      {isSelected && <Check className="w-3.5 h-3.5 shrink-0" />}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              className="w-full flex items-center justify-between px-3 py-1.5 rounded-xl bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] text-xs font-medium transition-colors cursor-pointer"
+              title="Collapse sidebar rail"
+              aria-label="Collapse sidebar rail"
+            >
+              <span className="text-[11px]">Collapse menu</span>
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+          </div>
+        )}
 
         {/* Navigation Items (M3 Navigation Drawer / Rail) */}
         <nav className="flex-1 py-3 px-2 space-y-1 overflow-y-auto">
@@ -279,7 +183,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentProjectId, onProjectCha
           })}
         </nav>
 
-        {/* Bottom Section: Swagger link & Expand trigger */}
+        {/* Bottom Section: Swagger link */}
         <div className="p-3 border-t border-[var(--md-sys-color-outline-variant)]/40 shrink-0 space-y-1">
           {!collapsed ? (
             <a
@@ -325,7 +229,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentProjectId, onProjectCha
                   <Shield className="w-4 h-4" />
                 </div>
                 <span className="font-bold text-sm text-[var(--md-sys-color-on-surface)]">
-                  BugTracker v2.0
+                  BugTracker v3
                 </span>
               </div>
               <button

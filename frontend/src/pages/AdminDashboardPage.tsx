@@ -809,7 +809,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                     <div className="flex flex-wrap gap-2">
                       {[
                         { label: 'Scheduled Maintenance', msg: '⚠️ Scheduled database maintenance at 02:00 UTC (15m window)', sev: 'warning' as BroadcastSeverity },
-                        { label: 'BugTracker v2.0 Live', msg: '🚀 BugTracker v2.0 Operational: Real-Time Sockets & SeaweedFS Active', sev: 'info' as BroadcastSeverity },
+                        { label: 'BugTracker v3 Live', msg: '🚀 BugTracker v3 Operational: Real-Time Sockets & SeaweedFS Active', sev: 'info' as BroadcastSeverity },
                         { label: 'System Incident', msg: '🔥 Incident: API latency degradation under active DevOps investigation', sev: 'critical' as BroadcastSeverity },
                         { label: 'Incident Resolved', msg: '✅ Incident Resolved: All systems verified and fully operational', sev: 'success' as BroadcastSeverity },
                       ].map((preset) => (
