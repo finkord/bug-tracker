@@ -76,20 +76,20 @@ export const Badge: React.FC<BadgeProps> = ({
       dot: 'bg-[var(--md-sys-color-outline)] opacity-60',
     },
     low: {
-      badge: 'bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)]',
-      dot: 'bg-[var(--md-sys-color-outline)] opacity-60',
+      badge: 'bg-[var(--md-sys-color-priority-low-container)] text-[var(--md-sys-color-priority-on-low-container)] font-medium',
+      dot: 'bg-[var(--md-sys-color-priority-low)]',
     },
     medium: {
-      badge: 'bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)]',
-      dot: 'bg-[var(--md-sys-color-warning)]',
+      badge: 'bg-[var(--md-sys-color-priority-medium-container)] text-[var(--md-sys-color-priority-on-medium-container)] font-semibold',
+      dot: 'bg-[var(--md-sys-color-priority-medium)]',
     },
     high: {
-      badge: 'bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] font-bold',
-      dot: 'bg-[var(--md-sys-color-warning)]',
+      badge: 'bg-[var(--md-sys-color-priority-high-container)] text-[var(--md-sys-color-priority-on-high-container)] font-bold',
+      dot: 'bg-[var(--md-sys-color-priority-high)]',
     },
     critical: {
-      badge: 'bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] font-bold',
-      dot: 'bg-[var(--md-sys-color-error)] animate-pulse',
+      badge: 'bg-[var(--md-sys-color-priority-critical-container)] text-[var(--md-sys-color-priority-on-critical-container)] font-bold',
+      dot: 'bg-[var(--md-sys-color-priority-critical)] animate-pulse',
     },
   };
 

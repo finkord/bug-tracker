@@ -137,13 +137,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentProjectId, onProjectCha
         <div className="h-16 px-3.5 flex items-center justify-between border-b border-[var(--md-sys-color-outline-variant)]/40 shrink-0">
           {collapsed ? (
             <div className="w-full flex items-center justify-center">
-              <Link
-                to="/"
-                className="w-10 h-10 rounded-2xl bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] flex items-center justify-center shadow-xs hover:scale-105 active:scale-95 transition-all"
-                title="BugTracker v2.0"
+              <button
+                type="button"
+                onClick={toggleSidebar}
+                className="w-10 h-10 rounded-2xl bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-surface)] hover:text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center shadow-xs transition-all cursor-pointer group"
+                title="Expand sidebar navigation"
+                aria-label="Expand sidebar navigation"
               >
-                <Shield className="w-5 h-5" />
-              </Link>
+                <ChevronRight className="w-5 h-5 transition-transform group-hover:translate-x-0.5" />
+              </button>
             </div>
           ) : (
             <div className="flex items-center justify-between w-full">
@@ -294,15 +296,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentProjectId, onProjectCha
               <ExternalLink className="w-3.5 h-3.5 opacity-60" />
             </a>
           ) : (
-            <button
-              type="button"
-              onClick={toggleSidebar}
-              className="w-10 h-10 mx-auto rounded-full flex items-center justify-center text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)] transition-colors cursor-pointer"
-              title="Expand sidebar"
-              aria-label="Expand sidebar"
+            <a
+              href="http://localhost:3000/api/docs"
+              target="_blank"
+              rel="noreferrer"
+              className="w-10 h-10 mx-auto rounded-xl flex items-center justify-center text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)] transition-colors"
+              title="Swagger OpenAPI Documentation"
             >
-              <ChevronRight className="w-4 h-4" />
-            </button>
+              <ExternalLink className="w-4 h-4" />
+            </a>
           )}
         </div>
       </aside>

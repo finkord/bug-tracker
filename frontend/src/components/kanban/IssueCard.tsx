@@ -80,27 +80,27 @@ export const IssueCard: React.FC<IssueCardProps> = ({
     switch (priority) {
       case 'CRITICAL':
         return (
-          <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] border border-[var(--md-sys-color-error)]/30">
-            <Flame className="w-3 h-3 text-[var(--md-sys-color-error)]" />
+          <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-[var(--md-sys-color-priority-critical-container)] text-[var(--md-sys-color-priority-on-critical-container)]">
+            <Flame className="w-3 h-3 text-[var(--md-sys-color-priority-critical)]" />
             Crit
           </span>
         );
       case 'HIGH':
         return (
-          <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] border border-[var(--md-sys-color-warning)]/30">
-            <AlertCircle className="w-3 h-3 text-[var(--md-sys-color-warning)]" />
+          <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-[var(--md-sys-color-priority-high-container)] text-[var(--md-sys-color-priority-on-high-container)]">
+            <AlertCircle className="w-3 h-3 text-[var(--md-sys-color-priority-high)]" />
             High
           </span>
         );
       case 'MEDIUM':
         return (
-          <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]">
+          <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-[var(--md-sys-color-priority-medium-container)] text-[var(--md-sys-color-priority-on-medium-container)]">
             Med
           </span>
         );
       case 'LOW':
         return (
-          <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-[var(--md-sys-color-surface-container-low)] text-[var(--md-sys-color-on-surface-variant)] border border-[var(--md-sys-color-outline-variant)]/60">
+          <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-[var(--md-sys-color-priority-low-container)] text-[var(--md-sys-color-priority-on-low-container)]">
             Low
           </span>
         );

@@ -549,9 +549,9 @@ export const BacklogPage: React.FC = () => {
                         {issue.estimatedHours ? `${issue.estimatedHours}h est` : 'No est'}
                       </span>
 
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[var(--md-sys-color-surface-container-highest)]">
+                      <Badge variant={issue.priority.toLowerCase() as any} size="sm">
                         {issue.priority}
-                      </span>
+                      </Badge>
 
                       {issue.assignee ? (
                         <Avatar
