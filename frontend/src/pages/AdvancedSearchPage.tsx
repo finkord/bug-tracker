@@ -335,7 +335,7 @@ export const AdvancedSearchPage: React.FC = () => {
       </div>
 
       {saveSuccessMsg && (
-        <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs flex items-center gap-2 animate-in fade-in">
+        <div className="p-3 rounded-xl bg-[var(--md-sys-color-success-container)] border border-[var(--md-sys-color-success)]/20 text-[var(--md-sys-color-on-success-container)] text-xs flex items-center gap-2 animate-in fade-in">
           <CheckCircle2 className="w-4 h-4 shrink-0" />
           <span>{saveSuccessMsg}</span>
         </div>
@@ -664,7 +664,7 @@ export const AdvancedSearchPage: React.FC = () => {
                     </td>
 
                     <td className="py-2.5 px-3.5 font-mono text-right whitespace-nowrap text-xs">
-                      <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                      <span className="text-[var(--md-sys-color-success)] font-bold">
                         {issue.loggedHours || 0}h
                       </span>
                       <span className="text-[var(--md-sys-color-on-surface-variant)] opacity-50 mx-1">/</span>

@@ -87,23 +87,23 @@ export const Navbar: React.FC = () => {
   // Color classes map for header banner
   const colorStyles: Record<HeaderMessageColor, { badge: string; icon: any }> = {
     blue: {
-      badge: 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30',
+      badge: 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] border border-[var(--md-sys-color-primary)]/20',
       icon: Info,
     },
     amber: {
-      badge: 'bg-amber-500/15 text-amber-800 dark:text-amber-200 border-amber-500/30',
+      badge: 'bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] border border-[var(--md-sys-color-warning)]/20',
       icon: AlertTriangle,
     },
     rose: {
-      badge: 'bg-rose-500/15 text-rose-800 dark:text-rose-200 border-rose-500/30',
+      badge: 'bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] border border-[var(--md-sys-color-error)]/20',
       icon: ShieldAlert,
     },
     emerald: {
-      badge: 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-200 border-emerald-500/30',
+      badge: 'bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] border border-[var(--md-sys-color-success)]/20',
       icon: CheckCircle2,
     },
     purple: {
-      badge: 'bg-purple-500/15 text-purple-800 dark:text-purple-200 border-purple-500/30',
+      badge: 'bg-[var(--md-sys-color-tertiary-container)] text-[var(--md-sys-color-on-tertiary-container)] border border-[var(--md-sys-color-tertiary)]/20',
       icon: Megaphone,
     },
   };
@@ -269,7 +269,7 @@ export const Navbar: React.FC = () => {
                       {user.systemRole}
                     </span>
                     {user.twoFactorEnabled && (
-                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)]">
                         2FA Active
                       </span>
                     )}
@@ -325,7 +325,7 @@ export const Navbar: React.FC = () => {
 
                 <DropdownMenuItem
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-500/10 cursor-pointer transition-colors"
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)] cursor-pointer transition-colors"
                 >
                   <LogOut className="w-4 h-4" />
                   <span>Sign Out</span>

@@ -32,64 +32,64 @@ export const Badge: React.FC<BadgeProps> = ({
 }) => {
   const variantStyles: Record<NonNullable<BadgeProps['variant']>, { badge: string; dot: string }> = {
     neutral: {
-      badge: 'bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700',
-      dot: 'bg-slate-500 dark:bg-slate-400',
+      badge: 'bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]',
+      dot: 'bg-[var(--md-sys-color-outline)]',
     },
     primary: {
-      badge: 'bg-blue-100 text-blue-900 border-blue-300 dark:bg-blue-950 dark:text-blue-200 dark:border-blue-800',
-      dot: 'bg-blue-600 dark:bg-blue-400',
+      badge: 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] border border-[var(--md-sys-color-primary)]/20',
+      dot: 'bg-[var(--md-sys-color-primary)]',
     },
     secondary: {
-      badge: 'bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700',
-      dot: 'bg-slate-600 dark:bg-slate-400',
+      badge: 'bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] border border-[var(--md-sys-color-secondary)]/20',
+      dot: 'bg-[var(--md-sys-color-secondary)]',
     },
     success: {
-      badge: 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800',
-      dot: 'bg-emerald-600 dark:bg-emerald-400',
+      badge: 'bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] border border-[var(--md-sys-color-success)]/25',
+      dot: 'bg-[var(--md-sys-color-success)]',
     },
     warning: {
-      badge: 'bg-amber-100 text-amber-950 border-amber-300 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800',
-      dot: 'bg-amber-600 dark:bg-amber-400',
+      badge: 'bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] border border-[var(--md-sys-color-warning)]/25',
+      dot: 'bg-[var(--md-sys-color-warning)]',
     },
     error: {
-      badge: 'bg-rose-100 text-rose-950 border-rose-300 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-800',
-      dot: 'bg-rose-600 dark:bg-rose-400',
+      badge: 'bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] border border-[var(--md-sys-color-error)]/25',
+      dot: 'bg-[var(--md-sys-color-error)]',
     },
     open: {
-      badge: 'bg-slate-100 text-slate-800 border-slate-300 font-semibold dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700',
-      dot: 'bg-slate-500 dark:bg-slate-400',
+      badge: 'bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]',
+      dot: 'bg-[var(--md-sys-color-outline)]',
     },
     'in-progress': {
-      badge: 'bg-blue-100 text-blue-900 border-blue-300 font-semibold dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800',
-      dot: 'bg-blue-600 dark:bg-blue-400',
+      badge: 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] border border-[var(--md-sys-color-primary)]/20',
+      dot: 'bg-[var(--md-sys-color-primary)]',
     },
     review: {
-      badge: 'bg-purple-100 text-purple-900 border-purple-300 font-semibold dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800',
-      dot: 'bg-purple-600 dark:bg-purple-400',
+      badge: 'bg-[var(--md-sys-color-tertiary-container)] text-[var(--md-sys-color-on-tertiary-container)] border border-[var(--md-sys-color-tertiary)]/25',
+      dot: 'bg-[var(--md-sys-color-tertiary)]',
     },
     resolved: {
-      badge: 'bg-emerald-100 text-emerald-900 border-emerald-300 font-semibold dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800',
-      dot: 'bg-emerald-600 dark:bg-emerald-400',
+      badge: 'bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] border border-[var(--md-sys-color-success)]/25',
+      dot: 'bg-[var(--md-sys-color-success)]',
     },
     closed: {
-      badge: 'bg-zinc-100 text-zinc-800 border-zinc-300 font-semibold dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700',
-      dot: 'bg-zinc-500 dark:bg-zinc-400',
+      badge: 'bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] border border-[var(--md-sys-color-outline-variant)]',
+      dot: 'bg-[var(--md-sys-color-outline)] opacity-60',
     },
     low: {
-      badge: 'bg-slate-100 text-slate-800 border-slate-300 font-semibold dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
-      dot: 'bg-slate-500 dark:bg-slate-400',
+      badge: 'bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] border border-[var(--md-sys-color-outline-variant)]',
+      dot: 'bg-[var(--md-sys-color-outline)] opacity-60',
     },
     medium: {
-      badge: 'bg-amber-100 text-amber-950 border-amber-300 font-semibold dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800',
-      dot: 'bg-amber-600 dark:bg-amber-400',
+      badge: 'bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] border border-[var(--md-sys-color-warning)]/25',
+      dot: 'bg-[var(--md-sys-color-warning)]',
     },
     high: {
-      badge: 'bg-orange-100 text-orange-950 border-orange-300 font-semibold dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800',
-      dot: 'bg-orange-600 dark:bg-orange-400',
+      badge: 'bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] border border-[var(--md-sys-color-warning)]/30 font-bold',
+      dot: 'bg-[var(--md-sys-color-warning)]',
     },
     critical: {
-      badge: 'bg-rose-100 text-rose-950 border-rose-300 font-bold dark:bg-rose-950 dark:text-rose-300 dark:border-rose-800',
-      dot: 'bg-rose-600 dark:bg-rose-400 animate-pulse',
+      badge: 'bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] border border-[var(--md-sys-color-error)]/30 font-bold',
+      dot: 'bg-[var(--md-sys-color-error)] animate-pulse',
     },
   };
 

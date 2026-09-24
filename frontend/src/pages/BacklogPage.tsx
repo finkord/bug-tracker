@@ -349,7 +349,7 @@ export const BacklogPage: React.FC = () => {
           </div>
 
           {/* Active Sprint Section */}
-          <div className="p-6 rounded-3xl m3-card-high border border-[var(--md-sys-color-outline-variant)] space-y-5 shadow-xs">
+          <div className="p-6 rounded-3xl bg-[var(--md-sys-color-surface-container-lowest)] border border-[var(--md-sys-color-outline-variant)] space-y-5 shadow-xs">
             <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-[var(--md-sys-color-outline-variant)]">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
@@ -358,8 +358,8 @@ export const BacklogPage: React.FC = () => {
                   </h2>
                   <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
                     currentSprintDef.status === 'ACTIVE'
-                      ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                      : 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/20'
+                      ? 'bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] border border-[var(--md-sys-color-success)]/20'
+                      : 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] border border-[var(--md-sys-color-primary)]/20'
                   }`}>
                     {currentSprintDef.status}
                   </span>
@@ -383,13 +383,13 @@ export const BacklogPage: React.FC = () => {
 
               {/* Sprint Metrics & Lifecycle Controls */}
               <div className="flex flex-wrap items-center gap-3">
-                <div className="px-3 py-1.5 rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] text-xs">
+                <div className="px-3 py-1.5 rounded-xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)] text-xs">
                   <span className="text-[10px] text-[var(--md-sys-color-on-surface-variant)] block">Estimated</span>
                   <span className="font-bold text-[var(--md-sys-color-on-surface)]">{sprintTotalEstimate} hrs</span>
                 </div>
-                <div className="px-3 py-1.5 rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] text-xs">
+                <div className="px-3 py-1.5 rounded-xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)] text-xs">
                   <span className="text-[10px] text-[var(--md-sys-color-on-surface-variant)] block">Logged</span>
-                  <span className="font-bold text-emerald-600 dark:text-emerald-400">{sprintTotalLogged} hrs</span>
+                  <span className="font-bold text-[var(--md-sys-color-success)]">{sprintTotalLogged} hrs</span>
                 </div>
 
                 <button
@@ -417,7 +417,7 @@ export const BacklogPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setCompleteSprintModalOpen(true)}
-                    className="px-4 py-2 rounded-full m3-btn-outline text-xs font-semibold flex items-center gap-1.5 border-emerald-600 text-emerald-600 hover:bg-emerald-500/10 cursor-pointer"
+                    className="px-4 py-2 rounded-full m3-btn-outline text-xs font-semibold flex items-center gap-1.5 border-[var(--md-sys-color-success)] text-[var(--md-sys-color-success)] hover:bg-[var(--md-sys-color-success-container)] cursor-pointer"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     <span>Complete Sprint</span>
@@ -425,7 +425,7 @@ export const BacklogPage: React.FC = () => {
                 )}
 
                 {currentSprintDef.status === 'COMPLETED' && (
-                  <span className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/20 flex items-center gap-1">
+                  <span className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-[var(--md-sys-color-tertiary-container)] text-[var(--md-sys-color-on-tertiary-container)] border border-[var(--md-sys-color-tertiary)]/20 flex items-center gap-1">
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     <span>Completed & Archived</span>
                   </span>
@@ -502,7 +502,7 @@ export const BacklogPage: React.FC = () => {
           </div>
 
           {/* Backlog Section */}
-          <div className="p-6 rounded-3xl m3-card-high border border-[var(--md-sys-color-outline-variant)] space-y-4 shadow-xs">
+          <div className="p-6 rounded-3xl bg-[var(--md-sys-color-surface-container-lowest)] border border-[var(--md-sys-color-outline-variant)] space-y-4 shadow-xs">
             <div className="flex items-center justify-between pb-3 border-b border-[var(--md-sys-color-outline-variant)]">
               <div>
                 <h2 className="text-base font-bold text-[var(--md-sys-color-on-surface)]">
@@ -686,7 +686,7 @@ export const BacklogPage: React.FC = () => {
         size="md"
         title={
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-xl bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] flex items-center justify-center shrink-0">
               <CheckCircle2 className="w-4 h-4" />
             </div>
             <span>Complete {selectedSprintName}</span>

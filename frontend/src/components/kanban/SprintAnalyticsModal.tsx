@@ -470,20 +470,14 @@ export const SprintAnalyticsModal: React.FC<SprintAnalyticsModalProps> = ({
                           {issue.title}
                         </td>
                         <td className="p-3">
-                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-on-surface)]">
+                          <Badge variant={issue.status.toLowerCase().replace('_', '-') as any} size="sm">
                             {issue.status}
-                          </span>
+                          </Badge>
                         </td>
                         <td className="p-3">
-                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                            issue.priority === 'CRITICAL'
-                              ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400'
-                              : issue.priority === 'HIGH'
-                              ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
-                              : 'bg-blue-500/15 text-blue-600 dark:text-blue-400'
-                          }`}>
+                          <Badge variant={issue.priority.toLowerCase() as any} size="sm">
                             {issue.priority}
-                          </span>
+                          </Badge>
                         </td>
                         <td className="p-3 text-[var(--md-sys-color-on-surface-variant)]">
                           {issue.assignee?.fullName || 'Unassigned'}

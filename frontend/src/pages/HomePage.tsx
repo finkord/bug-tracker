@@ -193,8 +193,8 @@ export const HomePage: React.FC = () => {
           </Card>
 
           <Card variant="outlined" padding="md" rounded="xl" className="space-y-2">
-            <div className="w-9 h-9 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-              <Clock className="w-4 h-4" />
+            <div className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-tertiary-container)] text-[var(--md-sys-color-on-tertiary-container)] flex items-center justify-center">
+              <Clock className="w-4 h-4 text-[var(--md-sys-color-tertiary)]" />
             </div>
             <h3 className="font-bold text-sm text-[var(--md-sys-color-on-surface)]">
               Effort & Time Tracking

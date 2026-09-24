@@ -214,14 +214,14 @@ export const TimeCalendar: React.FC<TimeCalendarProps> = ({
               const isToday = dateStr === todayStr;
               const isSelected = dateStr === selectedDayStr;
 
-              // High-contrast color coding for light and dark themes
+              // High-contrast color coding for light and dark themes using M3 tokens
               let hoursBadgeClass = 'text-transparent';
               if (hours > 0 && hours < 4) {
-                hoursBadgeClass = 'bg-emerald-100 text-emerald-950 font-bold border border-emerald-300 dark:bg-emerald-950/70 dark:text-emerald-300 dark:border-emerald-800';
+                hoursBadgeClass = 'bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] font-bold border border-[var(--md-sys-color-success)]/25 shadow-2xs';
               } else if (hours >= 4 && hours < 8) {
-                hoursBadgeClass = 'bg-emerald-200 text-emerald-950 font-extrabold border border-emerald-400 dark:bg-emerald-900/60 dark:text-emerald-200 dark:border-emerald-700';
+                hoursBadgeClass = 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] font-extrabold border border-[var(--md-sys-color-primary)]/25 shadow-2xs';
               } else if (hours >= 8) {
-                hoursBadgeClass = 'bg-amber-200 text-amber-950 font-extrabold border border-amber-400 dark:bg-amber-950/70 dark:text-amber-200 dark:border-amber-700';
+                hoursBadgeClass = 'bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] font-extrabold border border-[var(--md-sys-color-warning)]/25 shadow-2xs';
               }
 
               return (
@@ -233,7 +233,7 @@ export const TimeCalendar: React.FC<TimeCalendarProps> = ({
                     isSelected
                       ? 'border-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-primary)]/40 bg-[var(--md-sys-color-primary-container)]/20'
                       : isToday
-                      ? 'border-amber-500 bg-amber-500/10 hover:border-amber-600'
+                      ? 'border-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/15 hover:border-[var(--md-sys-color-primary)]'
                       : 'border-[var(--md-sys-color-outline-variant)] bg-[var(--md-sys-color-surface-container-low)] hover:bg-[var(--md-sys-color-surface-container-high)]'
                   }`}
                 >
@@ -241,7 +241,7 @@ export const TimeCalendar: React.FC<TimeCalendarProps> = ({
                     <span
                       className={`text-xs font-bold ${
                         isToday
-                          ? 'w-5 h-5 rounded-full bg-amber-500 text-black font-extrabold flex items-center justify-center text-[11px]'
+                          ? 'w-5 h-5 rounded-full bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] font-extrabold flex items-center justify-center text-[11px]'
                           : 'text-[var(--md-sys-color-on-surface)]'
                       }`}
                     >
@@ -249,7 +249,7 @@ export const TimeCalendar: React.FC<TimeCalendarProps> = ({
                     </span>
 
                     {hours >= 8 && (
-                      <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                      <Sparkles className="w-3.5 h-3.5 text-[var(--md-sys-color-warning)] shrink-0" />
                     )}
                   </div>
 
@@ -339,7 +339,7 @@ export const TimeCalendar: React.FC<TimeCalendarProps> = ({
                     </div>
                   )}
 
-                  <div className="px-3 py-1 rounded-lg bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-bold text-xs">
+                  <div className="px-3 py-1 rounded-lg bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] border border-[var(--md-sys-color-success)]/20 font-bold text-xs">
                     {log.timeSpentHours} hrs
                   </div>
                 </div>

@@ -267,32 +267,37 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6 animate-in fade-in duration-200">
       {/* Top Banner */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--md-sys-color-outline-variant)] pb-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center font-bold shrink-0">
-            <ShieldAlert className="w-5 h-5 text-[var(--md-sys-color-primary)]" />
+      <Card variant="outlined" padding="md" rounded="xl" className="shadow-xs">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center font-bold shrink-0">
+              <ShieldAlert className="w-5 h-5 text-[var(--md-sys-color-primary)]" />
+            </div>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-black text-[var(--md-sys-color-on-surface)] tracking-tight">
+                Administration & Governance Center
+              </h1>
+              <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-0.5">
+                Extended RBAC governance, audit forensics, project management, and team capacity
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-black text-[var(--md-sys-color-on-surface)] tracking-tight">
-              Administration & Governance Center
-            </h1>
-            <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-0.5">
-              Extended RBAC governance, audit forensics, project management, and team capacity
-            </p>
-          </div>
+          <Badge variant="primary" size="sm">
+            Platform Master Console
+          </Badge>
         </div>
-      </div>
+      </Card>
 
       {/* Notifications */}
       {actionSuccess && (
-        <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold flex items-center justify-between">
+        <div className="p-3 rounded-xl bg-[var(--md-sys-color-success-container)] border border-[var(--md-sys-color-success)]/25 text-[var(--md-sys-color-on-success-container)] text-xs font-semibold flex items-center justify-between shadow-2xs">
           <span>✓ {actionSuccess}</span>
           <button onClick={() => setActionSuccess(null)} className="text-xs hover:underline cursor-pointer">Dismiss</button>
         </div>
       )}
 
       {errorMessage && (
-        <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-semibold flex items-center justify-between">
+        <div className="p-3 rounded-xl bg-[var(--md-sys-color-error-container)] border border-[var(--md-sys-color-error)]/25 text-[var(--md-sys-color-on-error-container)] text-xs font-semibold flex items-center justify-between shadow-2xs">
           <span>⚠ {errorMessage}</span>
           <button onClick={() => setErrorMessage(null)} className="text-xs hover:underline cursor-pointer">Dismiss</button>
         </div>
@@ -430,7 +435,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                               <select
                                 value={u.jobTitle || (u.systemRole === 'DEVELOPER' ? 'Software Developer' : u.systemRole === 'QA_ENGINEER' ? 'QA Engineer' : u.systemRole === 'PROJECT_MANAGER' ? 'Project Manager' : u.systemRole === 'ADMIN' ? 'System Administrator' : 'Software Engineer')}
                                 onChange={(e) => handleJobTitleChange(u.id, u.systemRole, e.target.value)}
-                                className="text-xs font-medium px-2 py-1 rounded-lg bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] cursor-pointer"
+                                className="text-xs font-medium px-2.5 py-1 rounded-lg bg-[var(--md-sys-color-surface-container-low)] hover:bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] cursor-pointer transition-colors focus:ring-1 focus:ring-[var(--md-sys-color-primary)] focus:outline-hidden"
                               >
                                 <option value="Software Developer">Software Developer</option>
                                 <option value="Frontend Developer">Frontend Developer</option>
@@ -449,7 +454,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                                 value={u.systemRole}
                                 disabled={isSelf}
                                 onChange={(e) => handleRoleChange(u.id, e.target.value as SystemRole, u.jobTitle || undefined)}
-                                className="text-xs font-bold px-2 py-1 rounded-lg bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] cursor-pointer disabled:opacity-50"
+                                className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[var(--md-sys-color-surface-container-low)] hover:bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] cursor-pointer transition-colors focus:ring-1 focus:ring-[var(--md-sys-color-primary)] focus:outline-hidden disabled:opacity-50"
                               >
                                 <option value="USER">USER</option>
                                 <option value="DEVELOPER">DEVELOPER</option>
@@ -624,11 +629,11 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                             return (
                               <td key={r} className="py-2.5 px-3.5 text-center">
                                 {allowed ? (
-                                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold text-xs">
+                                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] font-bold text-xs border border-[var(--md-sys-color-success)]/20 shadow-2xs">
                                     ✓
                                   </span>
                                 ) : (
-                                  <span className="text-[var(--md-sys-color-on-surface-variant)] opacity-25">—</span>
+                                  <span className="text-[var(--md-sys-color-outline)] opacity-30">—</span>
                                 )}
                               </td>
                             );
@@ -677,12 +682,12 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                     <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
                       Total Accounts
                     </span>
-                    <p className="text-xl font-black text-[var(--md-sys-color-on-surface)]">
+                    <p className="text-xl font-black text-[var(--md-sys-color-primary)]">
                       {systemStats?.totalUsers || 0}
                     </p>
                   </div>
-                  <div className="w-9 h-9 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                    <Users className="w-4 h-4" />
+                  <div className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center">
+                    <Users className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
                   </div>
                 </Card>
 
@@ -691,12 +696,12 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                     <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
                       2FA Adoption
                     </span>
-                    <p className="text-xl font-black text-emerald-600 dark:text-emerald-400">
+                    <p className="text-xl font-black text-[var(--md-sys-color-success)]">
                       {systemStats?.twoFactorPercentage || 0}%
                     </p>
                   </div>
-                  <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                    <ShieldCheck className="w-4 h-4" />
+                  <div className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] flex items-center justify-center">
+                    <ShieldCheck className="w-4 h-4 text-[var(--md-sys-color-success)]" />
                   </div>
                 </Card>
 
@@ -705,12 +710,12 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                     <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
                       Blocked Users
                     </span>
-                    <p className="text-xl font-black text-rose-600 dark:text-rose-400">
+                    <p className="text-xl font-black text-[var(--md-sys-color-error)]">
                       {systemStats?.blockedUsers || 0}
                     </p>
                   </div>
-                  <div className="w-9 h-9 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center">
-                    <Lock className="w-4 h-4" />
+                  <div className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] flex items-center justify-center">
+                    <Lock className="w-4 h-4 text-[var(--md-sys-color-error)]" />
                   </div>
                 </Card>
 
@@ -719,12 +724,12 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                     <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
                       Total Projects
                     </span>
-                    <p className="text-xl font-black text-purple-600 dark:text-purple-400">
+                    <p className="text-xl font-black text-[var(--md-sys-color-on-surface)]">
                       {projects.length}
                     </p>
                   </div>
-                  <div className="w-9 h-9 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center">
-                    <FolderGit2 className="w-4 h-4" />
+                  <div className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] flex items-center justify-center">
+                    <FolderGit2 className="w-4 h-4 text-[var(--md-sys-color-secondary)]" />
                   </div>
                 </Card>
               </div>
@@ -897,8 +902,8 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                       {timeStats?.totalHoursLogged || 0}h
                     </p>
                   </div>
-                  <div className="w-9 h-9 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                    <Activity className="w-4 h-4" />
+                  <div className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center">
+                    <Activity className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
                   </div>
                 </Card>
 
@@ -907,12 +912,12 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                     <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
                       Logged Today
                     </span>
-                    <p className="text-xl font-black text-emerald-600 dark:text-emerald-400">
+                    <p className="text-xl font-black text-[var(--md-sys-color-success)]">
                       {timeStats?.hoursLoggedToday || 0}h
                     </p>
                   </div>
-                  <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                    <TrendingUp className="w-4 h-4" />
+                  <div className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] flex items-center justify-center">
+                    <TrendingUp className="w-4 h-4 text-[var(--md-sys-color-success)]" />
                   </div>
                 </Card>
 
@@ -921,12 +926,12 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                     <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
                       Logged This Week
                     </span>
-                    <p className="text-xl font-black text-amber-600 dark:text-amber-400">
+                    <p className="text-xl font-black text-[var(--md-sys-color-warning)]">
                       {timeStats?.hoursLoggedThisWeek || 0}h
                     </p>
                   </div>
-                  <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                    <Database className="w-4 h-4" />
+                  <div className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] flex items-center justify-center">
+                    <Database className="w-4 h-4 text-[var(--md-sys-color-warning)]" />
                   </div>
                 </Card>
               </div>

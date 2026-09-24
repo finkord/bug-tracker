@@ -237,9 +237,9 @@ export const IssueDetailPage: React.FC = () => {
   if (error || !issue) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-12">
-        <div className="p-6 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 space-y-3">
+        <div className="p-6 rounded-2xl bg-[var(--md-sys-color-error-container)] border border-[var(--md-sys-color-error)]/20 text-[var(--md-sys-color-on-error-container)] space-y-3">
           <div className="flex items-center gap-2 font-bold text-base">
-            <AlertCircle className="w-5 h-5" />
+            <AlertCircle className="w-5 h-5 text-[var(--md-sys-color-error)]" />
             <span>Issue Not Found</span>
           </div>
           <p className="text-sm">{error || 'The requested issue does not exist or has been removed.'}</p>
@@ -395,7 +395,7 @@ export const IssueDetailPage: React.FC = () => {
             </div>
 
             {attachmentError && (
-              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs flex items-center justify-between">
+              <div className="p-3 rounded-xl bg-[var(--md-sys-color-error-container)] border border-[var(--md-sys-color-error)]/20 text-[var(--md-sys-color-on-error-container)] text-xs flex items-center justify-between">
                 <span>{attachmentError}</span>
                 <button
                   type="button"

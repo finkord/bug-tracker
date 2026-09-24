@@ -29,7 +29,7 @@ interface IssueCardProps {
 export const IssueCard: React.FC<IssueCardProps> = ({
   issue,
   onClick,
-  onStatusChange,
+  onStatusChange: _onStatusChange,
   onAssignToMe,
   currentUserId,
 }) => {
@@ -39,34 +39,34 @@ export const IssueCard: React.FC<IssueCardProps> = ({
     e.dataTransfer.effectAllowed = 'move';
   };
 
-  // Type icon and badge renderer
+  // Type icon and badge renderer using M3 tokens
   const renderTypeBadge = (type: IssueType) => {
     switch (type) {
       case 'BUG':
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-rose-100 text-rose-950 border border-rose-300 dark:bg-rose-950/80 dark:text-rose-300 dark:border-rose-800">
-            <Bug className="w-3 h-3 text-rose-600 dark:text-rose-400" />
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] border border-[var(--md-sys-color-error)]/20">
+            <Bug className="w-3 h-3 text-[var(--md-sys-color-error)]" />
             Bug
           </span>
         );
       case 'TASK':
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-blue-100 text-blue-950 border border-blue-300 dark:bg-blue-950/80 dark:text-blue-300 dark:border-blue-800">
-            <CheckSquare className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] border border-[var(--md-sys-color-primary)]/20">
+            <CheckSquare className="w-3 h-3 text-[var(--md-sys-color-primary)]" />
             Task
           </span>
         );
       case 'FEATURE':
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-950 border border-emerald-300 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border-emerald-800">
-            <Sparkles className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] border border-[var(--md-sys-color-success)]/20">
+            <Sparkles className="w-3 h-3 text-[var(--md-sys-color-success)]" />
             Feature
           </span>
         );
       case 'IMPROVEMENT':
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-purple-100 text-purple-950 border border-purple-300 dark:bg-purple-950/80 dark:text-purple-300 dark:border-purple-800">
-            <Zap className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-[var(--md-sys-color-tertiary-container)] text-[var(--md-sys-color-on-tertiary-container)] border border-[var(--md-sys-color-tertiary)]/20">
+            <Zap className="w-3 h-3 text-[var(--md-sys-color-tertiary)]" />
             Improvement
           </span>
         );
@@ -75,32 +75,32 @@ export const IssueCard: React.FC<IssueCardProps> = ({
     }
   };
 
-  // Priority indicator renderer
+  // Priority indicator renderer using M3 tokens
   const renderPriorityBadge = (priority: IssuePriority) => {
     switch (priority) {
       case 'CRITICAL':
         return (
-          <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-rose-100 text-rose-950 border border-rose-300 dark:bg-rose-950/80 dark:text-rose-300 dark:border-rose-800 shadow-2xs">
-            <Flame className="w-3 h-3 text-rose-600 dark:text-rose-400" />
+          <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] border border-[var(--md-sys-color-error)]/30">
+            <Flame className="w-3 h-3 text-[var(--md-sys-color-error)]" />
             Crit
           </span>
         );
       case 'HIGH':
         return (
-          <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-orange-100 text-orange-950 border border-orange-300 dark:bg-orange-950/80 dark:text-orange-300 dark:border-orange-800">
-            <AlertCircle className="w-3 h-3 text-orange-600 dark:text-orange-400" />
+          <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] border border-[var(--md-sys-color-warning)]/30">
+            <AlertCircle className="w-3 h-3 text-[var(--md-sys-color-warning)]" />
             High
           </span>
         );
       case 'MEDIUM':
         return (
-          <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-100 text-amber-950 border border-amber-300 dark:bg-amber-950/80 dark:text-amber-300 dark:border-amber-800">
+          <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]">
             Med
           </span>
         );
       case 'LOW':
         return (
-          <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-300 dark:bg-slate-800/80 dark:text-slate-300 dark:border-slate-700">
+          <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-[var(--md-sys-color-surface-container-low)] text-[var(--md-sys-color-on-surface-variant)] border border-[var(--md-sys-color-outline-variant)]/60">
             Low
           </span>
         );
@@ -120,7 +120,7 @@ export const IssueCard: React.FC<IssueCardProps> = ({
       draggable
       onDragStart={handleDragStart}
       onClick={() => onClick(issue)}
-      className="group relative bg-[var(--md-sys-color-surface)] hover:bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)] rounded-2xl p-3.5 shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer select-none"
+      className="group relative bg-[var(--md-sys-color-surface-container-lowest)] hover:bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)] rounded-2xl p-3.5 shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer select-none"
     >
       {/* Top Header: Key and Type */}
       <div className="flex items-center justify-between gap-2 mb-2">
@@ -129,7 +129,7 @@ export const IssueCard: React.FC<IssueCardProps> = ({
             {issue.key}
           </span>
           {issue.sprint && (
-            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20">
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-[var(--md-sys-color-tertiary-container)] text-[var(--md-sys-color-on-tertiary-container)] border border-[var(--md-sys-color-tertiary)]/20">
               {issue.sprint}
             </span>
           )}
