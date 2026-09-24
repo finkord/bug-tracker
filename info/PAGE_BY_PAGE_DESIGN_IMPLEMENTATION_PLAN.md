@@ -21,9 +21,9 @@ This document outlines the systematic, page-by-page audit and upgrade plan for a
 | | [`AdvancedSearchPage.tsx`](file:///home/finkord/dev/PPofSE/software/frontend/src/pages/AdvancedSearchPage.tsx) | `/search` | High | ✅ Complete |
 | **User & Analytics** | [`ProfilePage.tsx`](file:///home/finkord/dev/PPofSE/software/frontend/src/pages/ProfilePage.tsx) | `/profile` | High | ✅ Complete |
 | | [`TimeTrackingPage.tsx`](file:///home/finkord/dev/PPofSE/software/frontend/src/pages/TimeTrackingPage.tsx) | `/time-tracking` | High | ✅ Complete |
-| **Administration** | [`AdminDashboardPage.tsx`](file:///home/finkord/dev/PPofSE/software/frontend/src/pages/AdminDashboardPage.tsx) | `/admin` | Very High | ⏳ Next Up (Sprint 4) |
-| | [`AdminSecurityAuditPage.tsx`](file:///home/finkord/dev/PPofSE/software/frontend/src/pages/AdminSecurityAuditPage.tsx) | `/admin/audit` | Medium | ⏳ Planned |
-| **Public Landing** | [`HomePage.tsx`](file:///home/finkord/dev/PPofSE/software/frontend/src/pages/HomePage.tsx) | `/` | Medium | ⏳ Planned |
+| **Administration** | [`AdminDashboardPage.tsx`](file:///home/finkord/dev/PPofSE/software/frontend/src/pages/AdminDashboardPage.tsx) | `/admin` | Very High | ✅ Complete |
+| | [`AdminSecurityAuditPage.tsx`](file:///home/finkord/dev/PPofSE/software/frontend/src/pages/AdminSecurityAuditPage.tsx) | `/admin/audit` | Medium | ✅ Complete |
+| **Public Landing** | [`HomePage.tsx`](file:///home/finkord/dev/PPofSE/software/frontend/src/pages/HomePage.tsx) | `/` | Medium | ✅ Complete |
 
 ---
 
@@ -224,6 +224,7 @@ This document outlines the systematic, page-by-page audit and upgrade plan for a
 3. **Sprint 3 (Completed):** User Space & Timesheets
    - Upgrade [`ProfilePage.tsx`](file:///home/finkord/dev/PPofSE/software/frontend/src/pages/ProfilePage.tsx) (2FA flow, session revocation dialog).
    - Upgrade [`TimeTrackingPage.tsx`](file:///home/finkord/dev/PPofSE/software/frontend/src/pages/TimeTrackingPage.tsx) (Calendar controls, Log Work dialog).
-4. **Sprint 4 (Next Up):** Administration & Landing
+4. **Sprint 4 (Completed):** Administration & Landing
    - Modularize [`AdminDashboardPage.tsx`](file:///home/finkord/dev/PPofSE/software/frontend/src/pages/AdminDashboardPage.tsx).
+   - Upgrade [`AdminSecurityAuditPage.tsx`](file:///home/finkord/dev/PPofSE/software/frontend/src/pages/AdminSecurityAuditPage.tsx).
    - Polish [`HomePage.tsx`](file:///home/finkord/dev/PPofSE/software/frontend/src/pages/HomePage.tsx).

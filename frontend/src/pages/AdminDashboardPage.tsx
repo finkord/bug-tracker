@@ -9,6 +9,10 @@ import {
 } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { Avatar } from '../components/common/Avatar';
+import { Card } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
+import { Badge } from '../components/ui/Badge';
+import { Modal } from '../components/ui/Modal';
 import {
   ShieldAlert,
   Users,
@@ -21,10 +25,10 @@ import {
   Loader2,
   Trash2,
   Database,
-  Mail,
   Activity,
-  HardDrive,
   PlusCircle,
+  Lock,
+  Unlock,
 } from 'lucide-react';
 
 interface AdminDashboardPageProps {
@@ -261,19 +265,19 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
   };
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-in fade-in duration-200">
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6 animate-in fade-in duration-200">
       {/* Top Banner */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-6 rounded-3xl m3-card-high border border-[var(--md-sys-color-outline-variant)] shadow-xs">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center font-bold">
-            <ShieldAlert className="w-6 h-6" />
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--md-sys-color-outline-variant)] pb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center font-bold shrink-0">
+            <ShieldAlert className="w-5 h-5 text-[var(--md-sys-color-primary)]" />
           </div>
           <div>
-            <h1 className="text-2xl font-extrabold text-[var(--md-sys-color-on-surface)]">
-              System Administration & Control Center
+            <h1 className="text-xl sm:text-2xl font-black text-[var(--md-sys-color-on-surface)] tracking-tight">
+              Administration & Governance Center
             </h1>
-            <p className="text-xs sm:text-sm text-[var(--md-sys-color-on-surface-variant)] mt-0.5">
-              Extended RBAC governance, audit forensics, project management, and team analytics
+            <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-0.5">
+              Extended RBAC governance, audit forensics, project management, and team capacity
             </p>
           </div>
         </div>
@@ -281,85 +285,70 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
 
       {/* Notifications */}
       {actionSuccess && (
-        <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold flex items-center justify-between">
+        <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold flex items-center justify-between">
           <span>✓ {actionSuccess}</span>
-          <button onClick={() => setActionSuccess(null)} className="text-xs hover:underline">Dismiss</button>
+          <button onClick={() => setActionSuccess(null)} className="text-xs hover:underline cursor-pointer">Dismiss</button>
         </div>
       )}
 
       {errorMessage && (
-        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-semibold flex items-center justify-between">
+        <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-semibold flex items-center justify-between">
           <span>⚠ {errorMessage}</span>
-          <button onClick={() => setErrorMessage(null)} className="text-xs hover:underline">Dismiss</button>
+          <button onClick={() => setErrorMessage(null)} className="text-xs hover:underline cursor-pointer">Dismiss</button>
         </div>
       )}
 
-      {/* Navigation Tabs (4 Sections) */}
-      <div className="flex items-center gap-2 border-b border-[var(--md-sys-color-outline-variant)] pb-3 overflow-x-auto">
-        <button
+      {/* Navigation Tabs */}
+      <div className="flex items-center gap-2 border-b border-[var(--md-sys-color-outline-variant)] pb-2 overflow-x-auto">
+        <Button
           type="button"
+          variant={activeTab === 'users' ? 'filled' : 'ghost'}
+          size="sm"
           onClick={() => setActiveTab('users')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-bold transition-all ${
-            activeTab === 'users'
-              ? 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] shadow-xs'
-              : 'text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container)]'
-          }`}
+          leftIcon={<Users className="w-3.5 h-3.5" />}
         >
-          <Users className="w-4 h-4" />
-          <span>User Management</span>
-        </button>
+          User Management
+        </Button>
 
-        <button
+        <Button
           type="button"
+          variant={activeTab === 'roles' ? 'filled' : 'ghost'}
+          size="sm"
           onClick={() => setActiveTab('roles')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-bold transition-all ${
-            activeTab === 'roles'
-              ? 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] shadow-xs'
-              : 'text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container)]'
-          }`}
+          leftIcon={<ShieldAlert className="w-3.5 h-3.5" />}
         >
-          <ShieldAlert className="w-4 h-4" />
-          <span>RBAC & Roles Matrix</span>
-        </button>
+          RBAC & Roles Matrix
+        </Button>
 
-        <button
+        <Button
           type="button"
+          variant={activeTab === 'system' ? 'filled' : 'ghost'}
+          size="sm"
           onClick={() => setActiveTab('system')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-bold transition-all ${
-            activeTab === 'system'
-              ? 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] shadow-xs'
-              : 'text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container)]'
-          }`}
+          leftIcon={<ShieldCheck className="w-3.5 h-3.5" />}
         >
-          <ShieldCheck className="w-4 h-4" />
-          <span>System & Security</span>
-        </button>
+          System & Security
+        </Button>
 
-        <button
+        <Button
           type="button"
+          variant={activeTab === 'projects' ? 'filled' : 'ghost'}
+          size="sm"
           onClick={() => setActiveTab('projects')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-bold transition-all ${
-            activeTab === 'projects'
-              ? 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] shadow-xs'
-              : 'text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container)]'
-          }`}
+          leftIcon={<FolderGit2 className="w-3.5 h-3.5" />}
         >
-          <FolderGit2 className="w-4 h-4" />
-          <span>Projects Control</span>
-        </button>
+          Projects Control
+        </Button>
 
-        <button
+        <Button
           type="button"
+          variant={activeTab === 'analytics' ? 'filled' : 'ghost'}
+          size="sm"
           onClick={() => setActiveTab('analytics')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-bold transition-all ${
-            activeTab === 'analytics'
-              ? 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] shadow-xs'
-              : 'text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container)]'
-          }`}
+          leftIcon={<TrendingUp className="w-3.5 h-3.5" />}
         >
-          <TrendingUp className="w-4 h-4" />
-          <span>Team Analytics</span>
-        </button>
+          Team Analytics
+        </Button>
       </div>
 
       {loading ? (
@@ -373,17 +362,17 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
           {/* 1. USER MANAGEMENT TAB */}
           {/* ==================================================== */}
           {activeTab === 'users' && (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Search & Filters Bar */}
-              <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-3xl m3-card-high border border-[var(--md-sys-color-outline-variant)]">
+              <Card variant="outlined" padding="sm" rounded="xl" className="flex flex-wrap items-center justify-between gap-3 shadow-2xs">
                 <div className="relative flex-1 min-w-[240px]">
-                  <Search className="absolute left-3.5 top-2.5 w-4 h-4 text-[var(--md-sys-color-on-surface-variant)]" />
+                  <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-[var(--md-sys-color-on-surface-variant)]" />
                   <input
                     type="text"
                     placeholder="Search by full name or email address..."
                     value={userSearch}
                     onChange={(e) => setUserSearch(e.target.value)}
-                    className="w-full text-xs pl-10 pr-4 py-2 rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] focus:ring-2 focus:ring-[var(--md-sys-color-primary)]"
+                    className="w-full text-xs pl-9 pr-3 py-1.5 rounded-lg bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] focus:outline-hidden focus:ring-1 focus:ring-[var(--md-sys-color-primary)] font-medium"
                   />
                 </div>
 
@@ -391,7 +380,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                   <select
                     value={userRoleFilter}
                     onChange={(e) => setUserRoleFilter(e.target.value)}
-                    className="text-xs px-3 py-2 rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)]"
+                    className="text-xs px-2.5 py-1.5 rounded-lg bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] font-medium cursor-pointer"
                   >
                     <option value="">All Roles</option>
                     <option value="ADMIN">ADMIN</option>
@@ -401,29 +390,29 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                     <option value="USER">USER</option>
                   </select>
                 </div>
-              </div>
+              </Card>
 
               {/* Users Table */}
-              <div className="p-6 rounded-3xl m3-card-high border border-[var(--md-sys-color-outline-variant)] space-y-4 shadow-xs">
+              <Card variant="outlined" padding="none" rounded="xl" className="overflow-hidden shadow-xs">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
+                  <table className="w-full text-left text-xs border-collapse table-auto">
                     <thead>
-                      <tr className="border-b border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider text-[10px]">
-                        <th className="py-2.5 px-3">User</th>
-                        <th className="py-2.5 px-3">Work Label (Title)</th>
-                        <th className="py-2.5 px-3">System Role</th>
-                        <th className="py-2.5 px-3">Security & Status</th>
-                        <th className="py-2.5 px-3">2FA</th>
-                        <th className="py-2.5 px-3 text-right">Actions</th>
+                      <tr className="bg-[var(--md-sys-color-surface-container-low)] border-b border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider text-[10px] font-bold">
+                        <th className="py-2.5 px-3.5">User</th>
+                        <th className="py-2.5 px-3.5">Work Label (Title)</th>
+                        <th className="py-2.5 px-3.5">System Role</th>
+                        <th className="py-2.5 px-3.5">Security & Status</th>
+                        <th className="py-2.5 px-3.5">2FA</th>
+                        <th className="py-2.5 px-3.5 text-right">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)]/40">
+                    <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)]">
                       {users.map((u) => {
                         const isSelf = currentUser?.id === u.id;
                         return (
-                          <tr key={u.id} className="hover:bg-[var(--md-sys-color-surface-container)] transition-colors">
-                            <td className="py-3 px-3">
-                              <div className="flex items-center gap-3">
+                          <tr key={u.id} className="hover:bg-[var(--md-sys-color-surface-container-high)]/40 transition-colors">
+                            <td className="py-2.5 px-3.5">
+                              <div className="flex items-center gap-2.5">
                                 <Avatar name={u.fullName} avatarUrl={u.avatarUrl} size="sm" />
                                 <div>
                                   <p className="font-bold text-[var(--md-sys-color-on-surface)]">
@@ -436,8 +425,8 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                               </div>
                             </td>
 
-                            {/* Coworker Work Role / Job Title */}
-                            <td className="py-3 px-3">
+                            {/* Job Title */}
+                            <td className="py-2.5 px-3.5">
                               <select
                                 value={u.jobTitle || (u.systemRole === 'DEVELOPER' ? 'Software Developer' : u.systemRole === 'QA_ENGINEER' ? 'QA Engineer' : u.systemRole === 'PROJECT_MANAGER' ? 'Project Manager' : u.systemRole === 'ADMIN' ? 'System Administrator' : 'Software Engineer')}
                                 onChange={(e) => handleJobTitleChange(u.id, u.systemRole, e.target.value)}
@@ -449,93 +438,95 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                                 <option value="Fullstack Developer">Fullstack Developer</option>
                                 <option value="DevOps Engineer">DevOps Engineer</option>
                                 <option value="QA Engineer">QA Engineer</option>
-                                <option value="Security Engineer">Security Engineer</option>
                                 <option value="Project Manager">Project Manager</option>
-                                <option value="System Architect">System Architect</option>
-                                <option value="UI/UX Designer">UI/UX Designer</option>
+                                <option value="System Administrator">System Administrator</option>
                               </select>
                             </td>
 
-                            {/* System Access Role */}
-                            <td className="py-3 px-3">
+                            {/* System Role Selector */}
+                            <td className="py-2.5 px-3.5">
                               <select
                                 value={u.systemRole}
                                 disabled={isSelf}
-                                onChange={(e) => handleRoleChange(u.id, e.target.value as SystemRole)}
-                                className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] cursor-pointer disabled:opacity-60"
+                                onChange={(e) => handleRoleChange(u.id, e.target.value as SystemRole, u.jobTitle || undefined)}
+                                className="text-xs font-bold px-2 py-1 rounded-lg bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] cursor-pointer disabled:opacity-50"
                               >
-                                <option value="ADMIN">ADMIN</option>
-                                <option value="PROJECT_MANAGER">PROJECT_MANAGER</option>
+                                <option value="USER">USER</option>
                                 <option value="DEVELOPER">DEVELOPER</option>
                                 <option value="QA_ENGINEER">QA_ENGINEER</option>
-                                <option value="DEVOPS_ENGINEER">DEVOPS_ENGINEER</option>
-                                <option value="SECURITY_ENGINEER">SECURITY_ENGINEER</option>
-                                <option value="USER">USER</option>
+                                <option value="PROJECT_MANAGER">PROJECT_MANAGER</option>
+                                <option value="ADMIN">ADMIN</option>
                               </select>
                             </td>
 
-                            <td className="py-3 px-3">
-                              <div className="flex items-center gap-2">
-                                <span
-                                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                    u.isBlocked
-                                      ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20'
-                                      : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                                  }`}
-                                >
-                                  {u.isBlocked ? 'BLOCKED' : 'ACTIVE'}
-                                </span>
+                            {/* Status & Activation */}
+                            <td className="py-2.5 px-3.5">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                {u.isActivated ? (
+                                  <Badge variant="success" size="sm" dot>
+                                    Activated
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="warning" size="sm" dot>
+                                    Pending
+                                  </Badge>
+                                )}
 
-                                {!u.isActivated && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleActivateUser(u.id)}
-                                    className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 hover:underline"
-                                  >
-                                    Activate
-                                  </button>
+                                {u.isBlocked ? (
+                                  <Badge variant="error" size="sm">
+                                    Blocked
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="neutral" size="sm">
+                                    Active
+                                  </Badge>
                                 )}
                               </div>
                             </td>
 
-                            <td className="py-3 px-3">
-                              {u.twoFactorEnabled ? (
-                                <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
-                                  <CheckCircle className="w-3.5 h-3.5" />
-                                  <span>Enabled</span>
-                                </span>
-                              ) : (
-                                <span className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] opacity-60">
-                                  Disabled
-                                </span>
-                              )}
+                            {/* 2FA Status */}
+                            <td className="py-2.5 px-3.5">
+                              <Badge variant={u.twoFactorEnabled ? 'success' : 'neutral'} size="sm">
+                                {u.twoFactorEnabled ? 'Enabled' : 'Disabled'}
+                              </Badge>
                             </td>
 
-                            <td className="py-3 px-3 text-right">
-                              <div className="inline-flex items-center gap-2">
-                                {u.twoFactorEnabled && (
-                                  <button
+                            {/* Action Buttons */}
+                            <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
+                              <div className="flex items-center justify-end gap-1.5">
+                                {!u.isActivated && (
+                                  <Button
                                     type="button"
-                                    onClick={() => handleReset2Fa(u.id)}
-                                    className="p-1 rounded-md text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-highest)] hover:text-[var(--md-sys-color-primary)] transition-colors"
-                                    title="Reset 2FA"
+                                    variant="tonal"
+                                    size="xs"
+                                    onClick={() => handleActivateUser(u.id)}
                                   >
-                                    <RotateCcw className="w-3.5 h-3.5" />
-                                  </button>
+                                    Activate
+                                  </Button>
+                                )}
+
+                                {u.twoFactorEnabled && (
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="xs"
+                                    onClick={() => handleReset2Fa(u.id)}
+                                    leftIcon={<RotateCcw className="w-3 h-3" />}
+                                  >
+                                    Reset 2FA
+                                  </Button>
                                 )}
 
                                 {!isSelf && (
-                                  <button
+                                  <Button
                                     type="button"
+                                    variant={u.isBlocked ? 'tonal' : 'danger-tonal'}
+                                    size="xs"
                                     onClick={() => handleToggleBlock(u.id, u.isBlocked)}
-                                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-colors ${
-                                      u.isBlocked
-                                        ? 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20'
-                                        : 'bg-rose-500/10 text-rose-600 hover:bg-rose-500/20'
-                                    }`}
+                                    leftIcon={u.isBlocked ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
                                   >
                                     {u.isBlocked ? 'Unblock' : 'Block'}
-                                  </button>
+                                  </Button>
                                 )}
                               </div>
                             </td>
@@ -546,260 +537,234 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                   </table>
                 </div>
 
-                <div className="flex items-center justify-between pt-3 border-t border-[var(--md-sys-color-outline-variant)] text-xs text-[var(--md-sys-color-on-surface-variant)]">
+                {/* Pagination footer */}
+                <div className="p-3 bg-[var(--md-sys-color-surface-container-low)] border-t border-[var(--md-sys-color-outline-variant)] flex items-center justify-between text-xs text-[var(--md-sys-color-on-surface-variant)]">
                   <span>Showing {users.length} of {totalUsers} registered users</span>
-                  <div className="flex items-center gap-1">
-                    <button
+                  <div className="flex items-center gap-1.5">
+                    <Button
                       type="button"
+                      variant="outline"
+                      size="xs"
                       disabled={userPage <= 1}
-                      onClick={() => setUserPage((p) => Math.max(1, p - 1))}
-                      className="px-3 py-1 rounded-lg border border-[var(--md-sys-color-outline-variant)] disabled:opacity-40"
+                      onClick={() => setUserPage((p) => p - 1)}
                     >
-                      Prev
-                    </button>
-                    <span className="px-2">Page {userPage}</span>
-                    <button
+                      Previous
+                    </Button>
+                    <span className="font-semibold px-2">Page {userPage}</span>
+                    <Button
                       type="button"
+                      variant="outline"
+                      size="xs"
                       disabled={users.length < 25}
                       onClick={() => setUserPage((p) => p + 1)}
-                      className="px-3 py-1 rounded-lg border border-[var(--md-sys-color-outline-variant)] disabled:opacity-40"
                     >
                       Next
-                    </button>
+                    </Button>
                   </div>
                 </div>
-              </div>
+              </Card>
             </div>
           )}
 
-                    {/* ==================================================== */}
-          {/* ROLES & PERMISSIONS MATRIX TAB */}
+          {/* ==================================================== */}
+          {/* 2. RBAC & ROLES MATRIX TAB */}
           {/* ==================================================== */}
           {activeTab === 'roles' && (
-            <div className="space-y-6">
-              <div className="flex flex-wrap items-center justify-between gap-4 p-5 rounded-3xl m3-card-high border border-[var(--md-sys-color-outline-variant)]">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-base font-bold text-[var(--md-sys-color-on-surface)] flex items-center gap-2">
-                    <ShieldAlert className="w-5 h-5 text-[var(--md-sys-color-primary)]" />
-                    <span>RBAC Permissions & Coworker Role Matrix</span>
+                  <h3 className="text-sm font-bold text-[var(--md-sys-color-on-surface)]">
+                    Role-Based Access Control (RBAC) Governance Matrix
                   </h3>
-                  <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-1">
-                    Configure granular capabilities for Software Developers, DevOps, QA, Security Engineers, and custom access profiles.
+                  <p className="text-xs text-[var(--md-sys-color-on-surface-variant)]">
+                    Cross-functional system permission tiers and organizational assignments
                   </p>
                 </div>
-
-                <button
+                <Button
                   type="button"
+                  variant="filled"
+                  size="sm"
                   onClick={() => setCreateRoleModalOpen(true)}
-                  className="px-4 py-2 rounded-full m3-btn-filled text-xs font-semibold flex items-center gap-1.5 shadow-xs cursor-pointer"
+                  leftIcon={<PlusCircle className="w-3.5 h-3.5" />}
                 >
-                  <PlusCircle className="w-4 h-4" />
-                  <span>+ Create Custom Role</span>
-                </button>
+                  Create Custom Role
+                </Button>
               </div>
 
-              {/* Roles Matrix Table */}
-              <div className="p-6 rounded-3xl m3-card-high border border-[var(--md-sys-color-outline-variant)] space-y-4 shadow-xs">
+              <Card variant="outlined" padding="none" rounded="xl" className="overflow-hidden shadow-xs">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border-collapse">
+                  <table className="w-full text-left text-xs border-collapse table-auto">
                     <thead>
-                      <tr className="border-b border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider text-[10px]">
-                        <th className="py-3 px-3">System Permission</th>
-                        <th className="py-3 px-3">Scope</th>
-                        <th className="py-3 px-3 text-center">ADMIN</th>
-                        <th className="py-3 px-3 text-center">PROJECT_MGR</th>
-                        <th className="py-3 px-3 text-center">DEVELOPER</th>
-                        <th className="py-3 px-3 text-center">QA_ENG</th>
-                        <th className="py-3 px-3 text-center">DEVOPS</th>
-                        <th className="py-3 px-3 text-center">SECURITY</th>
-                        <th className="py-3 px-3 text-center">USER</th>
-                        {customRoles.map((r) => (
-                          <th key={r.name} className="py-3 px-3 text-center text-[var(--md-sys-color-primary)]">
-                            {r.label}
-                          </th>
-                        ))}
+                      <tr className="bg-[var(--md-sys-color-surface-container-low)] border-b border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider text-[10px] font-bold">
+                        <th className="py-2.5 px-3.5">Permission / Action</th>
+                        <th className="py-2.5 px-3.5 text-center">ADMIN</th>
+                        <th className="py-2.5 px-3.5 text-center">PROJECT_MANAGER</th>
+                        <th className="py-2.5 px-3.5 text-center">DEVELOPER</th>
+                        <th className="py-2.5 px-3.5 text-center">QA_ENGINEER</th>
+                        <th className="py-2.5 px-3.5 text-center">USER</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)]/40 font-mono text-[11px]">
+                    <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)]">
                       {[
-                        { id: 'issues:create', name: 'Create Defect / Task', scope: 'Issues', pm: true, dev: true, qa: true, devops: true, sec: true, user: true },
-                        { id: 'issues:edit', name: 'Edit Issue Details & Estimates', scope: 'Issues', pm: true, dev: true, qa: true, devops: true, sec: true, user: false },
-                        { id: 'issues:status', name: 'Move Cards on Kanban Board', scope: 'Issues', pm: true, dev: true, qa: true, devops: true, sec: true, user: false },
-                        { id: 'issues:assign', name: 'Assign Tickets to Coworkers', scope: 'Issues', pm: true, dev: true, qa: true, devops: true, sec: true, user: false },
-                        { id: 'issues:delete', name: 'Delete Issues', scope: 'Issues', pm: true, dev: false, qa: false, devops: false, sec: false, user: false },
-                        { id: 'worklogs:log', name: 'Log Work Hours & Minutes', scope: 'Time', pm: true, dev: true, qa: true, devops: true, sec: true, user: true },
-                        { id: 'worklogs:team', name: 'View Team Timesheet Matrix', scope: 'Time', pm: true, dev: true, qa: true, devops: true, sec: true, user: false },
-                        { id: 'sprints:manage', name: 'Create & Manage Agile Sprints', scope: 'Sprints', pm: true, dev: true, qa: false, devops: true, sec: false, user: false },
-                        { id: 'projects:manage', name: 'Create & Manage Workspaces', scope: 'Projects', pm: true, dev: false, qa: false, devops: true, sec: false, user: false },
-                        { id: 'security:audit', name: 'Inspect Security Audit Logs', scope: 'Security', pm: false, dev: false, qa: false, devops: true, sec: true, user: false },
-                        { id: 'users:manage', name: 'Activate, Block & Assign Roles', scope: 'Admin', pm: false, dev: false, qa: false, devops: false, sec: false, user: false },
-                      ].map((perm) => (
-                        <tr key={perm.id} className="hover:bg-[var(--md-sys-color-surface-container)]/50">
-                          <td className="py-2.5 px-3 font-sans font-semibold text-[var(--md-sys-color-on-surface)]">
-                            {perm.name}
-                            <span className="block font-mono text-[10px] text-[var(--md-sys-color-on-surface-variant)]">{perm.id}</span>
-                          </td>
-                          <td className="py-2.5 px-3">
-                            <span className="px-2 py-0.5 rounded-md bg-[var(--md-sys-color-surface-container-highest)] text-[10px] uppercase font-bold text-[var(--md-sys-color-on-surface-variant)]">
-                              {perm.scope}
-                            </span>
-                          </td>
-                          <td className="py-2.5 px-3 text-center text-emerald-600 font-bold">✓</td>
-                          <td className="py-2.5 px-3 text-center">{perm.pm ? <span className="text-emerald-600 font-bold">✓</span> : <span className="opacity-20">-</span>}</td>
-                          <td className="py-2.5 px-3 text-center">{perm.dev ? <span className="text-emerald-600 font-bold">✓</span> : <span className="opacity-20">-</span>}</td>
-                          <td className="py-2.5 px-3 text-center">{perm.qa ? <span className="text-emerald-600 font-bold">✓</span> : <span className="opacity-20">-</span>}</td>
-                          <td className="py-2.5 px-3 text-center">{perm.devops ? <span className="text-emerald-600 font-bold">✓</span> : <span className="opacity-20">-</span>}</td>
-                          <td className="py-2.5 px-3 text-center">{perm.sec ? <span className="text-emerald-600 font-bold">✓</span> : <span className="opacity-20">-</span>}</td>
-                          <td className="py-2.5 px-3 text-center">{perm.user ? <span className="text-emerald-600 font-bold">✓</span> : <span className="opacity-20">-</span>}</td>
-                          {customRoles.map((r) => (
-                            <td key={r.name} className="py-2.5 px-3 text-center">
-                              {r.permissions.includes(perm.id) ? (
-                                <span className="text-[var(--md-sys-color-primary)] font-bold">✓</span>
-                              ) : (
-                                <span className="opacity-20">-</span>
-                              )}
-                            </td>
-                          ))}
+                        { name: 'Create & File Issues', roles: ['ADMIN', 'PROJECT_MANAGER', 'DEVELOPER', 'QA_ENGINEER', 'USER'] },
+                        { name: 'Edit Issue Details & Descriptions', roles: ['ADMIN', 'PROJECT_MANAGER', 'DEVELOPER', 'QA_ENGINEER'] },
+                        { name: 'Change Kanban Workflow Status', roles: ['ADMIN', 'PROJECT_MANAGER', 'DEVELOPER', 'QA_ENGINEER'] },
+                        { name: 'Assign Tickets to Team Members', roles: ['ADMIN', 'PROJECT_MANAGER', 'DEVELOPER'] },
+                        { name: 'Log Working Time & Hours', roles: ['ADMIN', 'PROJECT_MANAGER', 'DEVELOPER', 'QA_ENGINEER'] },
+                        { name: 'Sprint Creation & Closure', roles: ['ADMIN', 'PROJECT_MANAGER'] },
+                        { name: 'Delete Issues & Attachments', roles: ['ADMIN', 'PROJECT_MANAGER'] },
+                        { name: 'Create & Manage Projects', roles: ['ADMIN'] },
+                        { name: 'User Management & Role Assignment', roles: ['ADMIN'] },
+                        { name: 'Security Forensics & Audit Inspection', roles: ['ADMIN'] },
+                      ].map((perm, idx) => (
+                        <tr key={idx} className="hover:bg-[var(--md-sys-color-surface-container-high)]/40 transition-colors">
+                          <td className="py-2.5 px-3.5 font-medium">{perm.name}</td>
+                          {['ADMIN', 'PROJECT_MANAGER', 'DEVELOPER', 'QA_ENGINEER', 'USER'].map((r) => {
+                            const allowed = perm.roles.includes(r);
+                            return (
+                              <td key={r} className="py-2.5 px-3.5 text-center">
+                                {allowed ? (
+                                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold text-xs">
+                                    ✓
+                                  </span>
+                                ) : (
+                                  <span className="text-[var(--md-sys-color-on-surface-variant)] opacity-25">—</span>
+                                )}
+                              </td>
+                            );
+                          })}
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-              </div>
+              </Card>
 
-              {/* Coworker Labels Directory Guide */}
-              <div className="p-6 rounded-3xl m3-card-high border border-[var(--md-sys-color-outline-variant)] space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)]">
-                  Registered Coworker Role Labels
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    'Software Developer',
-                    'DevOps Engineer',
-                    'QA Engineer',
-                    'Security Engineer',
-                    'Frontend Developer',
-                    'Backend Developer',
-                    'Fullstack Developer',
-                    'Project Manager',
-                    'System Architect',
-                    'UI/UX Designer',
-                  ].map((label) => (
-                    <span
-                      key={label}
-                      className="px-3 py-1 rounded-xl text-xs font-semibold bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]"
-                    >
-                      {label}
-                    </span>
-                  ))}
+              {customRoles.length > 0 && (
+                <div className="space-y-3 pt-2">
+                  <h4 className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">
+                    Custom Organizational Roles ({customRoles.length})
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {customRoles.map((cr) => (
+                      <Card key={cr.name} variant="outlined" padding="sm" rounded="xl" className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-xs text-[var(--md-sys-color-on-surface)]">{cr.label}</span>
+                          <Badge variant="primary" size="sm">
+                            {cr.permissions.length} perms
+                          </Badge>
+                        </div>
+                        <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] leading-relaxed">
+                          {cr.description}
+                        </p>
+                      </Card>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
           {/* ==================================================== */}
-          {/* 2. SYSTEM & SECURITY TAB */}
+          {/* 3. SYSTEM & SECURITY TAB */}
           {/* ==================================================== */}
           {activeTab === 'system' && (
-            <div className="space-y-6">
-              {/* Service Health Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="p-4 rounded-3xl m3-card-high border border-[var(--md-sys-color-outline-variant)] space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Database className="w-4 h-4 text-emerald-500" />
-                      <span className="font-bold text-xs text-[var(--md-sys-color-on-surface)]">PostgreSQL 15</span>
-                    </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600">
-                      HEALTHY
+            <div className="space-y-4">
+              {/* Security Metrics Overview */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                <Card variant="outlined" padding="sm" rounded="xl" className="flex items-center justify-between shadow-2xs">
+                  <div className="space-y-0.5">
+                    <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
+                      Total Accounts
                     </span>
+                    <p className="text-xl font-black text-[var(--md-sys-color-on-surface)]">
+                      {systemStats?.totalUsers || 0}
+                    </p>
                   </div>
-                  <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
-                    Port 5432 • 3NF Database Synchronized
-                  </p>
-                </div>
+                  <div className="w-9 h-9 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                    <Users className="w-4 h-4" />
+                  </div>
+                </Card>
 
-                <div className="p-4 rounded-3xl m3-card-high border border-[var(--md-sys-color-outline-variant)] space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Activity className="w-4 h-4 text-emerald-500" />
-                      <span className="font-bold text-xs text-[var(--md-sys-color-on-surface)]">Redis 7</span>
-                    </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600">
-                      HEALTHY
+                <Card variant="outlined" padding="sm" rounded="xl" className="flex items-center justify-between shadow-2xs">
+                  <div className="space-y-0.5">
+                    <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
+                      2FA Adoption
                     </span>
+                    <p className="text-xl font-black text-emerald-600 dark:text-emerald-400">
+                      {systemStats?.twoFactorPercentage || 0}%
+                    </p>
                   </div>
-                  <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
-                    Port 6379 • Session & Lockout Store
-                  </p>
-                </div>
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                    <ShieldCheck className="w-4 h-4" />
+                  </div>
+                </Card>
 
-                <div className="p-4 rounded-3xl m3-card-high border border-[var(--md-sys-color-outline-variant)] space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Mail className="w-4 h-4 text-emerald-500" />
-                      <span className="font-bold text-xs text-[var(--md-sys-color-on-surface)]">Mailpit</span>
-                    </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600">
-                      ONLINE
+                <Card variant="outlined" padding="sm" rounded="xl" className="flex items-center justify-between shadow-2xs">
+                  <div className="space-y-0.5">
+                    <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
+                      Blocked Users
                     </span>
+                    <p className="text-xl font-black text-rose-600 dark:text-rose-400">
+                      {systemStats?.blockedUsers || 0}
+                    </p>
                   </div>
-                  <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
-                    Ports 1025 / 8025 • Mailbox Active
-                  </p>
-                </div>
+                  <div className="w-9 h-9 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                </Card>
 
-                <div className="p-4 rounded-3xl m3-card-high border border-[var(--md-sys-color-outline-variant)] space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <HardDrive className="w-4 h-4 text-emerald-500" />
-                      <span className="font-bold text-xs text-[var(--md-sys-color-on-surface)]">SeaweedFS S3</span>
-                    </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600">
-                      READY
+                <Card variant="outlined" padding="sm" rounded="xl" className="flex items-center justify-between shadow-2xs">
+                  <div className="space-y-0.5">
+                    <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
+                      Total Projects
                     </span>
+                    <p className="text-xl font-black text-purple-600 dark:text-purple-400">
+                      {projects.length}
+                    </p>
                   </div>
-                  <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
-                    Ports 8333 / 9333 • Distributed Storage
-                  </p>
-                </div>
+                  <div className="w-9 h-9 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                    <FolderGit2 className="w-4 h-4" />
+                  </div>
+                </Card>
               </div>
 
-              {/* Login Audit Logs Table */}
-              <div className="p-6 rounded-3xl m3-card-high border border-[var(--md-sys-color-outline-variant)] space-y-4 shadow-xs">
-                <div className="flex items-center justify-between pb-3 border-b border-[var(--md-sys-color-outline-variant)]">
-                  <h3 className="font-bold text-sm text-[var(--md-sys-color-on-surface)]">
-                    Authentication Audit Trail ({auditLogs.length})
-                  </h3>
+              {/* Recent Audit Logs Preview */}
+              <Card variant="outlined" padding="none" rounded="xl" className="overflow-hidden shadow-xs space-y-0">
+                <div className="p-3.5 bg-[var(--md-sys-color-surface-container-low)] border-b border-[var(--md-sys-color-outline-variant)] flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
+                    <h3 className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">
+                      Recent Authentication Logs Preview
+                    </h3>
+                  </div>
+                  <Badge variant="primary" size="sm">
+                    Live Telemetry
+                  </Badge>
                 </div>
 
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
+                  <table className="w-full text-left text-xs border-collapse table-auto">
                     <thead>
-                      <tr className="border-b border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider text-[10px]">
-                        <th className="py-2.5 px-3">Timestamp</th>
-                        <th className="py-2.5 px-3">IP Address</th>
-                        <th className="py-2.5 px-3">Status</th>
-                        <th className="py-2.5 px-3">Details</th>
+                      <tr className="bg-[var(--md-sys-color-surface-container-low)] border-b border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider text-[10px] font-bold">
+                        <th className="py-2 px-3">Timestamp</th>
+                        <th className="py-2 px-3">IP Address</th>
+                        <th className="py-2 px-3">Status</th>
+                        <th className="py-2 px-3">Details</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)]/40 font-mono text-[11px]">
-                      {auditLogs.map((log) => (
-                        <tr key={log.id} className="hover:bg-[var(--md-sys-color-surface-container)]">
+                    <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)] font-mono text-[11px] text-[var(--md-sys-color-on-surface)]">
+                      {auditLogs.slice(0, 10).map((log) => (
+                        <tr key={log.id} className="hover:bg-[var(--md-sys-color-surface-container-high)]/40">
                           <td className="py-2 px-3 whitespace-nowrap">{new Date(log.createdAt).toLocaleString()}</td>
                           <td className="py-2 px-3">{log.ipAddress}</td>
                           <td className="py-2 px-3">
-                            <span
-                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                log.status === 'SUCCESS'
-                                  ? 'bg-emerald-500/10 text-emerald-600'
-                                  : log.status === 'LOCKED_OUT'
-                                  ? 'bg-red-600 text-white'
-                                  : 'bg-rose-500/10 text-rose-500'
-                              }`}
+                            <Badge
+                              variant={log.status === 'SUCCESS' ? 'success' : 'error'}
+                              size="sm"
                             >
                               {log.status}
-                            </span>
+                            </Badge>
                           </td>
                           <td className="py-2 px-3 text-[var(--md-sys-color-on-surface-variant)] truncate max-w-sm">
                             {log.failureReason || 'Normal session established'}
@@ -809,27 +774,27 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                     </tbody>
                   </table>
                 </div>
-              </div>
+              </Card>
             </div>
           )}
 
           {/* ==================================================== */}
-          {/* 3. PROJECTS CONTROL TAB */}
+          {/* 4. PROJECTS CONTROL TAB */}
           {/* ==================================================== */}
           {activeTab === 'projects' && (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Create Project Card */}
-              <div className="p-6 rounded-3xl m3-card-high border border-[var(--md-sys-color-outline-variant)] space-y-4 shadow-xs">
+              <Card variant="outlined" padding="md" rounded="xl" className="space-y-3 shadow-xs">
                 <div className="flex items-center gap-2 pb-2 border-b border-[var(--md-sys-color-outline-variant)]">
                   <PlusCircle className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
-                  <h3 className="font-bold text-sm text-[var(--md-sys-color-on-surface)]">
+                  <h3 className="font-bold text-xs text-[var(--md-sys-color-on-surface)]">
                     Register New Workspace Project
                   </h3>
                 </div>
 
                 <form onSubmit={handleCreateProject} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-[11px] font-semibold text-[var(--md-sys-color-on-surface-variant)] mb-1">
+                    <label className="block text-[10px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider mb-1">
                       Key (2-6 letters) *
                     </label>
                     <input
@@ -839,12 +804,12 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                       placeholder="e.g. AUTH"
                       value={newProjectKey}
                       onChange={(e) => setNewProjectKey(e.target.value.toUpperCase())}
-                      className="w-full text-xs font-mono uppercase px-3 py-2 rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] focus:ring-2 focus:ring-[var(--md-sys-color-primary)]"
+                      className="w-full text-xs font-mono uppercase px-3 py-1.5 rounded-lg bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] focus:outline-hidden focus:ring-1 focus:ring-[var(--md-sys-color-primary)] font-bold"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-semibold text-[var(--md-sys-color-on-surface-variant)] mb-1">
+                    <label className="block text-[10px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider mb-1">
                       Project Name *
                     </label>
                     <input
@@ -853,251 +818,249 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                       placeholder="e.g. Authentication Service"
                       value={newProjectName}
                       onChange={(e) => setNewProjectName(e.target.value)}
-                      className="w-full text-xs px-3 py-2 rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] focus:ring-2 focus:ring-[var(--md-sys-color-primary)]"
+                      className="w-full text-xs px-3 py-1.5 rounded-lg bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] focus:outline-hidden focus:ring-1 focus:ring-[var(--md-sys-color-primary)] font-medium"
                     />
                   </div>
 
                   <div className="flex items-end">
-                    <button
+                    <Button
                       type="submit"
-                      disabled={creatingProject}
-                      className="w-full py-2 rounded-xl m3-btn-filled text-xs font-semibold flex items-center justify-center gap-1.5 shadow-2xs"
+                      variant="filled"
+                      size="sm"
+                      isLoading={creatingProject}
+                      disabled={!newProjectKey || !newProjectName}
+                      className="w-full"
+                      leftIcon={<PlusCircle className="w-3.5 h-3.5" />}
                     >
-                      <PlusCircle className="w-3.5 h-3.5" />
-                      <span>{creatingProject ? 'Creating...' : 'Create Project'}</span>
-                    </button>
+                      Create Project
+                    </Button>
                   </div>
                 </form>
-              </div>
+              </Card>
 
               {/* Projects Table */}
-              <div className="p-6 rounded-3xl m3-card-high border border-[var(--md-sys-color-outline-variant)] space-y-4 shadow-xs">
-                <h3 className="font-bold text-sm text-[var(--md-sys-color-on-surface)]">
-                  All Registered Workspaces ({projects.length})
-                </h3>
-
+              <Card variant="outlined" padding="none" rounded="xl" className="overflow-hidden shadow-xs">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
+                  <table className="w-full text-left text-xs border-collapse table-auto">
                     <thead>
-                      <tr className="border-b border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider text-[10px]">
-                        <th className="py-2.5 px-3">Key</th>
-                        <th className="py-2.5 px-3">Project Name</th>
-                        <th className="py-2.5 px-3">Project Lead</th>
-                        <th className="py-2.5 px-3">Issues</th>
-                        <th className="py-2.5 px-3 text-right">Actions</th>
+                      <tr className="bg-[var(--md-sys-color-surface-container-low)] border-b border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider text-[10px] font-bold">
+                        <th className="py-2.5 px-3.5">Key</th>
+                        <th className="py-2.5 px-3.5">Project Name</th>
+                        <th className="py-2.5 px-3.5">Created</th>
+                        <th className="py-2.5 px-3.5 text-right">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)]/40">
+                    <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)]">
                       {projects.map((p) => (
-                        <tr key={p.id} className="hover:bg-[var(--md-sys-color-surface-container)]">
-                          <td className="py-3 px-3 font-mono font-bold text-[var(--md-sys-color-primary)]">
+                        <tr key={p.id} className="hover:bg-[var(--md-sys-color-surface-container-high)]/40 transition-colors">
+                          <td className="py-2.5 px-3.5 font-mono font-bold text-[var(--md-sys-color-primary)]">
                             {p.key}
                           </td>
-                          <td className="py-3 px-3 font-semibold text-[var(--md-sys-color-on-surface)]">
+                          <td className="py-2.5 px-3.5 font-semibold text-[var(--md-sys-color-on-surface)]">
                             {p.name}
                           </td>
-                          <td className="py-3 px-3 text-[var(--md-sys-color-on-surface-variant)]">
-                            {p.lead?.fullName || 'Not assigned'}
+                          <td className="py-2.5 px-3.5 text-[var(--md-sys-color-on-surface-variant)]">
+                            {new Date(p.createdAt).toLocaleDateString()}
                           </td>
-                          <td className="py-3 px-3">
-                            <span className="font-mono text-[11px]">
-                              {p.openIssues ?? 0} open / {p.totalIssues ?? 0} total
-                            </span>
-                          </td>
-                          <td className="py-3 px-3 text-right">
-                            <button
+                          <td className="py-2.5 px-3.5 text-right">
+                            <Button
                               type="button"
+                              variant="danger-tonal"
+                              size="xs"
                               onClick={() => handleDeleteProject(p.id, p.key)}
-                              className="p-1 rounded-md text-[var(--md-sys-color-on-surface-variant)] hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
-                              title="Delete project"
+                              leftIcon={<Trash2 className="w-3 h-3" />}
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                              Delete
+                            </Button>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-              </div>
+              </Card>
             </div>
           )}
 
           {/* ==================================================== */}
-          {/* 4. TEAM ANALYTICS & VELOCITY TAB */}
+          {/* 5. TEAM ANALYTICS TAB */}
           {/* ==================================================== */}
           {activeTab === 'analytics' && (
-            <div className="space-y-6">
-              {/* Analytics Header Metrics */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="p-5 rounded-3xl m3-tile shadow-xs space-y-1">
-                  <span className="text-xs uppercase font-semibold text-[var(--md-sys-color-on-surface-variant)]">
-                    Total Time Logged
-                  </span>
-                  <div className="text-3xl font-extrabold text-[var(--md-sys-color-on-surface)]">
-                    {timeStats?.totalHoursLogged || 0} hrs
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                <Card variant="outlined" padding="sm" rounded="xl" className="flex items-center justify-between shadow-2xs">
+                  <div className="space-y-0.5">
+                    <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
+                      Total Hours Logged
+                    </span>
+                    <p className="text-xl font-black text-[var(--md-sys-color-primary)]">
+                      {timeStats?.totalHoursLogged || 0}h
+                    </p>
                   </div>
-                  <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
-                    Across {projects.length} software projects
-                  </p>
-                </div>
+                  <div className="w-9 h-9 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                    <Activity className="w-4 h-4" />
+                  </div>
+                </Card>
 
-                <div className="p-5 rounded-3xl m3-tile shadow-xs space-y-1">
-                  <span className="text-xs uppercase font-semibold text-[var(--md-sys-color-on-surface-variant)]">
-                    2FA Security Adoption
-                  </span>
-                  <div className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">
-                    {systemStats?.twoFactorPercentage || 0}%
+                <Card variant="outlined" padding="sm" rounded="xl" className="flex items-center justify-between shadow-2xs">
+                  <div className="space-y-0.5">
+                    <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
+                      Logged Today
+                    </span>
+                    <p className="text-xl font-black text-emerald-600 dark:text-emerald-400">
+                      {timeStats?.hoursLoggedToday || 0}h
+                    </p>
                   </div>
-                  <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
-                    {systemStats?.twoFactorAdoptionCount || 0} of {systemStats?.totalUsers || 0} users protected
-                  </p>
-                </div>
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                    <TrendingUp className="w-4 h-4" />
+                  </div>
+                </Card>
 
-                <div className="p-5 rounded-3xl m3-tile shadow-xs space-y-1">
-                  <span className="text-xs uppercase font-semibold text-[var(--md-sys-color-on-surface-variant)]">
-                    Active Accounts
-                  </span>
-                  <div className="text-3xl font-extrabold text-[var(--md-sys-color-primary)]">
-                    {systemStats?.activeUsers || 0}
+                <Card variant="outlined" padding="sm" rounded="xl" className="flex items-center justify-between shadow-2xs">
+                  <div className="space-y-0.5">
+                    <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
+                      Logged This Week
+                    </span>
+                    <p className="text-xl font-black text-amber-600 dark:text-amber-400">
+                      {timeStats?.hoursLoggedThisWeek || 0}h
+                    </p>
                   </div>
-                  <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
-                    Verified and unblocked accounts
-                  </p>
-                </div>
+                  <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                    <Database className="w-4 h-4" />
+                  </div>
+                </Card>
               </div>
 
-              {/* Roles Breakdown */}
               {systemStats?.roleBreakdown && (
-                <div className="p-6 rounded-3xl m3-card-high border border-[var(--md-sys-color-outline-variant)] space-y-4 shadow-xs">
-                  <h3 className="font-bold text-sm text-[var(--md-sys-color-on-surface)]">
-                    RBAC Role Distribution (5 Roles)
+                <Card variant="outlined" padding="md" rounded="xl" className="space-y-3 shadow-xs">
+                  <h3 className="text-xs font-bold text-[var(--md-sys-color-on-surface)] flex items-center gap-2">
+                    <Users className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
+                    <span>User Role Distribution</span>
                   </h3>
                   <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                     {Object.entries(systemStats.roleBreakdown).map(([role, count]) => (
-                      <div key={role} className="p-3 rounded-2xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] text-center">
-                        <span className="text-[10px] font-bold text-[var(--md-sys-color-on-surface-variant)] block">
+                      <div
+                        key={role}
+                        className="p-3 rounded-lg bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-center"
+                      >
+                        <span className="text-[10px] font-bold text-[var(--md-sys-color-on-surface-variant)] block uppercase mb-1">
                           {role}
                         </span>
-                        <span className="text-xl font-extrabold text-[var(--md-sys-color-on-surface)]">
+                        <span className="text-lg font-black text-[var(--md-sys-color-on-surface)]">
                           {count}
                         </span>
                       </div>
                     ))}
                   </div>
-                </div>
+                </Card>
               )}
             </div>
           )}
         </>
       )}
-      {/* Create Custom Role Modal */}
-      {createRoleModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="relative w-full max-w-lg rounded-[28px] bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)] shadow-2xl p-6 space-y-4">
-            <h3 className="text-base font-bold text-[var(--md-sys-color-on-surface)] flex items-center gap-2">
-              <ShieldAlert className="w-5 h-5 text-[var(--md-sys-color-primary)]" />
-              <span>Create Custom Access Role</span>
-            </h3>
-            <p className="text-xs text-[var(--md-sys-color-on-surface-variant)]">
-              Define custom permissions for new organizational roles (e.g. DevOps Lead, Security Auditor).
-            </p>
 
-            <form onSubmit={handleSaveCustomRole} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface)] mb-1">
-                  Role Name *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. DevOps Engineer"
-                  value={newRoleName}
-                  onChange={(e) => setNewRoleName(e.target.value)}
-                  className="w-full text-xs px-3 py-2 rounded-xl bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] font-medium"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface)] mb-1">
-                  Description
-                </label>
-                <input
-                  type="text"
-                  placeholder="Responsibilities and permission scope"
-                  value={newRoleDescription}
-                  onChange={(e) => setNewRoleDescription(e.target.value)}
-                  className="w-full text-xs px-3 py-2 rounded-xl bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] font-medium"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface)] mb-2">
-                  Select Included Permissions *
-                </label>
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  {[
-                    { id: 'issues:create', label: 'Create Issues' },
-                    { id: 'issues:edit', label: 'Edit Issues & Estimates' },
-                    { id: 'issues:status', label: 'Move Kanban Status' },
-                    { id: 'issues:assign', label: 'Assign Tickets' },
-                    { id: 'issues:delete', label: 'Delete Issues' },
-                    { id: 'worklogs:log', label: 'Log Working Time' },
-                    { id: 'worklogs:team', label: 'Team Timesheet Access' },
-                    { id: 'sprints:manage', label: 'Sprint Planning' },
-                    { id: 'projects:manage', label: 'Workspace Governance' },
-                    { id: 'security:audit', label: 'Security Forensics' },
-                  ].map((p) => {
-                    const isChecked = newRolePermissions.includes(p.id);
-                    return (
-                      <label
-                        key={p.id}
-                        className={`flex items-center gap-2 p-2 rounded-xl border cursor-pointer transition-colors ${
-                          isChecked
-                            ? 'bg-[var(--md-sys-color-primary-container)]/30 border-[var(--md-sys-color-primary)] font-semibold'
-                            : 'bg-[var(--md-sys-color-surface)] border-[var(--md-sys-color-outline-variant)] opacity-70'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setNewRolePermissions((prev) => [...prev, p.id]);
-                            } else {
-                              setNewRolePermissions((prev) => prev.filter((id) => id !== p.id));
-                            }
-                          }}
-                          className="rounded text-[var(--md-sys-color-primary)]"
-                        />
-                        <span>{p.label}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--md-sys-color-outline-variant)]">
-                <button
-                  type="button"
-                  onClick={() => setCreateRoleModalOpen(false)}
-                  className="px-4 py-2 rounded-full m3-btn-outline text-xs"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-full m3-btn-filled text-xs font-semibold flex items-center gap-1.5"
-                >
-                  <CheckCircle className="w-3.5 h-3.5" />
-                  <span>Register Role</span>
-                </button>
-              </div>
-            </form>
+      {/* Create Custom Role Radix Modal */}
+      <Modal
+        isOpen={createRoleModalOpen}
+        onClose={() => setCreateRoleModalOpen(false)}
+        title="Create Custom Access Role"
+        description="Define custom permissions for new organizational roles (e.g. DevOps Lead, Security Auditor)."
+        size="md"
+      >
+        <form onSubmit={handleSaveCustomRole} className="space-y-4 pt-2">
+          <div>
+            <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface)] mb-1">
+              Role Name *
+            </label>
+            <input
+              type="text"
+              required
+              placeholder="e.g. DevOps Engineer"
+              value={newRoleName}
+              onChange={(e) => setNewRoleName(e.target.value)}
+              className="w-full text-xs px-3 py-2 rounded-xl bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] font-medium focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)]"
+            />
           </div>
-        </div>
-      )}
 
+          <div>
+            <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface)] mb-1">
+              Description
+            </label>
+            <input
+              type="text"
+              placeholder="Responsibilities and permission scope"
+              value={newRoleDescription}
+              onChange={(e) => setNewRoleDescription(e.target.value)}
+              className="w-full text-xs px-3 py-2 rounded-xl bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] font-medium focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)]"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface)] mb-2">
+              Select Included Permissions *
+            </label>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              {[
+                { id: 'issues:create', label: 'Create Issues' },
+                { id: 'issues:edit', label: 'Edit Issues & Estimates' },
+                { id: 'issues:status', label: 'Move Kanban Status' },
+                { id: 'issues:assign', label: 'Assign Tickets' },
+                { id: 'issues:delete', label: 'Delete Issues' },
+                { id: 'worklogs:log', label: 'Log Working Time' },
+                { id: 'worklogs:team', label: 'Team Timesheet Access' },
+                { id: 'sprints:manage', label: 'Sprint Planning' },
+                { id: 'projects:manage', label: 'Workspace Governance' },
+                { id: 'security:audit', label: 'Security Forensics' },
+              ].map((p) => {
+                const isChecked = newRolePermissions.includes(p.id);
+                return (
+                  <label
+                    key={p.id}
+                    className={`flex items-center gap-2 p-2 rounded-xl border cursor-pointer transition-colors ${
+                      isChecked
+                        ? 'bg-[var(--md-sys-color-primary-container)]/30 border-[var(--md-sys-color-primary)] font-semibold'
+                        : 'bg-[var(--md-sys-color-surface-container)] border-[var(--md-sys-color-outline-variant)] opacity-70'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setNewRolePermissions((prev) => [...prev, p.id]);
+                        } else {
+                          setNewRolePermissions((prev) => prev.filter((id) => id !== p.id));
+                        }
+                      }}
+                      className="rounded text-[var(--md-sys-color-primary)]"
+                    />
+                    <span>{p.label}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-[var(--md-sys-color-outline-variant)]">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setCreateRoleModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="filled"
+              size="sm"
+              leftIcon={<CheckCircle className="w-3.5 h-3.5" />}
+            >
+              Register Role
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

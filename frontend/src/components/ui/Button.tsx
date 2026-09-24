@@ -4,7 +4,7 @@ import { cn } from '../../utils/cn';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'filled' | 'tonal' | 'outline' | 'ghost' | 'danger' | 'danger-tonal';
-  size?: 'sm' | 'md' | 'lg' | 'icon-sm' | 'icon-md';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'icon-sm' | 'icon-md';
   isLoading?: boolean;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
@@ -44,6 +44,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     const sizeStyles: Record<NonNullable<ButtonProps['size']>, string> = {
+      xs: 'h-7 px-2.5 text-xs gap-1 rounded-md',
       sm: 'h-8 px-3 text-xs gap-1.5 rounded-lg',
       md: 'h-10 px-4 text-sm gap-2 rounded-xl',
       lg: 'h-12 px-6 text-base gap-2.5 rounded-xl',

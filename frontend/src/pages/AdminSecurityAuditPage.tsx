@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { api, type LoginAuditLogItem, type UserProfile } from '../api/client';
+import { Card } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
+import { Badge } from '../components/ui/Badge';
 import {
   ShieldAlert,
   Users,
@@ -10,6 +13,7 @@ import {
   Clock,
   Lock,
   Unlock,
+  ShieldCheck,
 } from 'lucide-react';
 
 export const AdminSecurityAuditPage: React.FC = () => {
@@ -33,8 +37,8 @@ export const AdminSecurityAuditPage: React.FC = () => {
       const data = await api.getLoginAuditLogs(1, 100);
       setLogs(data.items);
       setLogsTotal(data.total);
-    } catch (err) {
-      console.error('Failed to load audit logs:', err);
+    } catch {
+      // Ignored
     } finally {
       setLogsLoading(false);
     }
@@ -43,10 +47,10 @@ export const AdminSecurityAuditPage: React.FC = () => {
   const fetchUsers = async () => {
     setUsersLoading(true);
     try {
-      const data = await api.getUsers(1, 100);
+      const data = await api.getUsers({ page: 1, limit: 100 });
       setUsers(data.items);
-    } catch (err) {
-      console.error('Failed to load users:', err);
+    } catch {
+      // Ignored
     } finally {
       setUsersLoading(false);
     }
@@ -69,29 +73,28 @@ export const AdminSecurityAuditPage: React.FC = () => {
         await api.blockUser(user.id);
       }
       await fetchUsers();
-    } catch (err) {
-      console.error('Failed to update user block state:', err);
+    } catch {
+      // Ignored
     } finally {
       setActionLoadingId(null);
     }
   };
 
-  const getStatusBadge = (status: LoginAuditLogItem['status']) => {
+  const getStatusBadgeVariant = (status: LoginAuditLogItem['status']): 'success' | 'warning' | 'error' | 'primary' | 'neutral' => {
     switch (status) {
       case 'SUCCESS':
       case 'TWO_FACTOR_SUCCESS':
-        return 'bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)]';
+        return 'success';
       case 'ACCOUNT_LOCKED':
-        return 'bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] animate-pulse';
+        return 'warning';
       case 'ACCOUNT_BLOCKED':
-        return 'bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)]';
       case 'FAILED_PASSWORD':
       case 'TWO_FACTOR_FAILED':
-        return 'bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)]';
+        return 'error';
       case 'REQUIRE_2FA':
-        return 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)]';
+        return 'primary';
       default:
-        return 'bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)]';
+        return 'neutral';
     }
   };
 
@@ -106,43 +109,43 @@ export const AdminSecurityAuditPage: React.FC = () => {
   });
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-6 space-y-5 animate-in fade-in duration-200">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-[18px] bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] flex items-center justify-center">
-            <ShieldAlert className="w-6 h-6 text-[var(--md-sys-color-warning)]" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--md-sys-color-outline-variant)] pb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] flex items-center justify-center shrink-0">
+            <ShieldAlert className="w-5 h-5 text-[var(--md-sys-color-warning)]" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-[var(--md-sys-color-on-surface)] tracking-tight">Security Audit Center</h1>
-            <p className="text-xs text-[var(--md-sys-color-on-surface-variant)]">Security forensics, rate limiting & access controls</p>
+            <h1 className="text-xl sm:text-2xl font-black text-[var(--md-sys-color-on-surface)] tracking-tight">
+              Security Audit Center
+            </h1>
+            <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-0.5">
+              Forensic audit trail, account access controls, and rate-limiting telemetry
+            </p>
           </div>
         </div>
 
-        {/* Tab Controls - M3 Pill Group */}
-        <div className="flex items-center gap-1.5 p-1.5 rounded-full bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]">
-          <button
+        {/* Tab Controls */}
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant={tab === 'logs' ? 'filled' : 'ghost'}
+            size="sm"
             onClick={() => setTab('logs')}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
-              tab === 'logs'
-                ? 'bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] shadow-sm'
-                : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]'
-            }`}
+            leftIcon={<ShieldCheck className="w-3.5 h-3.5" />}
           >
-            <ShieldAlert className="w-3.5 h-3.5" />
-            <span>Audit Trail ({logsTotal})</span>
-          </button>
-          <button
+            Audit Trail ({logsTotal})
+          </Button>
+          <Button
+            type="button"
+            variant={tab === 'users' ? 'filled' : 'ghost'}
+            size="sm"
             onClick={() => setTab('users')}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
-              tab === 'users'
-                ? 'bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] shadow-sm'
-                : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]'
-            }`}
+            leftIcon={<Users className="w-3.5 h-3.5" />}
           >
-            <Users className="w-3.5 h-3.5" />
-            <span>User Accounts & Blocks</span>
-          </button>
+            User Accounts & Locks
+          </Button>
         </div>
       </div>
 
@@ -150,23 +153,23 @@ export const AdminSecurityAuditPage: React.FC = () => {
         /* ================= AUDIT LOGS VIEW ================= */
         <div className="space-y-4">
           {/* Filter Bar */}
-          <div className="p-4 rounded-[24px] m3-card flex flex-wrap items-center justify-between gap-3 shadow-sm">
+          <Card variant="outlined" padding="sm" rounded="xl" className="flex flex-wrap items-center justify-between gap-3 shadow-2xs">
             <div className="flex items-center gap-2.5 flex-1 min-w-[260px]">
               <div className="relative w-full max-w-sm">
-                <Search className="absolute left-3.5 top-3 w-4 h-4 text-[var(--md-sys-color-outline)]" />
+                <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-[var(--md-sys-color-on-surface-variant)]" />
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search by email, IP address, or reason..."
-                  className="w-full pl-10 pr-4 py-2.5 text-xs m3-input"
+                  className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] focus:outline-hidden focus:ring-1 focus:ring-[var(--md-sys-color-primary)] font-medium"
                 />
               </div>
 
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3.5 py-2.5 text-xs m3-input"
+                className="px-2.5 py-1.5 text-xs rounded-lg bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] font-medium cursor-pointer"
               >
                 <option value="ALL">All Outcomes</option>
                 <option value="SUCCESS">SUCCESS</option>
@@ -178,70 +181,76 @@ export const AdminSecurityAuditPage: React.FC = () => {
               </select>
             </div>
 
-            <button
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
               onClick={fetchLogs}
-              disabled={logsLoading}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full m3-btn-tonal text-xs font-semibold"
+              isLoading={logsLoading}
+              leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${logsLoading ? 'animate-spin' : ''}`} />
-              <span>Refresh Log</span>
-            </button>
-          </div>
+              Refresh Log
+            </Button>
+          </Card>
 
           {/* Table Container */}
-          <div className="rounded-[24px] m3-card overflow-hidden shadow-sm">
+          <Card variant="outlined" padding="none" rounded="xl" className="overflow-hidden shadow-xs">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] font-semibold border-b border-[var(--md-sys-color-outline-variant)]">
+              <table className="w-full text-left text-xs border-collapse table-auto">
+                <thead className="bg-[var(--md-sys-color-surface-container-low)] text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider text-[10px] font-bold border-b border-[var(--md-sys-color-outline-variant)]">
                   <tr>
-                    <th className="px-5 py-3.5">ID</th>
-                    <th className="px-5 py-3.5">Timestamp</th>
-                    <th className="px-5 py-3.5">Status</th>
-                    <th className="px-5 py-3.5">Attempted Email</th>
-                    <th className="px-5 py-3.5">Client IP</th>
-                    <th className="px-5 py-3.5">User-Agent</th>
-                    <th className="px-5 py-3.5">Forensic Context</th>
+                    <th className="px-3.5 py-2.5">ID</th>
+                    <th className="px-3.5 py-2.5">Timestamp</th>
+                    <th className="px-3.5 py-2.5">Status</th>
+                    <th className="px-3.5 py-2.5">Attempted Email</th>
+                    <th className="px-3.5 py-2.5">Client IP</th>
+                    <th className="px-3.5 py-2.5">User-Agent</th>
+                    <th className="px-3.5 py-2.5">Forensic Context</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)]">
                   {logsLoading ? (
                     <tr>
-                      <td colSpan={7} className="px-5 py-12 text-center text-[var(--md-sys-color-outline)]">
+                      <td colSpan={7} className="px-5 py-12 text-center text-[var(--md-sys-color-on-surface-variant)]">
                         Loading security audit trail...
                       </td>
                     </tr>
                   ) : filteredLogs.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-5 py-12 text-center text-[var(--md-sys-color-outline)]">
+                      <td colSpan={7} className="px-5 py-12 text-center text-[var(--md-sys-color-on-surface-variant)]">
                         No audit log records match the current filter.
                       </td>
                     </tr>
                   ) : (
                     filteredLogs.map((log) => (
-                      <tr key={log.id} className="hover:bg-[var(--md-sys-color-surface-container-high)]/50 transition-colors">
-                        <td className="px-5 py-3.5 font-mono text-[var(--md-sys-color-outline)] font-bold">#{log.id}</td>
-                        <td className="px-5 py-3.5 whitespace-nowrap text-[var(--md-sys-color-on-surface-variant)]">
+                      <tr key={log.id} className="hover:bg-[var(--md-sys-color-surface-container-high)]/40 transition-colors">
+                        <td className="px-3.5 py-2.5 font-mono text-[var(--md-sys-color-on-surface-variant)] font-bold">
+                          #{log.id}
+                        </td>
+                        <td className="px-3.5 py-2.5 whitespace-nowrap text-[var(--md-sys-color-on-surface-variant)]">
                           {new Date(log.createdAt).toLocaleString()}
                         </td>
-                        <td className="px-5 py-3.5">
-                          <span
-                            className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase ${getStatusBadge(
-                              log.status,
-                            )}`}
-                          >
+                        <td className="px-3.5 py-2.5 whitespace-nowrap">
+                          <Badge variant={getStatusBadgeVariant(log.status)} size="sm">
                             {log.status}
-                          </span>
+                          </Badge>
                         </td>
-                        <td className="px-5 py-3.5 font-medium text-[var(--md-sys-color-on-surface)]">{log.attemptedEmail}</td>
-                        <td className="px-5 py-3.5 font-mono text-[var(--md-sys-color-on-surface-variant)]">{log.ipAddress}</td>
-                        <td className="px-5 py-3.5 max-w-[180px] truncate text-[var(--md-sys-color-on-surface-variant)]" title={log.userAgent}>
+                        <td className="px-3.5 py-2.5 font-medium text-[var(--md-sys-color-on-surface)]">
+                          {log.attemptedEmail}
+                        </td>
+                        <td className="px-3.5 py-2.5 font-mono text-xs text-[var(--md-sys-color-on-surface-variant)]">
+                          {log.ipAddress}
+                        </td>
+                        <td className="px-3.5 py-2.5 max-w-[180px] truncate text-[var(--md-sys-color-on-surface-variant)]" title={log.userAgent}>
                           {log.userAgent || 'Unknown'}
                         </td>
-                        <td className="px-5 py-3.5 text-[var(--md-sys-color-on-surface-variant)]">
+                        <td className="px-3.5 py-2.5 text-[var(--md-sys-color-on-surface-variant)]">
                           {log.failureReason ? (
-                            <span className="text-[var(--md-sys-color-warning)] font-medium">{log.failureReason}</span>
+                            <span className="text-[var(--md-sys-color-error)] font-medium text-xs">
+                              {log.failureReason}
+                            </span>
                           ) : (
-                            <span className="text-[var(--md-sys-color-success)] font-medium">—</span>
+                            <span className="text-[var(--md-sys-color-success)] font-medium text-xs">—</span>
                           )}
                         </td>
                       </tr>
@@ -250,51 +259,47 @@ export const AdminSecurityAuditPage: React.FC = () => {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Card>
         </div>
       ) : (
         /* ================= USER ACCOUNTS & BLOCKING VIEW ================= */
-        <div className="rounded-[24px] m3-card overflow-hidden shadow-sm">
+        <Card variant="outlined" padding="none" rounded="xl" className="overflow-hidden shadow-xs">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] font-semibold border-b border-[var(--md-sys-color-outline-variant)]">
+            <table className="w-full text-left text-xs border-collapse table-auto">
+              <thead className="bg-[var(--md-sys-color-surface-container-low)] text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider text-[10px] font-bold border-b border-[var(--md-sys-color-outline-variant)]">
                 <tr>
-                  <th className="px-5 py-3.5">ID</th>
-                  <th className="px-5 py-3.5">User Profile</th>
-                  <th className="px-5 py-3.5">System Role</th>
-                  <th className="px-5 py-3.5">Email Activated</th>
-                  <th className="px-5 py-3.5">2FA TOTP</th>
-                  <th className="px-5 py-3.5">Account State</th>
-                  <th className="px-5 py-3.5 text-right">Admin Action</th>
+                  <th className="px-3.5 py-2.5">ID</th>
+                  <th className="px-3.5 py-2.5">User Profile</th>
+                  <th className="px-3.5 py-2.5">System Role</th>
+                  <th className="px-3.5 py-2.5">Email Activated</th>
+                  <th className="px-3.5 py-2.5">2FA TOTP</th>
+                  <th className="px-3.5 py-2.5">Account State</th>
+                  <th className="px-3.5 py-2.5 text-right">Admin Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)]">
                 {usersLoading ? (
                   <tr>
-                    <td colSpan={7} className="px-5 py-12 text-center text-[var(--md-sys-color-outline)]">
+                    <td colSpan={7} className="px-5 py-12 text-center text-[var(--md-sys-color-on-surface-variant)]">
                       Loading registered users...
                     </td>
                   </tr>
                 ) : (
                   users.map((u) => (
-                    <tr key={u.id} className="hover:bg-[var(--md-sys-color-surface-container-high)]/50 transition-colors">
-                      <td className="px-5 py-3.5 font-mono font-bold text-[var(--md-sys-color-outline)]">#{u.id}</td>
-                      <td className="px-5 py-3.5">
+                    <tr key={u.id} className="hover:bg-[var(--md-sys-color-surface-container-high)]/40 transition-colors">
+                      <td className="px-3.5 py-2.5 font-mono font-bold text-[var(--md-sys-color-on-surface-variant)]">
+                        #{u.id}
+                      </td>
+                      <td className="px-3.5 py-2.5">
                         <div className="font-semibold text-[var(--md-sys-color-on-surface)]">{u.fullName}</div>
                         <div className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">{u.email}</div>
                       </td>
-                      <td className="px-5 py-3.5">
-                        <span
-                          className={`inline-block px-3 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                            u.systemRole === 'ADMIN'
-                              ? 'bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)]'
-                              : 'bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-on-surface-variant)]'
-                          }`}
-                        >
+                      <td className="px-3.5 py-2.5">
+                        <Badge variant={u.systemRole === 'ADMIN' ? 'primary' : 'neutral'} size="sm">
                           {u.systemRole}
-                        </span>
+                        </Badge>
                       </td>
-                      <td className="px-5 py-3.5">
+                      <td className="px-3.5 py-2.5">
                         {u.isActivated ? (
                           <span className="text-[var(--md-sys-color-success)] flex items-center gap-1 font-medium">
                             <CheckCircle className="w-3.5 h-3.5" />
@@ -307,52 +312,36 @@ export const AdminSecurityAuditPage: React.FC = () => {
                           </span>
                         )}
                       </td>
-                      <td className="px-5 py-3.5">
-                        <span
-                          className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${
-                            u.twoFactorEnabled
-                              ? 'bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)]'
-                              : 'bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-outline)]'
-                          }`}
-                        >
+                      <td className="px-3.5 py-2.5">
+                        <Badge variant={u.twoFactorEnabled ? 'success' : 'neutral'} size="sm">
                           {u.twoFactorEnabled ? 'Enabled' : 'Disabled'}
-                        </span>
+                        </Badge>
                       </td>
-                      <td className="px-5 py-3.5">
+                      <td className="px-3.5 py-2.5">
                         {u.isBlocked ? (
-                          <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] flex items-center gap-1 w-max">
-                            <Ban className="w-3 h-3" />
-                            <span>Blocked</span>
-                          </span>
+                          <Badge variant="error" size="sm">
+                            <Ban className="w-3 h-3 mr-1" />
+                            Blocked
+                          </Badge>
                         ) : (
-                          <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] flex items-center gap-1 w-max">
-                            <CheckCircle className="w-3 h-3" />
-                            <span>Active</span>
-                          </span>
+                          <Badge variant="success" size="sm">
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            Active
+                          </Badge>
                         )}
                       </td>
-                      <td className="px-5 py-3.5 text-right">
-                        <button
+                      <td className="px-3.5 py-2.5 text-right">
+                        <Button
+                          type="button"
+                          variant={u.isBlocked ? 'tonal' : 'danger-tonal'}
+                          size="xs"
                           onClick={() => handleToggleBlock(u)}
                           disabled={actionLoadingId === u.id || u.systemRole === 'ADMIN'}
-                          className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ml-auto disabled:opacity-40 ${
-                            u.isBlocked
-                              ? 'bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)]'
-                              : 'bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)]'
-                          }`}
+                          isLoading={actionLoadingId === u.id}
+                          leftIcon={u.isBlocked ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
                         >
-                          {u.isBlocked ? (
-                            <>
-                              <Unlock className="w-3 h-3" />
-                              <span>Unblock</span>
-                            </>
-                          ) : (
-                            <>
-                              <Lock className="w-3 h-3" />
-                              <span>Block User</span>
-                            </>
-                          )}
-                        </button>
+                          {u.isBlocked ? 'Unblock' : 'Block User'}
+                        </Button>
                       </td>
                     </tr>
                   ))
@@ -360,7 +349,7 @@ export const AdminSecurityAuditPage: React.FC = () => {
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
       )}
     </div>
   );
