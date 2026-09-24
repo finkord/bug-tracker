@@ -209,10 +209,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentProjectId }) => {
               href="http://localhost:3000/api/docs"
               target="_blank"
               rel="noreferrer"
-              className="w-10 h-10 mx-auto rounded-xl flex items-center justify-center text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)] transition-colors"
+              className="flex flex-col items-center gap-1 px-1 py-2 w-full rounded-2xl text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)] transition-colors"
               title="Swagger OpenAPI Documentation"
             >
-              <ExternalLink className="w-4 h-4" />
+              <ExternalLink className="w-5 h-5" />
+              <span className="text-[9px] font-semibold leading-tight text-center">API</span>
             </a>
           )}
         </div>
