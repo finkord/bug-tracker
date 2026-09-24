@@ -39,50 +39,52 @@ export const Navbar: React.FC = () => {
     navigate('/');
   };
 
-  // Severity styles for DevOps broadcast banner
-  const severityStyles: Record<
+  // Severity styles for the DevOps broadcast banner stripe
+  const severityStripe: Record<
     BroadcastSeverity,
-    { badge: string; icon: React.FC<{ className?: string }> }
+    { bar: string; icon: React.FC<{ className?: string }> }
   > = {
     info: {
-      badge: 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)]',
+      bar: 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)]',
       icon: Info,
     },
     warning: {
-      badge: 'bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)]',
+      bar: 'bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)]',
       icon: AlertTriangle,
     },
     critical: {
-      badge: 'bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] animate-pulse',
+      bar: 'bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)]',
       icon: ShieldAlert,
     },
     success: {
-      badge: 'bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)]',
+      bar: 'bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)]',
       icon: CheckCircle2,
     },
   };
 
-  const currentSeverity = severityStyles[broadcast.severity] || severityStyles.info;
-  const BroadcastIcon = currentSeverity.icon;
+  const currentStyle = severityStripe[broadcast.severity] ?? severityStripe.info;
+  const BroadcastIcon = currentStyle.icon;
+
+  const showBanner = broadcast.enabled && broadcast.message && !isDismissed;
 
   return (
-    <header className="sticky top-0 z-20 w-full backdrop-blur-md bg-[var(--md-sys-color-surface)]/90 transition-colors select-none">
-      <div className="w-full px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-        {/* Left Section */}
+    <header className="sticky top-0 z-20 w-full bg-[var(--md-sys-color-surface)] transition-colors select-none">
+      {/* ── Main toolbar row ─────────────────────────────────── */}
+      <div className="w-full px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+
+        {/* Left: mobile hamburger OR guest logo */}
         <div className="flex items-center gap-3 shrink-0">
           {user ? (
-            /* Mobile Drawer Toggle */
             <button
               type="button"
               onClick={toggleMobile}
-              className="flex md:hidden items-center justify-center w-9 h-9 rounded-full text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)] transition-colors cursor-pointer"
+              className="flex md:hidden items-center justify-center w-10 h-10 rounded-full text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] transition-colors cursor-pointer"
               title="Open mobile navigation"
               aria-label="Open mobile navigation"
             >
               <Menu className="w-5 h-5" />
             </button>
           ) : (
-            /* Guest Logo (Only shown when not logged in, as sidebar is hidden) */
             <Link
               to="/"
               className="flex items-center gap-2.5 group transition-transform active:scale-95"
@@ -102,62 +104,51 @@ export const Navbar: React.FC = () => {
           )}
         </div>
 
-        {/* Center Section: DevOps & System Announcement Banner */}
-        <div className="flex items-center justify-center flex-1 max-w-2xl px-2">
-          {broadcast.enabled && broadcast.message && !isDismissed && (
-            <div
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold shadow-2xs transition-all ${currentSeverity.badge}`}
-            >
-              <BroadcastIcon className="w-3.5 h-3.5 shrink-0" />
-              <span className="truncate max-w-xs sm:max-w-md md:max-w-lg">
-                {broadcast.message}
-              </span>
-              <button
-                type="button"
-                onClick={dismissBroadcast}
-                className="p-0.5 rounded-full opacity-50 hover:opacity-100 transition-opacity hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer"
-                title="Dismiss message"
-                aria-label="Dismiss message"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          )}
-        </div>
+        {/* Center spacer — expands to push right section to the end */}
+        <div className="flex-1" />
 
-        {/* Right Section: Theme Toggle + User Profile M3 Chip */}
-        <div className="flex items-center gap-2.5 shrink-0">
-          {/* Theme Toggle Button */}
+        {/* Right: theme toggle + user chip */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Theme toggle */}
           <button
             type="button"
             onClick={toggleTheme}
-            className="w-9 h-9 rounded-full flex items-center justify-center text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)] transition-colors cursor-pointer"
+            className="w-10 h-10 rounded-full flex items-center justify-center text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)] transition-colors cursor-pointer"
             title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
             aria-label="Toggle visual theme"
           >
-            {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
+            {theme === 'dark' ? (
+              <Sun className="w-5 h-5 text-amber-400" />
+            ) : (
+              <Moon className="w-5 h-5" />
+            )}
           </button>
 
-          {/* Authenticated User Menu: Authentic M3 Profile Chip */}
+          {/* Authenticated user chip */}
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
-                  className="flex items-center gap-2 pl-1.5 pr-3 py-1 rounded-full bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container-highest)] transition-all cursor-pointer group focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--md-sys-color-primary)] active:scale-95 shadow-2xs"
+                  className="flex items-center gap-2.5 pl-1.5 pr-4 py-1.5 h-11 rounded-full bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container-highest)] transition-all cursor-pointer group focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--md-sys-color-primary)] active:scale-95 shadow-xs"
                   aria-label="User account menu"
                 >
                   <Avatar
                     name={user.fullName || user.email}
                     avatarUrl={user.avatarUrl}
-                    size="xs"
+                    size="sm"
                   />
                   <div className="hidden sm:flex flex-col text-left leading-tight">
-                    <span className="text-xs font-semibold text-[var(--md-sys-color-on-surface)] group-hover:text-[var(--md-sys-color-primary)] transition-colors max-w-[120px] truncate">
+                    <span className="text-sm font-semibold text-[var(--md-sys-color-on-surface)] group-hover:text-[var(--md-sys-color-primary)] transition-colors max-w-[120px] truncate">
                       {user.fullName || user.email.split('@')[0]}
                     </span>
+                    {user.systemRole === 'ADMIN' && (
+                      <span className="text-[10px] font-mono text-[var(--md-sys-color-on-surface-variant)] leading-none">
+                        Admin
+                      </span>
+                    )}
                   </div>
-                  <ChevronDown className="w-3.5 h-3.5 text-[var(--md-sys-color-on-surface-variant)] group-hover:text-[var(--md-sys-color-on-surface)] transition-colors shrink-0" />
+                  <ChevronDown className="w-4 h-4 text-[var(--md-sys-color-on-surface-variant)] group-hover:text-[var(--md-sys-color-on-surface)] transition-all group-hover:translate-y-0.5 shrink-0" />
                 </button>
               </DropdownMenuTrigger>
 
@@ -165,7 +156,7 @@ export const Navbar: React.FC = () => {
                 align="end"
                 className="w-64 p-2 rounded-2xl bg-[var(--md-sys-color-surface-container-lowest)] shadow-xl z-50 animate-in fade-in zoom-in-95 duration-150"
               >
-                {/* Header Profile Summary */}
+                {/* Profile summary card */}
                 <div className="p-3 bg-[var(--md-sys-color-surface-container-low)] rounded-xl mb-1.5">
                   <div className="flex items-center gap-2.5">
                     <Avatar
@@ -199,7 +190,7 @@ export const Navbar: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Dropdown Links */}
+                {/* Menu items */}
                 <div className="space-y-0.5 text-xs font-medium">
                   <DropdownMenuItem asChild>
                     <Link
@@ -253,6 +244,29 @@ export const Navbar: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* ── DevOps Broadcast Banner — full-width stripe below toolbar ─── */}
+      {showBanner && (
+        <div
+          className={`w-full flex items-center gap-3 px-4 sm:px-6 py-2 text-xs font-semibold transition-all ${currentStyle.bar} ${
+            broadcast.severity === 'critical' ? 'animate-pulse' : ''
+          }`}
+          role="status"
+          aria-live="polite"
+        >
+          <BroadcastIcon className="w-4 h-4 shrink-0" />
+          <span className="flex-1 truncate">{broadcast.message}</span>
+          <button
+            type="button"
+            onClick={dismissBroadcast}
+            className="p-1 rounded-full opacity-60 hover:opacity-100 transition-opacity hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer shrink-0"
+            title="Dismiss announcement"
+            aria-label="Dismiss announcement"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
     </header>
   );
 };

@@ -749,7 +749,6 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                 </div>
 
                 <form onSubmit={handleSaveBroadcast} className="space-y-4">
-                  {/* Message Input */}
                   <div>
                     <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface)] mb-1.5">
                       Announcement Banner Message *
@@ -760,7 +759,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                       rows={2}
                       required
                       placeholder="e.g. ⚠️ Scheduled maintenance today at 02:00 UTC (expected 15m duration)"
-                      className="w-full text-xs p-3 rounded-xl bg-[var(--md-sys-color-surface-container-low)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]/60 focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] resize-none"
+                      className="w-full text-xs p-3 rounded-xl bg-[var(--md-sys-color-surface-container-low)] text-[var(--md-sys-color-on-surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] resize-none"
                     />
                   </div>
 
@@ -834,10 +833,10 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                     <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)] block">
                       Live Header Preview
                     </span>
-                    <div className="flex items-center justify-center py-2 px-4 rounded-xl bg-[var(--md-sys-color-surface)]">
+                    <div className="flex items-center py-2 px-4 rounded-xl bg-[var(--md-sys-color-surface)] overflow-hidden">
                       {broadcastEnabled && broadcastMessage ? (
                         <div
-                          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold shadow-2xs ${
+                          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-none w-full text-xs font-semibold ${
                             broadcastSeverity === 'info'
                               ? 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)]'
                               : broadcastSeverity === 'warning'
@@ -848,7 +847,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                           }`}
                         >
                           <Radio className="w-3.5 h-3.5 shrink-0" />
-                          <span>{broadcastMessage}</span>
+                          <span className="truncate">{broadcastMessage}</span>
                         </div>
                       ) : (
                         <span className="text-xs text-[var(--md-sys-color-on-surface-variant)] italic">
