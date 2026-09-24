@@ -32,63 +32,63 @@ export const Badge: React.FC<BadgeProps> = ({
 }) => {
   const variantStyles: Record<NonNullable<BadgeProps['variant']>, { badge: string; dot: string }> = {
     neutral: {
-      badge: 'bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]',
+      badge: 'bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)]',
       dot: 'bg-[var(--md-sys-color-outline)]',
     },
     primary: {
-      badge: 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] border border-[var(--md-sys-color-primary)]/20',
+      badge: 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)]',
       dot: 'bg-[var(--md-sys-color-primary)]',
     },
     secondary: {
-      badge: 'bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] border border-[var(--md-sys-color-secondary)]/20',
+      badge: 'bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)]',
       dot: 'bg-[var(--md-sys-color-secondary)]',
     },
     success: {
-      badge: 'bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] border border-[var(--md-sys-color-success)]/25',
+      badge: 'bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)]',
       dot: 'bg-[var(--md-sys-color-success)]',
     },
     warning: {
-      badge: 'bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] border border-[var(--md-sys-color-warning)]/25',
+      badge: 'bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)]',
       dot: 'bg-[var(--md-sys-color-warning)]',
     },
     error: {
-      badge: 'bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] border border-[var(--md-sys-color-error)]/25',
+      badge: 'bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)]',
       dot: 'bg-[var(--md-sys-color-error)]',
     },
     open: {
-      badge: 'bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]',
+      badge: 'bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-on-surface)]',
       dot: 'bg-[var(--md-sys-color-outline)]',
     },
     'in-progress': {
-      badge: 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] border border-[var(--md-sys-color-primary)]/20',
+      badge: 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)]',
       dot: 'bg-[var(--md-sys-color-primary)]',
     },
     review: {
-      badge: 'bg-[var(--md-sys-color-tertiary-container)] text-[var(--md-sys-color-on-tertiary-container)] border border-[var(--md-sys-color-tertiary)]/25',
+      badge: 'bg-[var(--md-sys-color-tertiary-container)] text-[var(--md-sys-color-on-tertiary-container)]',
       dot: 'bg-[var(--md-sys-color-tertiary)]',
     },
     resolved: {
-      badge: 'bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] border border-[var(--md-sys-color-success)]/25',
+      badge: 'bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)]',
       dot: 'bg-[var(--md-sys-color-success)]',
     },
     closed: {
-      badge: 'bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] border border-[var(--md-sys-color-outline-variant)]',
+      badge: 'bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)]',
       dot: 'bg-[var(--md-sys-color-outline)] opacity-60',
     },
     low: {
-      badge: 'bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] border border-[var(--md-sys-color-outline-variant)]',
+      badge: 'bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)]',
       dot: 'bg-[var(--md-sys-color-outline)] opacity-60',
     },
     medium: {
-      badge: 'bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] border border-[var(--md-sys-color-warning)]/25',
+      badge: 'bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)]',
       dot: 'bg-[var(--md-sys-color-warning)]',
     },
     high: {
-      badge: 'bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] border border-[var(--md-sys-color-warning)]/30 font-bold',
+      badge: 'bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] font-bold',
       dot: 'bg-[var(--md-sys-color-warning)]',
     },
     critical: {
-      badge: 'bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] border border-[var(--md-sys-color-error)]/30 font-bold',
+      badge: 'bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] font-bold',
       dot: 'bg-[var(--md-sys-color-error)] animate-pulse',
     },
   };

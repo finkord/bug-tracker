@@ -13,6 +13,7 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Modal } from '../components/ui/Modal';
+import { useBroadcast, type BroadcastSeverity } from '../context/BroadcastContext';
 import {
   ShieldAlert,
   Users,
@@ -29,6 +30,11 @@ import {
   PlusCircle,
   Lock,
   Unlock,
+  Megaphone,
+  Radio,
+  AlertTriangle,
+  Info,
+  CheckCircle2,
 } from 'lucide-react';
 
 interface AdminDashboardPageProps {
@@ -59,6 +65,31 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
 
   // Time Analytics State
   const [timeStats, setTimeStats] = useState<WorklogStats | null>(null);
+
+  // DevOps Broadcast Banner State
+  const { broadcast, updateBroadcast } = useBroadcast();
+  const [broadcastEnabled, setBroadcastEnabled] = useState(broadcast.enabled);
+  const [broadcastMessage, setBroadcastMessage] = useState(broadcast.message);
+  const [broadcastSeverity, setBroadcastSeverity] = useState<BroadcastSeverity>(broadcast.severity);
+  const [broadcastSavedMsg, setBroadcastSavedMsg] = useState(false);
+
+  useEffect(() => {
+    setBroadcastEnabled(broadcast.enabled);
+    setBroadcastMessage(broadcast.message);
+    setBroadcastSeverity(broadcast.severity);
+  }, [broadcast]);
+
+  const handleSaveBroadcast = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateBroadcast({
+      enabled: broadcastEnabled,
+      message: broadcastMessage.trim(),
+      severity: broadcastSeverity,
+      author: currentUser?.fullName || 'DevOps Team',
+    });
+    setBroadcastSavedMsg(true);
+    setTimeout(() => setBroadcastSavedMsg(false), 3000);
+  };
 
   // Custom Roles & RBAC Matrix State
   const [customRoles, setCustomRoles] = useState<Array<{ name: string; label: string; description: string; permissions: string[] }>>(() => {
@@ -675,6 +706,183 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
           {/* ==================================================== */}
           {activeTab === 'system' && (
             <div className="space-y-4">
+              {/* DevOps & System Broadcast Announcement Manager */}
+              <Card variant="outlined" padding="md" rounded="xl" className="space-y-4 shadow-xs">
+                <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[var(--md-sys-color-outline-variant)]/40">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center">
+                      <Megaphone className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm text-[var(--md-sys-color-on-surface)] flex items-center gap-2">
+                        <span>DevOps Announcement & System Broadcast</span>
+                        {broadcast.enabled && (
+                          <span className="w-2 h-2 rounded-full bg-[var(--md-sys-color-success)] animate-pulse" />
+                        )}
+                      </h3>
+                      <p className="text-xs text-[var(--md-sys-color-on-surface-variant)]">
+                        Broadcast critical maintenance notices and live status banners to all active users in the top header
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-[var(--md-sys-color-on-surface)]">
+                      {broadcastEnabled ? 'Active' : 'Disabled'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setBroadcastEnabled((prev) => !prev)}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                        broadcastEnabled ? 'bg-[var(--md-sys-color-primary)]' : 'bg-[var(--md-sys-color-surface-container-highest)]'
+                      }`}
+                      role="switch"
+                      aria-checked={broadcastEnabled}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                          broadcastEnabled ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                <form onSubmit={handleSaveBroadcast} className="space-y-4">
+                  {/* Message Input */}
+                  <div>
+                    <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface)] mb-1.5">
+                      Announcement Banner Message *
+                    </label>
+                    <textarea
+                      value={broadcastMessage}
+                      onChange={(e) => setBroadcastMessage(e.target.value)}
+                      rows={2}
+                      required
+                      placeholder="e.g. ⚠️ Scheduled maintenance today at 02:00 UTC (expected 15m duration)"
+                      className="w-full text-xs p-3 rounded-xl bg-[var(--md-sys-color-surface-container-low)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]/60 focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] resize-none"
+                    />
+                  </div>
+
+                  {/* Severity Level Selector */}
+                  <div>
+                    <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface)] mb-1.5">
+                      Severity Tone & Container Role
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {(
+                        [
+                          { id: 'info', label: 'Info / Release', token: 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)]', icon: Info },
+                          { id: 'warning', label: 'Maintenance / Warning', token: 'bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)]', icon: AlertTriangle },
+                          { id: 'critical', label: 'Incident / Critical', token: 'bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)]', icon: ShieldAlert },
+                          { id: 'success', label: 'Resolved / Normal', token: 'bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)]', icon: CheckCircle2 },
+                        ] as const
+                      ).map((sev) => {
+                        const Icon = sev.icon;
+                        const isSelected = broadcastSeverity === sev.id;
+                        return (
+                          <button
+                            key={sev.id}
+                            type="button"
+                            onClick={() => setBroadcastSeverity(sev.id)}
+                            className={`p-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                              sev.token
+                            } ${
+                              isSelected
+                                ? 'ring-2 ring-offset-2 ring-[var(--md-sys-color-primary)] scale-[1.02] shadow-xs'
+                                : 'opacity-60 hover:opacity-100'
+                            }`}
+                          >
+                            <Icon className="w-3.5 h-3.5" />
+                            <span>{sev.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Quick Preset Buttons */}
+                  <div>
+                    <span className="text-[11px] font-semibold text-[var(--md-sys-color-on-surface-variant)] block mb-1.5">
+                      DevOps Quick Presets:
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { label: 'Scheduled Maintenance', msg: '⚠️ Scheduled database maintenance at 02:00 UTC (15m window)', sev: 'warning' as BroadcastSeverity },
+                        { label: 'BugTracker v2.0 Live', msg: '🚀 BugTracker v2.0 Operational: Real-Time Sockets & SeaweedFS Active', sev: 'info' as BroadcastSeverity },
+                        { label: 'System Incident', msg: '🔥 Incident: API latency degradation under active DevOps investigation', sev: 'critical' as BroadcastSeverity },
+                        { label: 'Incident Resolved', msg: '✅ Incident Resolved: All systems verified and fully operational', sev: 'success' as BroadcastSeverity },
+                      ].map((preset) => (
+                        <button
+                          key={preset.label}
+                          type="button"
+                          onClick={() => {
+                            setBroadcastMessage(preset.msg);
+                            setBroadcastSeverity(preset.sev);
+                            setBroadcastEnabled(true);
+                          }}
+                          className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] transition-colors cursor-pointer"
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Real-time Header Preview */}
+                  <div className="p-3.5 rounded-xl bg-[var(--md-sys-color-surface-container-low)] space-y-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)] block">
+                      Live Header Preview
+                    </span>
+                    <div className="flex items-center justify-center py-2 px-4 rounded-xl bg-[var(--md-sys-color-surface)]">
+                      {broadcastEnabled && broadcastMessage ? (
+                        <div
+                          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold shadow-2xs ${
+                            broadcastSeverity === 'info'
+                              ? 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)]'
+                              : broadcastSeverity === 'warning'
+                              ? 'bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)]'
+                              : broadcastSeverity === 'critical'
+                              ? 'bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)]'
+                              : 'bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)]'
+                          }`}
+                        >
+                          <Radio className="w-3.5 h-3.5 shrink-0" />
+                          <span>{broadcastMessage}</span>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-[var(--md-sys-color-on-surface-variant)] italic">
+                          (Banner is currently disabled — header will display no broadcast)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Save Action */}
+                  <div className="flex items-center justify-between pt-2">
+                    {broadcastSavedMsg ? (
+                      <span className="text-xs font-semibold text-[var(--md-sys-color-success)] flex items-center gap-1.5 animate-in fade-in">
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>Broadcast updated and published to all active headers!</span>
+                      </span>
+                    ) : (
+                      <span className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
+                        Last updated by: {broadcast.author} • {new Date(broadcast.updatedAt).toLocaleTimeString()}
+                      </span>
+                    )}
+
+                    <Button
+                      type="submit"
+                      variant="filled"
+                      size="sm"
+                      leftIcon={<Megaphone className="w-3.5 h-3.5" />}
+                    >
+                      Publish Broadcast Banner
+                    </Button>
+                  </div>
+                </form>
+              </Card>
+
               {/* Security Metrics Overview */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
                 <Card variant="outlined" padding="sm" rounded="xl" className="flex items-center justify-between shadow-2xs">

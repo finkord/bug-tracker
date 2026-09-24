@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { SidebarProvider } from './context/SidebarContext';
+import { BroadcastProvider } from './context/BroadcastContext';
 import { Navbar } from './components/common/Navbar';
 import { Sidebar } from './components/common/Sidebar';
 import { ProtectedRoute, AdminRoute } from './components/common/ProtectedRoute';
@@ -28,21 +29,21 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--md-sys-color-background)] text-[var(--md-sys-color-on-background)] transition-colors duration-200">
-      <Navbar />
+    <div className="min-h-screen flex bg-[var(--md-sys-color-background)] text-[var(--md-sys-color-on-background)] transition-colors duration-200">
+      {user && <Sidebar />}
 
-      <div className="flex flex-1 min-h-0">
-        {user && <Sidebar />}
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+        <Navbar />
+
         <main className="flex-1 overflow-x-hidden min-w-0">
           {children}
         </main>
-      </div>
 
-      {/* Footer across full available width */}
-      <footer className="w-full border-t border-[var(--md-sys-color-outline-variant)] bg-[var(--md-sys-color-surface-container-low)] py-4 px-4 sm:px-6 text-xs text-[var(--md-sys-color-on-surface-variant)] transition-colors z-10">
-        <div className="w-full flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Shield className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
+        {/* Footer across available content width */}
+        <footer className="w-full border-t border-[var(--md-sys-color-outline-variant)]/30 bg-[var(--md-sys-color-surface-container-low)] py-4 px-4 sm:px-6 text-xs text-[var(--md-sys-color-on-surface-variant)] transition-colors z-10">
+          <div className="w-full flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <Shield className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
             <span className="font-semibold text-[var(--md-sys-color-on-surface)]">BugTracker</span>
             <span>• Volodymyr Fufalko (PPofSE Lab 6–7)</span>
           </div>
@@ -79,7 +80,8 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         </div>
       </footer>
     </div>
-  );
+  </div>
+);
 };
 
 export const App: React.FC = () => {
@@ -87,8 +89,9 @@ export const App: React.FC = () => {
     <ThemeProvider>
       <BrowserRouter>
         <AuthProvider>
-          <SidebarProvider>
-            <AppLayout>
+          <BroadcastProvider>
+            <SidebarProvider>
+              <AppLayout>
               <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<HomePage />} />
@@ -204,7 +207,8 @@ export const App: React.FC = () => {
               </Routes>
             </AppLayout>
           </SidebarProvider>
-        </AuthProvider>
+        </BroadcastProvider>
+      </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>
   );
