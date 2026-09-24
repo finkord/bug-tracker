@@ -857,12 +857,12 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                     </div>
                   </div>
 
-                  {/* Save Action */}
-                  <div className="flex items-center justify-between pt-2">
+                  {/* Action row: Disable (only when active) + Publish */}
+                  <div className="flex items-center justify-between pt-2 gap-3">
                     {broadcastSavedMsg ? (
                       <span className="text-xs font-semibold text-[var(--md-sys-color-success)] flex items-center gap-1.5 animate-in fade-in">
                         <CheckCircle2 className="w-4 h-4" />
-                        <span>Broadcast updated and published to all active headers!</span>
+                        <span>Published to all active users!</span>
                       </span>
                     ) : (
                       <span className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
@@ -870,14 +870,29 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                       </span>
                     )}
 
-                    <Button
-                      type="submit"
-                      variant="filled"
-                      size="sm"
-                      leftIcon={<Megaphone className="w-3.5 h-3.5" />}
-                    >
-                      Publish Broadcast Banner
-                    </Button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {broadcast.enabled && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            updateBroadcast({ enabled: false, message: broadcastMessage, severity: broadcastSeverity, author: currentUser?.fullName || 'DevOps Team' });
+                            setBroadcastEnabled(false);
+                          }}
+                        >
+                          Disable Banner
+                        </Button>
+                      )}
+                      <Button
+                        type="submit"
+                        variant="filled"
+                        size="sm"
+                        leftIcon={<Megaphone className="w-3.5 h-3.5" />}
+                      >
+                        Publish Banner
+                      </Button>
+                    </div>
                   </div>
                 </form>
               </Card>
