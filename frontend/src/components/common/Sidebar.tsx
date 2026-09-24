@@ -49,35 +49,41 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentProjectId }) => {
   const navItems = [
     {
       label: 'Dashboard',
+      shortLabel: 'Dash',
       path: '/',
       icon: LayoutDashboard,
       exact: true,
     },
     {
       label: 'Projects',
+      shortLabel: 'Projects',
       path: '/projects',
       icon: FolderKanban,
       exact: true,
     },
     {
       label: 'Kanban Board',
+      shortLabel: 'Kanban',
       path: boardPath,
       icon: Kanban,
       activeMatch: (pathname: string) => pathname.includes('/board'),
     },
     {
       label: 'Backlog & Sprints',
+      shortLabel: 'Backlog',
       path: backlogPath,
       icon: Layers,
       activeMatch: (pathname: string) => pathname.includes('/backlog'),
     },
     {
       label: 'Advanced Search',
+      shortLabel: 'Search',
       path: '/search',
       icon: Search,
     },
     {
       label: 'Time Tracking',
+      shortLabel: 'Time',
       path: '/time-tracking',
       icon: Clock,
     },
@@ -86,6 +92,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentProjectId }) => {
   if (user.systemRole === 'ADMIN') {
     navItems.push({
       label: 'Admin Center',
+      shortLabel: 'Admin',
       path: '/admin',
       icon: ShieldAlert,
       activeMatch: (pathname: string) => pathname.startsWith('/admin'),
@@ -94,69 +101,66 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentProjectId }) => {
 
   return (
     <>
-      {/* Desktop Sidebar Rail / Expanded Drawer */}
+      {/* Desktop Sidebar — single DOM tree, CSS-only width transition to prevent re-mount flicker */}
       <aside
-        className={`hidden md:flex flex-col h-screen sticky top-0 bg-[var(--md-sys-color-surface-container-low)] transition-all duration-300 ease-in-out shrink-0 select-none z-30 ${
-          collapsed ? 'w-18' : 'w-64'
+        className={`hidden md:flex flex-col h-screen sticky top-0 bg-[var(--md-sys-color-surface-container-low)] shrink-0 select-none z-30 overflow-hidden transition-[width] duration-300 ease-in-out ${
+          collapsed ? 'w-[72px]' : 'w-64'
         }`}
       >
-        {/* Brand & Logo Header — consistent height in both states */}
-        {collapsed ? (
-          /* Collapsed State: Logo + expand toggle, same block height as expanded */
-          <div className="py-3 px-2 flex flex-col items-center gap-2 border-b border-[var(--md-sys-color-outline-variant)]/30 shrink-0">
+        {/* ── Brand Header ────────────────────────────────── */}
+        <div className="px-2.5 pt-3 pb-2.5 flex flex-col shrink-0">
+          {/* Logo row — always rendered, text fades out on collapse */}
+          <div className="flex items-center gap-2.5 mb-2 px-0.5 overflow-hidden">
             <Link
               to="/"
-              className="w-10 h-10 rounded-2xl bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] flex items-center justify-center shadow-xs hover:scale-105 active:scale-95 transition-all"
+              className="shrink-0 w-10 h-10 rounded-2xl bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] flex items-center justify-center shadow-xs hover:scale-105 active:scale-95 transition-all"
               title="BugTracker v3"
             >
               <Shield className="w-5 h-5" />
             </Link>
 
-            <button
-              type="button"
-              onClick={toggleSidebar}
-              className="w-10 h-9 rounded-xl bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center shadow-2xs transition-all cursor-pointer group"
-              title="Expand sidebar navigation"
-              aria-label="Expand sidebar navigation"
+            {/* Text slides & fades — no layout shift because overflow-hidden */}
+            <div
+              className={`flex flex-col overflow-hidden transition-all duration-300 ${
+                collapsed ? 'w-0 opacity-0' : 'w-40 opacity-100'
+              }`}
             >
-              <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-            </button>
+              <span className="font-bold text-sm tracking-tight text-[var(--md-sys-color-on-surface)] leading-none whitespace-nowrap">
+                BugTracker
+              </span>
+              <span className="text-[10px] font-mono text-[var(--md-sys-color-primary)] font-bold mt-0.5 whitespace-nowrap">
+                Enterprise v3
+              </span>
+            </div>
           </div>
-        ) : (
-          /* Expanded State: Logo + collapse toggle, same block height as collapsed */
-          <div className="p-3.5 flex flex-col gap-2 border-b border-[var(--md-sys-color-outline-variant)]/30 shrink-0">
-            <Link
-              to="/"
-              className="flex items-center gap-2.5 group transition-transform active:scale-95 px-0.5"
-            >
-              <div className="w-10 h-10 rounded-2xl bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] flex items-center justify-center shadow-xs">
-                <Shield className="w-5 h-5 transition-transform group-hover:rotate-12" />
-              </div>
-              <div className="flex flex-col">
-                <span className="font-bold text-sm tracking-tight text-[var(--md-sys-color-on-surface)] leading-none">
-                  BugTracker
-                </span>
-                <span className="text-[10px] font-mono text-[var(--md-sys-color-primary)] font-bold mt-0.5">
-                  Enterprise v3
-                </span>
-              </div>
-            </Link>
 
-            <button
-              type="button"
-              onClick={toggleSidebar}
-              className="w-full h-9 flex items-center justify-between px-3 rounded-xl bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] text-xs font-medium transition-colors cursor-pointer"
-              title="Collapse sidebar rail"
-              aria-label="Collapse sidebar rail"
+          {/* Collapse / Expand toggle — same height always */}
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            className={`h-9 rounded-xl bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] flex items-center transition-all duration-200 cursor-pointer overflow-hidden ${
+              collapsed ? 'w-10 justify-center mx-auto' : 'w-full px-3 justify-between'
+            }`}
+            title={collapsed ? 'Expand navigation' : 'Collapse navigation'}
+            aria-label={collapsed ? 'Expand sidebar navigation' : 'Collapse sidebar navigation'}
+          >
+            <span
+              className={`text-[11px] font-medium whitespace-nowrap transition-all duration-200 ${
+                collapsed ? 'w-0 opacity-0 overflow-hidden' : 'w-auto opacity-100'
+              }`}
             >
-              <span className="text-[11px]">Collapse menu</span>
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-          </div>
-        )}
+              Collapse menu
+            </span>
+            {collapsed ? (
+              <ChevronRight className="w-4 h-4 shrink-0" />
+            ) : (
+              <ChevronLeft className="w-4 h-4 shrink-0" />
+            )}
+          </button>
+        </div>
 
-        {/* Navigation Items (M3 Navigation Drawer / Rail) */}
-        <nav className="flex-1 py-3 px-2 space-y-1 overflow-y-auto">
+        {/* ── Navigation Items ─────────────────────────────── */}
+        <nav className="flex-1 py-2 px-2 space-y-0.5 overflow-y-auto overflow-x-hidden">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = item.activeMatch
@@ -169,51 +173,79 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentProjectId }) => {
               <NavLink
                 key={item.label}
                 to={item.path}
-                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-full text-xs font-medium transition-all ${
-                  isActive
-                    ? 'bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] font-bold shadow-2xs'
-                    : 'text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)]'
-                } ${collapsed ? 'flex-col justify-center items-center px-1 py-2 w-full mx-auto h-auto rounded-2xl gap-1' : ''}`}
                 title={collapsed ? item.label : undefined}
+                className={`flex items-center rounded-full transition-colors duration-150 group ${
+                  collapsed
+                    ? 'flex-col py-2 px-1 gap-1 rounded-2xl w-full'
+                    : 'flex-row gap-3 px-3.5 py-2.5 text-xs font-medium'
+                } ${
+                  isActive
+                    ? collapsed
+                      ? 'text-[var(--md-sys-color-on-secondary-container)]'
+                      : 'bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] font-bold'
+                    : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]'
+                }`}
               >
-                <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-[var(--md-sys-color-primary)]' : ''}`} />
-                {!collapsed && <span className="truncate">{item.label}</span>}
-                {collapsed && (
-                  <span className="text-[9px] font-semibold leading-tight text-center max-w-[56px] truncate">
-                    {item.label.split(' ')[0]}
+                {/* Icon — in rail mode gets its own pill indicator */}
+                <span
+                  className={`flex items-center justify-center transition-all duration-200 ${
+                    collapsed
+                      ? `w-14 h-8 rounded-full ${
+                          isActive
+                            ? 'bg-[var(--md-sys-color-secondary-container)]'
+                            : 'group-hover:bg-[var(--md-sys-color-surface-container-high)]'
+                        }`
+                      : ''
+                  }`}
+                >
+                  <Icon
+                    className={`w-5 h-5 shrink-0 transition-colors ${
+                      isActive ? 'text-[var(--md-sys-color-primary)]' : ''
+                    }`}
+                  />
+                </span>
+
+                {/* Label — full label in expanded, short label always visible in collapsed */}
+                {collapsed ? (
+                  <span className="text-[9px] font-semibold leading-tight text-center whitespace-nowrap">
+                    {item.shortLabel}
                   </span>
+                ) : (
+                  <span className="truncate">{item.label}</span>
                 )}
               </NavLink>
             );
           })}
         </nav>
 
-        {/* Bottom Section: Swagger link */}
-        <div className="p-3 border-t border-[var(--md-sys-color-outline-variant)]/40 shrink-0 space-y-1">
-          {!collapsed ? (
+        {/* ── Bottom: Swagger API link ──────────────────────── */}
+        <div className="px-2 pb-3 pt-2 shrink-0">
+          {collapsed ? (
             <a
               href="http://localhost:3000/api/docs"
               target="_blank"
               rel="noreferrer"
-              className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)] transition-colors"
+              className="flex flex-col items-center gap-1 py-2 px-1 w-full rounded-2xl text-[var(--md-sys-color-on-surface-variant)] group"
               title="Swagger OpenAPI Documentation"
             >
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-[11px] font-bold text-[var(--md-sys-color-primary)]">API</span>
-                <span>Swagger Docs</span>
-              </div>
-              <ExternalLink className="w-3.5 h-3.5 opacity-60" />
+              <span className="flex items-center justify-center w-14 h-8 rounded-full group-hover:bg-[var(--md-sys-color-surface-container-high)] transition-colors">
+                <ExternalLink className="w-5 h-5" />
+              </span>
+              <span className="text-[9px] font-semibold leading-tight text-center">API</span>
             </a>
           ) : (
             <a
               href="http://localhost:3000/api/docs"
               target="_blank"
               rel="noreferrer"
-              className="flex flex-col items-center gap-1 px-1 py-2 w-full rounded-2xl text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)] transition-colors"
+              className="flex items-center justify-between px-3.5 py-2.5 rounded-full text-xs font-medium text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)] transition-colors"
               title="Swagger OpenAPI Documentation"
             >
-              <ExternalLink className="w-5 h-5" />
-              <span className="text-[9px] font-semibold leading-tight text-center">API</span>
+              <div className="flex items-center gap-3">
+                <ExternalLink className="w-5 h-5 shrink-0" />
+                <span>Swagger Docs</span>
+              </div>
+              <span className="font-mono text-[10px] font-bold text-[var(--md-sys-color-primary)]">API</span>
             </a>
           )}
         </div>
@@ -229,7 +261,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentProjectId }) => {
 
           <div className="relative w-72 max-w-[85vw] bg-[var(--md-sys-color-surface-container-low)] h-full shadow-2xl flex flex-col z-10 animate-in slide-in-from-left duration-200">
             {/* Mobile Header */}
-            <div className="p-4 border-b border-[var(--md-sys-color-outline-variant)]/40 flex items-center justify-between">
+            <div className="p-4 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] flex items-center justify-center">
                   <Shield className="w-4 h-4" />
@@ -249,7 +281,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentProjectId }) => {
             </div>
 
             {/* Mobile Nav Items */}
-            <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto">
+            <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = item.activeMatch
@@ -263,29 +295,31 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentProjectId }) => {
                     key={item.label}
                     to={item.path}
                     onClick={closeMobile}
-                    className={`flex items-center gap-3 px-4 py-2.5 rounded-full text-xs font-medium transition-all ${
+                    className={`flex items-center gap-3 px-4 py-2.5 rounded-full text-xs font-medium transition-colors ${
                       isActive
-                        ? 'bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] font-bold shadow-2xs'
+                        ? 'bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] font-bold'
                         : 'text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)]'
                     }`}
                   >
-                    <Icon className="w-4.5 h-4.5 shrink-0" />
+                    <Icon className={`w-4.5 h-4.5 shrink-0 ${isActive ? 'text-[var(--md-sys-color-primary)]' : ''}`} />
                     <span>{item.label}</span>
                   </NavLink>
                 );
               })}
             </nav>
 
-            {/* Mobile Footer */}
-            <div className="p-3 border-t border-[var(--md-sys-color-outline-variant)]/40">
+            {/* Mobile Bottom */}
+            <div className="p-3">
               <a
                 href="http://localhost:3000/api/docs"
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)]"
+                className="flex items-center justify-between px-4 py-2.5 rounded-full text-xs font-medium text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)]"
               >
-                <span>Swagger OpenAPI Docs</span>
-                <ExternalLink className="w-3.5 h-3.5 opacity-60" />
+                <div className="flex items-center gap-3">
+                  <ExternalLink className="w-4.5 h-4.5 shrink-0" />
+                  <span>Swagger OpenAPI Docs</span>
+                </div>
               </a>
             </div>
           </div>

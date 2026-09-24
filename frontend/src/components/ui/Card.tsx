@@ -15,9 +15,11 @@ export const Card: React.FC<CardProps> = ({
   children,
   ...props
 }) => {
+  // All variants use surface-container-low — M3-consistent tonal surface.
+  // No borders: M3 uses tonal elevation / shadow for separation, not strokes.
   const variantStyles: Record<NonNullable<CardProps['variant']>, string> = {
     outlined:
-      'bg-[var(--md-sys-color-surface-container-low)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]/50',
+      'bg-[var(--md-sys-color-surface-container-low)] text-[var(--md-sys-color-on-surface)]',
     filled:
       'bg-[var(--md-sys-color-surface-container-low)] text-[var(--md-sys-color-on-surface)]',
     elevated:
