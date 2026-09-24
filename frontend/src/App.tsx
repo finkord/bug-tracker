@@ -23,7 +23,7 @@ import { AdvancedSearchPage } from './pages/AdvancedSearchPage';
 import { TimeTrackingPage } from './pages/TimeTrackingPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { OAuthCallbackPage } from './pages/OAuthCallbackPage';
-import { Shield, ExternalLink } from 'lucide-react';
+
 
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
@@ -39,47 +39,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           {children}
         </main>
 
-        {/* Footer across available content width */}
-        <footer className="w-full border-t border-[var(--md-sys-color-outline-variant)]/30 bg-[var(--md-sys-color-surface-container-low)] py-4 px-4 sm:px-6 text-xs text-[var(--md-sys-color-on-surface-variant)] transition-colors z-10">
-          <div className="w-full flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
-            <span className="font-semibold text-[var(--md-sys-color-on-surface)]">BugTracker</span>
-            <span>• Volodymyr Fufalko (PPofSE Lab 6–7)</span>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-4">
-            <a
-              href="http://localhost:3000/api/docs"
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-[var(--md-sys-color-primary)] flex items-center gap-1 transition-colors"
-            >
-              <span>Swagger API Docs</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
-            <a
-              href="http://localhost:8025"
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-[var(--md-sys-color-primary)] flex items-center gap-1 transition-colors"
-            >
-              <span>Mailpit Mailbox</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
-            <a
-              href="http://localhost:9333"
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-[var(--md-sys-color-primary)] flex items-center gap-1 transition-colors"
-            >
-              <span>SeaweedFS S3</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
-          </div>
-        </div>
-      </footer>
-    </div>
+      </div>
   </div>
 );
 };

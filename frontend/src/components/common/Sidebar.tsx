@@ -100,9 +100,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentProjectId }) => {
           collapsed ? 'w-18' : 'w-64'
         }`}
       >
-        {/* Brand & Logo Header backed into Sidebar */}
+        {/* Brand & Logo Header — consistent height in both states */}
         {collapsed ? (
-          /* Collapsed State: Logo on top, expand button BELOW logo */
+          /* Collapsed State: Logo + expand toggle, same block height as expanded */
           <div className="py-3 px-2 flex flex-col items-center gap-2 border-b border-[var(--md-sys-color-outline-variant)]/30 shrink-0">
             <Link
               to="/"
@@ -115,7 +115,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentProjectId }) => {
             <button
               type="button"
               onClick={toggleSidebar}
-              className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center shadow-2xs transition-all cursor-pointer group"
+              className="w-10 h-9 rounded-xl bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center shadow-2xs transition-all cursor-pointer group"
               title="Expand sidebar navigation"
               aria-label="Expand sidebar navigation"
             >
@@ -123,13 +123,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentProjectId }) => {
             </button>
           </div>
         ) : (
-          /* Expanded State: Logo on top, collapse button BELOW logo */
-          <div className="p-3.5 flex flex-col gap-2.5 border-b border-[var(--md-sys-color-outline-variant)]/30 shrink-0">
+          /* Expanded State: Logo + collapse toggle, same block height as collapsed */
+          <div className="p-3.5 flex flex-col gap-2 border-b border-[var(--md-sys-color-outline-variant)]/30 shrink-0">
             <Link
               to="/"
               className="flex items-center gap-2.5 group transition-transform active:scale-95 px-0.5"
             >
-              <div className="w-9 h-9 rounded-2xl bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] flex items-center justify-center shadow-xs">
+              <div className="w-10 h-10 rounded-2xl bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] flex items-center justify-center shadow-xs">
                 <Shield className="w-5 h-5 transition-transform group-hover:rotate-12" />
               </div>
               <div className="flex flex-col">
@@ -145,7 +145,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentProjectId }) => {
             <button
               type="button"
               onClick={toggleSidebar}
-              className="w-full flex items-center justify-between px-3 py-1.5 rounded-xl bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] text-xs font-medium transition-colors cursor-pointer"
+              className="w-full h-9 flex items-center justify-between px-3 rounded-xl bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] text-xs font-medium transition-colors cursor-pointer"
               title="Collapse sidebar rail"
               aria-label="Collapse sidebar rail"
             >
@@ -173,11 +173,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentProjectId }) => {
                   isActive
                     ? 'bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] font-bold shadow-2xs'
                     : 'text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)]'
-                } ${collapsed ? 'justify-center px-0 w-11 mx-auto h-11' : ''}`}
+                } ${collapsed ? 'flex-col justify-center items-center px-1 py-2 w-full mx-auto h-auto rounded-2xl gap-1' : ''}`}
                 title={collapsed ? item.label : undefined}
               >
-                <Icon className={`w-4.5 h-4.5 shrink-0 ${isActive ? 'text-[var(--md-sys-color-primary)]' : ''}`} />
+                <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-[var(--md-sys-color-primary)]' : ''}`} />
                 {!collapsed && <span className="truncate">{item.label}</span>}
+                {collapsed && (
+                  <span className="text-[9px] font-semibold leading-tight text-center max-w-[56px] truncate">
+                    {item.label.split(' ')[0]}
+                  </span>
+                )}
               </NavLink>
             );
           })}

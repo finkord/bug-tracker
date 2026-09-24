@@ -17,11 +17,11 @@ export const Card: React.FC<CardProps> = ({
 }) => {
   const variantStyles: Record<NonNullable<CardProps['variant']>, string> = {
     outlined:
-      'bg-[var(--md-sys-color-surface-container-lowest)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]/60',
+      'bg-[var(--md-sys-color-surface-container-low)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]/50',
     filled:
-      'bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)]',
+      'bg-[var(--md-sys-color-surface-container-low)] text-[var(--md-sys-color-on-surface)]',
     elevated:
-      'bg-[var(--md-sys-color-surface-container-lowest)] text-[var(--md-sys-color-on-surface)] shadow-xs hover:shadow-md',
+      'bg-[var(--md-sys-color-surface-container-low)] text-[var(--md-sys-color-on-surface)] shadow-sm hover:shadow-md',
   };
 
   const paddingStyles: Record<NonNullable<CardProps['padding']>, string> = {
