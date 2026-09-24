@@ -8,6 +8,11 @@ import {
   type SavedFilterItem,
 } from '../api/client';
 import { Avatar } from '../components/common/Avatar';
+import { Button } from '../components/ui/Button';
+import { Card } from '../components/ui/Card';
+import { Badge } from '../components/ui/Badge';
+import { Modal } from '../components/ui/Modal';
+import { Tooltip } from '../components/ui/Tooltip';
 import {
   Search,
   Filter,
@@ -21,6 +26,8 @@ import {
   Bookmark,
   CheckCircle2,
   Trash2,
+  SlidersHorizontal,
+  FolderGit2,
 } from 'lucide-react';
 
 export const AdvancedSearchPage: React.FC = () => {
@@ -200,7 +207,7 @@ export const AdvancedSearchPage: React.FC = () => {
       await api.deleteSavedFilter(filterId);
       setSavedFilters((prev) => prev.filter((f) => f.id !== filterId));
     } catch {
-      // Error
+      // Error handling
     }
   };
 
@@ -225,7 +232,7 @@ export const AdvancedSearchPage: React.FC = () => {
       setNewFilterName('');
       setTimeout(() => setSaveSuccessMsg(null), 4000);
     } catch {
-      // Handle error
+      // Error handling
     }
   };
 
@@ -254,48 +261,81 @@ export const AdvancedSearchPage: React.FC = () => {
     document.body.removeChild(link);
   };
 
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'OPEN':
+        return 'open' as const;
+      case 'IN_PROGRESS':
+        return 'in-progress' as const;
+      case 'REVIEW':
+        return 'review' as const;
+      case 'RESOLVED':
+        return 'resolved' as const;
+      case 'CLOSED':
+        return 'closed' as const;
+      default:
+        return 'neutral' as const;
+    }
+  };
+
+  const getPriorityBadgeVariant = (priority: string) => {
+    switch (priority) {
+      case 'CRITICAL':
+        return 'critical' as const;
+      case 'HIGH':
+        return 'high' as const;
+      case 'MEDIUM':
+        return 'medium' as const;
+      case 'LOW':
+        return 'low' as const;
+      default:
+        return 'neutral' as const;
+    }
+  };
+
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-8 space-y-6 animate-in fade-in duration-200">
-      {/* Page Title & Actions */}
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-6 space-y-5 animate-in fade-in duration-200">
+      {/* Page Title & Action Bar */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--md-sys-color-primary-container)] text-xs font-semibold text-[var(--md-sys-color-on-primary-container)] mb-2">
-            <Search className="w-3.5 h-3.5" />
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[var(--md-sys-color-primary-container)] text-[11px] font-semibold text-[var(--md-sys-color-on-primary-container)] mb-1.5">
+            <SlidersHorizontal className="w-3 h-3" />
             <span>Search & Query Builder</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[var(--md-sys-color-on-surface)] tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-black text-[var(--md-sys-color-on-surface)] tracking-tight">
             Advanced Search
           </h1>
-          <p className="text-xs sm:text-sm text-[var(--md-sys-color-on-surface-variant)] mt-1">
+          <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-0.5">
             Filter defects across projects, sprints, statuses, and custom criteria.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <button
+        <div className="flex items-center gap-2">
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             onClick={handleExportCSV}
             disabled={filteredIssues.length === 0}
-            className="px-4 py-2 rounded-full m3-btn-outline text-xs font-semibold flex items-center gap-1.5"
-            title="Export results to CSV"
+            leftIcon={<Download className="w-3.5 h-3.5" />}
           >
-            <Download className="w-3.5 h-3.5" />
-            <span>Export CSV</span>
-          </button>
+            Export CSV
+          </Button>
 
-          <button
+          <Button
             type="button"
+            variant="filled"
+            size="sm"
             onClick={() => setFilterNameModalOpen(true)}
-            className="px-4 py-2 rounded-full m3-btn-filled text-xs font-semibold flex items-center gap-1.5 shadow-xs"
+            leftIcon={<Bookmark className="w-3.5 h-3.5" />}
           >
-            <Bookmark className="w-3.5 h-3.5" />
-            <span>Save Filter</span>
-          </button>
+            Save Filter
+          </Button>
         </div>
       </div>
 
       {saveSuccessMsg && (
-        <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs flex items-center gap-2 animate-in fade-in">
+        <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs flex items-center gap-2 animate-in fade-in">
           <CheckCircle2 className="w-4 h-4 shrink-0" />
           <span>{saveSuccessMsg}</span>
         </div>
@@ -303,36 +343,38 @@ export const AdvancedSearchPage: React.FC = () => {
 
       {/* Saved Filter Quick-Load Chips */}
       {savedFilters.length > 0 && (
-        <div className="p-3 rounded-2xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] flex flex-wrap items-center gap-2">
-          <span className="text-xs font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider px-2 flex items-center gap-1">
-            <Bookmark className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
+        <Card variant="outlined" padding="sm" rounded="xl" className="flex flex-wrap items-center gap-2 bg-[var(--md-sys-color-surface-container-low)]">
+          <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider px-1 flex items-center gap-1">
+            <Bookmark className="w-3 h-3 text-[var(--md-sys-color-primary)]" />
             <span>Saved Presets:</span>
           </span>
           {savedFilters.map((f) => (
             <div
               key={f.id}
               onClick={() => handleApplySavedFilter(f)}
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] cursor-pointer transition-colors shadow-2xs group"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] cursor-pointer transition-colors group"
             >
               <span>{f.name}</span>
-              <button
-                type="button"
-                onClick={(e) => handleDeleteSavedFilter(f.id, e)}
-                className="opacity-40 group-hover:opacity-100 hover:text-rose-500 p-0.5 rounded transition-opacity"
-                title="Delete filter preset"
-              >
-                <Trash2 className="w-3 h-3" />
-              </button>
+              <Tooltip content="Delete preset">
+                <button
+                  type="button"
+                  onClick={(e) => handleDeleteSavedFilter(f.id, e)}
+                  className="opacity-40 group-hover:opacity-100 hover:text-[var(--md-sys-color-error)] p-0.5 rounded transition-opacity"
+                  aria-label="Delete filter preset"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </Tooltip>
             </div>
           ))}
-        </div>
+        </Card>
       )}
 
       {/* Query Filter Builder Panel */}
-      <div className="bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] rounded-3xl p-5 shadow-xs space-y-4">
+      <Card variant="outlined" padding="md" rounded="xl" className="space-y-4 shadow-xs">
         {/* Full Text Search Bar */}
         <div className="relative">
-          <Search className="absolute left-4 top-3.5 w-4 h-4 text-[var(--md-sys-color-on-surface-variant)]" />
+          <Search className="absolute left-3.5 top-3 w-4 h-4 text-[var(--md-sys-color-on-surface-variant)]" />
           <input
             type="text"
             value={query}
@@ -341,15 +383,15 @@ export const AdvancedSearchPage: React.FC = () => {
               updateUrlParams({ q: e.target.value });
             }}
             placeholder="Search by issue key (e.g. CORE-101), title keywords, or description..."
-            className="w-full text-sm pl-11 pr-4 py-3 rounded-2xl bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] font-medium"
+            className="w-full text-xs sm:text-sm pl-10 pr-4 py-2.5 rounded-xl bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] font-medium"
           />
         </div>
 
-        {/* Multi-Criteria Filters Row (Priority only, Severity removed) */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 pt-2">
+        {/* Multi-Criteria Filters Row */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {/* Project */}
           <div>
-            <label className="block text-[11px] font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider mb-1">
+            <label className="block text-[10px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider mb-1">
               Project
             </label>
             <select
@@ -359,7 +401,7 @@ export const AdvancedSearchPage: React.FC = () => {
                 setSelectedProjectId(val);
                 updateUrlParams({ projectId: String(val) });
               }}
-              className="w-full text-xs font-semibold px-2.5 py-2 rounded-xl bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] cursor-pointer"
+              className="w-full text-xs font-medium px-2.5 py-1.5 rounded-lg bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] cursor-pointer focus:outline-hidden focus:ring-1 focus:ring-[var(--md-sys-color-primary)]"
             >
               <option value="ALL">All Projects</option>
               {projects.map((p) => (
@@ -372,7 +414,7 @@ export const AdvancedSearchPage: React.FC = () => {
 
           {/* Status */}
           <div>
-            <label className="block text-[11px] font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider mb-1">
+            <label className="block text-[10px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider mb-1">
               Status
             </label>
             <select
@@ -381,7 +423,7 @@ export const AdvancedSearchPage: React.FC = () => {
                 setSelectedStatus(e.target.value);
                 updateUrlParams({ status: e.target.value });
               }}
-              className="w-full text-xs font-semibold px-2.5 py-2 rounded-xl bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] cursor-pointer"
+              className="w-full text-xs font-medium px-2.5 py-1.5 rounded-lg bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] cursor-pointer focus:outline-hidden focus:ring-1 focus:ring-[var(--md-sys-color-primary)]"
             >
               <option value="ALL">All Statuses</option>
               <option value="OPEN">To Do (Open)</option>
@@ -392,9 +434,9 @@ export const AdvancedSearchPage: React.FC = () => {
             </select>
           </div>
 
-          {/* Priority (Sole urgency field) */}
+          {/* Priority */}
           <div>
-            <label className="block text-[11px] font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider mb-1">
+            <label className="block text-[10px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider mb-1">
               Priority
             </label>
             <select
@@ -403,7 +445,7 @@ export const AdvancedSearchPage: React.FC = () => {
                 setSelectedPriority(e.target.value);
                 updateUrlParams({ priority: e.target.value });
               }}
-              className="w-full text-xs font-semibold px-2.5 py-2 rounded-xl bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] cursor-pointer"
+              className="w-full text-xs font-medium px-2.5 py-1.5 rounded-lg bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] cursor-pointer focus:outline-hidden focus:ring-1 focus:ring-[var(--md-sys-color-primary)]"
             >
               <option value="ALL">All Priorities</option>
               <option value="CRITICAL">Critical</option>
@@ -415,7 +457,7 @@ export const AdvancedSearchPage: React.FC = () => {
 
           {/* Assignee */}
           <div>
-            <label className="block text-[11px] font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider mb-1">
+            <label className="block text-[10px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider mb-1">
               Assignee
             </label>
             <select
@@ -424,7 +466,7 @@ export const AdvancedSearchPage: React.FC = () => {
                 setSelectedAssigneeId(e.target.value);
                 updateUrlParams({ assigneeId: e.target.value });
               }}
-              className="w-full text-xs font-semibold px-2.5 py-2 rounded-xl bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] cursor-pointer"
+              className="w-full text-xs font-medium px-2.5 py-1.5 rounded-lg bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] cursor-pointer focus:outline-hidden focus:ring-1 focus:ring-[var(--md-sys-color-primary)]"
             >
               <option value="ALL">All Assignees</option>
               <option value="UNASSIGNED">Unassigned</option>
@@ -438,7 +480,7 @@ export const AdvancedSearchPage: React.FC = () => {
 
           {/* Sprint */}
           <div>
-            <label className="block text-[11px] font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider mb-1">
+            <label className="block text-[10px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider mb-1">
               Sprint
             </label>
             <select
@@ -447,7 +489,7 @@ export const AdvancedSearchPage: React.FC = () => {
                 setSelectedSprint(e.target.value);
                 updateUrlParams({ sprint: e.target.value });
               }}
-              className="w-full text-xs font-semibold px-2.5 py-2 rounded-xl bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] cursor-pointer"
+              className="w-full text-xs font-medium px-2.5 py-1.5 rounded-lg bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] cursor-pointer focus:outline-hidden focus:ring-1 focus:ring-[var(--md-sys-color-primary)]"
             >
               <option value="ALL">All Sprints</option>
               <option value="BACKLOG">Backlog (No Sprint)</option>
@@ -463,14 +505,14 @@ export const AdvancedSearchPage: React.FC = () => {
         {/* Filter Toolbar: Matches Count & Reset */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[var(--md-sys-color-outline-variant)] text-xs">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)] px-2.5 py-0.5 rounded-full">
+            <Badge variant="primary" size="sm">
               {filteredIssues.length} issues found
-            </span>
+            </Badge>
             {(query || selectedProjectId !== 'ALL' || selectedStatus !== 'ALL' || selectedPriority !== 'ALL' || selectedAssigneeId !== 'ALL' || selectedSprint !== 'ALL') && (
               <button
                 type="button"
                 onClick={handleResetFilters}
-                className="text-xs text-[var(--md-sys-color-on-surface-variant)] hover:text-rose-500 flex items-center gap-1 transition-colors cursor-pointer"
+                className="text-xs text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-error)] flex items-center gap-1 transition-colors cursor-pointer"
               >
                 <RotateCcw className="w-3 h-3" />
                 <span>Reset all filters</span>
@@ -484,23 +526,25 @@ export const AdvancedSearchPage: React.FC = () => {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="text-xs font-semibold px-2 py-1 rounded-lg bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] cursor-pointer"
+              className="text-xs font-medium px-2 py-1 rounded-lg bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] cursor-pointer"
             >
               <option value="createdAt">Date Created</option>
               <option value="updatedAt">Last Updated</option>
               <option value="priority">Priority</option>
             </select>
-            <button
-              type="button"
-              onClick={() => setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'))}
-              className="p-1 rounded-lg hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] transition-colors cursor-pointer"
-              title={`Switch to ${sortOrder === 'asc' ? 'descending' : 'ascending'}`}
-            >
-              {sortOrder === 'desc' ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-            </button>
+            <Tooltip content={`Switch to ${sortOrder === 'asc' ? 'descending' : 'ascending'}`}>
+              <button
+                type="button"
+                onClick={() => setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'))}
+                className="p-1 rounded-lg hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] transition-colors cursor-pointer"
+                aria-label={`Switch to ${sortOrder === 'asc' ? 'descending' : 'ascending'}`}
+              >
+                {sortOrder === 'desc' ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+              </button>
+            </Tooltip>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Results Table */}
       {loading ? (
@@ -508,46 +552,47 @@ export const AdvancedSearchPage: React.FC = () => {
           <Loader2 className="w-8 h-8 animate-spin text-[var(--md-sys-color-primary)]" />
         </div>
       ) : filteredIssues.length === 0 ? (
-        <div className="p-12 rounded-3xl bg-[var(--md-sys-color-surface)] border border-dashed border-[var(--md-sys-color-outline-variant)] text-center space-y-3">
+        <Card variant="outlined" padding="lg" rounded="xl" className="text-center space-y-3 border-dashed">
           <Filter className="w-10 h-10 mx-auto text-[var(--md-sys-color-on-surface-variant)] opacity-40" />
-          <h3 className="text-base font-bold text-[var(--md-sys-color-on-surface)]">
+          <h3 className="text-sm font-bold text-[var(--md-sys-color-on-surface)]">
             No matching issues found
           </h3>
           <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] max-w-sm mx-auto">
             Try adjusting your search query, clearing specific filters, or selecting "All Projects".
           </p>
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             onClick={handleResetFilters}
-            className="px-4 py-2 rounded-full m3-btn-outline text-xs font-semibold inline-flex items-center gap-1.5"
+            leftIcon={<RotateCcw className="w-3.5 h-3.5" />}
           >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Clear Filters</span>
-          </button>
-        </div>
+            Clear Filters
+          </Button>
+        </Card>
       ) : (
-        <div className="bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] rounded-3xl overflow-hidden shadow-xs">
+        <div className="bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] rounded-xl overflow-hidden shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left border-collapse table-auto">
               <thead>
                 <tr className="bg-[var(--md-sys-color-surface-container-low)] border-b border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider text-[10px]">
-                  <th className="py-3 px-4 font-bold">Key</th>
-                  <th className="py-3 px-4 font-bold">Title</th>
-                  <th className="py-3 px-4 font-bold">Project</th>
-                  <th className="py-3 px-4 font-bold">Status</th>
-                  <th className="py-3 px-4 font-bold">Priority</th>
-                  <th className="py-3 px-4 font-bold">Sprint</th>
-                  <th className="py-3 px-4 font-bold">Assignee</th>
-                  <th className="py-3 px-4 font-bold text-right">Logged / Est</th>
+                  <th className="py-2.5 px-3.5 font-bold">Key</th>
+                  <th className="py-2.5 px-3.5 font-bold">Title</th>
+                  <th className="py-2.5 px-3.5 font-bold">Project</th>
+                  <th className="py-2.5 px-3.5 font-bold">Status</th>
+                  <th className="py-2.5 px-3.5 font-bold">Priority</th>
+                  <th className="py-2.5 px-3.5 font-bold">Sprint</th>
+                  <th className="py-2.5 px-3.5 font-bold">Assignee</th>
+                  <th className="py-2.5 px-3.5 font-bold text-right">Logged / Est</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)]">
                 {filteredIssues.map((issue) => (
                   <tr
                     key={issue.id}
-                    className="hover:bg-[var(--md-sys-color-surface-container-high)]/50 transition-colors"
+                    className="hover:bg-[var(--md-sys-color-surface-container-high)]/40 transition-colors"
                   >
-                    <td className="py-3 px-4 font-mono font-bold text-[var(--md-sys-color-primary)] whitespace-nowrap">
+                    <td className="py-2.5 px-3.5 font-mono font-bold text-[var(--md-sys-color-primary)] whitespace-nowrap">
                       <Link
                         to={`/issues/${issue.id}`}
                         className="hover:underline flex items-center gap-1"
@@ -556,7 +601,7 @@ export const AdvancedSearchPage: React.FC = () => {
                       </Link>
                     </td>
 
-                    <td className="py-3 px-4 max-w-md">
+                    <td className="py-2.5 px-3.5 max-w-md">
                       <Link
                         to={`/issues/${issue.id}`}
                         className="font-semibold text-[var(--md-sys-color-on-surface)] hover:text-[var(--md-sys-color-primary)] transition-colors block truncate"
@@ -566,33 +611,28 @@ export const AdvancedSearchPage: React.FC = () => {
                       </Link>
                     </td>
 
-                    <td className="py-3 px-4 whitespace-nowrap">
-                      <span className="text-[11px] font-medium text-[var(--md-sys-color-on-surface-variant)]">
+                    <td className="py-2.5 px-3.5 whitespace-nowrap">
+                      <span className="text-[11px] font-medium text-[var(--md-sys-color-on-surface-variant)] flex items-center gap-1">
+                        <FolderGit2 className="w-3 h-3 opacity-60" />
                         {issue.projectName || 'CORE'}
                       </span>
                     </td>
 
-                    <td className="py-3 px-4 whitespace-nowrap">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-on-surface)] uppercase">
+                    <td className="py-2.5 px-3.5 whitespace-nowrap">
+                      <Badge variant={getStatusBadgeVariant(issue.status)} size="sm">
                         {issue.status}
-                      </span>
+                      </Badge>
                     </td>
 
-                    <td className="py-3 px-4 whitespace-nowrap">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        issue.priority === 'CRITICAL'
-                          ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400'
-                          : issue.priority === 'HIGH'
-                          ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
-                          : 'bg-slate-500/15 text-slate-600 dark:text-slate-400'
-                      }`}>
+                    <td className="py-2.5 px-3.5 whitespace-nowrap">
+                      <Badge variant={getPriorityBadgeVariant(issue.priority)} size="sm">
                         {issue.priority}
-                      </span>
+                      </Badge>
                     </td>
 
-                    <td className="py-3 px-4 whitespace-nowrap">
+                    <td className="py-2.5 px-3.5 whitespace-nowrap">
                       {issue.sprint ? (
-                        <span className="text-[11px] font-semibold text-violet-600 dark:text-violet-400 bg-violet-500/10 px-2 py-0.5 rounded-md flex items-center gap-1 w-max">
+                        <span className="text-[11px] font-semibold text-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/50 px-2 py-0.5 rounded-md flex items-center gap-1 w-max">
                           <Layers className="w-3 h-3" />
                           <span>{issue.sprint}</span>
                         </span>
@@ -603,16 +643,16 @@ export const AdvancedSearchPage: React.FC = () => {
                       )}
                     </td>
 
-                    <td className="py-3 px-4 whitespace-nowrap">
+                    <td className="py-2.5 px-3.5 whitespace-nowrap">
                       {issue.assignee ? (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           <Avatar
                             name={issue.assignee.fullName}
                             avatarUrl={issue.assignee.avatarUrl}
                             role={issue.assignee.systemRole}
                             size="xs"
                           />
-                          <span className="truncate max-w-[120px] font-medium text-[var(--md-sys-color-on-surface)]">
+                          <span className="truncate max-w-[120px] font-medium text-[var(--md-sys-color-on-surface)] text-xs">
                             {issue.assignee.fullName}
                           </span>
                         </div>
@@ -623,7 +663,7 @@ export const AdvancedSearchPage: React.FC = () => {
                       )}
                     </td>
 
-                    <td className="py-3 px-4 font-mono text-right whitespace-nowrap">
+                    <td className="py-2.5 px-3.5 font-mono text-right whitespace-nowrap text-xs">
                       <span className="text-emerald-600 dark:text-emerald-400 font-bold">
                         {issue.loggedHours || 0}h
                       </span>
@@ -640,54 +680,50 @@ export const AdvancedSearchPage: React.FC = () => {
         </div>
       )}
 
-      {/* Save Filter Modal */}
-      {filterNameModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="relative w-full max-w-sm rounded-[28px] bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)] shadow-2xl p-6 space-y-4">
-            <h3 className="text-base font-bold text-[var(--md-sys-color-on-surface)] flex items-center gap-2">
-              <Bookmark className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
-              <span>Save Search Filter</span>
-            </h3>
-            <p className="text-xs text-[var(--md-sys-color-on-surface-variant)]">
-              Name this filter preset to pin it directly to your personal dashboard.
-            </p>
-
-            <form onSubmit={handleSaveFilter} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface)] mb-1">
-                  Filter Name *
-                </label>
-                <input
-                  type="text"
-                  required
-                  autoFocus
-                  placeholder="e.g. Critical Unassigned Bugs"
-                  value={newFilterName}
-                  onChange={(e) => setNewFilterName(e.target.value)}
-                  className="w-full text-xs px-3 py-2 rounded-xl bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] font-medium"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--md-sys-color-outline-variant)]">
-                <button
-                  type="button"
-                  onClick={() => setFilterNameModalOpen(false)}
-                  className="px-4 py-2 rounded-full m3-btn-outline text-xs"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-full m3-btn-filled text-xs font-semibold flex items-center gap-1.5"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  <span>Save Preset</span>
-                </button>
-              </div>
-            </form>
+      {/* Save Filter Radix Modal */}
+      <Modal
+        isOpen={filterNameModalOpen}
+        onClose={() => setFilterNameModalOpen(false)}
+        title="Save Search Filter"
+        description="Name this filter preset to pin it directly to your query dashboard."
+        size="sm"
+      >
+        <form onSubmit={handleSaveFilter} className="space-y-4 pt-2">
+          <div>
+            <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface)] mb-1">
+              Filter Name *
+            </label>
+            <input
+              type="text"
+              required
+              autoFocus
+              placeholder="e.g. Critical Unassigned Bugs"
+              value={newFilterName}
+              onChange={(e) => setNewFilterName(e.target.value)}
+              className="w-full text-xs px-3 py-2 rounded-xl bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] font-medium"
+            />
           </div>
-        </div>
-      )}
+
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--md-sys-color-outline-variant)]">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setFilterNameModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="filled"
+              size="sm"
+              leftIcon={<Save className="w-3.5 h-3.5" />}
+            >
+              Save Preset
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

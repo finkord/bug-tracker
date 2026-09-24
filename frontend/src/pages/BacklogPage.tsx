@@ -19,12 +19,12 @@ import {
   Calendar,
   Target,
   Sparkles,
-  X,
   CheckCircle2,
   Send,
   Play,
   TrendingDown,
 } from 'lucide-react';
+import { Modal, Button, Input, Badge } from '../components/ui';
 
 interface SprintDefinition {
   name: string;
@@ -589,107 +589,79 @@ export const BacklogPage: React.FC = () => {
       )}
 
       {/* Create Sprint Modal */}
-      {createSprintModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="relative w-full max-w-md rounded-[28px] bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)] shadow-2xl p-6 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-[var(--md-sys-color-outline-variant)]">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-2xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center">
-                  <Sparkles className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-[var(--md-sys-color-on-surface)]">
-                    Create New Sprint
-                  </h3>
-                  <p className="text-xs text-[var(--md-sys-color-on-surface-variant)]">
-                    Define sprint cycle, duration, and objective
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setCreateSprintModalOpen(false)}
-                className="p-1 rounded-full text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-highest)]"
-              >
-                <X className="w-5 h-5" />
-              </button>
+      <Modal
+        isOpen={createSprintModalOpen}
+        onClose={() => setCreateSprintModalOpen(false)}
+        size="md"
+        title={
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center shrink-0">
+              <Sparkles className="w-4 h-4" />
             </div>
-
-            <form onSubmit={handleCreateSprint} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface)] mb-1">
-                  Sprint Name *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={newSprintName}
-                  onChange={(e) => setNewSprintName(e.target.value)}
-                  placeholder="e.g. Sprint 2 - Core Engine"
-                  className="w-full text-xs px-3 py-2 rounded-xl bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] font-medium"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface)] mb-1">
-                  Sprint Goal
-                </label>
-                <textarea
-                  rows={2}
-                  value={newSprintGoal}
-                  onChange={(e) => setNewSprintGoal(e.target.value)}
-                  placeholder="What is the key target outcome for this sprint?"
-                  className="w-full text-xs px-3 py-2 rounded-xl bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] resize-none font-medium"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-semibold text-[var(--md-sys-color-on-surface)] mb-1">
-                    Start Date
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={newSprintStartDate}
-                    onChange={(e) => setNewSprintStartDate(e.target.value)}
-                    className="w-full text-xs px-2.5 py-1.5 rounded-xl bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-[var(--md-sys-color-on-surface)] mb-1">
-                    End Date
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={newSprintEndDate}
-                    onChange={(e) => setNewSprintEndDate(e.target.value)}
-                    className="w-full text-xs px-2.5 py-1.5 rounded-xl bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--md-sys-color-outline-variant)]">
-                <button
-                  type="button"
-                  onClick={() => setCreateSprintModalOpen(false)}
-                  className="px-4 py-2 rounded-full m3-btn-outline text-xs"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-full m3-btn-filled text-xs font-semibold flex items-center gap-1.5"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Create Sprint</span>
-                </button>
-              </div>
-            </form>
+            <span>Create New Sprint</span>
           </div>
-        </div>
-      )}
+        }
+        description="Define sprint cycle, duration, and objective for your team."
+      >
+        <form onSubmit={handleCreateSprint} className="space-y-4">
+          <Input
+            label="Sprint Name *"
+            required
+            value={newSprintName}
+            onChange={(e) => setNewSprintName(e.target.value)}
+            placeholder="e.g. Sprint 2 - Core Engine"
+          />
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider select-none">
+              Sprint Goal
+            </label>
+            <textarea
+              rows={2}
+              value={newSprintGoal}
+              onChange={(e) => setNewSprintGoal(e.target.value)}
+              placeholder="What is the key target outcome for this sprint?"
+              className="w-full text-xs px-3.5 py-2.5 rounded-xl bg-[var(--md-sys-color-input-bg)] text-[var(--md-sys-color-input-text)] border border-[var(--md-sys-color-input-border)] focus:outline-none focus:ring-2 focus:ring-[var(--md-sys-color-primary)]/20 focus:border-[var(--md-sys-color-primary)] resize-none"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="Start Date"
+              type="date"
+              required
+              value={newSprintStartDate}
+              onChange={(e) => setNewSprintStartDate(e.target.value)}
+            />
+            <Input
+              label="End Date"
+              type="date"
+              required
+              value={newSprintEndDate}
+              onChange={(e) => setNewSprintEndDate(e.target.value)}
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-4 border-t border-[var(--md-sys-color-outline-variant)]">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setCreateSprintModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="filled"
+              size="sm"
+              leftIcon={<CheckCircle2 className="w-3.5 h-3.5" />}
+            >
+              Create Sprint
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Task Creation & Detail Modals */}
       <IssueModal
@@ -706,90 +678,79 @@ export const BacklogPage: React.FC = () => {
         onIssueUpdated={loadData}
         onIssueDeleted={loadData}
       />
+
       {/* Complete Sprint Modal */}
-      {completeSprintModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="relative w-full max-w-md rounded-[28px] bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)] shadow-2xl p-6 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-[var(--md-sys-color-outline-variant)]">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                  <CheckCircle2 className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-[var(--md-sys-color-on-surface)]">
-                    Complete {selectedSprintName}
-                  </h3>
-                  <p className="text-xs text-[var(--md-sys-color-on-surface-variant)]">
-                    Review completed work and rollover remaining tasks
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setCompleteSprintModalOpen(false)}
-                className="p-1 rounded-full text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-highest)]"
-              >
-                <X className="w-5 h-5" />
-              </button>
+      <Modal
+        isOpen={completeSprintModalOpen}
+        onClose={() => setCompleteSprintModalOpen(false)}
+        size="md"
+        title={
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-4 h-4" />
             </div>
-
-            <div className="space-y-3 py-1">
-              <div className="p-3.5 rounded-2xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] space-y-1.5 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-[var(--md-sys-color-on-surface-variant)]">Completed Issues:</span>
-                  <strong className="text-emerald-600 dark:text-emerald-400">
-                    {sprintIssues.filter((i) => i.status === 'RESOLVED' || i.status === 'CLOSED').length} issues
-                  </strong>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[var(--md-sys-color-on-surface-variant)]">Incomplete Issues:</span>
-                  <strong className="text-amber-600 dark:text-amber-400">
-                    {sprintIssues.filter((i) => i.status !== 'RESOLVED' && i.status !== 'CLOSED').length} issues
-                  </strong>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface)] mb-1.5">
-                  Move Incomplete Issues To:
-                </label>
-                <select
-                  value={rolloverTargetSprint}
-                  onChange={(e) => setRolloverTargetSprint(e.target.value)}
-                  className="w-full text-xs px-3 py-2 rounded-xl bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] cursor-pointer"
-                >
-                  <option value="BACKLOG">Product Backlog</option>
-                  {allSprintNames
-                    .filter((s) => s !== selectedSprintName)
-                    .map((s) => (
-                      <option key={s} value={s}>
-                        {s} ({sprintDefinitions[s]?.status || 'PLANNED'})
-                      </option>
-                    ))}
-                </select>
-              </div>
+            <span>Complete {selectedSprintName}</span>
+          </div>
+        }
+        description="Review completed work and rollover remaining tasks to next sprint or backlog."
+      >
+        <div className="space-y-4">
+          <div className="p-4 rounded-xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] space-y-2 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[var(--md-sys-color-on-surface-variant)]">Completed Issues:</span>
+              <Badge variant="resolved" size="sm">
+                {sprintIssues.filter((i) => i.status === 'RESOLVED' || i.status === 'CLOSED').length} issues
+              </Badge>
             </div>
-
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--md-sys-color-outline-variant)]">
-              <button
-                type="button"
-                onClick={() => setCompleteSprintModalOpen(false)}
-                className="px-4 py-2 rounded-full m3-btn-outline text-xs"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleCompleteSprint}
-                className="px-5 py-2 rounded-full m3-btn-filled text-xs font-semibold flex items-center gap-1.5 bg-emerald-600 text-white"
-              >
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Complete & Archive</span>
-              </button>
+            <div className="flex items-center justify-between">
+              <span className="text-[var(--md-sys-color-on-surface-variant)]">Incomplete Issues:</span>
+              <Badge variant="in-progress" size="sm">
+                {sprintIssues.filter((i) => i.status !== 'RESOLVED' && i.status !== 'CLOSED').length} issues
+              </Badge>
             </div>
           </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider mb-1.5 select-none">
+              Move Incomplete Issues To:
+            </label>
+            <select
+              value={rolloverTargetSprint}
+              onChange={(e) => setRolloverTargetSprint(e.target.value)}
+              className="w-full text-xs px-3.5 py-2.5 rounded-xl bg-[var(--md-sys-color-input-bg)] text-[var(--md-sys-color-input-text)] border border-[var(--md-sys-color-input-border)] cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--md-sys-color-primary)]/20 focus:border-[var(--md-sys-color-primary)]"
+            >
+              <option value="BACKLOG">Product Backlog</option>
+              {allSprintNames
+                .filter((s) => s !== selectedSprintName)
+                .map((s) => (
+                  <option key={s} value={s}>
+                    {s} ({sprintDefinitions[s]?.status || 'PLANNED'})
+                  </option>
+                ))}
+            </select>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-4 border-t border-[var(--md-sys-color-outline-variant)]">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setCompleteSprintModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="filled"
+              size="sm"
+              onClick={handleCompleteSprint}
+              leftIcon={<CheckCircle2 className="w-3.5 h-3.5" />}
+            >
+              Complete & Archive
+            </Button>
+          </div>
         </div>
-      )}
+      </Modal>
 
       <SprintAnalyticsModal
         isOpen={analyticsModalOpen}

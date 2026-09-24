@@ -21,6 +21,7 @@ import {
   CheckCircle2,
   Loader2,
 } from 'lucide-react';
+import { Button, Tooltip } from '../components/ui';
 
 const COLUMNS: { status: IssueStatus; title: string; badgeColor: string }[] = [
   { status: 'OPEN', title: 'To Do', badgeColor: 'bg-slate-500/10 text-slate-600 dark:text-slate-400' },
@@ -304,37 +305,42 @@ export const KanbanBoardPage: React.FC = () => {
 
           {/* Save Filter Button */}
           {(filterType !== 'ALL' || filterPriority !== 'ALL' || searchTerm.trim()) && (
-            <button
-              type="button"
-              onClick={handleSaveCurrentFilter}
-              className="p-1.5 rounded-full text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] hover:bg-[var(--md-sys-color-surface-container-high)] transition-colors"
-              title="Save filter to Dashboard"
-            >
-              <BookmarkPlus className="w-4 h-4" />
-            </button>
+            <Tooltip content="Save current filter to Personal Dashboard">
+              <button
+                type="button"
+                onClick={handleSaveCurrentFilter}
+                className="p-1.5 rounded-full text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] hover:bg-[var(--md-sys-color-surface-container-high)] transition-colors cursor-pointer"
+                aria-label="Save current filter"
+              >
+                <BookmarkPlus className="w-4 h-4" />
+              </button>
+            </Tooltip>
           )}
 
           {/* Refresh Button */}
-          <button
-            onClick={loadIssues}
-            disabled={loading}
-            className="p-2 rounded-full text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] transition-colors"
-            title="Refresh board"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
+          <Tooltip content="Refresh board issues">
+            <button
+              onClick={loadIssues}
+              disabled={loading}
+              className="p-2 rounded-full text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] transition-colors cursor-pointer disabled:opacity-50"
+              aria-label="Refresh board"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+          </Tooltip>
 
           {/* Create Issue Button */}
-          <button
+          <Button
             onClick={() => {
               setEditingIssue(null);
               setIsCreateModalOpen(true);
             }}
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold m3-btn-filled shadow-xs"
+            variant="filled"
+            size="sm"
+            leftIcon={<Plus className="w-3.5 h-3.5" />}
           >
-            <Plus className="w-3.5 h-3.5" />
-            <span>New Issue</span>
-          </button>
+            New Issue
+          </Button>
         </div>
       </div>
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { IssueItem } from '../../api/client';
+import { Modal, Button, Badge } from '../ui';
 import {
-  X,
   TrendingDown,
   BarChart3,
   Download,
@@ -124,41 +124,32 @@ export const SprintAnalyticsModal: React.FC<SprintAnalyticsModalProps> = ({
   };
 
   return (
-    <div
-      onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-4xl max-h-[90vh] bg-[var(--md-sys-color-surface-container-high)] rounded-3xl shadow-2xl border border-[var(--md-sys-color-outline-variant)] flex flex-col overflow-hidden"
-      >
-        {/* Modal Header */}
-        <div className="flex items-center justify-between p-6 border-b border-[var(--md-sys-color-outline-variant)] bg-[var(--md-sys-color-surface)]">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[var(--md-sys-color-primary-container)] flex items-center justify-center text-[var(--md-sys-color-on-primary-container)]">
-              <TrendingDown className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-[var(--md-sys-color-on-surface)] flex items-center gap-2">
-                <span>{sprint.name} Agile Analytics & Burndown</span>
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                  {sprint.status}
-                </span>
-              </h2>
-              <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-0.5">
-                Measure effort delivery velocity, ideal vs. actual burndown, and team throughput.
-              </p>
-            </div>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="2xl"
+      title={
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-primary-container)] flex items-center justify-center text-[var(--md-sys-color-on-primary-container)] shrink-0">
+            <TrendingDown className="w-5 h-5" />
           </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 rounded-full text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-highest)]"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-base text-[var(--md-sys-color-on-surface)]">
+                {sprint.name} Agile Analytics & Burndown
+              </span>
+              <Badge variant="success" size="sm">
+                {sprint.status}
+              </Badge>
+            </div>
+            <span className="text-xs text-[var(--md-sys-color-on-surface-variant)]">
+              Measure effort delivery velocity, ideal vs. actual burndown, and team throughput.
+            </span>
+          </div>
         </div>
+      }
+    >
+      <div className="flex flex-col overflow-hidden -mx-6 -my-6">
 
         {/* Tab Switcher */}
         <div className="flex items-center gap-2 px-6 pt-4 border-b border-[var(--md-sys-color-outline-variant)] bg-[var(--md-sys-color-surface)]">
@@ -436,22 +427,24 @@ export const SprintAnalyticsModal: React.FC<SprintAnalyticsModalProps> = ({
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
+                    size="sm"
                     onClick={handleExportCSV}
-                    className="px-3.5 py-1.5 rounded-full m3-btn-outline text-xs font-semibold flex items-center gap-1.5"
+                    leftIcon={<Download className="w-3.5 h-3.5" />}
                   >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>Export CSV</span>
-                  </button>
-                  <button
+                    Export CSV
+                  </Button>
+                  <Button
                     type="button"
+                    variant="filled"
+                    size="sm"
                     onClick={() => window.print()}
-                    className="px-3.5 py-1.5 rounded-full m3-btn-filled text-xs font-semibold flex items-center gap-1.5"
+                    leftIcon={<Printer className="w-3.5 h-3.5" />}
                   >
-                    <Printer className="w-3.5 h-3.5" />
-                    <span>Print Summary</span>
-                  </button>
+                    Print Summary
+                  </Button>
                 </div>
               </div>
 
@@ -510,6 +503,6 @@ export const SprintAnalyticsModal: React.FC<SprintAnalyticsModalProps> = ({
           )}
         </div>
       </div>
-    </div>
+    </Modal>
   );
 };
