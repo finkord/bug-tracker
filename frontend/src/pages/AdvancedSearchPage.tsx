@@ -594,7 +594,7 @@ export const AdvancedSearchPage: React.FC = () => {
                   >
                     <td className="py-2.5 px-3.5 font-mono font-bold text-[var(--md-sys-color-primary)] whitespace-nowrap">
                       <Link
-                        to={`/issues/${issue.id}`}
+                        to={`/issues/${issue.key || issue.id}`}
                         className="hover:underline flex items-center gap-1"
                       >
                         {issue.key}
@@ -603,7 +603,7 @@ export const AdvancedSearchPage: React.FC = () => {
 
                     <td className="py-2.5 px-3.5 max-w-md">
                       <Link
-                        to={`/issues/${issue.id}`}
+                        to={`/issues/${issue.key || issue.id}`}
                         className="font-semibold text-[var(--md-sys-color-on-surface)] hover:text-[var(--md-sys-color-primary)] transition-colors block truncate"
                         title={issue.title}
                       >

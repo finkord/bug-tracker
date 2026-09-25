@@ -540,7 +540,7 @@ export const api = {
     const qs = query.toString();
     return request<IssueItem[]>(`/issues${qs ? `?${qs}` : ''}`);
   },
-  getIssue: (id: number) => request<IssueItem>(`/issues/${id}`),
+  getIssue: (idOrKey: string | number) => request<IssueItem>(`/issues/${idOrKey}`),
   createIssue: (payload: CreateIssuePayload) =>
     request<IssueItem>('/issues', {
       method: 'POST',

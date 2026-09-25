@@ -28,7 +28,7 @@ export const OAuthCallbackPage: React.FC = () => {
     const completeOAuth = async () => {
       try {
         await login({ accessToken, refreshToken });
-        navigate('/profile', { replace: true });
+        navigate('/', { replace: true });
       } catch (err: any) {
         setErrorMessage(err.message || 'Failed to load user profile after OAuth authentication.');
       }

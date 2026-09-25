@@ -71,10 +71,10 @@ export class IssuesController {
 
   @Get(':id')
   @ApiOperation({
-    summary: 'Get single issue details with comments and worklog history',
+    summary: 'Get single issue details with comments and worklog history by ID or Issue Key (e.g. PROJ-6)',
   })
-  async findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.issuesService.findById(id);
+  async findOne(@Param('id') keyOrId: string) {
+    return this.issuesService.findByKeyOrId(keyOrId);
   }
 
   @Post()

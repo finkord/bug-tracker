@@ -178,7 +178,7 @@ export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
               <div className="flex items-center gap-1.5">
                 <Tooltip content="Open in full page view">
                   <Link
-                    to={`/issues/${issue.id}`}
+                    to={`/issues/${issue.key || issue.id}`}
                     target="_blank"
                     rel="noreferrer"
                     className="p-1.5 rounded-lg text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-highest)] hover:text-[var(--md-sys-color-primary)] transition-colors flex items-center gap-1 text-xs"

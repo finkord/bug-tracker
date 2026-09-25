@@ -123,38 +123,98 @@ export class IssuesService {
   }
 
   /**
-   * Retrieves single issue with relations, full comments thread, and worklog history.
+   * Retrieves single issue with relations, full comments thread, and worklog history by numeric ID or Issue Key (e.g. "PROJ-6").
    */
-  async findById(id: number): Promise<any> {
-    const issue = await this.issueRepository.findOne({
-      where: { id },
-      relations: {
-        project: true,
-        reporter: true,
-        assignee: true,
-        comments: {
-          author: true,
+  async findByKeyOrId(keyOrId: string | number): Promise<any> {
+    const raw = String(keyOrId).trim();
+    let issue: Issue | null = null;
+
+    // Check if keyOrId is in "KEY-123" format (e.g., PROJ-6, BT-1)
+    const keyMatch = raw.match(/^([a-zA-Z0-9_-]+)-(\d+)$/);
+    if (keyMatch) {
+      const [, projectKey, issueNumStr] = keyMatch;
+      const issueNum = parseInt(issueNumStr, 10);
+
+      issue = await this.issueRepository.findOne({
+        where: {
+          issueNum,
+          project: {
+            key: projectKey.toUpperCase(),
+          },
         },
-        worklogs: {
-          user: true,
+        relations: {
+          project: true,
+          reporter: true,
+          assignee: true,
+          comments: {
+            author: true,
+          },
+          worklogs: {
+            user: true,
+          },
         },
-      },
-      order: {
-        comments: {
-          createdAt: 'ASC',
+        order: {
+          comments: {
+            createdAt: 'ASC',
+          },
+          worklogs: {
+            createdAt: 'DESC',
+          },
         },
-        worklogs: {
-          createdAt: 'DESC',
+      });
+
+      // If not found with exact uppercase, try case-insensitive query builder
+      if (!issue) {
+        issue = await this.issueRepository
+          .createQueryBuilder('issue')
+          .leftJoinAndSelect('issue.project', 'project')
+          .leftJoinAndSelect('issue.reporter', 'reporter')
+          .leftJoinAndSelect('issue.assignee', 'assignee')
+          .leftJoinAndSelect('issue.comments', 'comments')
+          .leftJoinAndSelect('comments.author', 'commentAuthor')
+          .leftJoinAndSelect('issue.worklogs', 'worklogs')
+          .leftJoinAndSelect('worklogs.user', 'worklogUser')
+          .where('LOWER(project.key) = LOWER(:projectKey)', { projectKey })
+          .andWhere('issue.issueNum = :issueNum', { issueNum })
+          .orderBy('comments.createdAt', 'ASC')
+          .addOrderBy('worklogs.createdAt', 'DESC')
+          .getOne();
+      }
+    }
+
+    // If not found by key and raw is numeric, try finding by primary key ID
+    if (!issue && /^\d+$/.test(raw)) {
+      const numId = parseInt(raw, 10);
+      issue = await this.issueRepository.findOne({
+        where: { id: numId },
+        relations: {
+          project: true,
+          reporter: true,
+          assignee: true,
+          comments: {
+            author: true,
+          },
+          worklogs: {
+            user: true,
+          },
         },
-      },
-    });
+        order: {
+          comments: {
+            createdAt: 'ASC',
+          },
+          worklogs: {
+            createdAt: 'DESC',
+          },
+        },
+      });
+    }
 
     if (!issue) {
-      throw new NotFoundException(`Issue with ID #${id} not found`);
+      throw new NotFoundException(`Issue "${raw}" not found`);
     }
 
     const attachments = await this.attachmentRepository.find({
-      where: { issueId: id },
+      where: { issueId: issue.id },
       relations: { uploader: true },
       order: { createdAt: 'DESC' },
     });
@@ -238,6 +298,10 @@ export class IssuesService {
       createdAt: issue.createdAt,
       updatedAt: issue.updatedAt,
     };
+  }
+
+  async findById(id: number): Promise<any> {
+    return this.findByKeyOrId(id);
   }
 
   /**

@@ -28,7 +28,8 @@ import {
 } from 'lucide-react';
 
 export const IssueDetailPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { key, id } = useParams<{ key?: string; id?: string }>();
+  const issueKeyOrId = key || id;
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -51,12 +52,16 @@ export const IssueDetailPage: React.FC = () => {
   const [isDragOver, setIsDragOver] = useState(false);
 
   const fetchIssue = async () => {
-    if (!id) return;
+    if (!issueKeyOrId) return;
     setLoading(true);
     setError(null);
     try {
-      const data = await api.getIssue(Number(id));
+      const data = await api.getIssue(issueKeyOrId);
       setIssue(data);
+      // If user navigated via numeric ID or different casing, replace URL with canonical /issues/<projectKey>-<issueNum>
+      if (data?.key && issueKeyOrId !== data.key) {
+        navigate(`/issues/${data.key}`, { replace: true });
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to load issue');
     } finally {
@@ -66,7 +71,7 @@ export const IssueDetailPage: React.FC = () => {
 
   useEffect(() => {
     fetchIssue();
-  }, [id]);
+  }, [issueKeyOrId]);
 
   // Real-time WebSocket connection for live collaboration & updates
   useEffect(() => {

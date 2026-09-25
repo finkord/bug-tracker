@@ -354,7 +354,7 @@ export const HomePage: React.FC = () => {
                       </select>
 
                       <Link
-                        to={`/issues/${issue.id}`}
+                        to={`/issues/${issue.key || issue.id}`}
                         onClick={(e) => e.stopPropagation()}
                         className="p-1 rounded-md text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] transition-colors"
                         title="Open full page"

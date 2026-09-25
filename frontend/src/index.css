@@ -351,3 +351,26 @@ iframe[src*="challenges.cloudflare.com"],
   box-shadow: none !important;
   border-radius: 5px !important;
 }
+
+/* ========================================================================= */
+/* DevOps Broadcast Banner Sliding Marquee Animation                        */
+/* ========================================================================= */
+@keyframes bannerMarquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-banner-marquee {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: bannerMarquee 28s linear infinite;
+}
+
+.animate-banner-marquee:hover {
+  animation-play-state: paused;
+}
+

@@ -300,7 +300,7 @@ export const TimeCalendar: React.FC<TimeCalendarProps> = ({
                   {log.issue ? (
                     <div className="flex items-center gap-2">
                       <Link
-                        to={`/issues/${log.issue.id}`}
+                        to={`/issues/${log.issue.key || log.issue.id}`}
                         className="text-xs font-mono font-bold text-[var(--md-sys-color-primary)] hover:underline flex items-center gap-1"
                       >
                         <span>{log.issue.key}</span>

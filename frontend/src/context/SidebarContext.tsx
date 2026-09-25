@@ -7,6 +7,9 @@ interface SidebarContextType {
   mobileOpen: boolean;
   toggleMobile: () => void;
   closeMobile: () => void;
+  showCollapsedLabels: boolean;
+  setShowCollapsedLabels: (show: boolean) => void;
+  toggleCollapsedLabels: () => void;
 }
 
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
@@ -15,6 +18,11 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [collapsed, setCollapsedState] = useState<boolean>(() => {
     return localStorage.getItem('bt_sidebar_collapsed') === 'true';
   });
+
+  const [showCollapsedLabels, setShowCollapsedLabelsState] = useState<boolean>(() => {
+    return localStorage.getItem('bt_pref_collapsed_labels') === 'true';
+  });
+
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const toggleSidebar = () => {
@@ -30,6 +38,19 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
     localStorage.setItem('bt_sidebar_collapsed', String(val));
   };
 
+  const setShowCollapsedLabels = (val: boolean) => {
+    setShowCollapsedLabelsState(val);
+    localStorage.setItem('bt_pref_collapsed_labels', String(val));
+  };
+
+  const toggleCollapsedLabels = () => {
+    setShowCollapsedLabelsState((prev) => {
+      const next = !prev;
+      localStorage.setItem('bt_pref_collapsed_labels', String(next));
+      return next;
+    });
+  };
+
   const toggleMobile = () => setMobileOpen((prev) => !prev);
   const closeMobile = () => setMobileOpen(false);
 
@@ -42,6 +63,9 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
         mobileOpen,
         toggleMobile,
         closeMobile,
+        showCollapsedLabels,
+        setShowCollapsedLabels,
+        toggleCollapsedLabels,
       }}
     >
       {children}
