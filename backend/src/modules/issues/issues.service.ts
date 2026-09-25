@@ -646,24 +646,45 @@ export class IssuesService {
       systemRole: string;
       avatarUrl: string | null;
       dailyHours: Record<string, number>;
+      dailyWorklogs?: Record<
+        string,
+        Array<{
+          id: number;
+          issueId?: number;
+          issueKey?: string;
+          issueTitle?: string;
+          timeSpentHours: number;
+          description?: string;
+        }>
+      >;
       totalPeriodHours: number;
     }>;
     dailyTotals: Record<string, number>;
     grandTotal: number;
   }> {
     const now = new Date();
-    const end = endDate ? new Date(endDate) : now;
-    const start = startDate
-      ? new Date(startDate)
-      : new Date(end.getTime() - 13 * 24 * 60 * 60 * 1000);
+    const defaultEndStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const endStr = endDate || defaultEndStr;
 
-    const startStr = start.toISOString().split('T')[0];
-    const endStr = end.toISOString().split('T')[0];
+    let startStr = startDate;
+    if (!startStr) {
+      const [eY, eM, eD] = endStr.split('-').map(Number);
+      const sDate = new Date(eY, eM - 1, eD);
+      sDate.setDate(sDate.getDate() - 13);
+      startStr = `${sDate.getFullYear()}-${String(sDate.getMonth() + 1).padStart(2, '0')}-${String(sDate.getDate()).padStart(2, '0')}`;
+    }
 
     const days: string[] = [];
-    const curr = new Date(start);
-    while (curr <= end) {
-      days.push(curr.toISOString().split('T')[0]);
+    const [sY, sM, sD] = startStr.split('-').map(Number);
+    const [eY, eM, eD] = endStr.split('-').map(Number);
+    const curr = new Date(sY, sM - 1, sD);
+    const endLimit = new Date(eY, eM - 1, eD);
+
+    while (curr <= endLimit) {
+      const y = curr.getFullYear();
+      const m = String(curr.getMonth() + 1).padStart(2, '0');
+      const d = String(curr.getDate()).padStart(2, '0');
+      days.push(`${y}-${m}-${d}`);
       curr.setDate(curr.getDate() + 1);
     }
 
@@ -674,6 +695,8 @@ export class IssuesService {
 
     const logs = await this.worklogRepository
       .createQueryBuilder('worklog')
+      .leftJoinAndSelect('worklog.issue', 'issue')
+      .leftJoinAndSelect('issue.project', 'project')
       .where('worklog.dateLogged >= :startStr AND worklog.dateLogged <= :endStr', {
         startStr,
         endStr,
@@ -687,10 +710,27 @@ export class IssuesService {
     let grandTotal = 0;
 
     const userLogsMap: Record<number, Record<string, number>> = {};
+    const userWorklogsMap: Record<
+      number,
+      Record<
+        string,
+        Array<{
+          id: number;
+          issueId?: number;
+          issueKey?: string;
+          issueTitle?: string;
+          timeSpentHours: number;
+          description?: string;
+        }>
+      >
+    > = {};
+
     for (const u of users) {
       userLogsMap[u.id] = {};
+      userWorklogsMap[u.id] = {};
       for (const d of days) {
         userLogsMap[u.id][d] = 0;
+        userWorklogsMap[u.id][d] = [];
       }
     }
 
@@ -703,14 +743,35 @@ export class IssuesService {
         userLogsMap[uId] = {};
         for (const d of days) userLogsMap[uId][d] = 0;
       }
+      if (!userWorklogsMap[uId]) {
+        userWorklogsMap[uId] = {};
+        for (const d of days) userWorklogsMap[uId][d] = [];
+      }
+      if (!userWorklogsMap[uId][date]) {
+        userWorklogsMap[uId][date] = [];
+      }
+
+      const issueKey = log.issue
+        ? `${log.issue.project?.key || 'ISSUE'}-${log.issue.issueNum}`
+        : undefined;
 
       userLogsMap[uId][date] = Number(((userLogsMap[uId][date] || 0) + hours).toFixed(2));
+      userWorklogsMap[uId][date].push({
+        id: log.id,
+        issueId: log.issueId,
+        issueKey,
+        issueTitle: log.issue?.title,
+        timeSpentHours: log.timeSpentHours,
+        description: log.description || undefined,
+      });
+
       dailyTotals[date] = Number(((dailyTotals[date] || 0) + hours).toFixed(2));
       grandTotal += hours;
     }
 
     const members = users.map((u) => {
       const dHours = userLogsMap[u.id] || {};
+      const dWorklogs = userWorklogsMap[u.id] || {};
       const totalPeriodHours = Object.values(dHours).reduce((a, b) => a + b, 0);
       return {
         userId: u.id,
@@ -719,6 +780,7 @@ export class IssuesService {
         systemRole: u.systemRole,
         avatarUrl: u.avatarUrl || null,
         dailyHours: dHours,
+        dailyWorklogs: dWorklogs,
         totalPeriodHours: Number(totalPeriodHours.toFixed(2)),
       };
     });

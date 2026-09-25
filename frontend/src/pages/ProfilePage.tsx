@@ -6,7 +6,6 @@ import { PasswordStrengthMeter } from '../components/auth/PasswordStrengthMeter'
 import { Link, useSearchParams } from 'react-router-dom';
 import { TimeCalendar, type DayWorklog } from '../components/common/TimeCalendar';
 import { Avatar } from '../components/common/Avatar';
-import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import {
@@ -192,7 +191,7 @@ export const ProfilePage: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-6 animate-in fade-in duration-200">
       {/* Profile Overview Card */}
-      <Card variant="outlined" padding="lg" rounded="xl" className="shadow-xs">
+      <div className="bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 rounded-3xl p-6 shadow-xs">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
             <Avatar
@@ -224,7 +223,7 @@ export const ProfilePage: React.FC = () => {
 
           {/* Quick Badges / Status Chips */}
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            <div className="px-2.5 py-1 rounded-lg bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface-variant)] border border-[var(--md-sys-color-outline-variant)] flex items-center gap-1.5 font-medium">
+            <div className="px-3 py-1 rounded-full bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] border border-[var(--md-sys-color-outline-variant)]/30 flex items-center gap-1.5 font-medium">
               <span>ID:</span>
               <strong className="text-[var(--md-sys-color-on-surface)] font-mono">#{user.id}</strong>
             </div>
@@ -233,7 +232,7 @@ export const ProfilePage: React.FC = () => {
               {user.isActivated ? 'Activated' : 'Pending Activation'}
             </Badge>
 
-            <div className="px-2.5 py-1 rounded-lg bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface-variant)] border border-[var(--md-sys-color-outline-variant)] font-medium">
+            <div className="px-3 py-1 rounded-full bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] border border-[var(--md-sys-color-outline-variant)]/30 font-medium">
               Auth: <strong className="text-[var(--md-sys-color-primary)]">{user.oauthProvider || 'LOCAL'}</strong>
             </div>
 
@@ -242,10 +241,10 @@ export const ProfilePage: React.FC = () => {
             </Badge>
           </div>
         </div>
-      </Card>
+      </div>
 
       {/* Tab Switcher */}
-      <div className="flex items-center gap-2 border-b border-[var(--md-sys-color-outline-variant)] pb-2">
+      <div className="flex items-center gap-2 border-b border-[var(--md-sys-color-outline-variant)] pb-3">
         <Button
           type="button"
           variant={activeTab === 'account' ? 'filled' : 'ghost'}
@@ -271,77 +270,77 @@ export const ProfilePage: React.FC = () => {
         <div className="space-y-5">
           {/* Achievements Summary Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-            <Card variant="outlined" padding="sm" rounded="xl" className="flex items-center justify-between">
+            <div className="p-5 rounded-3xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 shadow-xs flex items-center justify-between">
               <div className="space-y-0.5">
                 <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
                   Total Effort
                 </span>
-                <p className="text-xl font-black text-[var(--md-sys-color-primary)]">
+                <p className="text-xl sm:text-2xl font-black text-[var(--md-sys-color-primary)]">
                   {totalPersonalHours.toFixed(1)}h
                 </p>
               </div>
-              <div className="w-9 h-9 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                <Clock className="w-4 h-4" />
+              <div className="w-10 h-10 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                <Clock className="w-5 h-5" />
               </div>
-            </Card>
+            </div>
 
-            <Card variant="outlined" padding="sm" rounded="xl" className="flex items-center justify-between">
+            <div className="p-5 rounded-3xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 shadow-xs flex items-center justify-between">
               <div className="space-y-0.5">
                 <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
                   This Month
                 </span>
-                <p className="text-xl font-black text-emerald-600 dark:text-emerald-400">
+                <p className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400">
                   {thisMonthPersonalHours.toFixed(1)}h
                 </p>
               </div>
-              <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                <Trophy className="w-4 h-4" />
+              <div className="w-10 h-10 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <Trophy className="w-5 h-5" />
               </div>
-            </Card>
+            </div>
 
-            <Card variant="outlined" padding="sm" rounded="xl" className="flex items-center justify-between">
+            <div className="p-5 rounded-3xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 shadow-xs flex items-center justify-between">
               <div className="space-y-0.5">
                 <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
                   Day Streak
                 </span>
-                <p className="text-xl font-black text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                <p className="text-xl sm:text-2xl font-black text-amber-600 dark:text-amber-400 flex items-center gap-1">
                   <span>{streak}</span>
                   <span className="text-xs font-normal text-[var(--md-sys-color-on-surface-variant)]">days</span>
                 </p>
               </div>
-              <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                <Flame className="w-4 h-4" />
+              <div className="w-10 h-10 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                <Flame className="w-5 h-5" />
               </div>
-            </Card>
+            </div>
 
-            <Card variant="outlined" padding="sm" rounded="xl" className="flex items-center justify-between">
+            <div className="p-5 rounded-3xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 shadow-xs flex items-center justify-between">
               <div className="space-y-0.5">
                 <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
                   Worklogs
                 </span>
-                <p className="text-xl font-black text-purple-600 dark:text-purple-400">
+                <p className="text-xl sm:text-2xl font-black text-purple-600 dark:text-purple-400">
                   {myLogs.length}
                 </p>
               </div>
-              <div className="w-9 h-9 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center">
-                <Award className="w-4 h-4" />
+              <div className="w-10 h-10 rounded-full bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                <Award className="w-5 h-5" />
               </div>
-            </Card>
+            </div>
           </div>
 
           {/* Achievement Badges Showcase */}
-          <Card variant="outlined" padding="md" rounded="xl" className="space-y-3">
+          <div className="p-6 rounded-3xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 space-y-4 shadow-xs">
             <h4 className="text-xs font-bold text-[var(--md-sys-color-on-surface)] flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-amber-500" />
               <span>Personal Engineering Milestones & Badges</span>
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className={`p-3 rounded-xl border flex items-center gap-3 ${
+              <div className={`p-3.5 rounded-2xl border flex items-center gap-3 transition-colors ${
                 streak >= 3
                   ? 'border-amber-500/40 bg-amber-500/10'
-                  : 'border-[var(--md-sys-color-outline-variant)] bg-[var(--md-sys-color-surface-container-low)] opacity-60'
+                  : 'border-[var(--md-sys-color-outline-variant)]/20 bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] opacity-70'
               }`}>
-                <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-xs">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-sm">
                   🔥
                 </div>
                 <div>
@@ -352,12 +351,12 @@ export const ProfilePage: React.FC = () => {
                 </div>
               </div>
 
-              <div className={`p-3 rounded-xl border flex items-center gap-3 ${
+              <div className={`p-3.5 rounded-2xl border flex items-center gap-3 transition-colors ${
                 Object.values(myDailyHours).some((h) => h >= 8)
                   ? 'border-emerald-500/40 bg-emerald-500/10'
-                  : 'border-[var(--md-sys-color-outline-variant)] bg-[var(--md-sys-color-surface-container-low)] opacity-60'
+                  : 'border-[var(--md-sys-color-outline-variant)]/20 bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] opacity-70'
               }`}>
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xs">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-sm">
                   ⚡
                 </div>
                 <div>
@@ -368,12 +367,12 @@ export const ProfilePage: React.FC = () => {
                 </div>
               </div>
 
-              <div className={`p-3 rounded-xl border flex items-center gap-3 ${
+              <div className={`p-3.5 rounded-2xl border flex items-center gap-3 transition-colors ${
                 myLogs.length >= 5
                   ? 'border-blue-500/40 bg-blue-500/10'
-                  : 'border-[var(--md-sys-color-outline-variant)] bg-[var(--md-sys-color-surface-container-low)] opacity-60'
+                  : 'border-[var(--md-sys-color-outline-variant)]/20 bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] opacity-70'
               }`}>
-                <div className="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs">
+                <div className="w-9 h-9 rounded-xl bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-sm">
                   🎯
                 </div>
                 <div>
@@ -384,7 +383,7 @@ export const ProfilePage: React.FC = () => {
                 </div>
               </div>
             </div>
-          </Card>
+          </div>
 
           {/* Interactive Personal Calendar */}
           <TimeCalendar
@@ -400,11 +399,11 @@ export const ProfilePage: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
           {/* Account Password Card */}
-          <Card variant="outlined" padding="md" rounded="xl" className="space-y-4">
+          <div className="bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 rounded-3xl p-6 space-y-4 shadow-xs">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  className={`w-10 h-10 rounded-2xl flex items-center justify-center ${
                     user.hasPassword
                       ? 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-primary)]'
                       : 'bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-warning)]'
@@ -434,7 +433,7 @@ export const ProfilePage: React.FC = () => {
             </p>
 
             {passwordSuccess && (
-              <div className="p-3 text-xs rounded-xl bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] font-medium space-y-2 animate-in fade-in">
+              <div className="p-3 text-xs rounded-2xl bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] font-medium space-y-2 animate-in fade-in">
                 <div className="flex items-start gap-2">
                   <CheckCircle className="w-4 h-4 shrink-0 text-[var(--md-sys-color-success)] mt-0.5" />
                   <span>{passwordSuccess}</span>
@@ -457,7 +456,7 @@ export const ProfilePage: React.FC = () => {
             )}
 
             {passwordError && (
-              <div className="p-3 text-xs rounded-xl bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] font-medium flex items-center gap-2 animate-in fade-in">
+              <div className="p-3 text-xs rounded-2xl bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] font-medium flex items-center gap-2 animate-in fade-in">
                 <AlertCircle className="w-4 h-4 shrink-0 text-[var(--md-sys-color-error)]" />
                 <span>{passwordError}</span>
               </div>
@@ -476,12 +475,12 @@ export const ProfilePage: React.FC = () => {
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="••••••••••••"
-                      className="w-full px-3 py-2 text-xs rounded-xl bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] pr-10 font-medium"
+                      className="w-full px-3.5 py-2.5 text-xs rounded-2xl bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]/40 pr-10 font-medium focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)]"
                     />
                     <button
                       type="button"
                       onClick={() => setShowNewPw(!showNewPw)}
-                      className="absolute right-3 top-2.5 text-[var(--md-sys-color-outline)] hover:text-[var(--md-sys-color-on-surface)]"
+                      className="absolute right-3 top-2.5 text-[var(--md-sys-color-outline)] hover:text-[var(--md-sys-color-on-surface)] cursor-pointer"
                     >
                       {showNewPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -500,12 +499,12 @@ export const ProfilePage: React.FC = () => {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="••••••••••••"
-                      className="w-full px-3 py-2 text-xs rounded-xl bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] pr-10 font-medium"
+                      className="w-full px-3.5 py-2.5 text-xs rounded-2xl bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]/40 pr-10 font-medium focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)]"
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPw(!showConfirmPw)}
-                      className="absolute right-3 top-2.5 text-[var(--md-sys-color-outline)] hover:text-[var(--md-sys-color-on-surface)]"
+                      className="absolute right-3 top-2.5 text-[var(--md-sys-color-outline)] hover:text-[var(--md-sys-color-on-surface)] cursor-pointer"
                     >
                       {showConfirmPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -538,7 +537,7 @@ export const ProfilePage: React.FC = () => {
             )}
 
             {/* Password Card Action Footer */}
-            <div className="pt-3 border-t border-[var(--md-sys-color-outline-variant)] flex items-center justify-between gap-3">
+            <div className="pt-3 border-t border-[var(--md-sys-color-surface-container-high)] flex items-center justify-between gap-3">
               {user.hasPassword ? (
                 <>
                   <div className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)] truncate">
@@ -578,14 +577,14 @@ export const ProfilePage: React.FC = () => {
                 </>
               ) : null}
             </div>
-          </Card>
+          </div>
 
           {/* Two-Factor Authentication Card */}
-          <Card variant="outlined" padding="md" rounded="xl" className="space-y-4">
+          <div className="bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 rounded-3xl p-6 space-y-4 shadow-xs">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  className={`w-10 h-10 rounded-2xl flex items-center justify-center ${
                     user.twoFactorEnabled
                       ? 'bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)]'
                       : 'bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)]'
@@ -617,7 +616,7 @@ export const ProfilePage: React.FC = () => {
             </p>
 
             {twoFactorError && (
-              <div className="p-3 text-xs rounded-xl bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] font-medium">
+              <div className="p-3 text-xs rounded-2xl bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] font-medium">
                 {twoFactorError}
               </div>
             )}
@@ -634,7 +633,7 @@ export const ProfilePage: React.FC = () => {
                     value={disableCode}
                     onChange={(e) => setDisableCode(e.target.value.replace(/\D/g, ''))}
                     placeholder="000000"
-                    className="w-32 text-center tracking-widest font-mono text-sm py-1.5 rounded-lg bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]"
+                    className="w-32 text-center tracking-widest font-mono text-sm py-2 rounded-xl bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]/40 focus:outline-hidden"
                   />
                   <Button
                     type="submit"
@@ -658,7 +657,7 @@ export const ProfilePage: React.FC = () => {
             )}
 
             {/* 2FA Action Footer */}
-            <div className="pt-3 border-t border-[var(--md-sys-color-outline-variant)] flex items-center justify-between gap-3">
+            <div className="pt-3 border-t border-[var(--md-sys-color-surface-container-high)] flex items-center justify-between gap-3">
               <span className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
                 RFC 6238 Standard
               </span>
@@ -686,13 +685,13 @@ export const ProfilePage: React.FC = () => {
                 </Button>
               )}
             </div>
-          </Card>
+          </div>
 
           {/* Active Sessions Card */}
-          <Card variant="outlined" padding="md" rounded="xl" className="space-y-3 md:col-span-2">
+          <div className="bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 rounded-3xl p-6 space-y-4 shadow-xs md:col-span-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] flex items-center justify-center">
+                <div className="w-10 h-10 rounded-2xl bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] flex items-center justify-center">
                   <Laptop className="w-5 h-5 text-[var(--md-sys-color-primary)]" />
                 </div>
                 <div>
@@ -717,13 +716,13 @@ export const ProfilePage: React.FC = () => {
             </div>
 
             {sessionsRevokedMsg && (
-              <div className="p-3 text-xs rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-medium">
+              <div className="p-3 text-xs rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-medium">
                 {sessionsRevokedMsg}
               </div>
             )}
 
-            <div className="divide-y divide-[var(--md-sys-color-outline-variant)] pt-1">
-              <div className="py-2.5 flex items-center justify-between">
+            <div className="space-y-2 pt-1">
+              <div className="p-3.5 rounded-2xl bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/30 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Laptop className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
                   <div>
@@ -740,8 +739,8 @@ export const ProfilePage: React.FC = () => {
                 </Badge>
               </div>
 
-              <div className="py-2.5 flex items-center justify-between">
-                <div className="flex items-center gap-3 opacity-75">
+              <div className="p-3.5 rounded-2xl bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/30 opacity-75 flex items-center justify-between">
+                <div className="flex items-center gap-3">
                   <Smartphone className="w-4 h-4 text-[var(--md-sys-color-on-surface-variant)]" />
                   <div>
                     <p className="text-xs font-semibold text-[var(--md-sys-color-on-surface)]">
@@ -757,13 +756,13 @@ export const ProfilePage: React.FC = () => {
                 </span>
               </div>
             </div>
-          </Card>
+          </div>
 
           {/* Administrator Quick Controls Card */}
           {user.systemRole === 'ADMIN' && (
-            <Card variant="filled" padding="md" rounded="xl" className="space-y-3 md:col-span-2 bg-[var(--md-sys-color-surface-container)]">
+            <div className="p-6 rounded-3xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 space-y-3 md:col-span-2 shadow-xs">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] flex items-center justify-center">
+                <div className="w-10 h-10 rounded-2xl bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] flex items-center justify-center">
                   <ShieldAlert className="w-5 h-5 text-[var(--md-sys-color-warning)]" />
                 </div>
                 <div>
@@ -792,7 +791,7 @@ export const ProfilePage: React.FC = () => {
                   </Button>
                 </Link>
               </div>
-            </Card>
+            </div>
           )}
         </div>
       )}

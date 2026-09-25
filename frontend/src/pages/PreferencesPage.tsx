@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSidebar } from '../context/SidebarContext';
 import { useTheme } from '../context/ThemeContext';
-import { Card, Button } from '../components/ui';
+import { Button } from '../components/ui';
 import {
   Sliders,
   Moon,
@@ -41,14 +41,14 @@ export const PreferencesPage: React.FC = () => {
         <div className="md:col-span-2 space-y-6">
 
           {/* Setting Card 1: Collapsed Sidebar Labels */}
-          <Card className="p-6 space-y-5 rounded-2xl border border-[var(--md-sys-color-outline-variant)]/20 bg-[var(--md-sys-color-surface-container-low)]">
+          <div className="p-6 space-y-5 rounded-3xl border border-[var(--md-sys-color-outline-variant)]/20 bg-[var(--md-sys-color-surface-container-low)] shadow-xs">
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <h2 className="text-sm font-bold text-[var(--md-sys-color-on-surface)]">
                     Collapsed Sidebar Text Labels
                   </h2>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] font-semibold">
+                  <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] font-semibold">
                     Navigation
                   </span>
                 </div>
@@ -77,7 +77,7 @@ export const PreferencesPage: React.FC = () => {
               </button>
             </div>
 
-            <div className="pt-2 border-t border-[var(--md-sys-color-outline-variant)]/20 flex items-center justify-between text-xs">
+            <div className="pt-3 border-t border-[var(--md-sys-color-surface-container-high)] flex items-center justify-between text-xs">
               <span className="text-[var(--md-sys-color-on-surface-variant)]">
                 Status: <strong className="text-[var(--md-sys-color-on-surface)]">{showCollapsedLabels ? 'Labels Enabled' : 'Icons Only (Default)'}</strong>
               </span>
@@ -90,16 +90,16 @@ export const PreferencesPage: React.FC = () => {
                 Reset to Default
               </Button>
             </div>
-          </Card>
+          </div>
 
           {/* Setting Card 2: Theme / Appearance */}
-          <Card className="p-6 space-y-5 rounded-2xl border border-[var(--md-sys-color-outline-variant)]/20 bg-[var(--md-sys-color-surface-container-low)]">
+          <div className="p-6 space-y-5 rounded-3xl border border-[var(--md-sys-color-outline-variant)]/20 bg-[var(--md-sys-color-surface-container-low)] shadow-xs">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <h2 className="text-sm font-bold text-[var(--md-sys-color-on-surface)]">
                   Visual Theme
                 </h2>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] font-semibold">
+                <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] font-semibold">
                   Appearance
                 </span>
               </div>
@@ -116,10 +116,10 @@ export const PreferencesPage: React.FC = () => {
                 className={`p-4 rounded-2xl border flex flex-col items-center gap-3 transition-all cursor-pointer ${
                   theme === 'light'
                     ? 'border-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/20 shadow-xs'
-                    : 'border-[var(--md-sys-color-outline-variant)]/30 hover:bg-[var(--md-sys-color-surface-container)]'
+                    : 'border-[var(--md-sys-color-outline-variant)]/30 bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container-high)]'
                 }`}
               >
-                <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
                   <Sun className="w-5 h-5" />
                 </div>
                 <div className="text-center">
@@ -142,10 +142,10 @@ export const PreferencesPage: React.FC = () => {
                 className={`p-4 rounded-2xl border flex flex-col items-center gap-3 transition-all cursor-pointer ${
                   theme === 'dark'
                     ? 'border-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/20 shadow-xs'
-                    : 'border-[var(--md-sys-color-outline-variant)]/30 hover:bg-[var(--md-sys-color-surface-container)]'
+                    : 'border-[var(--md-sys-color-outline-variant)]/30 bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container-high)]'
                 }`}
               >
-                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
                   <Moon className="w-5 h-5" />
                 </div>
                 <div className="text-center">
@@ -161,12 +161,12 @@ export const PreferencesPage: React.FC = () => {
                 )}
               </button>
             </div>
-          </Card>
+          </div>
         </div>
 
         {/* Right 1 Column: Live Interactive Preview */}
         <div className="space-y-4">
-          <Card className="p-5 rounded-2xl border border-[var(--md-sys-color-outline-variant)]/20 bg-[var(--md-sys-color-surface-container-low)] space-y-4">
+          <div className="p-6 rounded-3xl border border-[var(--md-sys-color-outline-variant)]/20 bg-[var(--md-sys-color-surface-container-low)] space-y-4 shadow-xs">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
               <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)]">
@@ -179,7 +179,7 @@ export const PreferencesPage: React.FC = () => {
             </p>
 
             {/* Mock Navigation Rail */}
-            <div className="w-[72px] mx-auto py-3 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/20 flex flex-col items-center gap-3 select-none">
+            <div className="w-[72px] mx-auto py-3 rounded-2xl bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/30 flex flex-col items-center gap-3 select-none">
               {/* Active Mock Item */}
               <div className="w-full flex flex-col items-center justify-center gap-1">
                 <div className="w-14 h-8 rounded-full bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-primary)] flex items-center justify-center">
@@ -217,13 +217,13 @@ export const PreferencesPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-[var(--md-sys-color-surface-container)]/50 text-[11px] text-[var(--md-sys-color-on-surface-variant)] space-y-1">
+            <div className="p-3.5 rounded-2xl bg-[var(--md-sys-color-surface-container)]/70 dark:bg-[var(--md-sys-color-surface-container-high)] text-[11px] text-[var(--md-sys-color-on-surface-variant)] space-y-1">
               <span className="font-semibold text-[var(--md-sys-color-on-surface)] block">
                 Instant Persistence
               </span>
               Settings are saved automatically and synchronized across all active browser windows.
             </div>
-          </Card>
+          </div>
         </div>
       </div>
     </div>

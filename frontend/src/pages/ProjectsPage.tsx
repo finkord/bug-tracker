@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import type { ProjectItem, CreateProjectPayload } from '../api/client';
-import { Button, Input, Modal, Card, Badge } from '../components/ui';
+import { Button, Input, Modal, Badge } from '../components/ui';
 import {
   FolderGit2,
   Plus,
@@ -110,41 +110,47 @@ export const ProjectsPage: React.FC = () => {
 
       {/* KPI Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card variant="filled" padding="sm" rounded="xl">
+        <div className="p-5 rounded-3xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
               Total Workspaces
             </span>
-            <FolderGit2 className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
+            <div className="w-8 h-8 rounded-full bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center">
+              <FolderGit2 className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
+            </div>
           </div>
-          <p className="text-2xl font-bold text-[var(--md-sys-color-on-surface)] mt-2">
+          <p className="text-2xl font-black text-[var(--md-sys-color-on-surface)] mt-2">
             {projects.length}
           </p>
-        </Card>
+        </div>
 
-        <Card variant="filled" padding="sm" rounded="xl">
+        <div className="p-5 rounded-3xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
               Active / Open Issues
             </span>
-            <Clock className="w-4 h-4 text-amber-500" />
+            <div className="w-8 h-8 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+              <Clock className="w-4 h-4" />
+            </div>
           </div>
-          <p className="text-2xl font-bold text-[var(--md-sys-color-on-surface)] mt-2">
+          <p className="text-2xl font-black text-[var(--md-sys-color-on-surface)] mt-2">
             {totalOpenIssues}
           </p>
-        </Card>
+        </div>
 
-        <Card variant="filled" padding="sm" rounded="xl">
+        <div className="p-5 rounded-3xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
               Total Tracked Issues
             </span>
-            <Layers className="w-4 h-4 text-emerald-500" />
+            <div className="w-8 h-8 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+              <Layers className="w-4 h-4" />
+            </div>
           </div>
-          <p className="text-2xl font-bold text-[var(--md-sys-color-on-surface)] mt-2">
+          <p className="text-2xl font-black text-[var(--md-sys-color-on-surface)] mt-2">
             {totalIssues}
           </p>
-        </Card>
+        </div>
       </div>
 
       {/* Loading & Error States */}
@@ -156,7 +162,7 @@ export const ProjectsPage: React.FC = () => {
       )}
 
       {error && (
-        <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-sm">
+        <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-sm">
           {error}
         </div>
       )}
@@ -165,16 +171,13 @@ export const ProjectsPage: React.FC = () => {
       {!loading && !error && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {projects.map((project) => (
-            <Card
+            <div
               key={project.id}
-              variant="filled"
-              padding="none"
-              rounded="xl"
-              className="flex flex-col justify-between hover:border-[var(--md-sys-color-primary)]/40 hover:shadow-md transition-all duration-200"
+              className="flex flex-col justify-between bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 hover:border-[var(--md-sys-color-outline-variant)]/60 rounded-3xl overflow-hidden shadow-xs hover:shadow-md transition-all duration-200"
             >
-              <div className="p-5">
-                <div className="flex items-center justify-between gap-2 mb-3">
-                  <span className="font-mono text-xs font-bold text-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)] px-2.5 py-1 rounded-md">
+              <div className="p-5 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono text-xs font-bold text-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/50 px-2.5 py-0.5 rounded-full">
                     {project.key}
                   </span>
                   <Badge variant="neutral" size="sm">
@@ -182,7 +185,7 @@ export const ProjectsPage: React.FC = () => {
                   </Badge>
                 </div>
 
-                <h3 className="font-bold text-lg text-[var(--md-sys-color-on-surface)] mb-2">
+                <h3 className="font-bold text-base text-[var(--md-sys-color-on-surface)]">
                   {project.name}
                 </h3>
 
@@ -191,7 +194,7 @@ export const ProjectsPage: React.FC = () => {
                 </p>
               </div>
 
-              <div className="p-5 pt-3 border-t border-[var(--md-sys-color-outline-variant)] bg-[var(--md-sys-color-surface-container-low)] rounded-b-xl space-y-3">
+              <div className="p-5 pt-3 border-t border-[var(--md-sys-color-outline-variant)]/20 bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] rounded-b-3xl space-y-3">
                 <div className="flex items-center justify-between text-xs text-[var(--md-sys-color-on-surface-variant)]">
                   <div className="flex items-center gap-1.5 truncate">
                     <User className="w-3.5 h-3.5 shrink-0" />
@@ -203,7 +206,7 @@ export const ProjectsPage: React.FC = () => {
                 <div className="grid grid-cols-2 gap-2">
                   <Link
                     to={`/projects/${project.id}/board`}
-                    className="py-2 px-3 rounded-lg bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-surface)] hover:text-[var(--md-sys-color-on-primary-container)] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors border border-[var(--md-sys-color-outline-variant)]"
+                    className="py-2 px-3 rounded-full bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-surface)] hover:text-[var(--md-sys-color-on-primary-container)] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors border border-[var(--md-sys-color-outline-variant)]/30 cursor-pointer"
                   >
                     <Kanban className="w-3.5 h-3.5" />
                     <span>Board</span>
@@ -211,14 +214,14 @@ export const ProjectsPage: React.FC = () => {
 
                   <Link
                     to={`/projects/${project.id}/backlog`}
-                    className="py-2 px-3 rounded-lg bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-surface)] hover:text-[var(--md-sys-color-on-primary-container)] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors border border-[var(--md-sys-color-outline-variant)]"
+                    className="py-2 px-3 rounded-full bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-surface)] hover:text-[var(--md-sys-color-on-primary-container)] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors border border-[var(--md-sys-color-outline-variant)]/30 cursor-pointer"
                   >
                     <Layers className="w-3.5 h-3.5" />
                     <span>Backlog</span>
                   </Link>
                 </div>
               </div>
-            </Card>
+            </div>
           ))}
         </div>
       )}

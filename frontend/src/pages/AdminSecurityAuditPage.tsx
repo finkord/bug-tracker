@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { api, type LoginAuditLogItem, type UserProfile } from '../api/client';
-import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import {
@@ -153,23 +152,23 @@ export const AdminSecurityAuditPage: React.FC = () => {
         /* ================= AUDIT LOGS VIEW ================= */
         <div className="space-y-4">
           {/* Filter Bar */}
-          <Card variant="outlined" padding="sm" rounded="xl" className="flex flex-wrap items-center justify-between gap-3 shadow-2xs">
+          <div className="p-4 rounded-3xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 flex flex-wrap items-center justify-between gap-3 shadow-xs">
             <div className="flex items-center gap-2.5 flex-1 min-w-[260px]">
               <div className="relative w-full max-w-sm">
-                <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-[var(--md-sys-color-on-surface-variant)]" />
+                <Search className="absolute left-3.5 top-2.5 w-3.5 h-3.5 text-[var(--md-sys-color-on-surface-variant)]" />
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search by email, IP address, or reason..."
-                  className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] focus:outline-hidden focus:ring-1 focus:ring-[var(--md-sys-color-primary)] font-medium"
+                  className="w-full pl-9 pr-3.5 py-1.5 text-xs rounded-full bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]/30 focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] font-medium"
                 />
               </div>
 
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-2.5 py-1.5 text-xs rounded-lg bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] font-medium cursor-pointer"
+                className="px-3.5 py-1.5 text-xs rounded-full bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]/30 font-medium cursor-pointer outline-none"
               >
                 <option value="ALL">All Outcomes</option>
                 <option value="SUCCESS">SUCCESS</option>
@@ -191,24 +190,24 @@ export const AdminSecurityAuditPage: React.FC = () => {
             >
               Refresh Log
             </Button>
-          </Card>
+          </div>
 
           {/* Table Container */}
-          <Card variant="outlined" padding="none" rounded="xl" className="overflow-hidden shadow-xs">
+          <div className="bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 rounded-3xl overflow-hidden shadow-xs">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse table-auto">
-                <thead className="bg-[var(--md-sys-color-surface-container-low)] text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider text-[10px] font-bold border-b border-[var(--md-sys-color-outline-variant)]">
+                <thead className="bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider text-[10px] font-bold border-b border-[var(--md-sys-color-outline-variant)]/20">
                   <tr>
-                    <th className="px-3.5 py-2.5">ID</th>
-                    <th className="px-3.5 py-2.5">Timestamp</th>
-                    <th className="px-3.5 py-2.5">Status</th>
-                    <th className="px-3.5 py-2.5">Attempted Email</th>
-                    <th className="px-3.5 py-2.5">Client IP</th>
-                    <th className="px-3.5 py-2.5">User-Agent</th>
-                    <th className="px-3.5 py-2.5">Forensic Context</th>
+                    <th className="px-4 py-3">ID</th>
+                    <th className="px-4 py-3">Timestamp</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Attempted Email</th>
+                    <th className="px-4 py-3">Client IP</th>
+                    <th className="px-4 py-3">User-Agent</th>
+                    <th className="px-4 py-3">Forensic Context</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)]">
+                <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)]/20 text-[var(--md-sys-color-on-surface)]">
                   {logsLoading ? (
                     <tr>
                       <td colSpan={7} className="px-5 py-12 text-center text-[var(--md-sys-color-on-surface-variant)]">
@@ -224,27 +223,27 @@ export const AdminSecurityAuditPage: React.FC = () => {
                   ) : (
                     filteredLogs.map((log) => (
                       <tr key={log.id} className="hover:bg-[var(--md-sys-color-surface-container-high)]/40 transition-colors">
-                        <td className="px-3.5 py-2.5 font-mono text-[var(--md-sys-color-on-surface-variant)] font-bold">
+                        <td className="px-4 py-3 font-mono text-[var(--md-sys-color-on-surface-variant)] font-bold">
                           #{log.id}
                         </td>
-                        <td className="px-3.5 py-2.5 whitespace-nowrap text-[var(--md-sys-color-on-surface-variant)]">
+                        <td className="px-4 py-3 whitespace-nowrap text-[var(--md-sys-color-on-surface-variant)]">
                           {new Date(log.createdAt).toLocaleString()}
                         </td>
-                        <td className="px-3.5 py-2.5 whitespace-nowrap">
+                        <td className="px-4 py-3 whitespace-nowrap">
                           <Badge variant={getStatusBadgeVariant(log.status)} size="sm">
                             {log.status}
                           </Badge>
                         </td>
-                        <td className="px-3.5 py-2.5 font-medium text-[var(--md-sys-color-on-surface)]">
+                        <td className="px-4 py-3 font-medium text-[var(--md-sys-color-on-surface)]">
                           {log.attemptedEmail}
                         </td>
-                        <td className="px-3.5 py-2.5 font-mono text-xs text-[var(--md-sys-color-on-surface-variant)]">
+                        <td className="px-4 py-3 font-mono text-xs text-[var(--md-sys-color-on-surface-variant)]">
                           {log.ipAddress}
                         </td>
-                        <td className="px-3.5 py-2.5 max-w-[180px] truncate text-[var(--md-sys-color-on-surface-variant)]" title={log.userAgent}>
+                        <td className="px-4 py-3 max-w-[180px] truncate text-[var(--md-sys-color-on-surface-variant)]" title={log.userAgent}>
                           {log.userAgent || 'Unknown'}
                         </td>
-                        <td className="px-3.5 py-2.5 text-[var(--md-sys-color-on-surface-variant)]">
+                        <td className="px-4 py-3 text-[var(--md-sys-color-on-surface-variant)]">
                           {log.failureReason ? (
                             <span className="text-[var(--md-sys-color-error)] font-medium text-xs">
                               {log.failureReason}
@@ -259,25 +258,25 @@ export const AdminSecurityAuditPage: React.FC = () => {
                 </tbody>
               </table>
             </div>
-          </Card>
+          </div>
         </div>
       ) : (
         /* ================= USER ACCOUNTS & BLOCKING VIEW ================= */
-        <Card variant="outlined" padding="none" rounded="xl" className="overflow-hidden shadow-xs">
+        <div className="bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 rounded-3xl overflow-hidden shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse table-auto">
-              <thead className="bg-[var(--md-sys-color-surface-container-low)] text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider text-[10px] font-bold border-b border-[var(--md-sys-color-outline-variant)]">
+              <thead className="bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider text-[10px] font-bold border-b border-[var(--md-sys-color-outline-variant)]/20">
                 <tr>
-                  <th className="px-3.5 py-2.5">ID</th>
-                  <th className="px-3.5 py-2.5">User Profile</th>
-                  <th className="px-3.5 py-2.5">System Role</th>
-                  <th className="px-3.5 py-2.5">Email Activated</th>
-                  <th className="px-3.5 py-2.5">2FA TOTP</th>
-                  <th className="px-3.5 py-2.5">Account State</th>
-                  <th className="px-3.5 py-2.5 text-right">Admin Action</th>
+                  <th className="px-4 py-3">ID</th>
+                  <th className="px-4 py-3">User Profile</th>
+                  <th className="px-4 py-3">System Role</th>
+                  <th className="px-4 py-3">Email Activated</th>
+                  <th className="px-4 py-3">2FA TOTP</th>
+                  <th className="px-4 py-3">Account State</th>
+                  <th className="px-4 py-3 text-right">Admin Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)]">
+              <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)]/20 text-[var(--md-sys-color-on-surface)]">
                 {usersLoading ? (
                   <tr>
                     <td colSpan={7} className="px-5 py-12 text-center text-[var(--md-sys-color-on-surface-variant)]">
@@ -287,19 +286,19 @@ export const AdminSecurityAuditPage: React.FC = () => {
                 ) : (
                   users.map((u) => (
                     <tr key={u.id} className="hover:bg-[var(--md-sys-color-surface-container-high)]/40 transition-colors">
-                      <td className="px-3.5 py-2.5 font-mono font-bold text-[var(--md-sys-color-on-surface-variant)]">
+                      <td className="px-4 py-3 font-mono font-bold text-[var(--md-sys-color-on-surface-variant)]">
                         #{u.id}
                       </td>
-                      <td className="px-3.5 py-2.5">
+                      <td className="px-4 py-3">
                         <div className="font-semibold text-[var(--md-sys-color-on-surface)]">{u.fullName}</div>
                         <div className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">{u.email}</div>
                       </td>
-                      <td className="px-3.5 py-2.5">
+                      <td className="px-4 py-3">
                         <Badge variant={u.systemRole === 'ADMIN' ? 'primary' : 'neutral'} size="sm">
                           {u.systemRole}
                         </Badge>
                       </td>
-                      <td className="px-3.5 py-2.5">
+                      <td className="px-4 py-3">
                         {u.isActivated ? (
                           <span className="text-[var(--md-sys-color-success)] flex items-center gap-1 font-medium">
                             <CheckCircle className="w-3.5 h-3.5" />
@@ -312,12 +311,12 @@ export const AdminSecurityAuditPage: React.FC = () => {
                           </span>
                         )}
                       </td>
-                      <td className="px-3.5 py-2.5">
+                      <td className="px-4 py-3">
                         <Badge variant={u.twoFactorEnabled ? 'success' : 'neutral'} size="sm">
                           {u.twoFactorEnabled ? 'Enabled' : 'Disabled'}
                         </Badge>
                       </td>
-                      <td className="px-3.5 py-2.5">
+                      <td className="px-4 py-3">
                         {u.isBlocked ? (
                           <Badge variant="error" size="sm">
                             <Ban className="w-3 h-3 mr-1" />
@@ -330,7 +329,7 @@ export const AdminSecurityAuditPage: React.FC = () => {
                           </Badge>
                         )}
                       </td>
-                      <td className="px-3.5 py-2.5 text-right">
+                      <td className="px-4 py-3 text-right">
                         <Button
                           type="button"
                           variant={u.isBlocked ? 'tonal' : 'danger-tonal'}
@@ -349,7 +348,7 @@ export const AdminSecurityAuditPage: React.FC = () => {
               </tbody>
             </table>
           </div>
-        </Card>
+        </div>
       )}
     </div>
   );

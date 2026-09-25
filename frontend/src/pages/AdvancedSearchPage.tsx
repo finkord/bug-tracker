@@ -149,6 +149,26 @@ export const AdvancedSearchPage: React.FC = () => {
   const [previewImageTitle, setPreviewImageTitle] = useState<string | null>(null);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const jqlInputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Focus search input on '/' keyboard shortcut
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.key === '/' &&
+        !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)
+      ) {
+        e.preventDefault();
+        if (mode === 'BASIC') {
+          searchInputRef.current?.focus();
+        } else {
+          jqlInputRef.current?.focus();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [mode]);
 
   const showToast = (text: string, type: 'success' | 'info' = 'success') => {
     setToastMessage({ text, type });
@@ -520,11 +540,26 @@ export const AdvancedSearchPage: React.FC = () => {
     showToast('Filters cleared', 'info');
   };
 
-  // Execute JQL search
-  const handleRunJql = (e?: React.FormEvent) => {
+  // Unified search execution handler for both Basic and JQL modes
+  const handleExecuteSearch = (e?: React.FormEvent) => {
     e?.preventDefault();
-    setActiveJql(jqlInput.trim());
-    syncUrl({ jql: jqlInput.trim() || null });
+    if (mode === 'JQL') {
+      const trimmed = jqlInput.trim();
+      setActiveJql(trimmed);
+      syncUrl({ jql: trimmed || null });
+      showToast('Executed JQL search', 'info');
+    } else {
+      syncUrl({
+        q: query || null,
+        projects: selectedProjectKeys.length > 0 ? selectedProjectKeys.join(',') : null,
+        types: selectedTypes.length > 0 ? selectedTypes.join(',') : null,
+        statuses: selectedStatuses.length > 0 ? selectedStatuses.join(',') : null,
+        priorities: selectedPriorities.length > 0 ? selectedPriorities.join(',') : null,
+        assignee: selectedAssignee !== 'ALL' ? selectedAssignee : null,
+        sprint: selectedSprint !== 'ALL' ? selectedSprint : null,
+      });
+      showToast(`Applied search filters (${filteredIssues.length} issues)`, 'info');
+    }
   };
 
   // Export to CSV
@@ -659,9 +694,14 @@ export const AdvancedSearchPage: React.FC = () => {
               </span>
             )}
           </div>
-          <h1 className="text-xl sm:text-2xl font-black text-[var(--md-sys-color-on-surface)] tracking-tight mt-1">
-            Search & Filters
-          </h1>
+          <div className="flex items-center gap-3 mt-1">
+            <h1 className="text-xl sm:text-2xl font-black text-[var(--md-sys-color-on-surface)] tracking-tight">
+              Search & Filters
+            </h1>
+            <Badge variant="primary" size="md" className="rounded-full font-bold px-3 py-0.5">
+              {filteredIssues.length} {filteredIssues.length === 1 ? 'issue' : 'issues'}
+            </Badge>
+          </div>
         </div>
 
         {/* Action Controls & Layout Switcher */}
@@ -800,38 +840,81 @@ export const AdvancedSearchPage: React.FC = () => {
         )}
       </div>
 
-      {/* Directly Accessible 1-Click Interactive Filter Panel (M3 Tonal Surface) */}
-      <div className="bg-[var(--md-sys-color-surface-container-low)] rounded-3xl p-4 sm:p-5 space-y-4">
-        {/* Search Bar & Mode Switcher Header */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex-1 min-w-[240px] relative">
-            <Search className="absolute left-3.5 top-3 w-4 h-4 text-[var(--md-sys-color-on-surface-variant)]" />
-            <input
-              ref={searchInputRef}
-              type="text"
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-                syncUrl({ q: e.target.value });
-              }}
-              placeholder="Search issues by summary, description, comments, or key (Press '/' to focus)..."
-              className="w-full text-xs sm:text-sm pl-10 pr-10 py-2.5 rounded-full bg-[var(--md-sys-color-surface-container)] focus:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] border-0 focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] font-medium transition-all"
-            />
-            {query && (
-              <button
-                type="button"
-                onClick={() => {
-                  setQuery('');
-                  syncUrl({ q: null });
+      {/* Directly Accessible Consolidated Interactive Search & Filter Panel (M3 Tonal Surface) */}
+      <form
+        onSubmit={handleExecuteSearch}
+        className="bg-[var(--md-sys-color-surface-container-low)] rounded-3xl p-4 sm:p-5 space-y-3.5 shadow-xs"
+      >
+        {/* Top Row: Search Input / JQL Input + Mode Switcher + Single Search Button + Stats */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          {mode === 'BASIC' ? (
+            <div className="flex-1 min-w-[240px] relative">
+              <Search className="absolute left-3.5 top-3 w-4 h-4 text-[var(--md-sys-color-on-surface-variant)]" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  syncUrl({ q: e.target.value });
                 }}
-                className="absolute right-3.5 top-3 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] cursor-pointer"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
+                placeholder="Search issues by summary, description, comments, or key (Press '/' to focus)..."
+                className="w-full text-xs sm:text-sm pl-10 pr-16 py-2.5 rounded-full bg-[var(--md-sys-color-surface-container)] focus:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] border-0 focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] font-medium transition-all"
+              />
+              <div className="absolute right-3.5 top-2.5 flex items-center gap-1.5">
+                {query && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQuery('');
+                      syncUrl({ q: null });
+                    }}
+                    className="text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] p-0.5 cursor-pointer"
+                    title="Clear search text"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono font-medium text-[var(--md-sys-color-on-surface-variant)] bg-[var(--md-sys-color-surface-container-high)] rounded border border-[var(--md-sys-color-outline-variant)]">
+                  /
+                </kbd>
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 min-w-[240px] relative">
+              <textarea
+                ref={jqlInputRef}
+                rows={2}
+                value={jqlInput}
+                onChange={(e) => setJqlInput(e.target.value)}
+                placeholder='e.g. project IN ("CORE", "BT") AND status = "OPEN" AND assignee = currentUser() ORDER BY priority DESC (Press "/" to focus)'
+                className="w-full font-mono text-xs p-3 pr-16 rounded-2xl bg-[var(--md-sys-color-surface-container)] focus:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] border-0 focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] transition-all resize-none"
+              />
+              <div className="absolute right-3.5 top-3 flex items-center gap-1.5">
+                {jqlInput && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setJqlInput('');
+                      setActiveJql('');
+                      syncUrl({ jql: null });
+                    }}
+                    className="text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] p-0.5 cursor-pointer"
+                    title="Clear JQL query"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono font-medium text-[var(--md-sys-color-on-surface-variant)] bg-[var(--md-sys-color-surface-container-high)] rounded border border-[var(--md-sys-color-outline-variant)]">
+                  /
+                </kbd>
+              </div>
+            </div>
+          )}
 
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Unified Controls & The Single Search Button */}
+          <div className="flex items-center gap-2 shrink-0 flex-wrap justify-between sm:justify-end">
+            {/* Mode Switcher Pill */}
             <div className="inline-flex rounded-full p-1 bg-[var(--md-sys-color-surface-container)]">
               <button
                 type="button"
@@ -879,26 +962,35 @@ export const AdvancedSearchPage: React.FC = () => {
               </button>
             </div>
 
-            <Badge variant="primary" size="sm">
-              {filteredIssues.length} issues
-            </Badge>
+            {/* The One Unified Search Button */}
+            <Button
+              type="submit"
+              variant="filled"
+              size="sm"
+              className="rounded-full px-4 font-semibold shadow-xs shrink-0"
+              leftIcon={<Search className="w-3.5 h-3.5" />}
+            >
+              Search
+            </Button>
 
-            {(activeFiltersCount > 0 || mode === 'JQL') && (
+            {/* Reset All Filters Button */}
+            {(activeFiltersCount > 0 || mode === 'JQL' || query) && (
               <button
                 type="button"
                 onClick={handleResetFilters}
-                className="text-xs text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-error)] flex items-center gap-1 transition-colors cursor-pointer px-3 py-1.5 rounded-full hover:bg-[var(--md-sys-color-surface-container-high)]"
+                className="text-xs text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-error)] flex items-center gap-1 transition-colors cursor-pointer px-2.5 py-1.5 rounded-full hover:bg-[var(--md-sys-color-surface-container-high)]"
+                title="Reset all search filters"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                <span>Reset All</span>
+                <span className="hidden sm:inline">Reset</span>
               </button>
             )}
           </div>
         </div>
 
-        {/* 1. Basic Search Mode Controls: Clean Tonal Dropdowns Row */}
+        {/* Second Row: 1-Click Dropdowns (Basic Mode) OR Helper Chips & Status (JQL Mode) */}
         {mode === 'BASIC' ? (
-          <div className="flex flex-wrap items-center gap-2 pt-1">
+          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[var(--md-sys-color-surface-container-high)]/50">
             {/* Projects Multi-Filter */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -1244,63 +1336,47 @@ export const AdvancedSearchPage: React.FC = () => {
             </DropdownMenu>
           </div>
         ) : (
-          /* 2. Jira JQL Mode Controls */
-          <form onSubmit={handleRunJql} className="space-y-3">
-            <div className="relative">
-              <textarea
-                rows={2}
-                value={jqlInput}
-                onChange={(e) => setJqlInput(e.target.value)}
-                placeholder='e.g. project IN ("CORE", "BT") AND status = "OPEN" AND assignee = currentUser() ORDER BY priority DESC'
-                className="w-full font-mono text-xs p-3.5 rounded-2xl bg-[var(--md-sys-color-surface-container)] focus:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] border-0 focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] transition-all"
-              />
+          /* JQL Helper Chips & Syntax Validation */
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[var(--md-sys-color-surface-container-high)]/50 text-xs">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[10px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
+                Insert:
+              </span>
+              {[
+                'project = "CORE"',
+                'status = "OPEN"',
+                'assignee = currentUser()',
+                'priority = "CRITICAL"',
+                'sprint is EMPTY',
+                'ORDER BY createdAt DESC',
+              ].map((token) => (
+                <button
+                  key={token}
+                  type="button"
+                  onClick={() => setJqlInput((prev) => (prev ? `${prev} AND ${token}` : token))}
+                  className="px-2.5 py-1 rounded-full bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] font-mono text-[11px] text-[var(--md-sys-color-primary)] cursor-pointer transition-colors"
+                >
+                  +{token}
+                </button>
+              ))}
             </div>
 
-            {/* JQL Quick Tokens & Execute Row */}
-            <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[10px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
-                  Insert:
+            <div className="flex items-center gap-2">
+              {parsedJqlQuery.isValid ? (
+                <span className="text-[11px] font-semibold text-emerald-500 flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Valid JQL</span>
                 </span>
-                {[
-                  'project = "CORE"',
-                  'status = "OPEN"',
-                  'assignee = currentUser()',
-                  'priority = "CRITICAL"',
-                  'sprint is EMPTY',
-                  'ORDER BY createdAt DESC',
-                ].map((token) => (
-                  <button
-                    key={token}
-                    type="button"
-                    onClick={() => setJqlInput((prev) => (prev ? `${prev} AND ${token}` : token))}
-                    className="px-2.5 py-1 rounded-full bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] font-mono text-[11px] text-[var(--md-sys-color-primary)] cursor-pointer transition-colors"
-                  >
-                    +{token}
-                  </button>
-                ))}
-              </div>
-
-              <div className="flex items-center gap-2">
-                {parsedJqlQuery.isValid ? (
-                  <span className="text-[11px] font-semibold text-emerald-500 flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>Valid JQL</span>
-                  </span>
-                ) : (
-                  <span className="text-[11px] font-semibold text-rose-500 flex items-center gap-1">
-                    <X className="w-3.5 h-3.5" />
-                    <span>{parsedJqlQuery.errorMessage || 'Invalid JQL'}</span>
-                  </span>
-                )}
-                <Button type="submit" variant="filled" size="sm" leftIcon={<Search className="w-3.5 h-3.5" />}>
-                  Execute JQL
-                </Button>
-              </div>
+              ) : (
+                <span className="text-[11px] font-semibold text-rose-500 flex items-center gap-1">
+                  <X className="w-3.5 h-3.5" />
+                  <span>{parsedJqlQuery.errorMessage || 'Invalid JQL'}</span>
+                </span>
+              )}
             </div>
-          </form>
+          </div>
         )}
-      </div>
+      </form>
 
       {/* Main Content Area: Loading / Empty / List View / Detail 2-Pane View */}
       {loading ? (

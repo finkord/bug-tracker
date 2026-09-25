@@ -9,7 +9,6 @@ import {
 } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { Avatar } from '../components/common/Avatar';
-import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Modal } from '../components/ui/Modal';
@@ -298,10 +297,10 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6 animate-in fade-in duration-200">
       {/* Top Banner */}
-      <Card variant="outlined" padding="md" rounded="xl" className="shadow-xs">
+      <div className="bg-[var(--md-sys-color-surface-container-low)] rounded-3xl p-5 sm:p-6 border border-[var(--md-sys-color-outline-variant)]/20 shadow-xs">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center font-bold shrink-0">
+            <div className="w-11 h-11 rounded-2xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center font-bold shrink-0 shadow-2xs">
               <ShieldAlert className="w-5 h-5 text-[var(--md-sys-color-primary)]" />
             </div>
             <div>
@@ -313,33 +312,34 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
               </p>
             </div>
           </div>
-          <Badge variant="primary" size="sm">
+          <Badge variant="primary" size="sm" className="rounded-full px-3 py-1 font-semibold">
             Platform Master Console
           </Badge>
         </div>
-      </Card>
+      </div>
 
       {/* Notifications */}
       {actionSuccess && (
-        <div className="p-3 rounded-xl bg-[var(--md-sys-color-success-container)] border border-[var(--md-sys-color-success)]/25 text-[var(--md-sys-color-on-success-container)] text-xs font-semibold flex items-center justify-between shadow-2xs">
+        <div className="p-3.5 rounded-2xl bg-[var(--md-sys-color-success-container)] border border-[var(--md-sys-color-success)]/25 text-[var(--md-sys-color-on-success-container)] text-xs font-semibold flex items-center justify-between shadow-2xs">
           <span>✓ {actionSuccess}</span>
           <button onClick={() => setActionSuccess(null)} className="text-xs hover:underline cursor-pointer">Dismiss</button>
         </div>
       )}
 
       {errorMessage && (
-        <div className="p-3 rounded-xl bg-[var(--md-sys-color-error-container)] border border-[var(--md-sys-color-error)]/25 text-[var(--md-sys-color-on-error-container)] text-xs font-semibold flex items-center justify-between shadow-2xs">
+        <div className="p-3.5 rounded-2xl bg-[var(--md-sys-color-error-container)] border border-[var(--md-sys-color-error)]/25 text-[var(--md-sys-color-on-error-container)] text-xs font-semibold flex items-center justify-between shadow-2xs">
           <span>⚠ {errorMessage}</span>
           <button onClick={() => setErrorMessage(null)} className="text-xs hover:underline cursor-pointer">Dismiss</button>
         </div>
       )}
 
-      {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-[var(--md-sys-color-outline-variant)] pb-2 overflow-x-auto">
+      {/* Navigation Tabs Bar */}
+      <div className="flex items-center gap-1.5 p-1.5 rounded-full bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 overflow-x-auto w-fit max-w-full shadow-2xs">
         <Button
           type="button"
           variant={activeTab === 'users' ? 'filled' : 'ghost'}
           size="sm"
+          className="rounded-full px-4 text-xs font-bold"
           onClick={() => setActiveTab('users')}
           leftIcon={<Users className="w-3.5 h-3.5" />}
         >
@@ -350,6 +350,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
           type="button"
           variant={activeTab === 'roles' ? 'filled' : 'ghost'}
           size="sm"
+          className="rounded-full px-4 text-xs font-bold"
           onClick={() => setActiveTab('roles')}
           leftIcon={<ShieldAlert className="w-3.5 h-3.5" />}
         >
@@ -360,6 +361,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
           type="button"
           variant={activeTab === 'system' ? 'filled' : 'ghost'}
           size="sm"
+          className="rounded-full px-4 text-xs font-bold"
           onClick={() => setActiveTab('system')}
           leftIcon={<ShieldCheck className="w-3.5 h-3.5" />}
         >
@@ -370,6 +372,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
           type="button"
           variant={activeTab === 'projects' ? 'filled' : 'ghost'}
           size="sm"
+          className="rounded-full px-4 text-xs font-bold"
           onClick={() => setActiveTab('projects')}
           leftIcon={<FolderGit2 className="w-3.5 h-3.5" />}
         >
@@ -380,6 +383,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
           type="button"
           variant={activeTab === 'analytics' ? 'filled' : 'ghost'}
           size="sm"
+          className="rounded-full px-4 text-xs font-bold"
           onClick={() => setActiveTab('analytics')}
           leftIcon={<TrendingUp className="w-3.5 h-3.5" />}
         >
@@ -400,15 +404,15 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
           {activeTab === 'users' && (
             <div className="space-y-4">
               {/* Search & Filters Bar */}
-              <Card variant="outlined" padding="sm" rounded="xl" className="flex flex-wrap items-center justify-between gap-3 shadow-2xs">
+              <div className="bg-[var(--md-sys-color-surface-container-low)] rounded-3xl p-3.5 sm:p-4 border border-[var(--md-sys-color-outline-variant)]/20 flex flex-wrap items-center justify-between gap-3 shadow-xs">
                 <div className="relative flex-1 min-w-[240px]">
-                  <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-[var(--md-sys-color-on-surface-variant)]" />
+                  <Search className="absolute left-3.5 top-2.5 w-3.5 h-3.5 text-[var(--md-sys-color-on-surface-variant)]" />
                   <input
                     type="text"
                     placeholder="Search by full name or email address..."
                     value={userSearch}
                     onChange={(e) => setUserSearch(e.target.value)}
-                    className="w-full text-xs pl-9 pr-3 py-1.5 rounded-lg bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] focus:outline-hidden focus:ring-1 focus:ring-[var(--md-sys-color-primary)] font-medium"
+                    className="w-full text-xs pl-9 pr-3.5 py-2 rounded-full bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/30 text-[var(--md-sys-color-on-surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] font-medium transition-all"
                   />
                 </div>
 
@@ -416,7 +420,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                   <select
                     value={userRoleFilter}
                     onChange={(e) => setUserRoleFilter(e.target.value)}
-                    className="text-xs px-2.5 py-1.5 rounded-lg bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] font-medium cursor-pointer"
+                    className="text-xs px-3.5 py-2 rounded-full bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/30 text-[var(--md-sys-color-on-surface)] font-medium cursor-pointer transition-colors focus:ring-2 focus:ring-[var(--md-sys-color-primary)] focus:outline-hidden"
                   >
                     <option value="">All Roles</option>
                     <option value="ADMIN">ADMIN</option>
@@ -426,28 +430,28 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                     <option value="USER">USER</option>
                   </select>
                 </div>
-              </Card>
+              </div>
 
               {/* Users Table */}
-              <Card variant="outlined" padding="none" rounded="xl" className="overflow-hidden shadow-xs">
+              <div className="bg-[var(--md-sys-color-surface-container-low)] rounded-3xl border border-[var(--md-sys-color-outline-variant)]/20 overflow-hidden shadow-xs">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse table-auto">
                     <thead>
-                      <tr className="bg-[var(--md-sys-color-surface-container-low)] border-b border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider text-[10px] font-bold">
-                        <th className="py-2.5 px-3.5">User</th>
-                        <th className="py-2.5 px-3.5">Work Label (Title)</th>
-                        <th className="py-2.5 px-3.5">System Role</th>
-                        <th className="py-2.5 px-3.5">Security & Status</th>
-                        <th className="py-2.5 px-3.5">2FA</th>
-                        <th className="py-2.5 px-3.5 text-right">Actions</th>
+                      <tr className="bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)]/60 border-b border-[var(--md-sys-color-outline-variant)]/30 text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider text-[10px] font-bold">
+                        <th className="py-3 px-4">User</th>
+                        <th className="py-3 px-4">Work Label (Title)</th>
+                        <th className="py-3 px-4">System Role</th>
+                        <th className="py-3 px-4">Security & Status</th>
+                        <th className="py-3 px-4">2FA</th>
+                        <th className="py-3 px-4 text-right">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)]">
+                    <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)]/20 text-[var(--md-sys-color-on-surface)]">
                       {users.map((u) => {
                         const isSelf = currentUser?.id === u.id;
                         return (
-                          <tr key={u.id} className="hover:bg-[var(--md-sys-color-surface-container-high)]/40 transition-colors">
-                            <td className="py-2.5 px-3.5">
+                          <tr key={u.id} className="hover:bg-[var(--md-sys-color-surface-container)] dark:hover:bg-[var(--md-sys-color-surface-container-high)]/50 transition-colors">
+                            <td className="py-3 px-4">
                               <div className="flex items-center gap-2.5">
                                 <Avatar name={u.fullName} avatarUrl={u.avatarUrl} size="sm" />
                                 <div>
@@ -462,11 +466,11 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                             </td>
 
                             {/* Job Title */}
-                            <td className="py-2.5 px-3.5">
+                            <td className="py-3 px-4">
                               <select
                                 value={u.jobTitle || (u.systemRole === 'DEVELOPER' ? 'Software Developer' : u.systemRole === 'QA_ENGINEER' ? 'QA Engineer' : u.systemRole === 'PROJECT_MANAGER' ? 'Project Manager' : u.systemRole === 'ADMIN' ? 'System Administrator' : 'Software Engineer')}
                                 onChange={(e) => handleJobTitleChange(u.id, u.systemRole, e.target.value)}
-                                className="text-xs font-medium px-2.5 py-1 rounded-lg bg-[var(--md-sys-color-surface-container-low)] hover:bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] cursor-pointer transition-colors focus:ring-1 focus:ring-[var(--md-sys-color-primary)] focus:outline-hidden"
+                                className="text-xs font-medium px-3 py-1.5 rounded-full bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/30 text-[var(--md-sys-color-on-surface)] cursor-pointer transition-colors focus:ring-2 focus:ring-[var(--md-sys-color-primary)] focus:outline-hidden"
                               >
                                 <option value="Software Developer">Software Developer</option>
                                 <option value="Frontend Developer">Frontend Developer</option>
@@ -480,12 +484,12 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                             </td>
 
                             {/* System Role Selector */}
-                            <td className="py-2.5 px-3.5">
+                            <td className="py-3 px-4">
                               <select
                                 value={u.systemRole}
                                 disabled={isSelf}
                                 onChange={(e) => handleRoleChange(u.id, e.target.value as SystemRole, u.jobTitle || undefined)}
-                                className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[var(--md-sys-color-surface-container-low)] hover:bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] cursor-pointer transition-colors focus:ring-1 focus:ring-[var(--md-sys-color-primary)] focus:outline-hidden disabled:opacity-50"
+                                className="text-xs font-bold px-3 py-1.5 rounded-full bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/30 text-[var(--md-sys-color-on-surface)] cursor-pointer transition-colors focus:ring-2 focus:ring-[var(--md-sys-color-primary)] focus:outline-hidden disabled:opacity-50"
                               >
                                 <option value="USER">USER</option>
                                 <option value="DEVELOPER">DEVELOPER</option>
@@ -496,24 +500,24 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                             </td>
 
                             {/* Status & Activation */}
-                            <td className="py-2.5 px-3.5">
+                            <td className="py-3 px-4">
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 {u.isActivated ? (
-                                  <Badge variant="success" size="sm" dot>
+                                  <Badge variant="success" size="sm" dot className="rounded-full font-semibold">
                                     Activated
                                   </Badge>
                                 ) : (
-                                  <Badge variant="warning" size="sm" dot>
+                                  <Badge variant="warning" size="sm" dot className="rounded-full font-semibold">
                                     Pending
                                   </Badge>
                                 )}
 
                                 {u.isBlocked ? (
-                                  <Badge variant="error" size="sm">
+                                  <Badge variant="error" size="sm" className="rounded-full font-semibold">
                                     Blocked
                                   </Badge>
                                 ) : (
-                                  <Badge variant="neutral" size="sm">
+                                  <Badge variant="neutral" size="sm" className="rounded-full font-semibold">
                                     Active
                                   </Badge>
                                 )}
@@ -521,20 +525,21 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                             </td>
 
                             {/* 2FA Status */}
-                            <td className="py-2.5 px-3.5">
-                              <Badge variant={u.twoFactorEnabled ? 'success' : 'neutral'} size="sm">
+                            <td className="py-3 px-4">
+                              <Badge variant={u.twoFactorEnabled ? 'success' : 'neutral'} size="sm" className="rounded-full font-semibold">
                                 {u.twoFactorEnabled ? 'Enabled' : 'Disabled'}
                               </Badge>
                             </td>
 
                             {/* Action Buttons */}
-                            <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
+                            <td className="py-3 px-4 text-right whitespace-nowrap">
                               <div className="flex items-center justify-end gap-1.5">
                                 {!u.isActivated && (
                                   <Button
                                     type="button"
                                     variant="tonal"
                                     size="xs"
+                                    className="rounded-full px-3"
                                     onClick={() => handleActivateUser(u.id)}
                                   >
                                     Activate
@@ -546,6 +551,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                                     type="button"
                                     variant="outline"
                                     size="xs"
+                                    className="rounded-full px-3"
                                     onClick={() => handleReset2Fa(u.id)}
                                     leftIcon={<RotateCcw className="w-3 h-3" />}
                                   >
@@ -558,6 +564,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                                     type="button"
                                     variant={u.isBlocked ? 'tonal' : 'danger-tonal'}
                                     size="xs"
+                                    className="rounded-full px-3"
                                     onClick={() => handleToggleBlock(u.id, u.isBlocked)}
                                     leftIcon={u.isBlocked ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
                                   >
@@ -574,13 +581,14 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                 </div>
 
                 {/* Pagination footer */}
-                <div className="p-3 bg-[var(--md-sys-color-surface-container-low)] border-t border-[var(--md-sys-color-outline-variant)] flex items-center justify-between text-xs text-[var(--md-sys-color-on-surface-variant)]">
+                <div className="p-3.5 bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)]/40 border-t border-[var(--md-sys-color-outline-variant)]/20 flex items-center justify-between text-xs text-[var(--md-sys-color-on-surface-variant)]">
                   <span>Showing {users.length} of {totalUsers} registered users</span>
                   <div className="flex items-center gap-1.5">
                     <Button
                       type="button"
                       variant="outline"
                       size="xs"
+                      className="rounded-full px-3"
                       disabled={userPage <= 1}
                       onClick={() => setUserPage((p) => p - 1)}
                     >
@@ -591,6 +599,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                       type="button"
                       variant="outline"
                       size="xs"
+                      className="rounded-full px-3"
                       disabled={users.length < 25}
                       onClick={() => setUserPage((p) => p + 1)}
                     >
@@ -598,7 +607,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                     </Button>
                   </div>
                 </div>
-              </Card>
+              </div>
             </div>
           )}
 
@@ -620,6 +629,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                   type="button"
                   variant="filled"
                   size="sm"
+                  className="rounded-full px-4 text-xs font-bold"
                   onClick={() => setCreateRoleModalOpen(true)}
                   leftIcon={<PlusCircle className="w-3.5 h-3.5" />}
                 >
@@ -627,20 +637,20 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                 </Button>
               </div>
 
-              <Card variant="outlined" padding="none" rounded="xl" className="overflow-hidden shadow-xs">
+              <div className="bg-[var(--md-sys-color-surface-container-low)] rounded-3xl border border-[var(--md-sys-color-outline-variant)]/20 overflow-hidden shadow-xs">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse table-auto">
                     <thead>
-                      <tr className="bg-[var(--md-sys-color-surface-container-low)] border-b border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider text-[10px] font-bold">
-                        <th className="py-2.5 px-3.5">Permission / Action</th>
-                        <th className="py-2.5 px-3.5 text-center">ADMIN</th>
-                        <th className="py-2.5 px-3.5 text-center">PROJECT_MANAGER</th>
-                        <th className="py-2.5 px-3.5 text-center">DEVELOPER</th>
-                        <th className="py-2.5 px-3.5 text-center">QA_ENGINEER</th>
-                        <th className="py-2.5 px-3.5 text-center">USER</th>
+                      <tr className="bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)]/60 border-b border-[var(--md-sys-color-outline-variant)]/30 text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider text-[10px] font-bold">
+                        <th className="py-3 px-4">Permission / Action</th>
+                        <th className="py-3 px-4 text-center">ADMIN</th>
+                        <th className="py-3 px-4 text-center">PROJECT_MANAGER</th>
+                        <th className="py-3 px-4 text-center">DEVELOPER</th>
+                        <th className="py-3 px-4 text-center">QA_ENGINEER</th>
+                        <th className="py-3 px-4 text-center">USER</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)]">
+                    <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)]/20 text-[var(--md-sys-color-on-surface)]">
                       {[
                         { name: 'Create & File Issues', roles: ['ADMIN', 'PROJECT_MANAGER', 'DEVELOPER', 'QA_ENGINEER', 'USER'] },
                         { name: 'Edit Issue Details & Descriptions', roles: ['ADMIN', 'PROJECT_MANAGER', 'DEVELOPER', 'QA_ENGINEER'] },
@@ -653,12 +663,12 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                         { name: 'User Management & Role Assignment', roles: ['ADMIN'] },
                         { name: 'Security Forensics & Audit Inspection', roles: ['ADMIN'] },
                       ].map((perm, idx) => (
-                        <tr key={idx} className="hover:bg-[var(--md-sys-color-surface-container-high)]/40 transition-colors">
-                          <td className="py-2.5 px-3.5 font-medium">{perm.name}</td>
+                        <tr key={idx} className="hover:bg-[var(--md-sys-color-surface-container)] dark:hover:bg-[var(--md-sys-color-surface-container-high)]/50 transition-colors">
+                          <td className="py-3 px-4 font-medium">{perm.name}</td>
                           {['ADMIN', 'PROJECT_MANAGER', 'DEVELOPER', 'QA_ENGINEER', 'USER'].map((r) => {
                             const allowed = perm.roles.includes(r);
                             return (
-                              <td key={r} className="py-2.5 px-3.5 text-center">
+                              <td key={r} className="py-3 px-4 text-center">
                                 {allowed ? (
                                   <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] font-bold text-xs border border-[var(--md-sys-color-success)]/20 shadow-2xs">
                                     ✓
@@ -674,7 +684,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                     </tbody>
                   </table>
                 </div>
-              </Card>
+              </div>
 
               {customRoles.length > 0 && (
                 <div className="space-y-3 pt-2">
@@ -683,17 +693,20 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {customRoles.map((cr) => (
-                      <Card key={cr.name} variant="outlined" padding="sm" rounded="xl" className="space-y-2">
+                      <div
+                        key={cr.name}
+                        className="bg-[var(--md-sys-color-surface-container-low)] rounded-3xl p-4 border border-[var(--md-sys-color-outline-variant)]/20 space-y-2 shadow-xs"
+                      >
                         <div className="flex items-center justify-between">
                           <span className="font-bold text-xs text-[var(--md-sys-color-on-surface)]">{cr.label}</span>
-                          <Badge variant="primary" size="sm">
+                          <Badge variant="primary" size="sm" className="rounded-full px-2.5">
                             {cr.permissions.length} perms
                           </Badge>
                         </div>
                         <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] leading-relaxed">
                           {cr.description}
                         </p>
-                      </Card>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -707,10 +720,10 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
           {activeTab === 'system' && (
             <div className="space-y-4">
               {/* DevOps & System Broadcast Announcement Manager */}
-              <Card variant="outlined" padding="md" rounded="xl" className="space-y-4 shadow-xs">
-                <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[var(--md-sys-color-outline-variant)]/40">
+              <div className="bg-[var(--md-sys-color-surface-container-low)] rounded-3xl p-5 sm:p-6 border border-[var(--md-sys-color-outline-variant)]/20 space-y-4 shadow-xs">
+                <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[var(--md-sys-color-outline-variant)]/30">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-2xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center shadow-2xs">
                       <Megaphone className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
                     </div>
                     <div>
@@ -757,7 +770,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                       rows={2}
                       required
                       placeholder="e.g. ⚠️ Scheduled maintenance today at 02:00 UTC (expected 15m duration)"
-                      className="w-full text-xs p-3 rounded-xl bg-[var(--md-sys-color-surface-container-low)] text-[var(--md-sys-color-on-surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] resize-none"
+                      className="w-full text-xs p-3.5 rounded-2xl bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/30 text-[var(--md-sys-color-on-surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] resize-none transition-all"
                     />
                   </div>
 
@@ -782,7 +795,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                             key={sev.id}
                             type="button"
                             onClick={() => setBroadcastSeverity(sev.id)}
-                            className={`p-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${sev.token
+                            className={`p-2.5 rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${sev.token
                               } ${isSelected
                                 ? 'ring-2 ring-offset-2 ring-[var(--md-sys-color-primary)] scale-[1.02] shadow-xs'
                                 : 'opacity-60 hover:opacity-100'
@@ -816,7 +829,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                             setBroadcastSeverity(preset.sev);
                             setBroadcastEnabled(true);
                           }}
-                          className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] transition-colors cursor-pointer"
+                          className="px-3 py-1 rounded-full text-[11px] font-medium bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)]/20 text-[var(--md-sys-color-on-surface)] transition-colors cursor-pointer"
                         >
                           {preset.label}
                         </button>
@@ -825,14 +838,14 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                   </div>
 
                   {/* Real-time Header Preview */}
-                  <div className="p-3.5 rounded-xl bg-[var(--md-sys-color-surface-container-low)] space-y-2">
+                  <div className="p-4 rounded-2xl bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)]/50 border border-[var(--md-sys-color-outline-variant)]/20 space-y-2">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)] block">
                       Live Header Preview
                     </span>
                     <div className="flex items-center py-2 px-4 rounded-xl bg-[var(--md-sys-color-surface)] overflow-hidden">
                       {broadcastEnabled && broadcastMessage ? (
                         <div
-                          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-none w-full text-xs font-semibold ${broadcastSeverity === 'info'
+                          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg w-full text-xs font-semibold ${broadcastSeverity === 'info'
                               ? 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)]'
                               : broadcastSeverity === 'warning'
                                 ? 'bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)]'
@@ -871,6 +884,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                           type="button"
                           variant="ghost"
                           size="sm"
+                          className="rounded-full px-4 text-xs"
                           onClick={() => {
                             updateBroadcast({ enabled: false, message: broadcastMessage, severity: broadcastSeverity, author: currentUser?.fullName || 'DevOps Team' });
                             setBroadcastEnabled(false);
@@ -883,6 +897,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                         type="submit"
                         variant="filled"
                         size="sm"
+                        className="rounded-full px-4 text-xs font-bold"
                         leftIcon={<Megaphone className="w-3.5 h-3.5" />}
                       >
                         Publish Banner
@@ -890,77 +905,77 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                     </div>
                   </div>
                 </form>
-              </Card>
+              </div>
 
               {/* Security Metrics Overview */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-                <Card variant="outlined" padding="sm" rounded="xl" className="flex items-center justify-between shadow-2xs">
+                <div className="bg-[var(--md-sys-color-surface-container-low)] rounded-3xl p-5 border border-[var(--md-sys-color-outline-variant)]/20 flex items-center justify-between shadow-xs">
                   <div className="space-y-0.5">
                     <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
                       Total Accounts
                     </span>
-                    <p className="text-xl font-black text-[var(--md-sys-color-primary)]">
+                    <p className="text-2xl font-black text-[var(--md-sys-color-primary)]">
                       {systemStats?.totalUsers || 0}
                     </p>
                   </div>
-                  <div className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center">
-                    <Users className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
+                  <div className="w-10 h-10 rounded-2xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center shadow-2xs">
+                    <Users className="w-5 h-5 text-[var(--md-sys-color-primary)]" />
                   </div>
-                </Card>
+                </div>
 
-                <Card variant="outlined" padding="sm" rounded="xl" className="flex items-center justify-between shadow-2xs">
+                <div className="bg-[var(--md-sys-color-surface-container-low)] rounded-3xl p-5 border border-[var(--md-sys-color-outline-variant)]/20 flex items-center justify-between shadow-xs">
                   <div className="space-y-0.5">
                     <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
                       2FA Adoption
                     </span>
-                    <p className="text-xl font-black text-[var(--md-sys-color-success)]">
+                    <p className="text-2xl font-black text-[var(--md-sys-color-success)]">
                       {systemStats?.twoFactorPercentage || 0}%
                     </p>
                   </div>
-                  <div className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] flex items-center justify-center">
-                    <ShieldCheck className="w-4 h-4 text-[var(--md-sys-color-success)]" />
+                  <div className="w-10 h-10 rounded-2xl bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] flex items-center justify-center shadow-2xs">
+                    <ShieldCheck className="w-5 h-5 text-[var(--md-sys-color-success)]" />
                   </div>
-                </Card>
+                </div>
 
-                <Card variant="outlined" padding="sm" rounded="xl" className="flex items-center justify-between shadow-2xs">
+                <div className="bg-[var(--md-sys-color-surface-container-low)] rounded-3xl p-5 border border-[var(--md-sys-color-outline-variant)]/20 flex items-center justify-between shadow-xs">
                   <div className="space-y-0.5">
                     <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
                       Blocked Users
                     </span>
-                    <p className="text-xl font-black text-[var(--md-sys-color-error)]">
+                    <p className="text-2xl font-black text-[var(--md-sys-color-error)]">
                       {systemStats?.blockedUsers || 0}
                     </p>
                   </div>
-                  <div className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] flex items-center justify-center">
-                    <Lock className="w-4 h-4 text-[var(--md-sys-color-error)]" />
+                  <div className="w-10 h-10 rounded-2xl bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] flex items-center justify-center shadow-2xs">
+                    <Lock className="w-5 h-5 text-[var(--md-sys-color-error)]" />
                   </div>
-                </Card>
+                </div>
 
-                <Card variant="outlined" padding="sm" rounded="xl" className="flex items-center justify-between shadow-2xs">
+                <div className="bg-[var(--md-sys-color-surface-container-low)] rounded-3xl p-5 border border-[var(--md-sys-color-outline-variant)]/20 flex items-center justify-between shadow-xs">
                   <div className="space-y-0.5">
                     <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
                       Total Projects
                     </span>
-                    <p className="text-xl font-black text-[var(--md-sys-color-on-surface)]">
+                    <p className="text-2xl font-black text-[var(--md-sys-color-on-surface)]">
                       {projects.length}
                     </p>
                   </div>
-                  <div className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] flex items-center justify-center">
-                    <FolderGit2 className="w-4 h-4 text-[var(--md-sys-color-secondary)]" />
+                  <div className="w-10 h-10 rounded-2xl bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] flex items-center justify-center shadow-2xs">
+                    <FolderGit2 className="w-5 h-5 text-[var(--md-sys-color-secondary)]" />
                   </div>
-                </Card>
+                </div>
               </div>
 
               {/* Recent Audit Logs Preview */}
-              <Card variant="outlined" padding="none" rounded="xl" className="overflow-hidden shadow-xs space-y-0">
-                <div className="p-3.5 bg-[var(--md-sys-color-surface-container-low)] border-b border-[var(--md-sys-color-outline-variant)] flex items-center justify-between">
+              <div className="bg-[var(--md-sys-color-surface-container-low)] rounded-3xl border border-[var(--md-sys-color-outline-variant)]/20 overflow-hidden shadow-xs space-y-0">
+                <div className="p-4 bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)]/60 border-b border-[var(--md-sys-color-outline-variant)]/20 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Activity className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
                     <h3 className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">
                       Recent Authentication Logs Preview
                     </h3>
                   </div>
-                  <Badge variant="primary" size="sm">
+                  <Badge variant="primary" size="sm" className="rounded-full px-2.5">
                     Live Telemetry
                   </Badge>
                 </div>
@@ -968,27 +983,28 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse table-auto">
                     <thead>
-                      <tr className="bg-[var(--md-sys-color-surface-container-low)] border-b border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider text-[10px] font-bold">
-                        <th className="py-2 px-3">Timestamp</th>
-                        <th className="py-2 px-3">IP Address</th>
-                        <th className="py-2 px-3">Status</th>
-                        <th className="py-2 px-3">Details</th>
+                      <tr className="bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)]/40 border-b border-[var(--md-sys-color-outline-variant)]/20 text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider text-[10px] font-bold">
+                        <th className="py-2.5 px-4">Timestamp</th>
+                        <th className="py-2.5 px-4">IP Address</th>
+                        <th className="py-2.5 px-4">Status</th>
+                        <th className="py-2.5 px-4">Details</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)] font-mono text-[11px] text-[var(--md-sys-color-on-surface)]">
+                    <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)]/20 font-mono text-[11px] text-[var(--md-sys-color-on-surface)]">
                       {auditLogs.slice(0, 10).map((log) => (
-                        <tr key={log.id} className="hover:bg-[var(--md-sys-color-surface-container-high)]/40">
-                          <td className="py-2 px-3 whitespace-nowrap">{new Date(log.createdAt).toLocaleString()}</td>
-                          <td className="py-2 px-3">{log.ipAddress}</td>
-                          <td className="py-2 px-3">
+                        <tr key={log.id} className="hover:bg-[var(--md-sys-color-surface-container)] dark:hover:bg-[var(--md-sys-color-surface-container-high)]/50 transition-colors">
+                          <td className="py-2.5 px-4 whitespace-nowrap">{new Date(log.createdAt).toLocaleString()}</td>
+                          <td className="py-2.5 px-4">{log.ipAddress}</td>
+                          <td className="py-2.5 px-4">
                             <Badge
                               variant={log.status === 'SUCCESS' ? 'success' : 'error'}
                               size="sm"
+                              className="rounded-full font-semibold"
                             >
                               {log.status}
                             </Badge>
                           </td>
-                          <td className="py-2 px-3 text-[var(--md-sys-color-on-surface-variant)] truncate max-w-sm">
+                          <td className="py-2.5 px-4 text-[var(--md-sys-color-on-surface-variant)] truncate max-w-sm font-sans">
                             {log.failureReason || 'Normal session established'}
                           </td>
                         </tr>
@@ -996,7 +1012,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                     </tbody>
                   </table>
                 </div>
-              </Card>
+              </div>
             </div>
           )}
 
@@ -1006,17 +1022,17 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
           {activeTab === 'projects' && (
             <div className="space-y-4">
               {/* Create Project Card */}
-              <Card variant="outlined" padding="md" rounded="xl" className="space-y-3 shadow-xs">
-                <div className="flex items-center gap-2 pb-2 border-b border-[var(--md-sys-color-outline-variant)]">
+              <div className="bg-[var(--md-sys-color-surface-container-low)] rounded-3xl p-5 sm:p-6 border border-[var(--md-sys-color-outline-variant)]/20 space-y-4 shadow-xs">
+                <div className="flex items-center gap-2 pb-2 border-b border-[var(--md-sys-color-outline-variant)]/30">
                   <PlusCircle className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
-                  <h3 className="font-bold text-xs text-[var(--md-sys-color-on-surface)]">
+                  <h3 className="font-bold text-xs text-[var(--md-sys-color-on-surface)] uppercase tracking-wider">
                     Register New Workspace Project
                   </h3>
                 </div>
 
-                <form onSubmit={handleCreateProject} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <form onSubmit={handleCreateProject} className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                   <div>
-                    <label className="block text-[10px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider mb-1">
+                    <label className="block text-[10px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider mb-1.5">
                       Key (2-6 letters) *
                     </label>
                     <input
@@ -1026,12 +1042,12 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                       placeholder="e.g. AUTH"
                       value={newProjectKey}
                       onChange={(e) => setNewProjectKey(e.target.value.toUpperCase())}
-                      className="w-full text-xs font-mono uppercase px-3 py-1.5 rounded-lg bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] focus:outline-hidden focus:ring-1 focus:ring-[var(--md-sys-color-primary)] font-bold"
+                      className="w-full text-xs font-mono uppercase px-3.5 py-2 rounded-full bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/30 text-[var(--md-sys-color-on-surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] font-bold transition-all"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider mb-1">
+                    <label className="block text-[10px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider mb-1.5">
                       Project Name *
                     </label>
                     <input
@@ -1040,7 +1056,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                       placeholder="e.g. Authentication Service"
                       value={newProjectName}
                       onChange={(e) => setNewProjectName(e.target.value)}
-                      className="w-full text-xs px-3 py-1.5 rounded-lg bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] focus:outline-hidden focus:ring-1 focus:ring-[var(--md-sys-color-primary)] font-medium"
+                      className="w-full text-xs px-3.5 py-2 rounded-full bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/30 text-[var(--md-sys-color-on-surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] font-medium transition-all"
                     />
                   </div>
 
@@ -1051,44 +1067,45 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                       size="sm"
                       isLoading={creatingProject}
                       disabled={!newProjectKey || !newProjectName}
-                      className="w-full"
+                      className="w-full rounded-full text-xs font-bold"
                       leftIcon={<PlusCircle className="w-3.5 h-3.5" />}
                     >
                       Create Project
                     </Button>
                   </div>
                 </form>
-              </Card>
+              </div>
 
               {/* Projects Table */}
-              <Card variant="outlined" padding="none" rounded="xl" className="overflow-hidden shadow-xs">
+              <div className="bg-[var(--md-sys-color-surface-container-low)] rounded-3xl border border-[var(--md-sys-color-outline-variant)]/20 overflow-hidden shadow-xs">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse table-auto">
                     <thead>
-                      <tr className="bg-[var(--md-sys-color-surface-container-low)] border-b border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider text-[10px] font-bold">
-                        <th className="py-2.5 px-3.5">Key</th>
-                        <th className="py-2.5 px-3.5">Project Name</th>
-                        <th className="py-2.5 px-3.5">Created</th>
-                        <th className="py-2.5 px-3.5 text-right">Actions</th>
+                      <tr className="bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)]/60 border-b border-[var(--md-sys-color-outline-variant)]/30 text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider text-[10px] font-bold">
+                        <th className="py-3 px-4">Key</th>
+                        <th className="py-3 px-4">Project Name</th>
+                        <th className="py-3 px-4">Created</th>
+                        <th className="py-3 px-4 text-right">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)]">
+                    <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)]/20 text-[var(--md-sys-color-on-surface)]">
                       {projects.map((p) => (
-                        <tr key={p.id} className="hover:bg-[var(--md-sys-color-surface-container-high)]/40 transition-colors">
-                          <td className="py-2.5 px-3.5 font-mono font-bold text-[var(--md-sys-color-primary)]">
+                        <tr key={p.id} className="hover:bg-[var(--md-sys-color-surface-container)] dark:hover:bg-[var(--md-sys-color-surface-container-high)]/50 transition-colors">
+                          <td className="py-3 px-4 font-mono font-bold text-[var(--md-sys-color-primary)]">
                             {p.key}
                           </td>
-                          <td className="py-2.5 px-3.5 font-semibold text-[var(--md-sys-color-on-surface)]">
+                          <td className="py-3 px-4 font-semibold text-[var(--md-sys-color-on-surface)]">
                             {p.name}
                           </td>
-                          <td className="py-2.5 px-3.5 text-[var(--md-sys-color-on-surface-variant)]">
+                          <td className="py-3 px-4 text-[var(--md-sys-color-on-surface-variant)]">
                             {new Date(p.createdAt).toLocaleDateString()}
                           </td>
-                          <td className="py-2.5 px-3.5 text-right">
+                          <td className="py-3 px-4 text-right">
                             <Button
                               type="button"
                               variant="danger-tonal"
                               size="xs"
+                              className="rounded-full px-3"
                               onClick={() => handleDeleteProject(p.id, p.key)}
                               leftIcon={<Trash2 className="w-3 h-3" />}
                             >
@@ -1100,7 +1117,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                     </tbody>
                   </table>
                 </div>
-              </Card>
+              </div>
             </div>
           )}
 
@@ -1110,52 +1127,52 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
           {activeTab === 'analytics' && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                <Card variant="outlined" padding="sm" rounded="xl" className="flex items-center justify-between shadow-2xs">
+                <div className="bg-[var(--md-sys-color-surface-container-low)] rounded-3xl p-5 border border-[var(--md-sys-color-outline-variant)]/20 flex items-center justify-between shadow-xs">
                   <div className="space-y-0.5">
                     <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
                       Total Hours Logged
                     </span>
-                    <p className="text-xl font-black text-[var(--md-sys-color-primary)]">
+                    <p className="text-2xl font-black text-[var(--md-sys-color-primary)]">
                       {timeStats?.totalHoursLogged || 0}h
                     </p>
                   </div>
-                  <div className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center">
-                    <Activity className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
+                  <div className="w-10 h-10 rounded-2xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center shadow-2xs">
+                    <Activity className="w-5 h-5 text-[var(--md-sys-color-primary)]" />
                   </div>
-                </Card>
+                </div>
 
-                <Card variant="outlined" padding="sm" rounded="xl" className="flex items-center justify-between shadow-2xs">
+                <div className="bg-[var(--md-sys-color-surface-container-low)] rounded-3xl p-5 border border-[var(--md-sys-color-outline-variant)]/20 flex items-center justify-between shadow-xs">
                   <div className="space-y-0.5">
                     <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
                       Logged Today
                     </span>
-                    <p className="text-xl font-black text-[var(--md-sys-color-success)]">
+                    <p className="text-2xl font-black text-[var(--md-sys-color-success)]">
                       {timeStats?.hoursLoggedToday || 0}h
                     </p>
                   </div>
-                  <div className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] flex items-center justify-center">
-                    <TrendingUp className="w-4 h-4 text-[var(--md-sys-color-success)]" />
+                  <div className="w-10 h-10 rounded-2xl bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] flex items-center justify-center shadow-2xs">
+                    <TrendingUp className="w-5 h-5 text-[var(--md-sys-color-success)]" />
                   </div>
-                </Card>
+                </div>
 
-                <Card variant="outlined" padding="sm" rounded="xl" className="flex items-center justify-between shadow-2xs">
+                <div className="bg-[var(--md-sys-color-surface-container-low)] rounded-3xl p-5 border border-[var(--md-sys-color-outline-variant)]/20 flex items-center justify-between shadow-xs">
                   <div className="space-y-0.5">
                     <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
                       Logged This Week
                     </span>
-                    <p className="text-xl font-black text-[var(--md-sys-color-warning)]">
+                    <p className="text-2xl font-black text-[var(--md-sys-color-warning)]">
                       {timeStats?.hoursLoggedThisWeek || 0}h
                     </p>
                   </div>
-                  <div className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] flex items-center justify-center">
-                    <Database className="w-4 h-4 text-[var(--md-sys-color-warning)]" />
+                  <div className="w-10 h-10 rounded-2xl bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] flex items-center justify-center shadow-2xs">
+                    <Database className="w-5 h-5 text-[var(--md-sys-color-warning)]" />
                   </div>
-                </Card>
+                </div>
               </div>
 
               {systemStats?.roleBreakdown && (
-                <Card variant="outlined" padding="md" rounded="xl" className="space-y-3 shadow-xs">
-                  <h3 className="text-xs font-bold text-[var(--md-sys-color-on-surface)] flex items-center gap-2">
+                <div className="bg-[var(--md-sys-color-surface-container-low)] rounded-3xl p-5 sm:p-6 border border-[var(--md-sys-color-outline-variant)]/20 space-y-4 shadow-xs">
+                  <h3 className="text-xs font-bold text-[var(--md-sys-color-on-surface)] flex items-center gap-2 uppercase tracking-wider">
                     <Users className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
                     <span>User Role Distribution</span>
                   </h3>
@@ -1163,18 +1180,18 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                     {Object.entries(systemStats.roleBreakdown).map(([role, count]) => (
                       <div
                         key={role}
-                        className="p-3 rounded-lg bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-center"
+                        className="p-3.5 rounded-2xl bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/30 text-center shadow-2xs"
                       >
                         <span className="text-[10px] font-bold text-[var(--md-sys-color-on-surface-variant)] block uppercase mb-1">
                           {role}
                         </span>
-                        <span className="text-lg font-black text-[var(--md-sys-color-on-surface)]">
+                        <span className="text-xl font-black text-[var(--md-sys-color-on-surface)]">
                           {count}
                         </span>
                       </div>
                     ))}
                   </div>
-                </Card>
+                </div>
               )}
             </div>
           )}
@@ -1191,7 +1208,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
       >
         <form onSubmit={handleSaveCustomRole} className="space-y-4 pt-2">
           <div>
-            <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface)] mb-1">
+            <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface)] mb-1.5">
               Role Name *
             </label>
             <input
@@ -1200,12 +1217,12 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
               placeholder="e.g. DevOps Engineer"
               value={newRoleName}
               onChange={(e) => setNewRoleName(e.target.value)}
-              className="w-full text-xs px-3 py-2 rounded-xl bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] font-medium focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)]"
+              className="w-full text-xs px-3.5 py-2.5 rounded-2xl bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]/30 font-medium focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] transition-all"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface)] mb-1">
+            <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface)] mb-1.5">
               Description
             </label>
             <input
@@ -1213,7 +1230,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
               placeholder="Responsibilities and permission scope"
               value={newRoleDescription}
               onChange={(e) => setNewRoleDescription(e.target.value)}
-              className="w-full text-xs px-3 py-2 rounded-xl bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] font-medium focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)]"
+              className="w-full text-xs px-3.5 py-2.5 rounded-2xl bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]/30 font-medium focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] transition-all"
             />
           </div>
 
@@ -1238,9 +1255,9 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                 return (
                   <label
                     key={p.id}
-                    className={`flex items-center gap-2 p-2 rounded-xl border cursor-pointer transition-colors ${isChecked
+                    className={`flex items-center gap-2 p-2.5 rounded-2xl border cursor-pointer transition-all ${isChecked
                         ? 'bg-[var(--md-sys-color-primary-container)]/30 border-[var(--md-sys-color-primary)] font-semibold'
-                        : 'bg-[var(--md-sys-color-surface-container)] border-[var(--md-sys-color-outline-variant)] opacity-70'
+                        : 'bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] border-[var(--md-sys-color-outline-variant)]/30 opacity-70 hover:opacity-100'
                       }`}
                   >
                     <input
@@ -1262,11 +1279,12 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-[var(--md-sys-color-outline-variant)]">
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-[var(--md-sys-color-outline-variant)]/20">
             <Button
               type="button"
               variant="ghost"
               size="sm"
+              className="rounded-full px-4 text-xs"
               onClick={() => setCreateRoleModalOpen(false)}
             >
               Cancel
@@ -1275,6 +1293,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
               type="submit"
               variant="filled"
               size="sm"
+              className="rounded-full px-4 text-xs font-bold"
               leftIcon={<CheckCircle className="w-3.5 h-3.5" />}
             >
               Register Role

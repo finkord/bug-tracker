@@ -140,6 +140,17 @@ export interface TeamTimesheetMatrix {
     systemRole: SystemRole;
     avatarUrl: string | null;
     dailyHours: Record<string, number>;
+    dailyWorklogs?: Record<
+      string,
+      Array<{
+        id: number;
+        issueId?: number;
+        issueKey?: string;
+        issueTitle?: string;
+        timeSpentHours: number;
+        description?: string;
+      }>
+    >;
     totalPeriodHours: number;
   }>;
   dailyTotals: Record<string, number>;
