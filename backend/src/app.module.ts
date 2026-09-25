@@ -14,6 +14,7 @@ import { Issue } from './modules/issues/entities/issue.entity.js';
 import { Comment } from './modules/issues/entities/comment.entity.js';
 import { Worklog } from './modules/issues/entities/worklog.entity.js';
 import { Attachment } from './modules/issues/entities/attachment.entity.js';
+import { IssueLink } from './modules/issues/entities/issue-link.entity.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 import { SecurityAuditModule } from './modules/security-audit/security-audit.module.js';
@@ -40,7 +41,7 @@ import { IssuesModule } from './modules/issues/issues.module.js';
         username: configService.get<string>('DB_USER', 'postgres'),
         password: configService.get<string>('DB_PASSWORD', 'postgres'),
         database: configService.get<string>('DB_NAME', 'bug_tracker'),
-        entities: [User, SavedFilter, LoginAuditLog, Project, Issue, Comment, Worklog, Attachment],
+        entities: [User, SavedFilter, LoginAuditLog, Project, Issue, Comment, Worklog, Attachment, IssueLink],
         synchronize: true, // Automatically synchronize schema in development
       }),
     }),

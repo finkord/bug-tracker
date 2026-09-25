@@ -11,7 +11,6 @@ import {
   Layers,
   Sparkles,
   Check,
-  CheckCircle2,
 } from 'lucide-react';
 
 export const PreferencesPage: React.FC = () => {

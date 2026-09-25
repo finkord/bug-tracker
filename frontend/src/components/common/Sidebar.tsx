@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink, useLocation, Link } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSidebar } from '../../context/SidebarContext';
 import { api, type ProjectItem } from '../../api/client';
@@ -15,6 +15,7 @@ import {
   X,
   Shield,
   ExternalLink,
+  SlidersHorizontal,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -47,6 +48,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentProjectId }) => {
     { label: 'Projects',          shortLabel: 'Projects', path: '/projects',  icon: FolderKanban,    exact: true },
     { label: 'Kanban Board',      shortLabel: 'Kanban',   path: boardPath,    icon: Kanban,          activeMatch: (p: string) => p.includes('/board') },
     { label: 'Backlog & Sprints', shortLabel: 'Backlog',  path: backlogPath, icon: Layers,         activeMatch: (p: string) => p.includes('/backlog') },
+    { label: 'Filters & Search',  shortLabel: 'Search',   path: '/search',    icon: SlidersHorizontal, activeMatch: (p: string) => p.startsWith('/search') },
     { label: 'Time Tracking',     shortLabel: 'Time',     path: '/time-tracking', icon: Clock },
   ];
 

@@ -10,7 +10,7 @@ describe('JwtStrategy Security Hardening', () => {
   let usersService: Partial<UsersService>;
   let configService: Partial<ConfigService>;
 
-  const mockUser: User = {
+  const mockUser = {
     id: 42,
     fullName: 'Test User',
     email: 'test@example.com',
@@ -34,7 +34,7 @@ describe('JwtStrategy Security Hardening', () => {
     resetPasswordExpiresAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
-  };
+  } as unknown as User;
 
   beforeEach(() => {
     configService = {

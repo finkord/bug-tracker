@@ -6,10 +6,12 @@ import { Issue, IssueStatus } from './entities/issue.entity.js';
 import { Comment } from './entities/comment.entity.js';
 import { Worklog } from './entities/worklog.entity.js';
 import { Attachment } from './entities/attachment.entity.js';
+import { IssueLink, IssueLinkType } from './entities/issue-link.entity.js';
 import { SeaweedFsService, type UploadedFileInput } from './services/seaweedfs.service.js';
 import { Project } from '../projects/entities/project.entity.js';
 import { User } from '../users/entities/user.entity.js';
 import { CreateIssueDto } from './dto/create-issue.dto.js';
+import { CreateIssueLinkDto } from './dto/create-issue-link.dto.js';
 import { ListIssuesQueryDto } from './dto/list-issues-query.dto.js';
 import { LogWorkDto } from './dto/log-work.dto.js';
 
@@ -28,6 +30,8 @@ export class IssuesService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Attachment)
     private readonly attachmentRepository: Repository<Attachment>,
+    @InjectRepository(IssueLink)
+    private readonly issueLinkRepository: Repository<IssueLink>,
     private readonly seaweedFsService: SeaweedFsService,
     private readonly eventsGateway: EventsGateway,
   ) {}
@@ -219,6 +223,8 @@ export class IssuesService {
       order: { createdAt: 'DESC' },
     });
 
+    const links = await this.getIssueLinks(issue.id);
+
     return {
       id: issue.id,
       key: `${issue.project.key}-${issue.issueNum}`,
@@ -283,7 +289,7 @@ export class IssuesService {
         fileSize: a.fileSize,
         mimeType: a.mimeType,
         fid: a.fid,
-        url: a.url,
+        url: `http://localhost:3000/api/v1/issues/attachments/${a.id}/file`,
         createdAt: a.createdAt,
         uploader: a.uploader
           ? {
@@ -295,6 +301,7 @@ export class IssuesService {
             }
           : null,
       })),
+      links,
       createdAt: issue.createdAt,
       updatedAt: issue.updatedAt,
     };
@@ -302,6 +309,136 @@ export class IssuesService {
 
   async findById(id: number): Promise<any> {
     return this.findByKeyOrId(id);
+  }
+
+  /**
+   * Retrieves all semantic issue links for a given issue ID.
+   */
+  async getIssueLinks(issueId: number): Promise<any[]> {
+    const rawLinks = await this.issueLinkRepository
+      .createQueryBuilder('link')
+      .leftJoinAndSelect('link.sourceIssue', 'sourceIssue')
+      .leftJoinAndSelect('sourceIssue.project', 'sourceProject')
+      .leftJoinAndSelect('link.targetIssue', 'targetIssue')
+      .leftJoinAndSelect('targetIssue.project', 'targetProject')
+      .where('link.sourceIssueId = :issueId OR link.targetIssueId = :issueId', { issueId })
+      .orderBy('link.createdAt', 'DESC')
+      .getMany();
+
+    return rawLinks.map((link) => {
+      const isSource = link.sourceIssueId === issueId;
+      const otherIssue = isSource ? link.targetIssue : link.sourceIssue;
+      const otherProject = isSource ? link.targetIssue?.project : link.sourceIssue?.project;
+
+      let label = 'relates to';
+      if (link.linkType === IssueLinkType.BLOCKS) {
+        label = isSource ? 'blocks' : 'is blocked by';
+      } else if (link.linkType === IssueLinkType.IS_BLOCKED_BY) {
+        label = isSource ? 'is blocked by' : 'blocks';
+      } else if (link.linkType === IssueLinkType.DUPLICATES) {
+        label = isSource ? 'duplicates' : 'is duplicated by';
+      } else if (link.linkType === IssueLinkType.RELATES_TO) {
+        label = 'relates to';
+      }
+
+      return {
+        id: link.id,
+        linkType: link.linkType,
+        direction: isSource ? 'OUTWARD' : 'INWARD',
+        label,
+        linkedIssue: otherIssue
+          ? {
+              id: otherIssue.id,
+              key: `${otherProject?.key || 'ISSUE'}-${otherIssue.issueNum}`,
+              title: otherIssue.title,
+              status: otherIssue.status,
+              priority: otherIssue.priority,
+              issueType: otherIssue.issueType,
+              projectName: otherProject?.name,
+              projectKey: otherProject?.key,
+            }
+          : null,
+        createdAt: link.createdAt,
+      };
+    });
+  }
+
+  /**
+   * Creates a semantic dependency link between two issues.
+   */
+  async createIssueLink(sourceIssueId: number, dto: CreateIssueLinkDto): Promise<any> {
+    const sourceIssue = await this.issueRepository.findOne({
+      where: { id: sourceIssueId },
+      relations: { project: true },
+    });
+    if (!sourceIssue) {
+      throw new NotFoundException(`Source issue #${sourceIssueId} not found`);
+    }
+
+    const targetRaw = String(dto.targetIssueKeyOrId).trim();
+    let targetIssue: Issue | null = null;
+
+    const keyMatch = targetRaw.match(/^([a-zA-Z0-9_-]+)-(\d+)$/);
+    if (keyMatch) {
+      const [, projKey, issueNumStr] = keyMatch;
+      const issueNum = parseInt(issueNumStr, 10);
+      targetIssue = await this.issueRepository
+        .createQueryBuilder('issue')
+        .leftJoinAndSelect('issue.project', 'project')
+        .where('LOWER(project.key) = LOWER(:projKey)', { projKey })
+        .andWhere('issue.issueNum = :issueNum', { issueNum })
+        .getOne();
+    }
+
+    if (!targetIssue && /^\d+$/.test(targetRaw)) {
+      const targetId = parseInt(targetRaw, 10);
+      targetIssue = await this.issueRepository.findOne({
+        where: { id: targetId },
+        relations: { project: true },
+      });
+    }
+
+    if (!targetIssue) {
+      throw new NotFoundException(`Target issue "${targetRaw}" not found`);
+    }
+
+    if (sourceIssue.id === targetIssue.id) {
+      throw new BadRequestException('Cannot link an issue to itself');
+    }
+
+    const existing = await this.issueLinkRepository.findOne({
+      where: [
+        { sourceIssueId: sourceIssue.id, targetIssueId: targetIssue.id, linkType: dto.linkType },
+        { sourceIssueId: targetIssue.id, targetIssueId: sourceIssue.id, linkType: dto.linkType },
+      ],
+    });
+
+    if (existing) {
+      throw new BadRequestException('This link relationship already exists between these two issues');
+    }
+
+    const link = this.issueLinkRepository.create({
+      sourceIssueId: sourceIssue.id,
+      targetIssueId: targetIssue.id,
+      linkType: dto.linkType,
+    });
+
+    await this.issueLinkRepository.save(link);
+
+    const allLinks = await this.getIssueLinks(sourceIssue.id);
+    return allLinks.find((l) => l.id === link.id) || link;
+  }
+
+  /**
+   * Deletes an issue link by ID.
+   */
+  async deleteIssueLink(linkId: number): Promise<{ success: boolean; message: string }> {
+    const link = await this.issueLinkRepository.findOne({ where: { id: linkId } });
+    if (!link) {
+      throw new NotFoundException(`Issue link #${linkId} not found`);
+    }
+    await this.issueLinkRepository.remove(link);
+    return { success: true, message: 'Issue link removed successfully' };
   }
 
   /**
@@ -781,7 +918,7 @@ export class IssuesService {
       throw new NotFoundException(`Issue with ID #${issueId} not found`);
     }
 
-    const { fid, url } = await this.seaweedFsService.uploadFile(file);
+    const { fid } = await this.seaweedFsService.uploadFile(file);
 
     const attachment = this.attachmentRepository.create({
       issueId,
@@ -789,24 +926,46 @@ export class IssuesService {
       fileSize: file.size,
       mimeType: file.mimetype,
       fid,
-      url,
+      url: '',
       uploaderId: uploader.id,
       uploader,
     });
 
     const saved = await this.attachmentRepository.save(attachment);
+    saved.url = `http://localhost:3000/api/v1/issues/attachments/${saved.id}/file`;
+    await this.attachmentRepository.save(saved);
+
     this.eventsGateway.broadcastAttachmentUploaded({ issueId, attachment: saved });
     return saved;
+  }
+
+  /**
+   * Retrieves a single attachment by ID.
+   */
+  async getAttachmentById(id: number): Promise<Attachment> {
+    const attachment = await this.attachmentRepository.findOne({
+      where: { id },
+    });
+    if (!attachment) {
+      throw new NotFoundException(`Attachment #${id} not found`);
+    }
+    attachment.url = `http://localhost:3000/api/v1/issues/attachments/${attachment.id}/file`;
+    return attachment;
   }
 
   /**
    * Returns list of attachments for an issue.
    */
   async getAttachments(issueId: number): Promise<Attachment[]> {
-    return this.attachmentRepository.find({
+    const attachments = await this.attachmentRepository.find({
       where: { issueId },
       relations: { uploader: true },
       order: { createdAt: 'DESC' },
+    });
+
+    return attachments.map((a) => {
+      a.url = `http://localhost:3000/api/v1/issues/attachments/${a.id}/file`;
+      return a;
     });
   }
 

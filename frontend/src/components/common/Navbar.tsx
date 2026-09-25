@@ -7,6 +7,7 @@ import { useSidebar } from '../../context/SidebarContext';
 import { Avatar } from './Avatar';
 import { IssueModal } from '../kanban/IssueModal';
 import { Modal, Button } from '../ui';
+import { api, type SavedFilterItem } from '../../api/client';
 import {
   AlertTriangle,
   CheckCircle2,
@@ -18,13 +19,19 @@ import {
   Edit3,
   Sliders,
   LogOut,
-  ChevronDown,
   Search,
   Plus,
   Sun,
   Moon,
   Maximize2,
   Shield,
+  SlidersHorizontal,
+  Sparkles,
+  Star,
+  UserCheck,
+  FileCheck2,
+  Clock,
+  ChevronDown,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -44,7 +51,16 @@ export const Navbar: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isBannerModalOpen, setIsBannerModalOpen] = useState(false);
+  const [navSavedFilters, setNavSavedFilters] = useState<SavedFilterItem[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (user) {
+      api.getSavedFilters()
+        .then((data) => setNavSavedFilters(data))
+        .catch(() => {});
+    }
+  }, [user]);
 
   // Global keyboard shortcut '/' to focus search
   useEffect(() => {
@@ -201,7 +217,119 @@ export const Navbar: React.FC = () => {
 
         {/* Right side controls: Authenticated Workspace Tools VS Guest Navigation */}
         {user ? (
-          <div className="shrink-0 flex items-center gap-2.5">
+          <div className="shrink-0 flex items-center gap-2">
+            {/* Jira-style Filters Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="h-9 px-3 rounded-xl bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border border-[var(--md-sys-color-outline-variant)]/40"
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
+                  <span className="hidden sm:inline">Filters</span>
+                  <ChevronDown className="w-3 h-3 opacity-60" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                side="bottom"
+                className="w-64 p-2 rounded-2xl bg-[var(--md-sys-color-surface-container-lowest)] shadow-xl z-50 border border-[var(--md-sys-color-outline-variant)]/20 text-xs"
+              >
+                <DropdownMenuItem asChild>
+                  <Link to="/search" className="flex items-center gap-2 font-bold text-[var(--md-sys-color-primary)] cursor-pointer">
+                    <Search className="w-4 h-4" />
+                    <span>View all filters & search</span>
+                  </Link>
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator />
+
+                <div className="px-2 py-1 text-[10px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
+                  Quick Filters
+                </div>
+
+                <DropdownMenuItem asChild>
+                  <Link
+                    to="/search?jql=assignee%20%3D%20currentUser()%20AND%20status%20NOT%20IN%20(%22RESOLVED%22%2C%20%22CLOSED%22)%20ORDER%20BY%20priority%20DESC"
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <UserCheck className="w-3.5 h-3.5 text-blue-400" />
+                    <span>My open issues</span>
+                  </Link>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem asChild>
+                  <Link
+                    to="/search?jql=reporter%20%3D%20currentUser()%20ORDER%20BY%20createdAt%20DESC"
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <FileCheck2 className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Reported by me</span>
+                  </Link>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem asChild>
+                  <Link
+                    to="/search?jql=priority%20IN%20(%22CRITICAL%22%2C%20%22HIGH%22)%20AND%20status%20NOT%20IN%20(%22CLOSED%22)%20ORDER%20BY%20priority%20DESC"
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Critical & High Priority</span>
+                  </Link>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem asChild>
+                  <Link
+                    to="/search?jql=ORDER%20BY%20updatedAt%20DESC"
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <Clock className="w-3.5 h-3.5 text-teal-400" />
+                    <span>Recently updated</span>
+                  </Link>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem asChild>
+                  <Link
+                    to="/search?jql=status%20IN%20(%22RESOLVED%22%2C%20%22CLOSED%22)%20ORDER%20BY%20updatedAt%20DESC"
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Done issues</span>
+                  </Link>
+                </DropdownMenuItem>
+
+                {navSavedFilters.length > 0 && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <div className="px-2 py-1 text-[10px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
+                      Saved Presets ({navSavedFilters.length})
+                    </div>
+                    {navSavedFilters.slice(0, 5).map((f) => (
+                      <DropdownMenuItem asChild key={f.id}>
+                        <Link
+                          to={`/search`}
+                          onClick={() => {
+                            try {
+                              const crit = JSON.parse(f.criteria);
+                              if (crit.jql) {
+                                navigate(`/search?jql=${encodeURIComponent(crit.jql)}`);
+                              }
+                            } catch {
+                              // fallback
+                            }
+                          }}
+                          className="flex items-center gap-2 cursor-pointer truncate"
+                        >
+                          <Star className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                          <span className="truncate">{f.name}</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             {/* GitLab-style Search Input */}
             <form onSubmit={handleSearchSubmit} className="relative flex items-center">
               <Search className="w-4 h-4 absolute left-3 text-[var(--md-sys-color-on-surface-variant)] pointer-events-none" />
@@ -210,8 +338,8 @@ export const Navbar: React.FC = () => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search or go to..."
-                className="w-32 sm:w-52 md:w-60 h-9 pl-9 pr-8 text-xs rounded-xl bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] placeholder:text-[var(--md-sys-color-on-surface-variant)] focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] transition-all"
+                placeholder="Search issues..."
+                className="w-28 sm:w-48 md:w-56 h-9 pl-9 pr-8 text-xs rounded-xl bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] placeholder:text-[var(--md-sys-color-on-surface-variant)] focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] transition-all"
               />
               <kbd className="hidden sm:inline-flex items-center justify-center absolute right-2.5 px-1.5 py-0.5 text-[10px] font-mono text-[var(--md-sys-color-on-surface-variant)] bg-[var(--md-sys-color-surface-container-lowest)] rounded border border-[var(--md-sys-color-outline-variant)]/40 pointer-events-none">
                 /

@@ -1,11 +1,13 @@
 import { realtimeSocket } from '../api/socket';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api, type IssueItem, type IssueStatus } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { Avatar } from '../components/common/Avatar';
 import { LogWorkModal } from '../components/kanban/LogWorkModal';
 import { IssueModal } from '../components/kanban/IssueModal';
+import { IssueLinksSection } from '../components/kanban/IssueLinksSection';
+import { MarkdownContent } from '../components/common/MarkdownContent';
 import { Card, Button, Badge, Tooltip, Modal } from '../components/ui';
 import {
   ArrowLeft,
@@ -46,10 +48,13 @@ export const IssueDetailPage: React.FC = () => {
 
   // Attachments State
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const [uploadingScreenshot, setUploadingScreenshot] = useState(false);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [previewImageTitle, setPreviewImageTitle] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+
+  const commentFileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchIssue = async () => {
     if (!issueKeyOrId) return;
@@ -164,12 +169,83 @@ export const IssueDetailPage: React.FC = () => {
     setSubmittingComment(true);
     try {
       const newComment = await api.addIssueComment(issue.id, commentText.trim());
-      setIssue((prev) => (prev ? { ...prev, comments: [...(prev.comments || []), newComment] } : null));
+      setIssue((prev) => {
+        if (!prev) return prev;
+        const currentComments = prev.comments || [];
+        if (currentComments.some((cm) => cm.id === newComment.id)) {
+          return prev;
+        }
+        return {
+          ...prev,
+          comments: [...currentComments, newComment],
+        };
+      });
       setCommentText('');
     } catch (err: any) {
       setError(err.message || 'Failed to add comment');
     } finally {
       setSubmittingComment(false);
+    }
+  };
+
+  const handlePasteInComment = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items || !issue) return;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.indexOf('image') !== -1) {
+        e.preventDefault();
+        const blob = item.getAsFile();
+        if (!blob) continue;
+
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        const filename = `screenshot_${timestamp}.png`;
+        const file = new File([blob], filename, { type: blob.type || 'image/png' });
+
+        setUploadingScreenshot(true);
+        const placeholder = `\n![Uploading ${filename}...]()\n`;
+        setCommentText((prev) => prev + placeholder);
+
+        try {
+          const uploaded = await api.uploadAttachment(issue.id, file);
+          await fetchIssue();
+          setCommentText((prev) =>
+            prev.replace(placeholder, `\n![${filename}](${uploaded.url})\n`),
+          );
+        } catch (err: any) {
+          setError(err.message || 'Failed to upload pasted screenshot');
+          setCommentText((prev) => prev.replace(placeholder, ''));
+        } finally {
+          setUploadingScreenshot(false);
+        }
+        break;
+      }
+    }
+  };
+
+  const handleCommentScreenshotSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !issue) return;
+
+    setUploadingScreenshot(true);
+    const placeholder = `\n![Uploading ${file.name}...]()\n`;
+    setCommentText((prev) => prev + placeholder);
+
+    try {
+      const uploaded = await api.uploadAttachment(issue.id, file);
+      await fetchIssue();
+      setCommentText((prev) =>
+        prev.replace(placeholder, `\n![${file.name}](${uploaded.url})\n`),
+      );
+    } catch (err: any) {
+      setError(err.message || 'Failed to upload screenshot');
+      setCommentText((prev) => prev.replace(placeholder, ''));
+    } finally {
+      setUploadingScreenshot(false);
+      if (commentFileInputRef.current) {
+        commentFileInputRef.current.value = '';
+      }
     }
   };
 
@@ -375,15 +451,26 @@ export const IssueDetailPage: React.FC = () => {
               <span className="text-xs font-semibold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)] select-none">
                 Description
               </span>
-              <div className="p-4 rounded-xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)] text-sm text-[var(--md-sys-color-on-surface)] whitespace-pre-wrap leading-relaxed">
-                {issue.description || (
-                  <span className="italic text-[var(--md-sys-color-on-surface-variant)]">
-                    No description provided.
-                  </span>
-                )}
+              <div className="p-4 rounded-xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)] text-sm text-[var(--md-sys-color-on-surface)] leading-relaxed">
+                <MarkdownContent
+                  content={issue.description}
+                  onImageClick={(url, title) => {
+                    setPreviewImageUrl(url);
+                    setPreviewImageTitle(title || 'Description Image');
+                  }}
+                />
               </div>
             </div>
           </Card>
+
+          {/* Issue Linking & Dependency Graphs (Lab 3/5 Model) */}
+          <IssueLinksSection
+            issueId={issue.id}
+            currentIssueKey={issue.key}
+            projectId={issue.projectId}
+            links={issue.links}
+            onLinksChanged={fetchIssue}
+          />
 
           {/* Evidence & File Attachments */}
           <Card variant="filled" padding="md" rounded="xl" className="space-y-4">
@@ -476,11 +563,32 @@ export const IssueDetailPage: React.FC = () => {
                       key={att.id}
                       className="p-3 rounded-xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)] flex items-center justify-between gap-2.5 group hover:border-[var(--md-sys-color-primary)]/40 transition-colors"
                     >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-8 h-8 rounded-lg bg-[var(--md-sys-color-surface-container-highest)] flex items-center justify-center text-[var(--md-sys-color-primary)] shrink-0">
-                          {isImage ? <ImageIcon className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
-                        </div>
-                        <div className="min-w-0">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        {isImage ? (
+                          <div
+                            onClick={() => {
+                              setPreviewImageUrl(att.url);
+                              setPreviewImageTitle(att.filename);
+                            }}
+                            className="w-12 h-12 rounded-lg bg-black/10 overflow-hidden shrink-0 border border-[var(--md-sys-color-outline-variant)] cursor-pointer hover:opacity-85 transition-opacity relative group/img"
+                            title="Click to preview"
+                          >
+                            <img
+                              src={att.url}
+                              alt={att.filename}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white">
+                              <Maximize2 className="w-3.5 h-3.5" />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="w-10 h-10 rounded-lg bg-[var(--md-sys-color-surface-container-highest)] flex items-center justify-center text-[var(--md-sys-color-primary)] shrink-0">
+                            <FileText className="w-5 h-5" />
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
                           <p className="text-xs font-semibold text-[var(--md-sys-color-on-surface)] truncate" title={att.filename}>
                             {att.filename}
                           </p>
@@ -499,7 +607,7 @@ export const IssueDetailPage: React.FC = () => {
                                 setPreviewImageUrl(att.url);
                                 setPreviewImageTitle(att.filename);
                               }}
-                              className="p-1 rounded-md text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-highest)] hover:text-[var(--md-sys-color-primary)] transition-colors cursor-pointer"
+                              className="p-1.5 rounded-md text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-highest)] hover:text-[var(--md-sys-color-primary)] transition-colors cursor-pointer"
                               aria-label="Preview image"
                             >
                               <Maximize2 className="w-3.5 h-3.5" />
@@ -513,7 +621,7 @@ export const IssueDetailPage: React.FC = () => {
                             download={att.filename}
                             target="_blank"
                             rel="noreferrer"
-                            className="p-1 rounded-md text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-highest)] hover:text-[var(--md-sys-color-primary)] transition-colors"
+                            className="p-1.5 rounded-md text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-highest)] hover:text-[var(--md-sys-color-primary)] transition-colors"
                             aria-label="Download attachment"
                           >
                             <Download className="w-3.5 h-3.5" />
@@ -524,7 +632,7 @@ export const IssueDetailPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => handleDeleteAttachment(att.id)}
-                            className="p-1 rounded-md text-[var(--md-sys-color-on-surface-variant)] hover:bg-rose-500/10 hover:text-rose-500 transition-colors cursor-pointer"
+                            className="p-1.5 rounded-md text-[var(--md-sys-color-on-surface-variant)] hover:bg-rose-500/10 hover:text-rose-500 transition-colors cursor-pointer"
                             aria-label="Delete attachment"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -540,47 +648,91 @@ export const IssueDetailPage: React.FC = () => {
 
           {/* Discussion & Activity Section */}
           <Card variant="filled" padding="md" rounded="xl" className="space-y-4">
-            <div className="flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
-              <h3 className="font-bold text-sm text-[var(--md-sys-color-on-surface)]">
-                Discussion & Activity ({issue.comments?.length || 0})
-              </h3>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
+                <h3 className="font-bold text-sm text-[var(--md-sys-color-on-surface)]">
+                  Discussion & Activity ({issue.comments?.length || 0})
+                </h3>
+              </div>
+              <span className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
+                Markdown & Screenshots supported
+              </span>
             </div>
 
-            <form onSubmit={handleAddComment} className="flex gap-2">
-              <input
-                type="text"
-                required
-                placeholder="Share technical findings, reproduction steps, or mention colleagues..."
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                className="flex-1 px-3.5 py-2.5 rounded-xl bg-[var(--md-sys-color-input-bg)] text-[var(--md-sys-color-input-text)] border border-[var(--md-sys-color-input-border)] text-xs focus:outline-none focus:ring-2 focus:ring-[var(--md-sys-color-primary)]/20 focus:border-[var(--md-sys-color-primary)]"
-              />
-              <Button
-                type="submit"
-                variant="filled"
-                size="sm"
-                disabled={!commentText.trim()}
-                isLoading={submittingComment}
-                rightIcon={<Send className="w-3 h-3" />}
-              >
-                Post
-              </Button>
+            {/* Comment Form with Screenshot Toolbar */}
+            <form onSubmit={handleAddComment} className="space-y-2">
+              <div className="rounded-xl border border-[var(--md-sys-color-input-border)] bg-[var(--md-sys-color-input-bg)] focus-within:border-[var(--md-sys-color-primary)] focus-within:ring-2 focus-within:ring-[var(--md-sys-color-primary)]/20 transition-all overflow-hidden">
+                <textarea
+                  rows={3}
+                  required
+                  placeholder="Share findings, logs, or paste screenshots directly (Ctrl+V / Cmd+V)..."
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  onPaste={handlePasteInComment}
+                  className="w-full p-3.5 bg-transparent text-[var(--md-sys-color-input-text)] text-xs resize-y min-h-[75px] outline-hidden placeholder:text-[var(--md-sys-color-on-surface-variant)]/60 font-sans leading-relaxed"
+                />
+
+                {/* Toolbar */}
+                <div className="flex items-center justify-between px-3 py-2 bg-[var(--md-sys-color-surface-container-low)] border-t border-[var(--md-sys-color-outline-variant)]/30">
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={commentFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleCommentScreenshotSelect}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => commentFileInputRef.current?.click()}
+                      disabled={uploadingScreenshot}
+                      className="text-xs text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] px-2.5 py-1 h-auto cursor-pointer"
+                      leftIcon={<ImageIcon className="w-3.5 h-3.5" />}
+                    >
+                      {uploadingScreenshot ? 'Uploading Screenshot...' : 'Insert Screenshot'}
+                    </Button>
+
+                    <span className="text-[10px] text-[var(--md-sys-color-on-surface-variant)] hidden sm:inline select-none">
+                      • Paste with <kbd className="px-1 py-0.5 rounded bg-black/10 dark:bg-white/10 font-mono text-[10px]">Ctrl+V</kbd>
+                    </span>
+                  </div>
+
+                  <Button
+                    type="submit"
+                    variant="filled"
+                    size="sm"
+                    disabled={!commentText.trim() || uploadingScreenshot}
+                    isLoading={submittingComment}
+                    rightIcon={<Send className="w-3 h-3" />}
+                  >
+                    Post Comment
+                  </Button>
+                </div>
+              </div>
             </form>
 
             {/* Comments List */}
-            <div className="space-y-2.5 pt-2">
-              {!issue.comments || issue.comments.length === 0 ? (
-                <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] italic text-center py-4">
-                  No discussion comments yet. Be the first to comment!
-                </p>
-              ) : (
-                issue.comments.map((c) => (
+            <div className="space-y-3 pt-2">
+              {(() => {
+                const uniqueComments = Array.from(
+                  new Map((issue.comments || []).map((c) => [c.id, c])).values(),
+                );
+                if (uniqueComments.length === 0) {
+                  return (
+                    <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] italic text-center py-5">
+                      No discussion comments yet. Be the first to comment or attach a screenshot!
+                    </p>
+                  );
+                }
+                return uniqueComments.map((c) => (
                   <div
                     key={c.id}
-                    className="p-3.5 rounded-xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)] space-y-1.5 text-xs"
+                    className="p-3.5 rounded-xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)] space-y-2 text-xs"
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between pb-1.5 border-b border-[var(--md-sys-color-outline-variant)]/20">
                       <div className="flex items-center gap-2">
                         <Avatar
                           name={c.author.fullName}
@@ -596,12 +748,18 @@ export const IssueDetailPage: React.FC = () => {
                         {new Date(c.createdAt).toLocaleString()}
                       </span>
                     </div>
-                    <p className="text-[var(--md-sys-color-on-surface)] whitespace-pre-wrap leading-relaxed pl-7">
-                      {c.text}
-                    </p>
+                    <div className="pl-7 pt-0.5">
+                      <MarkdownContent
+                        content={c.text}
+                        onImageClick={(url, title) => {
+                          setPreviewImageUrl(url);
+                          setPreviewImageTitle(title || `Screenshot from ${c.author.fullName}`);
+                        }}
+                      />
+                    </div>
                   </div>
-                ))
-              )}
+                ));
+              })()}
             </div>
           </Card>
         </div>
@@ -829,11 +987,22 @@ export const IssueDetailPage: React.FC = () => {
         }
       >
         {previewImageUrl && (
-          <div className="flex items-center justify-center p-2 bg-black/20 rounded-xl overflow-hidden">
+          <div className="flex flex-col items-center justify-center p-3 bg-black/5 dark:bg-black/20 rounded-xl overflow-hidden min-h-[220px]">
             <img
               src={previewImageUrl}
               alt={previewImageTitle || 'Preview'}
               className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-md"
+              onError={(e) => {
+                const target = e.currentTarget;
+                target.style.display = 'none';
+                const parent = target.parentElement;
+                if (parent && !parent.querySelector('.error-fallback')) {
+                  const fallback = document.createElement('div');
+                  fallback.className = 'error-fallback p-6 text-center text-xs text-[var(--md-sys-color-on-surface-variant)] space-y-2';
+                  fallback.innerHTML = `<p class="font-semibold text-rose-500">Image could not be rendered directly.</p><a href="${previewImageUrl}" target="_blank" class="inline-flex items-center gap-1 text-[var(--md-sys-color-primary)] underline font-bold">Open directly in new tab &rarr;</a>`;
+                  parent.appendChild(fallback);
+                }
+              }}
             />
           </div>
         )}

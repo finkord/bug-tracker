@@ -240,7 +240,7 @@ export const KanbanBoardPage: React.FC = () => {
                   if (typeof val === 'number') navigate(`/projects/${val}/board`);
                   else navigate('/board');
                 }}
-                className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] cursor-pointer"
+                className="text-xs font-semibold px-3.5 py-1.5 rounded-full bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] cursor-pointer border-0 outline-none"
               >
                 <option value="ALL">All Workspaces</option>
                 {projects.map((p) => (
@@ -253,9 +253,9 @@ export const KanbanBoardPage: React.FC = () => {
               {activeProject && (
                 <Link
                   to={`/projects/${activeProject.id}/backlog`}
-                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--md-sys-color-primary)] hover:underline"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--md-sys-color-primary-container)]/40 text-[11px] font-semibold text-[var(--md-sys-color-primary)] hover:bg-[var(--md-sys-color-primary-container)]/70 transition-colors"
                 >
-                  <Layers className="w-3 h-3" />
+                  <Layers className="w-3.5 h-3.5" />
                   <span>Agile Backlog</span>
                 </Link>
               )}
@@ -273,7 +273,7 @@ export const KanbanBoardPage: React.FC = () => {
               placeholder="Search title, key..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 rounded-full bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-xs text-[var(--md-sys-color-on-surface)] focus:ring-2 focus:ring-[var(--md-sys-color-primary)]"
+              className="w-full pl-8 pr-3.5 py-1.5 rounded-full bg-[var(--md-sys-color-surface-container)] focus:bg-[var(--md-sys-color-surface-container-high)] text-xs text-[var(--md-sys-color-on-surface)] border-0 focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] transition-all font-medium"
             />
           </div>
 
@@ -281,7 +281,7 @@ export const KanbanBoardPage: React.FC = () => {
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            className="px-3 py-1.5 rounded-full text-xs bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)]"
+            className="px-3.5 py-1.5 rounded-full text-xs bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border-0 outline-none cursor-pointer"
           >
             <option value="ALL">All Types</option>
             <option value="BUG">🐛 Bug</option>
@@ -294,7 +294,7 @@ export const KanbanBoardPage: React.FC = () => {
           <select
             value={filterPriority}
             onChange={(e) => setFilterPriority(e.target.value)}
-            className="px-3 py-1.5 rounded-full text-xs bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)]"
+            className="px-3.5 py-1.5 rounded-full text-xs bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border-0 outline-none cursor-pointer"
           >
             <option value="ALL">All Priorities</option>
             <option value="CRITICAL">Critical</option>
@@ -345,7 +345,7 @@ export const KanbanBoardPage: React.FC = () => {
       </div>
 
       {filterSavedMsg && (
-        <div className="mt-3 p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
+        <div className="mt-3 p-3 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
           <CheckCircle2 className="w-4 h-4 shrink-0" />
           <span>{filterSavedMsg}</span>
         </div>
@@ -353,13 +353,13 @@ export const KanbanBoardPage: React.FC = () => {
 
       {/* Error Banner */}
       {error && (
-        <div className="mt-3 p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs">
+        <div className="mt-3 p-3 rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs">
           {error}
         </div>
       )}
 
       {/* Kanban Columns Grid */}
-      <div className="flex-1 mt-4 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3.5 overflow-x-auto pb-4">
+      <div className="flex-1 mt-4 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 overflow-x-auto pb-4">
         {COLUMNS.map((col) => {
           const colIssues = filteredIssues.filter((i) => i.status === col.status);
           const isOver = dragOverColumn === col.status;
@@ -370,14 +370,14 @@ export const KanbanBoardPage: React.FC = () => {
               onDragOver={(e) => handleDragOver(e, col.status)}
               onDragLeave={(e) => handleDragLeave(e, col.status)}
               onDrop={(e) => handleDrop(e, col.status)}
-              className={`flex flex-col min-w-[260px] rounded-2xl bg-[var(--md-sys-color-surface-container-low)] border transition-all duration-200 ${
+              className={`flex flex-col min-w-[260px] rounded-3xl bg-[var(--md-sys-color-surface-container-low)] transition-all duration-200 shadow-xs ${
                 isOver
-                  ? 'border-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-primary)]/20 shadow-md bg-[var(--md-sys-color-surface-container)]'
-                  : 'border-[var(--md-sys-color-outline-variant)]/60'
+                  ? 'ring-2 ring-[var(--md-sys-color-primary)] shadow-md bg-[var(--md-sys-color-surface-container)]'
+                  : ''
               }`}
             >
               {/* Column Header */}
-              <div className="flex items-center justify-between px-3.5 py-3 border-b border-[var(--md-sys-color-outline-variant)]/50">
+              <div className="flex items-center justify-between px-4 py-3.5 border-b border-[var(--md-sys-color-surface-container-high)]">
                 <div className="flex items-center gap-2">
                   <h3 className="font-bold text-xs uppercase tracking-wider text-[var(--md-sys-color-on-surface)]">
                     {col.title}
@@ -389,14 +389,14 @@ export const KanbanBoardPage: React.FC = () => {
               </div>
 
               {/* Column Issue Cards Container */}
-              <div className="flex-1 p-2.5 space-y-2.5 overflow-y-auto min-h-[300px]">
+              <div className="flex-1 p-3 space-y-3 overflow-y-auto min-h-[300px]">
                 {loading ? (
                   <div className="flex flex-col items-center justify-center py-10 gap-2">
                     <Loader2 className="w-5 h-5 animate-spin text-[var(--md-sys-color-primary)]" />
                     <span className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">Loading...</span>
                   </div>
                 ) : colIssues.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-32 border border-dashed border-[var(--md-sys-color-outline-variant)]/50 rounded-xl text-center p-3 text-xs text-[var(--md-sys-color-on-surface-variant)]">
+                  <div className="flex flex-col items-center justify-center h-32 rounded-2xl bg-[var(--md-sys-color-surface-container)]/40 text-center p-3 text-xs text-[var(--md-sys-color-on-surface-variant)]">
                     <span>No issues</span>
                     <span className="text-[10px] opacity-70 mt-0.5">Drag tickets here</span>
                   </div>

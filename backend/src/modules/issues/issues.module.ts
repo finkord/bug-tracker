@@ -6,6 +6,7 @@ import { Issue } from './entities/issue.entity.js';
 import { Comment } from './entities/comment.entity.js';
 import { Worklog } from './entities/worklog.entity.js';
 import { Attachment } from './entities/attachment.entity.js';
+import { IssueLink } from './entities/issue-link.entity.js';
 import { SeaweedFsService } from './services/seaweedfs.service.js';
 import { Project } from '../projects/entities/project.entity.js';
 import { IssuesController } from './issues.controller.js';
@@ -13,7 +14,7 @@ import { IssuesService } from './issues.service.js';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Issue, Comment, Project, Worklog, User, Attachment]),
+    TypeOrmModule.forFeature([Issue, Comment, Project, Worklog, User, Attachment, IssueLink]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
   ],
   controllers: [IssuesController],

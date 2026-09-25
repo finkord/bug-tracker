@@ -14,24 +14,32 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { IssuesService } from './issues.service.js';
+import { SeaweedFsService } from './services/seaweedfs.service.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
+import { Public } from '../../common/decorators/public.decorator.js';
 import { User } from '../users/entities/user.entity.js';
 import { IssueStatus } from './entities/issue.entity.js';
 import { CreateIssueDto } from './dto/create-issue.dto.js';
 import { ListIssuesQueryDto } from './dto/list-issues-query.dto.js';
 import { LogWorkDto } from './dto/log-work.dto.js';
+import { CreateIssueLinkDto } from './dto/create-issue-link.dto.js';
 
 @ApiTags('Issues & Kanban')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard)
 @Controller('issues')
 export class IssuesController {
-  constructor(private readonly issuesService: IssuesService) {}
+  constructor(
+    private readonly issuesService: IssuesService,
+    private readonly seaweedFsService: SeaweedFsService,
+  ) {}
 
   @Get()
   @ApiOperation({
@@ -197,6 +205,21 @@ export class IssuesController {
     return this.issuesService.getAttachments(id);
   }
 
+  @Public()
+  @Get('attachments/:id/file')
+  @ApiOperation({ summary: 'Serve attachment file directly from SeaweedFS' })
+  async getAttachmentFile(
+    @Param('id', ParseIntPipe) id: number,
+    @Res() res: Response,
+  ) {
+    const attachment = await this.issuesService.getAttachmentById(id);
+    const { buffer, contentType } = await this.seaweedFsService.getFileBuffer(attachment.fid);
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(attachment.filename)}"`);
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.send(buffer);
+  }
+
   @Delete(':id/attachments/:attachmentId')
   @ApiOperation({ summary: 'Delete attachment from SeaweedFS and database' })
   async deleteAttachment(
@@ -205,5 +228,27 @@ export class IssuesController {
     @CurrentUser() user: User,
   ) {
     return this.issuesService.deleteAttachment(id, attachmentId, user);
+  }
+
+  @Get(':id/links')
+  @ApiOperation({ summary: 'Get all semantic links/dependencies for an issue' })
+  async getLinks(@Param('id', ParseIntPipe) id: number) {
+    return this.issuesService.getIssueLinks(id);
+  }
+
+  @Post(':id/links')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Create a semantic dependency link between two issues' })
+  async createLink(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: CreateIssueLinkDto,
+  ) {
+    return this.issuesService.createIssueLink(id, dto);
+  }
+
+  @Delete('links/:linkId')
+  @ApiOperation({ summary: 'Delete an existing issue link' })
+  async deleteLink(@Param('linkId', ParseIntPipe) linkId: number) {
+    return this.issuesService.deleteIssueLink(linkId);
   }
 }

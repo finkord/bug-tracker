@@ -47,6 +47,19 @@ export class SeaweedFsService {
     return { fid, url: publicUrl };
   }
 
+  async getFileBuffer(fid: string): Promise<{ buffer: Buffer; contentType: string }> {
+    const res = await fetch(`${this.volumeUrl}/${fid}`);
+    if (!res.ok) {
+      throw new Error(`SeaweedFS file retrieval failed: ${res.status}`);
+    }
+    const contentType = res.headers.get('content-type') || 'application/octet-stream';
+    const arrayBuffer = await res.arrayBuffer();
+    return {
+      buffer: Buffer.from(arrayBuffer),
+      contentType,
+    };
+  }
+
   async deleteFile(fid: string): Promise<void> {
     try {
       await fetch(`${this.volumeUrl}/${fid}`, { method: 'DELETE' });

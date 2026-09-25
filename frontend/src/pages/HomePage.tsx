@@ -229,7 +229,7 @@ export const HomePage: React.FC = () => {
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6 animate-in fade-in duration-200">
       {/* Welcome Banner */}
-      <Card variant="outlined" padding="md" rounded="xl" className="shadow-xs">
+      <div className="bg-[var(--md-sys-color-surface-container-low)] rounded-3xl p-5 sm:p-6 shadow-xs">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
             <Avatar
@@ -276,15 +276,15 @@ export const HomePage: React.FC = () => {
             </Link>
           </div>
         </div>
-      </Card>
+      </div>
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column (2 spans): Assigned to Me & Project Jump */}
-        <div className="lg:col-span-2 space-y-5">
+        <div className="lg:col-span-2 space-y-6">
           {/* Section: Assigned to Me */}
-          <Card variant="outlined" padding="md" rounded="xl" className="space-y-3 shadow-xs">
-            <div className="flex items-center justify-between pb-2.5 border-b border-[var(--md-sys-color-outline-variant)]">
+          <div className="bg-[var(--md-sys-color-surface-container-low)] rounded-3xl p-5 sm:p-6 space-y-4 shadow-xs">
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--md-sys-color-surface-container-high)]">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
                 <h2 className="text-sm font-bold text-[var(--md-sys-color-on-surface)]">
@@ -301,7 +301,7 @@ export const HomePage: React.FC = () => {
                 Loading your assigned tasks...
               </p>
             ) : activeAssigned.length === 0 ? (
-              <div className="p-8 rounded-xl bg-[var(--md-sys-color-surface-container)] border border-dashed border-[var(--md-sys-color-outline-variant)] text-center space-y-2">
+              <div className="p-8 rounded-2xl bg-[var(--md-sys-color-surface-container)] text-center space-y-2">
                 <Sparkles className="w-6 h-6 mx-auto text-[var(--md-sys-color-primary)]" />
                 <p className="text-xs font-semibold text-[var(--md-sys-color-on-surface)]">
                   You have no pending assigned tickets!
@@ -316,10 +316,10 @@ export const HomePage: React.FC = () => {
                   <div
                     key={issue.id}
                     onClick={() => setSelectedIssueId(issue.id)}
-                    className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)] cursor-pointer transition-colors group"
+                    className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container-high)] dark:hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)]/40 hover:border-[var(--md-sys-color-outline-variant)]/80 cursor-pointer transition-all duration-150 group shadow-2xs hover:shadow-xs"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="font-mono text-xs font-bold text-[var(--md-sys-color-primary)] shrink-0">
+                      <span className="font-mono text-xs font-bold text-[var(--md-sys-color-primary)] shrink-0 bg-[var(--md-sys-color-primary-container)]/50 px-2.5 py-0.5 rounded-full">
                         {issue.key}
                       </span>
                       <span className="text-xs font-semibold text-[var(--md-sys-color-on-surface)] group-hover:text-[var(--md-sys-color-primary)] transition-colors truncate">
@@ -344,7 +344,7 @@ export const HomePage: React.FC = () => {
                         value={issue.status}
                         onClick={(e) => e.stopPropagation()}
                         onChange={(e) => handleStatusChange(issue.id, e.target.value as IssueStatus)}
-                        className="text-xs font-semibold px-2 py-0.5 rounded-lg bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] cursor-pointer"
+                        className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] cursor-pointer border border-[var(--md-sys-color-outline-variant)]/40 outline-none"
                       >
                         <option value="OPEN">To Do</option>
                         <option value="IN_PROGRESS">In Progress</option>
@@ -356,7 +356,7 @@ export const HomePage: React.FC = () => {
                       <Link
                         to={`/issues/${issue.key || issue.id}`}
                         onClick={(e) => e.stopPropagation()}
-                        className="p-1 rounded-md text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] transition-colors"
+                        className="p-1.5 rounded-full text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] hover:bg-[var(--md-sys-color-surface-container-high)] transition-colors"
                         title="Open full page"
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
@@ -366,11 +366,11 @@ export const HomePage: React.FC = () => {
                 ))}
               </div>
             )}
-          </Card>
+          </div>
 
           {/* Section: Quick Workspace Jump */}
-          <Card variant="outlined" padding="md" rounded="xl" className="space-y-3 shadow-xs">
-            <div className="flex items-center justify-between pb-2.5 border-b border-[var(--md-sys-color-outline-variant)]">
+          <div className="bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xs">
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--md-sys-color-surface-container-high)]">
               <div className="flex items-center gap-2">
                 <Kanban className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
                 <h2 className="text-sm font-bold text-[var(--md-sys-color-on-surface)]">
@@ -386,10 +386,10 @@ export const HomePage: React.FC = () => {
               {projects.map((p) => (
                 <div
                   key={p.id}
-                  className="p-3.5 rounded-xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] space-y-2.5 hover:shadow-2xs transition-shadow"
+                  className="p-4 rounded-2xl bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-outline-variant)]/70 space-y-3 hover:bg-[var(--md-sys-color-surface-container-high)] dark:hover:bg-[var(--md-sys-color-surface-container-highest)] transition-all shadow-2xs"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-bold text-[var(--md-sys-color-primary)]">
+                    <span className="font-mono text-xs font-bold text-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/50 px-2.5 py-0.5 rounded-full">
                       {p.key}
                     </span>
                     <span className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
@@ -404,7 +404,7 @@ export const HomePage: React.FC = () => {
                       {p.description || 'No description provided.'}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 pt-1 border-t border-[var(--md-sys-color-outline-variant)]">
+                  <div className="flex items-center gap-2 pt-2 border-t border-[var(--md-sys-color-surface-container-high)]">
                     <Link
                       to={`/projects/${p.id}/board`}
                       className="flex-1"
@@ -435,13 +435,13 @@ export const HomePage: React.FC = () => {
                 </div>
               ))}
             </div>
-          </Card>
+          </div>
         </div>
 
         {/* Right Column (1 span): Saved Filters */}
         <div className="space-y-6">
-          <Card variant="outlined" padding="md" rounded="xl" className="space-y-3 shadow-xs">
-            <div className="flex items-center justify-between pb-2.5 border-b border-[var(--md-sys-color-outline-variant)]">
+          <div className="bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xs">
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--md-sys-color-surface-container-high)]">
               <div className="flex items-center gap-2">
                 <Filter className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
                 <h3 className="font-bold text-xs text-[var(--md-sys-color-on-surface)]">
@@ -451,7 +451,7 @@ export const HomePage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowNewFilterInput(!showNewFilterInput)}
-                className="p-1 rounded-lg text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] transition-colors cursor-pointer"
+                className="p-1 rounded-full text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] transition-colors cursor-pointer"
                 title="Create saved filter"
               >
                 <PlusCircle className="w-4 h-4" />
@@ -464,14 +464,14 @@ export const HomePage: React.FC = () => {
 
             {/* Quick create filter form */}
             {showNewFilterInput && (
-              <form onSubmit={handleCreateQuickFilter} className="flex gap-2 p-1.5 rounded-xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]">
+              <form onSubmit={handleCreateQuickFilter} className="flex gap-2 p-1.5 rounded-full bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/40">
                 <input
                   type="text"
                   required
                   placeholder="Filter name (e.g. Critical)"
                   value={newFilterName}
                   onChange={(e) => setNewFilterName(e.target.value)}
-                  className="flex-1 text-xs px-2 py-1 bg-transparent text-[var(--md-sys-color-on-surface)] focus:outline-hidden"
+                  className="flex-1 text-xs px-3 py-1 bg-transparent text-[var(--md-sys-color-on-surface)] focus:outline-hidden"
                 />
                 <Button
                   type="submit"
@@ -485,7 +485,7 @@ export const HomePage: React.FC = () => {
 
             {/* Saved Filters List */}
             {savedFilters.length === 0 ? (
-              <div className="p-6 rounded-xl bg-[var(--md-sys-color-surface-container)] border border-dashed border-[var(--md-sys-color-outline-variant)] text-center text-xs text-[var(--md-sys-color-on-surface-variant)] italic">
+              <div className="p-6 rounded-2xl bg-[var(--md-sys-color-surface-container)] text-center text-xs text-[var(--md-sys-color-on-surface-variant)] italic">
                 No saved search filters yet.
               </div>
             ) : (
@@ -493,7 +493,7 @@ export const HomePage: React.FC = () => {
                 {savedFilters.map((f) => (
                   <div
                     key={f.id}
-                    className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)] transition-colors"
+                    className="flex items-center justify-between gap-2 p-2.5 rounded-2xl bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/30 hover:bg-[var(--md-sys-color-surface-container-high)] dark:hover:bg-[var(--md-sys-color-surface-container-highest)] transition-colors"
                   >
                     <button
                       type="button"
@@ -507,7 +507,7 @@ export const HomePage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleDeleteFilter(f.id)}
-                      className="p-1 rounded text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-error)] transition-colors cursor-pointer"
+                      className="p-1 rounded-full text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-error)] transition-colors cursor-pointer"
                       title="Delete filter"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -516,7 +516,7 @@ export const HomePage: React.FC = () => {
                 ))}
               </div>
             )}
-          </Card>
+          </div>
         </div>
       </div>
 

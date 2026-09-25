@@ -188,8 +188,29 @@ export interface IssueItem {
   comments?: IssueComment[];
   worklogs?: WorklogItem[];
   attachments?: AttachmentItem[];
+  links?: IssueLinkItem[];
   createdAt: string;
   updatedAt: string;
+}
+
+export type IssueLinkType = 'BLOCKS' | 'IS_BLOCKED_BY' | 'DUPLICATES' | 'RELATES_TO';
+
+export interface IssueLinkItem {
+  id: number;
+  linkType: IssueLinkType;
+  direction: 'OUTWARD' | 'INWARD';
+  label: string;
+  linkedIssue: {
+    id: number;
+    key: string;
+    title: string;
+    status: IssueStatus;
+    priority: IssuePriority;
+    issueType: IssueType;
+    projectName?: string;
+    projectKey?: string;
+  };
+  createdAt: string;
 }
 
 export interface AttachmentItem {
@@ -568,12 +589,41 @@ export const api = {
   uploadAttachment: async (issueId: number, file: File): Promise<AttachmentItem> => {
     const formData = new FormData();
     formData.append('file', file);
-    const token = localStorage.getItem('bt_access_token');
-    const res = await fetch(`${API_BASE_URL}/issues/${issueId}/attachments`, {
+    let token = localStorage.getItem('accessToken');
+    
+    let res = await fetch(`${API_BASE_URL}/issues/${issueId}/attachments`, {
       method: 'POST',
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,
     });
+
+    if (res.status === 401) {
+      const refreshToken = localStorage.getItem('refreshToken');
+      if (refreshToken) {
+        try {
+          const refreshRes = await fetch(`${API_BASE_URL}/auth/refresh`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refreshToken }),
+          });
+          if (refreshRes.ok) {
+            const data: AuthTokens = await refreshRes.json();
+            localStorage.setItem('accessToken', data.accessToken);
+            localStorage.setItem('refreshToken', data.refreshToken);
+            token = data.accessToken;
+            
+            res = await fetch(`${API_BASE_URL}/issues/${issueId}/attachments`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${token}` },
+              body: formData,
+            });
+          }
+        } catch {
+          // Fall through to error
+        }
+      }
+    }
+
     if (!res.ok) {
       const err = await res.json().catch(() => ({ message: 'Failed to upload attachment' }));
       throw new Error(err.message || 'Failed to upload attachment');
@@ -615,4 +665,20 @@ export const api = {
     const query = params.toString() ? `?${params.toString()}` : '';
     return request<TeamTimesheetMatrix>(`/issues/worklogs/matrix${query}`);
   },
+
+  // Issue Linking & Dependency Endpoints (Lab 3/5 model)
+  getIssueLinks: (issueId: number) =>
+    request<IssueLinkItem[]>(`/issues/${issueId}/links`),
+  createIssueLink: (
+    issueId: number,
+    payload: { targetIssueKeyOrId: string | number; linkType: IssueLinkType },
+  ) =>
+    request<IssueLinkItem>(`/issues/${issueId}/links`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  deleteIssueLink: (linkId: number) =>
+    request<{ success: boolean; message: string }>(`/issues/links/${linkId}`, {
+      method: 'DELETE',
+    }),
 };
