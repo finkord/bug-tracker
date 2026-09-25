@@ -733,16 +733,14 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                     <button
                       type="button"
                       onClick={() => setBroadcastEnabled((prev) => !prev)}
-                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                        broadcastEnabled ? 'bg-[var(--md-sys-color-primary)]' : 'bg-[var(--md-sys-color-surface-container-highest)]'
-                      }`}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${broadcastEnabled ? 'bg-[var(--md-sys-color-primary)]' : 'bg-[var(--md-sys-color-surface-container-highest)]'
+                        }`}
                       role="switch"
                       aria-checked={broadcastEnabled}
                     >
                       <span
-                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                          broadcastEnabled ? 'translate-x-5' : 'translate-x-0'
-                        }`}
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${broadcastEnabled ? 'translate-x-5' : 'translate-x-0'
+                          }`}
                       />
                     </button>
                   </div>
@@ -784,13 +782,11 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                             key={sev.id}
                             type="button"
                             onClick={() => setBroadcastSeverity(sev.id)}
-                            className={`p-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                              sev.token
-                            } ${
-                              isSelected
+                            className={`p-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${sev.token
+                              } ${isSelected
                                 ? 'ring-2 ring-offset-2 ring-[var(--md-sys-color-primary)] scale-[1.02] shadow-xs'
                                 : 'opacity-60 hover:opacity-100'
-                            }`}
+                              }`}
                           >
                             <Icon className="w-3.5 h-3.5" />
                             <span>{sev.label}</span>
@@ -836,15 +832,14 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                     <div className="flex items-center py-2 px-4 rounded-xl bg-[var(--md-sys-color-surface)] overflow-hidden">
                       {broadcastEnabled && broadcastMessage ? (
                         <div
-                          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-none w-full text-xs font-semibold ${
-                            broadcastSeverity === 'info'
+                          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-none w-full text-xs font-semibold ${broadcastSeverity === 'info'
                               ? 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)]'
                               : broadcastSeverity === 'warning'
-                              ? 'bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)]'
-                              : broadcastSeverity === 'critical'
-                              ? 'bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)]'
-                              : 'bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)]'
-                          }`}
+                                ? 'bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)]'
+                                : broadcastSeverity === 'critical'
+                                  ? 'bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)]'
+                                  : 'bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)]'
+                            }`}
                         >
                           <Radio className="w-3.5 h-3.5 shrink-0" />
                           <span className="truncate">{broadcastMessage}</span>
@@ -1243,11 +1238,10 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                 return (
                   <label
                     key={p.id}
-                    className={`flex items-center gap-2 p-2 rounded-xl border cursor-pointer transition-colors ${
-                      isChecked
+                    className={`flex items-center gap-2 p-2 rounded-xl border cursor-pointer transition-colors ${isChecked
                         ? 'bg-[var(--md-sys-color-primary-container)]/30 border-[var(--md-sys-color-primary)] font-semibold'
                         : 'bg-[var(--md-sys-color-surface-container)] border-[var(--md-sys-color-outline-variant)] opacity-70'
-                    }`}
+                      }`}
                   >
                     <input
                       type="checkbox"
