@@ -38,6 +38,12 @@ cd frontend && npm run dev
 cd backend && npm test
 
 # ------------------------------------------------------------------------------
+# 2.1 Database Seeding (Realistic Multi-Team Engineering Dataset)
+# ------------------------------------------------------------------------------
+# Seed database with 5 engineering teams, 30 engineers, 46 issues, 18 links, and 70 worklogs:
+cd backend && npm run seed
+
+# ------------------------------------------------------------------------------
 # 3. Production Regime (Production Build & Serving)
 # ------------------------------------------------------------------------------
 # Note: Ensure the development servers (npm run start:dev / npm run dev) are stopped

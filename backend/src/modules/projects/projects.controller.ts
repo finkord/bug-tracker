@@ -17,10 +17,13 @@ import { CreateProjectDto } from './dto/create-project.dto.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { User } from '../users/entities/user.entity.js';
+import { ProjectPermissionGuard } from '../rbac/guards/project-permission.guard.js';
+import { RequireProjectPermission } from '../rbac/decorators/require-permission.decorator.js';
+import { ProjectPermission } from '../rbac/entities/permission-grant.entity.js';
 
 @ApiTags('Projects')
 @ApiBearerAuth('JWT-auth')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, ProjectPermissionGuard)
 @Controller('projects')
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
@@ -53,6 +56,7 @@ export class ProjectsController {
   }
 
   @Patch(':id')
+  @RequireProjectPermission(ProjectPermission.ADMINISTER_PROJECTS)
   @ApiOperation({ summary: 'Update project settings' })
   async update(
     @Param('id', ParseIntPipe) id: number,
@@ -62,6 +66,7 @@ export class ProjectsController {
   }
 
   @Delete(':id')
+  @RequireProjectPermission(ProjectPermission.ADMINISTER_PROJECTS)
   @ApiOperation({ summary: 'Delete project workspace' })
   async remove(@Param('id', ParseIntPipe) id: number) {
     return this.projectsService.remove(id);

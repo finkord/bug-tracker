@@ -30,10 +30,13 @@ import { CreateIssueDto } from './dto/create-issue.dto.js';
 import { ListIssuesQueryDto } from './dto/list-issues-query.dto.js';
 import { LogWorkDto } from './dto/log-work.dto.js';
 import { CreateIssueLinkDto } from './dto/create-issue-link.dto.js';
+import { ProjectPermissionGuard } from '../rbac/guards/project-permission.guard.js';
+import { RequireProjectPermission } from '../rbac/decorators/require-permission.decorator.js';
+import { ProjectPermission } from '../rbac/entities/permission-grant.entity.js';
 
 @ApiTags('Issues & Kanban')
 @ApiBearerAuth('JWT-auth')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, ProjectPermissionGuard)
 @Controller('issues')
 export class IssuesController {
   constructor(
@@ -86,15 +89,17 @@ export class IssuesController {
   }
 
   @Post()
+  @RequireProjectPermission(ProjectPermission.CREATE_ISSUES)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
-    summary: 'Create a new issue (Available to all registered users)',
+    summary: 'Create a new issue in a project',
   })
   async create(@Body() dto: CreateIssueDto, @CurrentUser() user: User) {
     return this.issuesService.create(dto, user);
   }
 
   @Patch(':id/status')
+  @RequireProjectPermission(ProjectPermission.TRANSITION_ISSUES)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Transition issue FSM status (To Do, In Progress, Review, Resolved, Closed)',
@@ -107,6 +112,7 @@ export class IssuesController {
   }
 
   @Patch(':id/assign-me')
+  @RequireProjectPermission(ProjectPermission.ASSIGNABLE_USER)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Assign the issue directly to the authenticated developer (Self-assignment)',
@@ -119,6 +125,7 @@ export class IssuesController {
   }
 
   @Patch(':id/sprint')
+  @RequireProjectPermission(ProjectPermission.EDIT_ISSUES)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Move issue between Active Sprint and Backlog',
@@ -131,6 +138,7 @@ export class IssuesController {
   }
 
   @Patch(':id')
+  @RequireProjectPermission(ProjectPermission.EDIT_ISSUES)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Update issue title, description, priority, severity, or assignee',
@@ -143,6 +151,7 @@ export class IssuesController {
   }
 
   @Delete(':id')
+  @RequireProjectPermission(ProjectPermission.DELETE_ISSUES)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Delete an issue',
@@ -152,6 +161,7 @@ export class IssuesController {
   }
 
   @Post(':id/comments')
+  @RequireProjectPermission(ProjectPermission.ADD_COMMENTS)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Post a comment to an issue thread',
@@ -165,6 +175,7 @@ export class IssuesController {
   }
 
   @Post(':id/worklogs')
+  @RequireProjectPermission(ProjectPermission.LOG_WORK)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Log work hours spent on an issue',
@@ -186,6 +197,7 @@ export class IssuesController {
   }
 
   @Post(':id/attachments')
+  @RequireProjectPermission(ProjectPermission.CREATE_ATTACHMENTS)
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 25 * 1024 * 1024 } }))
   @ApiOperation({ summary: 'Upload file attachment/evidence to SeaweedFS S3 storage' })
   async uploadAttachment(
@@ -221,6 +233,7 @@ export class IssuesController {
   }
 
   @Delete(':id/attachments/:attachmentId')
+  @RequireProjectPermission(ProjectPermission.DELETE_OWN_ATTACHMENTS)
   @ApiOperation({ summary: 'Delete attachment from SeaweedFS and database' })
   async deleteAttachment(
     @Param('id', ParseIntPipe) id: number,
@@ -237,6 +250,7 @@ export class IssuesController {
   }
 
   @Post(':id/links')
+  @RequireProjectPermission(ProjectPermission.EDIT_ISSUES)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a semantic dependency link between two issues' })
   async createLink(
@@ -247,6 +261,7 @@ export class IssuesController {
   }
 
   @Delete('links/:linkId')
+  @RequireProjectPermission(ProjectPermission.EDIT_ISSUES)
   @ApiOperation({ summary: 'Delete an existing issue link' })
   async deleteLink(@Param('linkId', ParseIntPipe) linkId: number) {
     return this.issuesService.deleteIssueLink(linkId);

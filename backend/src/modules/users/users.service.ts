@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User, SystemRole } from './entities/user.entity.js';
 import { SavedFilter } from './entities/saved-filter.entity.js';
+import { Group } from '../rbac/entities/group.entity.js';
+import { UserGroup } from '../rbac/entities/user-group.entity.js';
 
 @Injectable()
 export class UsersService {
@@ -11,10 +13,22 @@ export class UsersService {
     private readonly usersRepository: Repository<User>,
     @InjectRepository(SavedFilter)
     private readonly savedFilterRepository: Repository<SavedFilter>,
+    @InjectRepository(Group)
+    private readonly groupRepository: Repository<Group>,
+    @InjectRepository(UserGroup)
+    private readonly userGroupRepository: Repository<UserGroup>,
   ) {}
 
   async findById(id: number): Promise<User | null> {
     return this.usersRepository.findOne({ where: { id } });
+  }
+
+  async getUserGroups(userId: number): Promise<string[]> {
+    const userGroups = await this.userGroupRepository.find({
+      where: { userId },
+      relations: { group: true },
+    });
+    return userGroups.map((ug) => ug.group?.name).filter(Boolean);
   }
 
   async findByEmail(email: string): Promise<User | null> {
@@ -43,13 +57,16 @@ export class UsersService {
 
   async createOAuthUser(data: Partial<User>): Promise<User> {
     const count = await this.usersRepository.count();
+    const systemRole = count === 0 ? SystemRole.ADMIN : SystemRole.USER;
     const user = this.usersRepository.create({
       ...data,
       email: data.email ? data.email.toLowerCase().trim() : '',
-      systemRole: count === 0 ? SystemRole.ADMIN : SystemRole.USER,
+      systemRole,
       isActivated: true,
     });
-    return this.usersRepository.save(user);
+    const saved = await this.usersRepository.save(user);
+    await this.syncUserGroupsWithRole(saved.id, systemRole);
+    return saved;
   }
 
   async create(userData: Partial<User>): Promise<User> {
@@ -57,7 +74,11 @@ export class UsersService {
       ...userData,
       email: userData.email ? userData.email.toLowerCase().trim() : '',
     });
-    return this.usersRepository.save(user);
+    const saved = await this.usersRepository.save(user);
+    if (saved.systemRole) {
+      await this.syncUserGroupsWithRole(saved.id, saved.systemRole);
+    }
+    return saved;
   }
 
   async update(id: number, updateData: Partial<User>): Promise<User> {
@@ -67,6 +88,54 @@ export class UsersService {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
     return updated;
+  }
+
+  /**
+   * Synchronizes user's group memberships with system role (RBAC directory sync).
+   */
+  async syncUserGroupsWithRole(userId: number, role: SystemRole): Promise<void> {
+    try {
+      // 1. Ensure user belongs to 'all-users' group
+      let allUsersGroup = await this.groupRepository.findOne({ where: { name: 'all-users' } });
+      if (!allUsersGroup) {
+        allUsersGroup = await this.groupRepository.findOne({ where: { name: 'jira-software-users' } });
+      }
+      if (allUsersGroup) {
+        const hasAllUsers = await this.userGroupRepository.findOne({
+          where: { groupId: allUsersGroup.id, userId },
+        });
+        if (!hasAllUsers) {
+          await this.userGroupRepository.save(
+            this.userGroupRepository.create({ groupId: allUsersGroup.id, userId }),
+          );
+        }
+      }
+
+      // 2. Sync 'administrators' group membership
+      const adminGroup = await this.groupRepository.findOne({
+        where: { name: 'administrators' },
+      });
+
+      if (adminGroup) {
+        const existingMembership = await this.userGroupRepository.findOne({
+          where: { groupId: adminGroup.id, userId },
+        });
+
+        if (role === SystemRole.ADMIN) {
+          if (!existingMembership) {
+            await this.userGroupRepository.save(
+              this.userGroupRepository.create({ groupId: adminGroup.id, userId }),
+            );
+          }
+        } else {
+          if (existingMembership) {
+            await this.userGroupRepository.delete({ groupId: adminGroup.id, userId });
+          }
+        }
+      }
+    } catch {
+      // Graceful fallback if tables are not initialized yet during bootstrap
+    }
   }
 
   /**
@@ -113,7 +182,9 @@ export class UsersService {
       updates.jobTitle = jobTitle.trim();
     }
 
-    return this.update(id, updates);
+    const updatedUser = await this.update(id, updates);
+    await this.syncUserGroupsWithRole(id, role);
+    return updatedUser;
   }
 
   /**

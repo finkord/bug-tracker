@@ -9,6 +9,8 @@ export interface UserProfile {
   systemRole: SystemRole;
   avatarUrl?: string | null;
   jobTitle?: string | null;
+  groups?: string[];
+  isAdmin?: boolean;
   isActivated: boolean;
   isBlocked: boolean;
   twoFactorEnabled: boolean;
@@ -409,10 +411,14 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 
-  setPassword: (payload: string | { newPassword: string }) =>
+  setPassword: (payload: string | { newPassword: string; currentPassword?: string }) =>
     request<{ message: string }>('/auth/set-password', {
       method: 'POST',
-      body: JSON.stringify(typeof payload === 'string' ? { password: payload } : { password: payload.newPassword }),
+      body: JSON.stringify(
+        typeof payload === 'string'
+          ? { newPassword: payload }
+          : { newPassword: payload.newPassword, currentPassword: payload.currentPassword },
+      ),
     }),
 
   logout: () =>
@@ -692,4 +698,152 @@ export const api = {
     request<{ success: boolean; message: string }>(`/issues/links/${linkId}`, {
       method: 'DELETE',
     }),
+
+  // ================= RBAC & ACCESS CONTROL =================
+  getGroups: () => request<GroupItem[]>('/rbac/groups'),
+  createGroup: (payload: { name: string; description?: string }) =>
+    request<GroupItem>('/rbac/groups', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  addUserToGroup: (groupId: number, userId: number) =>
+    request<any>(`/rbac/groups/${groupId}/members`, {
+      method: 'POST',
+      body: JSON.stringify({ userId }),
+    }),
+  removeUserFromGroup: (groupId: number, userId: number) =>
+    request<{ success: boolean; message: string }>(`/rbac/groups/${groupId}/members/${userId}`, {
+      method: 'DELETE',
+    }),
+
+  getProjectRoles: () => request<ProjectRoleItem[]>('/rbac/roles'),
+  createProjectRole: (payload: { name: string; description?: string; isDefault?: boolean }) =>
+    request<ProjectRoleItem>('/rbac/roles', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  getPermissionSchemes: () => request<PermissionSchemeItem[]>('/rbac/permission-schemes'),
+  getPermissionScheme: (id: number) => request<PermissionSchemeItem>(`/rbac/permission-schemes/${id}`),
+  createPermissionScheme: (payload: { name: string; description?: string }) =>
+    request<PermissionSchemeItem>('/rbac/permission-schemes', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  addPermissionGrant: (
+    schemeId: number,
+    payload: {
+      permission: string;
+      grantType: string;
+      roleId?: number;
+      groupId?: number;
+    },
+  ) =>
+    request<PermissionGrantItem>(`/rbac/permission-schemes/${schemeId}/grants`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  removePermissionGrant: (grantId: number) =>
+    request<{ success: boolean; message: string }>(`/rbac/permission-schemes/1/grants/${grantId}`, {
+      method: 'DELETE',
+    }),
+
+  getSecuritySchemes: () => request<IssueSecuritySchemeItem[]>('/rbac/security-schemes'),
+
+  getProjectPeople: (projectId: number) =>
+    request<ProjectRoleGrouped[]>(`/projects/${projectId}/rbac/people`),
+  addActorToProjectRole: (
+    projectId: number,
+    roleId: number,
+    payload: { actorType: 'USER' | 'GROUP'; userId?: number; groupId?: number },
+  ) =>
+    request<any>(`/projects/${projectId}/rbac/roles/${roleId}/actors`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  removeActorFromProjectRole: (projectId: number, roleId: number, actorId: number) =>
+    request<{ success: boolean; message: string }>(`/projects/${projectId}/rbac/roles/${roleId}/actors/${actorId}`, {
+      method: 'DELETE',
+    }),
+  getMyProjectPermissions: (projectId: number) =>
+    request<Record<string, boolean>>(`/projects/${projectId}/rbac/permissions/me`),
+  assignPermissionSchemeToProject: (projectId: number, schemeId: number) =>
+    request<ProjectItem>(`/projects/${projectId}/rbac/permission-scheme`, {
+      method: 'PUT',
+      body: JSON.stringify({ schemeId }),
+    }),
 };
+
+// RBAC Types
+export interface GroupItem {
+  id: number;
+  name: string;
+  description: string | null;
+  isSystem: boolean;
+  userGroups?: Array<{
+    id: number;
+    userId: number;
+    user?: UserProfile;
+  }>;
+  createdAt: string;
+}
+
+export interface ProjectRoleItem {
+  id: number;
+  name: string;
+  description: string | null;
+  isDefault: boolean;
+}
+
+export interface PermissionSchemeItem {
+  id: number;
+  name: string;
+  description: string | null;
+  isDefault: boolean;
+  grants?: PermissionGrantItem[];
+}
+
+export interface PermissionGrantItem {
+  id: number;
+  schemeId: number;
+  permission: string;
+  grantType: 'ROLE' | 'GROUP' | 'LEAD' | 'REPORTER' | 'ASSIGNEE' | 'ANY_LOGGED_IN';
+  roleId: number | null;
+  role?: ProjectRoleItem | null;
+  groupId: number | null;
+  group?: GroupItem | null;
+}
+
+export interface IssueSecuritySchemeItem {
+  id: number;
+  name: string;
+  description: string | null;
+  defaultLevelId: number | null;
+  levels?: IssueSecurityLevelItem[];
+}
+
+export interface IssueSecurityLevelItem {
+  id: number;
+  name: string;
+  description: string | null;
+  grants?: Array<{
+    id: number;
+    grantType: string;
+    role?: ProjectRoleItem | null;
+    group?: GroupItem | null;
+  }>;
+}
+
+export interface ProjectRoleGrouped {
+  roleId: number;
+  roleName: string;
+  description: string | null;
+  users: Array<{
+    actorId: number;
+    user: UserProfile;
+  }>;
+  groups: Array<{
+    actorId: number;
+    group: GroupItem;
+  }>;
+}

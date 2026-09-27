@@ -31,7 +31,12 @@ export const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }
     );
   }
 
-  if (!user || user.systemRole !== 'ADMIN') {
+  const isAdmin =
+    user?.isAdmin ||
+    user?.groups?.some((g) => ['administrators', 'admin', 'admins'].includes(g.toLowerCase())) ||
+    user?.systemRole === 'ADMIN';
+
+  if (!user || !isAdmin) {
     return <Navigate to="/profile" replace />;
   }
 

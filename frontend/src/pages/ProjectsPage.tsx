@@ -12,6 +12,7 @@ import {
   Clock,
   User,
   Kanban,
+  Shield,
 } from 'lucide-react';
 
 export const ProjectsPage: React.FC = () => {
@@ -203,10 +204,10 @@ export const ProjectsPage: React.FC = () => {
                   <span>Total: {project.totalIssues}</span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <Link
                     to={`/projects/${project.id}/board`}
-                    className="py-2 px-3 rounded-full bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-surface)] hover:text-[var(--md-sys-color-on-primary-container)] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors border border-[var(--md-sys-color-outline-variant)]/30 cursor-pointer"
+                    className="py-2 px-2.5 rounded-full bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-surface)] hover:text-[var(--md-sys-color-on-primary-container)] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors border border-[var(--md-sys-color-outline-variant)]/30 cursor-pointer"
                   >
                     <Kanban className="w-3.5 h-3.5" />
                     <span>Board</span>
@@ -214,10 +215,18 @@ export const ProjectsPage: React.FC = () => {
 
                   <Link
                     to={`/projects/${project.id}/backlog`}
-                    className="py-2 px-3 rounded-full bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-surface)] hover:text-[var(--md-sys-color-on-primary-container)] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors border border-[var(--md-sys-color-outline-variant)]/30 cursor-pointer"
+                    className="py-2 px-2.5 rounded-full bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-surface)] hover:text-[var(--md-sys-color-on-primary-container)] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors border border-[var(--md-sys-color-outline-variant)]/30 cursor-pointer"
                   >
                     <Layers className="w-3.5 h-3.5" />
                     <span>Backlog</span>
+                  </Link>
+
+                  <Link
+                    to={`/projects/${project.id}/settings`}
+                    className="py-2 px-2.5 rounded-full bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-surface)] hover:text-[var(--md-sys-color-on-secondary-container)] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors border border-[var(--md-sys-color-outline-variant)]/30 cursor-pointer"
+                  >
+                    <Shield className="w-3.5 h-3.5" />
+                    <span>People</span>
                   </Link>
                 </div>
               </div>

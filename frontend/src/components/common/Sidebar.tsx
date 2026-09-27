@@ -71,13 +71,25 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentProjectId }) => {
     { label: 'Time Tracking',     shortLabel: 'Time',     path: '/time-tracking', icon: Clock,      activeMatch: (p: string) => p.startsWith('/time-tracking') },
   ];
 
-  if (user.systemRole === 'ADMIN') {
+  const isUserAdmin =
+    user.isAdmin ||
+    user.groups?.some((g) => ['administrators', 'admin', 'admins'].includes(g.toLowerCase())) ||
+    user.systemRole === 'ADMIN';
+
+  if (isUserAdmin) {
     navItems.push({
       label: 'Admin Center',
       shortLabel: 'Admin',
       path: '/admin',
       icon: ShieldAlert,
-      activeMatch: (p: string) => p.startsWith('/admin'),
+      activeMatch: (p: string) => p === '/admin' || p.startsWith('/admin/dashboard'),
+    });
+    navItems.push({
+      label: 'Access & RBAC',
+      shortLabel: 'RBAC',
+      path: '/admin/rbac',
+      icon: Shield,
+      activeMatch: (p: string) => p.startsWith('/admin/rbac'),
     });
   }
 

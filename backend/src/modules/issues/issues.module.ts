@@ -12,10 +12,13 @@ import { Project } from '../projects/entities/project.entity.js';
 import { IssuesController } from './issues.controller.js';
 import { IssuesService } from './issues.service.js';
 
+import { RbacModule } from '../rbac/rbac.module.js';
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([Issue, Comment, Project, Worklog, User, Attachment, IssueLink]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
+    RbacModule,
   ],
   controllers: [IssuesController],
   providers: [IssuesService, SeaweedFsService],

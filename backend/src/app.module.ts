@@ -21,6 +21,18 @@ import { SecurityAuditModule } from './modules/security-audit/security-audit.mod
 import { CaptchaModule } from './modules/captcha/captcha.module.js';
 import { ProjectsModule } from './modules/projects/projects.module.js';
 import { IssuesModule } from './modules/issues/issues.module.js';
+import { AdminModule } from './modules/admin/admin.module.js';
+
+import { Group } from './modules/rbac/entities/group.entity.js';
+import { UserGroup } from './modules/rbac/entities/user-group.entity.js';
+import { ProjectRole } from './modules/rbac/entities/project-role.entity.js';
+import { ProjectRoleActor } from './modules/rbac/entities/project-role-actor.entity.js';
+import { PermissionScheme } from './modules/rbac/entities/permission-scheme.entity.js';
+import { PermissionGrant } from './modules/rbac/entities/permission-grant.entity.js';
+import { IssueSecurityScheme } from './modules/rbac/entities/issue-security-scheme.entity.js';
+import { IssueSecurityLevel } from './modules/rbac/entities/issue-security-level.entity.js';
+import { IssueSecurityGrant } from './modules/rbac/entities/issue-security-grant.entity.js';
+import { RbacModule } from './modules/rbac/rbac.module.js';
 
 @Module({
   imports: [
@@ -41,7 +53,26 @@ import { IssuesModule } from './modules/issues/issues.module.js';
         username: configService.get<string>('DB_USER', 'postgres'),
         password: configService.get<string>('DB_PASSWORD', 'postgres'),
         database: configService.get<string>('DB_NAME', 'bug_tracker'),
-        entities: [User, SavedFilter, LoginAuditLog, Project, Issue, Comment, Worklog, Attachment, IssueLink],
+        entities: [
+          User,
+          SavedFilter,
+          LoginAuditLog,
+          Project,
+          Issue,
+          Comment,
+          Worklog,
+          Attachment,
+          IssueLink,
+          Group,
+          UserGroup,
+          ProjectRole,
+          ProjectRoleActor,
+          PermissionScheme,
+          PermissionGrant,
+          IssueSecurityScheme,
+          IssueSecurityLevel,
+          IssueSecurityGrant,
+        ],
         synchronize: true, // Automatically synchronize schema in development
       }),
     }),
@@ -79,6 +110,8 @@ import { IssuesModule } from './modules/issues/issues.module.js';
     ProjectsModule,
     IssuesModule,
     EventsModule,
+    AdminModule,
+    RbacModule,
   ],
   controllers: [AppController],
   providers: [AppService],

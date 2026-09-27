@@ -37,6 +37,20 @@ export class Project {
   @OneToMany('Issue', 'project')
   issues: Issue[];
 
+  @Column({ name: 'permission_scheme_id', type: 'int', nullable: true })
+  permissionSchemeId: number | null;
+
+  @ManyToOne('PermissionScheme', { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'permission_scheme_id' })
+  permissionScheme: any;
+
+  @Column({ name: 'security_scheme_id', type: 'int', nullable: true })
+  securitySchemeId: number | null;
+
+  @ManyToOne('IssueSecurityScheme', { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'security_scheme_id' })
+  securityScheme: any;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 

@@ -24,6 +24,8 @@ import { IssueDetailPage } from './pages/IssueDetailPage';
 import { AdvancedSearchPage } from './pages/AdvancedSearchPage';
 import { TimeTrackingPage } from './pages/TimeTrackingPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
+import { AdminRbacPage } from './pages/AdminRbacPage';
+import { ProjectSettingsPage } from './pages/ProjectSettingsPage';
 import { OAuthCallbackPage } from './pages/OAuthCallbackPage';
 
 
@@ -158,6 +160,16 @@ export const App: React.FC = () => {
                     }
                   />
 
+                  {/* Project Settings / People */}
+                  <Route
+                    path="/projects/:id/settings"
+                    element={
+                      <ProtectedRoute>
+                        <ProjectSettingsPage />
+                      </ProtectedRoute>
+                    }
+                  />
+
                   {/* Admin Console Routes */}
                   <Route
                     path="/admin"
@@ -172,6 +184,14 @@ export const App: React.FC = () => {
                     element={
                       <AdminRoute>
                         <AdminDashboardPage defaultTab="users" />
+                      </AdminRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/rbac"
+                    element={
+                      <AdminRoute>
+                        <AdminRbacPage />
                       </AdminRoute>
                     }
                   />

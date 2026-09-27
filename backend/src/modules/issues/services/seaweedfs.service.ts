@@ -14,9 +14,15 @@ export class SeaweedFsService {
   private readonly masterUrl: string;
   private readonly volumeUrl: string;
 
-  constructor(private readonly configService: ConfigService) {
-    this.masterUrl = this.configService.get<string>('SEAWEED_MASTER_URL', 'http://localhost:9333');
-    this.volumeUrl = this.configService.get<string>('SEAWEED_VOLUME_URL', 'http://localhost:8080');
+  constructor(private readonly configService?: ConfigService) {
+    this.masterUrl =
+      this.configService?.get<string>?.('SEAWEED_MASTER_URL') ||
+      process.env.SEAWEED_MASTER_URL ||
+      'http://localhost:9333';
+    this.volumeUrl =
+      this.configService?.get<string>?.('SEAWEED_VOLUME_URL') ||
+      process.env.SEAWEED_VOLUME_URL ||
+      'http://localhost:8080';
   }
 
   async uploadFile(file: UploadedFileInput): Promise<{ fid: string; url: string }> {

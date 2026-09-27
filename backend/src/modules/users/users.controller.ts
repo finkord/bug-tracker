@@ -36,12 +36,20 @@ export class UsersController {
       'Returns current authenticated user details including email activation status, 2FA configuration, and avatar URL.',
   })
   async getProfile(@CurrentUser() user: User) {
+    const groups = await this.usersService.getUserGroups(user.id);
+    const isAdmin =
+      groups.some((g) => ['administrators', 'admin', 'admins'].includes(g.toLowerCase())) ||
+      user.systemRole === SystemRole.ADMIN;
+
     return {
       id: user.id,
       fullName: user.fullName,
       email: user.email,
       systemRole: user.systemRole,
+      jobTitle: user.jobTitle,
       avatarUrl: user.avatarUrl,
+      groups,
+      isAdmin,
       isActivated: user.isActivated,
       isBlocked: user.isBlocked,
       twoFactorEnabled: user.twoFactorEnabled,

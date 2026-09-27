@@ -86,7 +86,7 @@ export const KanbanBoardSettingsModal: React.FC<KanbanBoardSettingsModalProps> =
                 <Users2 className="w-5 h-5" />
               </div>
               <div>
-                <div className="text-xs font-bold">Assignee Swimlanes (Jira Style)</div>
+                <div className="text-xs font-bold">Assignee Swimlanes</div>
                 <div className="text-[11px] opacity-80 mt-0.5 leading-tight">
                   Organized by worker with expandable rows and cross-worker drag & drop.
                 </div>

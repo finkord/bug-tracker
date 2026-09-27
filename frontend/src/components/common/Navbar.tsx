@@ -288,7 +288,7 @@ export const Navbar: React.FC = () => {
                 <Search className="w-4 h-4 text-[var(--md-sys-color-on-surface-variant)]" />
               </button>
 
-              {/* Jira-style Filters Dropdown */}
+              {/* Quick Filters Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button

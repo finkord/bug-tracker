@@ -33,6 +33,10 @@ export interface AuthTokens {
     fullName: string;
     email: string;
     systemRole: SystemRole;
+    jobTitle?: string | null;
+    avatarUrl?: string | null;
+    groups?: string[];
+    isAdmin?: boolean;
     isActivated: boolean;
     isBlocked: boolean;
     twoFactorEnabled: boolean;
@@ -318,7 +322,7 @@ export class AuthService {
       failureReason: null,
     });
 
-    return this.generateTokens(user);
+    return await this.generateTokens(user);
   }
 
   /**
@@ -367,7 +371,7 @@ export class AuthService {
       failureReason: null,
     });
 
-    return this.generateTokens(user);
+    return await this.generateTokens(user);
   }
 
   /**
@@ -535,7 +539,12 @@ export class AuthService {
       }
     }
 
-    const passwordHash = await this.hashPassword(dto.newPassword);
+    const effectiveNewPassword = dto.newPassword || dto.password;
+    if (!effectiveNewPassword) {
+      throw new BadRequestException('New password is required');
+    }
+
+    const passwordHash = await this.hashPassword(effectiveNewPassword);
 
     await this.usersService.update(user.id, {
       passwordHash,
@@ -613,7 +622,7 @@ export class AuthService {
       failureReason: `OAuth2 Authentication via ${user.oauthProvider}`,
     });
 
-    return this.generateTokens(user);
+    return await this.generateTokens(user);
   }
 
   /**
@@ -661,7 +670,7 @@ export class AuthService {
         throw new UnauthorizedException('Refresh token has been revoked. Please sign in again.');
       }
 
-      return this.generateTokens(user);
+      return await this.generateTokens(user);
     } catch {
       throw new UnauthorizedException('Invalid or expired refresh token. Please sign in again.');
     }
@@ -679,11 +688,18 @@ export class AuthService {
     });
   }
 
-  private generateTokens(user: User): AuthTokens {
+  private async generateTokens(user: User): Promise<AuthTokens> {
+    const groups = await this.usersService.getUserGroups(user.id);
+    const isAdmin =
+      groups.some((g) => ['administrators', 'admin', 'admins'].includes(g.toLowerCase())) ||
+      user.systemRole === SystemRole.ADMIN;
+
     const payload = {
       sub: user.id,
       email: user.email,
       role: user.systemRole,
+      groups,
+      isAdmin,
       tokenVersion: user.tokenVersion ?? 0,
     };
 
@@ -707,6 +723,10 @@ export class AuthService {
         fullName: user.fullName,
         email: user.email,
         systemRole: user.systemRole,
+        jobTitle: user.jobTitle,
+        avatarUrl: user.avatarUrl,
+        groups,
+        isAdmin,
         isActivated: user.isActivated,
         isBlocked: user.isBlocked,
         twoFactorEnabled: user.twoFactorEnabled,

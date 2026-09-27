@@ -6,9 +6,12 @@ import { SavedFilter } from './entities/saved-filter.entity.js';
 import { UsersService } from './users.service.js';
 import { UsersController } from './users.controller.js';
 
+import { Group } from '../rbac/entities/group.entity.js';
+import { UserGroup } from '../rbac/entities/user-group.entity.js';
+
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, SavedFilter]),
+    TypeOrmModule.forFeature([User, SavedFilter, Group, UserGroup]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
   ],
   controllers: [UsersController],

@@ -126,6 +126,13 @@ export class Issue {
   @OneToMany('Worklog', 'issue')
   worklogs: Worklog[];
 
+  @Column({ name: 'security_level_id', type: 'int', nullable: true })
+  securityLevelId: number | null;
+
+  @ManyToOne('IssueSecurityLevel', { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'security_level_id' })
+  securityLevel: any;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 

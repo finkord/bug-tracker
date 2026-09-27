@@ -28,6 +28,8 @@ This repository directory contains the production implementation of a lightweigh
 ## Documentation Index
 
 - **[info/services/auth/README.md](file:///home/finkord/dev/PPofSE/software/info/services/auth/README.md)** — **Authentication & Security Service**: Complete technical specification (dependencies, database schema, module architecture, sequence diagrams, all 7 SDSecurity Lab 6 tasks).
+- **[info/services/seeding/README.md](file:///home/finkord/dev/PPofSE/software/info/services/seeding/README.md)** — **Database Seeding & Realistic Dataset Generator**: 5 engineering teams (`UI`, `CORE`, `MON`, `INFRA`, `NET`), 30 engineers, 46 sprint tickets, 18 links, and 70 worklogs.
+- **[info/services/time-tracking/README.md](file:///home/finkord/dev/PPofSE/software/info/services/time-tracking/README.md)** — **Time Tracking & Effort Forensics Subsystem**: Timesheet matrix, worklog aggregations, calendar views.
 - **[info/default_instructions.md](file:///home/finkord/dev/PPofSE/software/info/default_instructions.md)** — Core AI agent context, strict engineering standards, and stack reference.
 - **[info/TECH_STACK_AND_AUTH_PREPARATION.md](file:///home/finkord/dev/PPofSE/software/info/TECH_STACK_AND_AUTH_PREPARATION.md)** — Architectural design, backend & frontend evaluation, SDSecurity mapping, and capacity planning.
 - **[info/commands.bash](file:///home/finkord/dev/PPofSE/software/info/commands.bash)** — Reference CLI commands and operational scripts.

@@ -1,0 +1,95 @@
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+} from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { DataSource } from 'typeorm';
+import { REQUIRE_PROJECT_PERMISSION_KEY } from '../decorators/require-permission.decorator.js';
+import { ProjectPermission } from '../entities/permission-grant.entity.js';
+import { PermissionEvaluatorService } from '../services/permission-evaluator.service.js';
+import { Issue } from '../../issues/entities/issue.entity.js';
+
+@Injectable()
+export class ProjectPermissionGuard implements CanActivate {
+  constructor(
+    private readonly reflector: Reflector,
+    private readonly permissionEvaluator: PermissionEvaluatorService,
+    private readonly dataSource: DataSource,
+  ) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const requiredPermission = this.reflector.getAllAndOverride<ProjectPermission>(
+      REQUIRE_PROJECT_PERMISSION_KEY,
+      [context.getHandler(), context.getClass()],
+    );
+
+    if (!requiredPermission) {
+      return true;
+    }
+
+    const request = context.switchToHttp().getRequest();
+    const user = request.user;
+    if (!user) {
+      throw new ForbiddenException('User authentication required');
+    }
+
+    let projectId: number | undefined = undefined;
+    let issueId: number | undefined = undefined;
+
+    // 1. Explicit body projectId (e.g. POST /issues)
+    if (request.body?.projectId) {
+      projectId = Number(request.body.projectId);
+    }
+
+    // 2. Explicit route params
+    if (request.params?.projectId) {
+      projectId = Number(request.params.projectId);
+    }
+    if (request.params?.issueId) {
+      issueId = Number(request.params.issueId);
+    }
+
+    // 3. Resolve from :id depending on route context
+    if (request.params?.id) {
+      const idVal = Number(request.params.id);
+      const url = request.originalUrl || request.url || '';
+      if (url.includes('/projects/')) {
+        projectId = idVal;
+      } else if (url.includes('/issues/')) {
+        issueId = idVal;
+      }
+    }
+
+    // 4. If issueId is known but projectId is not, resolve issue from DB
+    if (!projectId && issueId) {
+      const issue = await this.dataSource.getRepository(Issue).findOne({
+        where: { id: issueId },
+        select: { id: true, projectId: true },
+      });
+      if (issue) {
+        projectId = issue.projectId;
+      }
+    }
+
+    if (!projectId) {
+      return true;
+    }
+
+    const hasAccess = await this.permissionEvaluator.hasPermission({
+      userId: user.id,
+      projectId,
+      permission: requiredPermission,
+      issueId,
+    });
+
+    if (!hasAccess) {
+      throw new ForbiddenException(
+        `You do not have the required permission (${requiredPermission}) to perform this action in this project.`,
+      );
+    }
+
+    return true;
+  }
+}
