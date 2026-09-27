@@ -12,6 +12,7 @@ export interface ModalProps {
   footer?: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
   className?: string;
+  bodyClassName?: string;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -23,6 +24,7 @@ export const Modal: React.FC<ModalProps> = ({
   footer,
   size = 'md',
   className,
+  bodyClassName,
 }) => {
   const sizeStyles: Record<NonNullable<ModalProps['size']>, string> = {
     sm: 'max-w-md',
@@ -45,18 +47,20 @@ export const Modal: React.FC<ModalProps> = ({
               'w-full bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)]',
               'border border-[var(--md-sys-color-outline-variant)] rounded-2xl shadow-xl',
               'transition-all duration-200 animate-in fade-in zoom-in-95 focus:outline-none',
-              'flex flex-col max-h-[90vh]',
+              'flex flex-col max-h-[90vh] overflow-hidden',
               sizeStyles[size],
               className,
             )}
           >
             {/* Header */}
             {(title || description) && (
-              <div className="px-6 py-4 border-b border-[var(--md-sys-color-outline-variant)] flex items-start justify-between gap-4 shrink-0">
-                <div className="flex flex-col gap-1">
+              <div className="px-6 py-4 border-b border-[var(--md-sys-color-outline-variant)] flex items-center justify-between gap-4 shrink-0">
+                <div className="flex flex-col gap-1 flex-1 min-w-0">
                   {title && (
-                    <Dialog.Title className="text-lg font-semibold tracking-tight text-[var(--md-sys-color-on-surface)]">
-                      {title}
+                    <Dialog.Title asChild>
+                      <div className="text-lg font-semibold tracking-tight text-[var(--md-sys-color-on-surface)] flex-1 min-w-0">
+                        {title}
+                      </div>
                     </Dialog.Title>
                   )}
                   {description && (
@@ -80,7 +84,7 @@ export const Modal: React.FC<ModalProps> = ({
             )}
 
             {/* Scrollable Body */}
-            <div className="p-6 overflow-y-auto flex-1">{children}</div>
+            <div className={cn('p-6 overflow-y-auto flex-1 min-h-0', bodyClassName)}>{children}</div>
 
             {/* Footer */}
             {footer && (

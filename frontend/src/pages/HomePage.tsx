@@ -10,9 +10,16 @@ import {
 } from '../api/client';
 import { Avatar } from '../components/common/Avatar';
 import { IssueDetailsModal } from '../components/kanban/IssueDetailsModal';
-import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
-import { Badge } from '../components/ui/Badge';
+import {
+  Card,
+  Button,
+  Badge,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '../components/ui';
 import {
   Shield,
   ArrowRight,
@@ -339,19 +346,25 @@ export const HomePage: React.FC = () => {
                       </Badge>
 
                       {/* Quick Status Select */}
-                      <select
-                        aria-label={`Status for ${issue.key}`}
-                        value={issue.status}
-                        onClick={(e) => e.stopPropagation()}
-                        onChange={(e) => handleStatusChange(issue.id, e.target.value as IssueStatus)}
-                        className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] cursor-pointer border border-[var(--md-sys-color-outline-variant)]/40 outline-none"
-                      >
-                        <option value="OPEN">To Do</option>
-                        <option value="IN_PROGRESS">In Progress</option>
-                        <option value="REVIEW">Review</option>
-                        <option value="RESOLVED">Resolved</option>
-                        <option value="CLOSED">Closed</option>
-                      </select>
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <Select
+                          value={issue.status}
+                          onValueChange={(val) =>
+                            handleStatusChange(issue.id, val as IssueStatus)
+                          }
+                        >
+                          <SelectTrigger size="sm" className="rounded-full bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container)] text-xs font-semibold h-7 border-[var(--md-sys-color-outline-variant)]/40">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="OPEN">To Do</SelectItem>
+                            <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                            <SelectItem value="REVIEW">Review</SelectItem>
+                            <SelectItem value="RESOLVED">Resolved</SelectItem>
+                            <SelectItem value="CLOSED">Closed</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
 
                       <Link
                         to={`/issues/${issue.key || issue.id}`}

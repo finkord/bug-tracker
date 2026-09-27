@@ -11,11 +11,11 @@ export const TabsList = React.forwardRef<
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      'inline-flex items-center select-none',
+      'inline-flex items-center select-none overflow-x-auto max-w-full no-scrollbar shrink-0',
       variant === 'pills' &&
         'p-1 gap-1 rounded-xl bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] border border-[var(--md-sys-color-outline-variant)]/20',
       variant === 'underline' &&
-        'border-b border-[var(--md-sys-color-outline-variant)]/30 gap-6 w-full',
+        'border-b border-[var(--md-sys-color-outline-variant)]/30 gap-4 sm:gap-6 w-full min-w-0',
       className,
     )}
     {...props}
@@ -43,7 +43,7 @@ export const TabsTrigger = React.forwardRef<
           'data-[state=active]:bg-[var(--md-sys-color-surface-container-lowest)] dark:data-[state=active]:bg-[var(--md-sys-color-surface-container-lowest)] data-[state=active]:text-[var(--md-sys-color-on-surface)] data-[state=active]:shadow-xs',
         ],
         variant === 'underline' && [
-          'py-3 text-sm font-medium border-b-2 border-transparent text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]',
+          'py-3 text-sm font-medium border-b-2 border-transparent -mb-px text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] transition-all',
           'data-[state=active]:border-[var(--md-sys-color-primary)] data-[state=active]:text-[var(--md-sys-color-primary)] data-[state=active]:font-bold',
         ],
         className,

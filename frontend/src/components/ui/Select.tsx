@@ -100,20 +100,20 @@ export const SelectItem = React.forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      'relative flex w-full cursor-pointer select-none items-center rounded-lg py-2 pl-8 pr-2.5 text-xs font-medium outline-none transition-colors',
+      'relative flex w-full cursor-pointer select-none items-center rounded-lg py-2 pl-3 pr-8 text-xs font-medium outline-none transition-colors',
       'focus:bg-[var(--md-sys-color-surface-container-highest)] focus:text-[var(--md-sys-color-on-surface)]',
       'data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
       className,
     )}
     {...props}
   >
-    <span className="absolute left-2.5 flex h-3.5 w-3.5 items-center justify-center">
+    <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+
+    <span className="absolute right-2.5 flex h-3.5 w-3.5 items-center justify-center">
       <SelectPrimitive.ItemIndicator>
         <Check className="h-4 w-4 text-[var(--md-sys-color-primary)]" />
       </SelectPrimitive.ItemIndicator>
     </span>
-
-    <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
   </SelectPrimitive.Item>
 ));
 SelectItem.displayName = SelectPrimitive.Item.displayName;
@@ -173,7 +173,7 @@ export const SelectField: React.FC<SelectFieldProps> = ({
         </label>
       )}
       <Select
-        value={value}
+        value={value !== undefined && value !== null ? String(value) : undefined}
         defaultValue={defaultValue}
         onValueChange={onValueChange}
         disabled={disabled}
@@ -184,10 +184,14 @@ export const SelectField: React.FC<SelectFieldProps> = ({
         <SelectContent>
           {options.map((opt) => (
             <SelectItem key={opt.value} value={opt.value} disabled={opt.disabled}>
-              <div className="flex items-center gap-2">
-                {opt.icon && <span className="shrink-0">{opt.icon}</span>}
-                <span>{opt.label}</span>
-              </div>
+              {opt.icon ? (
+                <span className="flex items-center gap-2">
+                  {opt.icon}
+                  <span>{opt.label}</span>
+                </span>
+              ) : (
+                opt.label
+              )}
             </SelectItem>
           ))}
         </SelectContent>

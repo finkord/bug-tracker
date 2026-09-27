@@ -1,6 +1,6 @@
 import { realtimeSocket } from '../api/socket';
-import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   api,
   type IssueItem,
@@ -8,28 +8,22 @@ import {
   type IssueStatus,
 } from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import { IssueCard } from '../components/kanban/IssueCard';
 import { IssueModal } from '../components/kanban/IssueModal';
 import { IssueDetailsModal } from '../components/kanban/IssueDetailsModal';
-import {
-  Kanban,
-  Plus,
-  Search,
-  RefreshCw,
-  Layers,
-  BookmarkPlus,
-  CheckCircle2,
-  Loader2,
-} from 'lucide-react';
-import { Button, Tooltip, Badge } from '../components/ui';
+import { KanbanToolbar } from '../components/kanban/KanbanToolbar';
+import { KanbanFlatBoard } from '../components/kanban/KanbanFlatBoard';
+import { KanbanSwimlaneBoard } from '../components/kanban/KanbanSwimlaneBoard';
+import { KanbanMobileView } from '../components/kanban/KanbanMobileView';
+import { KanbanBoardSettingsModal } from '../components/kanban/KanbanBoardSettingsModal';
+import type {
+  KanbanSettings,
+  QuickFilterState,
+  BoardViewMode,
+} from '../types/kanban';
+import { DEFAULT_KANBAN_SETTINGS } from '../types/kanban';
+import { CheckCircle2 } from 'lucide-react';
 
-const COLUMNS: { status: IssueStatus; title: string; badgeVariant: 'open' | 'in-progress' | 'review' | 'resolved' | 'closed' }[] = [
-  { status: 'OPEN', title: 'To Do', badgeVariant: 'open' },
-  { status: 'IN_PROGRESS', title: 'In Progress', badgeVariant: 'in-progress' },
-  { status: 'REVIEW', title: 'Code Review', badgeVariant: 'review' },
-  { status: 'RESOLVED', title: 'Resolved', badgeVariant: 'resolved' },
-  { status: 'CLOSED', title: 'Closed', badgeVariant: 'closed' },
-];
+const SETTINGS_STORAGE_KEY = 'bt_kanban_settings';
 
 export const KanbanBoardPage: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -37,27 +31,87 @@ export const KanbanBoardPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  // Project and issues state
   const [projects, setProjects] = useState<ProjectItem[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<number | 'ALL'>(
     projectId ? Number(projectId) : 'ALL',
   );
-
   const [issues, setIssues] = useState<IssueItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Filters
+  // Responsive screen detection (<640px is mobile single column / tab mode)
+  const [isMobile, setIsMobile] = useState<boolean>(
+    typeof window !== 'undefined' ? window.innerWidth < 640 : false,
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Board Settings State with localStorage persistence
+  const [settings, setSettings] = useState<KanbanSettings>(() => {
+    try {
+      const stored = localStorage.getItem(SETTINGS_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return { ...DEFAULT_KANBAN_SETTINGS, ...parsed };
+      }
+    } catch {
+      // Fallback to default
+    }
+    return DEFAULT_KANBAN_SETTINGS;
+  });
+
+  // URL query param override for view mode (e.g. ?view=swimlanes or ?view=flat)
+  useEffect(() => {
+    const viewParam = searchParams.get('view') as BoardViewMode | null;
+    if (viewParam && (viewParam === 'flat' || viewParam === 'swimlanes')) {
+      if (settings.viewMode !== viewParam) {
+        setSettings((prev) => ({ ...prev, viewMode: viewParam }));
+      }
+    }
+  }, [searchParams]);
+
+  // Persist settings whenever they change
+  const handleUpdateSettings = (newSettings: KanbanSettings) => {
+    setSettings(newSettings);
+    try {
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(newSettings));
+    } catch {
+      // Ignored
+    }
+  };
+
+  // Filters State
   const [searchTerm, setSearchTerm] = useState<string>(searchParams.get('search') || '');
   const [filterType, setFilterType] = useState<string>(searchParams.get('issueType') || 'ALL');
   const [filterPriority, setFilterPriority] = useState<string>(searchParams.get('priority') || 'ALL');
+  const [quickFilters, setQuickFilters] = useState<QuickFilterState>({
+    onlyMine: false,
+    unassignedOnly: false,
+    highPriorityOnly: false,
+  });
+
+  const handleToggleQuickFilter = (key: keyof QuickFilterState) => {
+    setQuickFilters((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
 
   // Modals state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
+  const [defaultCreateAssigneeId, setDefaultCreateAssigneeId] = useState<number | null>(null);
+  const [defaultCreateStatus, setDefaultCreateStatus] = useState<IssueStatus | null>(null);
   const [editingIssue, setEditingIssue] = useState<IssueItem | null>(null);
   const [selectedIssueId, setSelectedIssueId] = useState<number | null>(null);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState<boolean>(false);
 
-  // Drag and drop state
-  const [dragOverColumn, setDragOverColumn] = useState<IssueStatus | null>(null);
   const [filterSavedMsg, setFilterSavedMsg] = useState<string | null>(null);
 
   // Load projects list
@@ -68,15 +122,13 @@ export const KanbanBoardPage: React.FC = () => {
         if (projectId) {
           const found = data.find((p) => p.id === Number(projectId));
           if (found) setSelectedProjectId(found.id);
-        } else if (data.length > 0 && selectedProjectId === 'ALL') {
-          // Keep ALL as default
         }
       })
       .catch(() => {});
   }, [projectId]);
 
   // Load issues
-  const loadIssues = async () => {
+  const loadIssues = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -89,11 +141,11 @@ export const KanbanBoardPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedProjectId]);
 
   useEffect(() => {
     loadIssues();
-  }, [selectedProjectId]);
+  }, [loadIssues]);
 
   // Real-time WebSocket synchronization across users and browser tabs
   useEffect(() => {
@@ -136,11 +188,25 @@ export const KanbanBoardPage: React.FC = () => {
     };
   }, [selectedProjectId]);
 
-  // Client-side filtering
+  // Client-side filtering logic
   const filteredIssues = useMemo(() => {
     return issues.filter((issue) => {
+      // Type filter
       if (filterType !== 'ALL' && issue.issueType !== filterType) return false;
+
+      // Priority filter
       if (filterPriority !== 'ALL' && issue.priority !== filterPriority) return false;
+
+      // Quick filter: Only My Issues
+      if (quickFilters.onlyMine && user && issue.assignee?.id !== user.id) return false;
+
+      // Quick filter: Unassigned Only
+      if (quickFilters.unassignedOnly && issue.assignee !== null && issue.assignee !== undefined) return false;
+
+      // Quick filter: High / Critical Priority Only
+      if (quickFilters.highPriorityOnly && issue.priority !== 'CRITICAL' && issue.priority !== 'HIGH') return false;
+
+      // Search term
       if (searchTerm.trim()) {
         const term = searchTerm.toLowerCase();
         const matchTitle = issue.title.toLowerCase().includes(term);
@@ -148,17 +214,89 @@ export const KanbanBoardPage: React.FC = () => {
         const matchDesc = issue.description?.toLowerCase().includes(term) ?? false;
         if (!matchTitle && !matchKey && !matchDesc) return false;
       }
+
       return true;
     });
-  }, [issues, filterType, filterPriority, searchTerm]);
+  }, [issues, filterType, filterPriority, quickFilters, searchTerm, user]);
 
   // Status transition handler
   const handleStatusChange = async (issueId: number, nextStatus: IssueStatus) => {
+    const original = issues.find((i) => i.id === issueId);
+    if (!original || original.status === nextStatus) return;
+
+    // Optimistic update
+    setIssues((prev) => prev.map((i) => (i.id === issueId ? { ...i, status: nextStatus } : i)));
+
     try {
       const updated = await api.updateIssueStatus(issueId, nextStatus);
       setIssues((prev) => prev.map((i) => (i.id === issueId ? updated : i)));
     } catch (err: any) {
+      // Rollback
+      setIssues((prev) => prev.map((i) => (i.id === issueId ? original : i)));
       setError(err.message || 'Failed to transition issue status');
+    }
+  };
+
+  // Cross-swimlane and cross-status change handler
+  const handleAssigneeAndStatusChange = async (
+    issueId: number,
+    newAssigneeId: number | null,
+    nextStatus: IssueStatus,
+  ) => {
+    const original = issues.find((i) => i.id === issueId);
+    if (!original) return;
+
+    const isSameAssignee = (original.assignee?.id ?? null) === newAssigneeId;
+    const isSameStatus = original.status === nextStatus;
+
+    if (isSameAssignee && isSameStatus) return;
+
+    // Optimistic update
+    setIssues((prev) =>
+      prev.map((i) => {
+        if (i.id !== issueId) return i;
+        let newAssignee = i.assignee;
+        if (!isSameAssignee) {
+          if (newAssigneeId === null) {
+            newAssignee = null;
+          } else {
+            // Find assignee details from other issues if available
+            const foundUserIssue = issues.find((other) => other.assignee?.id === newAssigneeId);
+            newAssignee = foundUserIssue?.assignee || {
+              id: newAssigneeId,
+              fullName: `User #${newAssigneeId}`,
+              email: '',
+            };
+          }
+        }
+        return {
+          ...i,
+          status: nextStatus,
+          assignee: newAssignee,
+        };
+      }),
+    );
+
+    try {
+      // If assignee changed, update assignee
+      if (!isSameAssignee) {
+        await api.updateIssue(issueId, {
+          assigneeId: newAssigneeId === null ? undefined : newAssigneeId,
+        });
+      }
+
+      // If status changed, update status
+      if (!isSameStatus) {
+        await api.updateIssueStatus(issueId, nextStatus);
+      }
+
+      // Fetch fresh issue data to guarantee consistency
+      const fresh = await api.getIssue(issueId);
+      setIssues((prev) => prev.map((i) => (i.id === issueId ? fresh : i)));
+    } catch (err: any) {
+      // Rollback
+      setIssues((prev) => prev.map((i) => (i.id === issueId ? original : i)));
+      setError(err.message || 'Failed to update issue');
     }
   };
 
@@ -172,33 +310,20 @@ export const KanbanBoardPage: React.FC = () => {
     }
   };
 
-  // Drag and drop handlers
-  const handleDragOver = (e: React.DragEvent, status: IssueStatus) => {
-    e.preventDefault();
-    if (dragOverColumn !== status) setDragOverColumn(status);
-  };
-
-  const handleDragLeave = (e: React.DragEvent, status: IssueStatus) => {
-    e.preventDefault();
-    if (dragOverColumn === status) setDragOverColumn(null);
-  };
-
-  const handleDrop = async (e: React.DragEvent, status: IssueStatus) => {
-    e.preventDefault();
-    setDragOverColumn(null);
-    const issueIdStr = e.dataTransfer.getData('text/plain');
-    if (!issueIdStr) return;
-
-    const issueId = Number(issueIdStr);
-    const target = issues.find((i) => i.id === issueId);
-    if (!target || target.status === status) return;
-
-    await handleStatusChange(issueId, status);
+  // Quick add button handler in specific column or swimlane
+  const handleQuickAddInStatus = (status: IssueStatus, assigneeId?: number | null) => {
+    setEditingIssue(null);
+    setDefaultCreateStatus(status);
+    setDefaultCreateAssigneeId(assigneeId ?? null);
+    setIsCreateModalOpen(true);
   };
 
   // Save current filter query
   const handleSaveCurrentFilter = async () => {
-    const filterName = prompt('Enter a name for this custom filter:', `Filter: ${filterType !== 'ALL' ? filterType : ''} ${filterPriority !== 'ALL' ? filterPriority : ''}`);
+    const filterName = prompt(
+      'Enter a name for this custom filter:',
+      `Filter: ${filterType !== 'ALL' ? filterType : ''} ${filterPriority !== 'ALL' ? filterPriority : ''}`,
+    );
     if (!filterName || !filterName.trim()) return;
 
     try {
@@ -215,207 +340,101 @@ export const KanbanBoardPage: React.FC = () => {
     }
   };
 
-  const activeProject = typeof selectedProjectId === 'number' ? projects.find((p) => p.id === selectedProjectId) : null;
+  const handleSelectProject = (val: number | 'ALL') => {
+    setSelectedProjectId(val);
+    if (typeof val === 'number') navigate(`/projects/${val}/board`);
+    else navigate('/board');
+  };
+
+  const activeProject =
+    typeof selectedProjectId === 'number'
+      ? projects.find((p) => p.id === selectedProjectId) || null
+      : null;
 
   return (
-    <div className="max-w-[1700px] mx-auto px-4 py-6 flex flex-col min-h-[calc(100vh-8rem)] animate-in fade-in duration-200">
-      {/* Top Action Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-[var(--md-sys-color-outline-variant)]">
-        {/* Left: Title & Project Selector */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center font-bold shadow-xs">
-            <Kanban className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="text-xl font-extrabold text-[var(--md-sys-color-on-surface)] leading-tight">
-              Kanban Board
-            </h1>
-            <div className="flex items-center gap-2 mt-0.5">
-              <select
-                aria-label="Workspace selector"
-                value={selectedProjectId}
-                onChange={(e) => {
-                  const val = e.target.value === 'ALL' ? 'ALL' : Number(e.target.value);
-                  setSelectedProjectId(val);
-                  if (typeof val === 'number') navigate(`/projects/${val}/board`);
-                  else navigate('/board');
-                }}
-                className="text-xs font-semibold px-3.5 py-1.5 rounded-full bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] cursor-pointer border-0 outline-none"
-              >
-                <option value="ALL">All Workspaces</option>
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    [{p.key}] {p.name}
-                  </option>
-                ))}
-              </select>
+    <div className="w-full min-h-full flex flex-col px-3 sm:px-5 py-4 animate-in fade-in duration-200">
+      {/* Kanban Action Toolbar */}
+      <KanbanToolbar
+        projects={projects}
+        selectedProjectId={selectedProjectId}
+        onSelectProject={handleSelectProject}
+        activeProject={activeProject}
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        filterType={filterType}
+        onFilterTypeChange={setFilterType}
+        filterPriority={filterPriority}
+        onFilterPriorityChange={setFilterPriority}
+        quickFilters={quickFilters}
+        onToggleQuickFilter={handleToggleQuickFilter}
+        settings={settings}
+        onUpdateSettings={handleUpdateSettings}
+        onOpenSettingsModal={() => setIsSettingsModalOpen(true)}
+        onRefresh={loadIssues}
+        onSaveCurrentFilter={handleSaveCurrentFilter}
+        loading={loading}
+        totalFilteredCount={filteredIssues.length}
+      />
 
-              {activeProject && (
-                <Link
-                  to={`/projects/${activeProject.id}/backlog`}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--md-sys-color-primary-container)]/40 text-[11px] font-semibold text-[var(--md-sys-color-primary)] hover:bg-[var(--md-sys-color-primary-container)]/70 transition-colors"
-                >
-                  <Layers className="w-3.5 h-3.5" />
-                  <span>Agile Backlog</span>
-                </Link>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Right: Search, Filters, and New Issue Button */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          {/* Search Input */}
-          <div className="relative min-w-[160px] sm:min-w-[200px]">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--md-sys-color-on-surface-variant)]" />
-            <input
-              type="text"
-              placeholder="Search title, key..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-8 pr-3.5 py-1.5 rounded-full bg-[var(--md-sys-color-surface-container)] focus:bg-[var(--md-sys-color-surface-container-high)] text-xs text-[var(--md-sys-color-on-surface)] border-0 focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] transition-all font-medium"
-            />
-          </div>
-
-          {/* Type Filter */}
-          <select
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-            className="px-3.5 py-1.5 rounded-full text-xs bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border-0 outline-none cursor-pointer"
-          >
-            <option value="ALL">All Types</option>
-            <option value="BUG">🐛 Bug</option>
-            <option value="TASK">📋 Task</option>
-            <option value="FEATURE">🚀 Feature</option>
-            <option value="IMPROVEMENT">⚡ Improvement</option>
-          </select>
-
-          {/* Priority Filter */}
-          <select
-            value={filterPriority}
-            onChange={(e) => setFilterPriority(e.target.value)}
-            className="px-3.5 py-1.5 rounded-full text-xs bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border-0 outline-none cursor-pointer"
-          >
-            <option value="ALL">All Priorities</option>
-            <option value="CRITICAL">Critical</option>
-            <option value="HIGH">High</option>
-            <option value="MEDIUM">Medium</option>
-            <option value="LOW">Low</option>
-          </select>
-
-          {/* Save Filter Button */}
-          {(filterType !== 'ALL' || filterPriority !== 'ALL' || searchTerm.trim()) && (
-            <Tooltip content="Save current filter to Personal Dashboard">
-              <button
-                type="button"
-                onClick={handleSaveCurrentFilter}
-                className="p-1.5 rounded-full text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] hover:bg-[var(--md-sys-color-surface-container-high)] transition-colors cursor-pointer"
-                aria-label="Save current filter"
-              >
-                <BookmarkPlus className="w-4 h-4" />
-              </button>
-            </Tooltip>
-          )}
-
-          {/* Refresh Button */}
-          <Tooltip content="Refresh board issues">
-            <button
-              onClick={loadIssues}
-              disabled={loading}
-              className="p-2 rounded-full text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] transition-colors cursor-pointer disabled:opacity-50"
-              aria-label="Refresh board"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            </button>
-          </Tooltip>
-
-          {/* Create Issue Button */}
-          <Button
-            onClick={() => {
-              setEditingIssue(null);
-              setIsCreateModalOpen(true);
-            }}
-            variant="filled"
-            size="sm"
-            leftIcon={<Plus className="w-3.5 h-3.5" />}
-          >
-            New Issue
-          </Button>
-        </div>
-      </div>
-
+      {/* Filter Saved Feedback Banner */}
       {filterSavedMsg && (
-        <div className="mt-3 p-3 rounded-2xl bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] text-xs font-semibold flex items-center gap-2 animate-in fade-in">
+        <div className="mt-2.5 p-3 rounded-2xl bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] text-xs font-semibold flex items-center gap-2 animate-in fade-in shrink-0">
           <CheckCircle2 className="w-4 h-4 shrink-0" />
           <span>{filterSavedMsg}</span>
         </div>
       )}
 
-      {/* Error Banner */}
+      {/* Error Alert Banner */}
       {error && (
-        <div className="mt-3 p-3 rounded-2xl bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] text-xs">
-          {error}
+        <div className="mt-2.5 p-3 rounded-2xl bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] text-xs shrink-0 flex items-center justify-between">
+          <span>{error}</span>
+          <button
+            type="button"
+            onClick={() => setError(null)}
+            className="text-xs font-bold underline cursor-pointer ml-2"
+          >
+            Dismiss
+          </button>
         </div>
       )}
 
-      {/* Kanban Columns Grid */}
-      <div className="flex-1 mt-4 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 overflow-x-auto pb-4">
-        {COLUMNS.map((col) => {
-          const colIssues = filteredIssues.filter((i) => i.status === col.status);
-          const isOver = dragOverColumn === col.status;
-
-          return (
-            <div
-              key={col.status}
-              onDragOver={(e) => handleDragOver(e, col.status)}
-              onDragLeave={(e) => handleDragLeave(e, col.status)}
-              onDrop={(e) => handleDrop(e, col.status)}
-              className={`flex flex-col min-w-[260px] rounded-3xl bg-[var(--md-sys-color-surface-container-low)] transition-all duration-200 shadow-xs ${
-                isOver
-                  ? 'ring-2 ring-[var(--md-sys-color-primary)] shadow-md bg-[var(--md-sys-color-surface-container)]'
-                  : ''
-              }`}
-            >
-              {/* Column Header */}
-              <div className="flex items-center justify-between px-4 py-3.5 border-b border-[var(--md-sys-color-surface-container-high)]">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-bold text-xs uppercase tracking-wider text-[var(--md-sys-color-on-surface)]">
-                    {col.title}
-                  </h3>
-                  <Badge variant={col.badgeVariant} size="sm" className="px-2 py-0.5 rounded-full font-bold">
-                    {colIssues.length}
-                  </Badge>
-                </div>
-              </div>
-
-              {/* Column Issue Cards Container */}
-              <div className="flex-1 p-3 space-y-3 overflow-y-auto min-h-[300px]">
-                {loading ? (
-                  <div className="flex flex-col items-center justify-center py-10 gap-2">
-                    <Loader2 className="w-5 h-5 animate-spin text-[var(--md-sys-color-primary)]" />
-                    <span className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">Loading...</span>
-                  </div>
-                ) : colIssues.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-32 rounded-2xl bg-[var(--md-sys-color-surface-container)]/40 text-center p-3 text-xs text-[var(--md-sys-color-on-surface-variant)]">
-                    <span>No issues</span>
-                    <span className="text-[10px] opacity-70 mt-0.5">Drag tickets here</span>
-                  </div>
-                ) : (
-                  colIssues.map((issue) => (
-                    <IssueCard
-                      key={issue.id}
-                      issue={issue}
-                      onClick={(item) => setSelectedIssueId(item.id)}
-                      onStatusChange={handleStatusChange}
-                      onAssignToMe={handleAssignToMe}
-                      currentUserId={user?.id}
-                    />
-                  ))
-                )}
-              </div>
-            </div>
-          );
-        })}
+      {/* Main Board Surface (Responsive Render) */}
+      <div className="flex-1 flex flex-col mt-2">
+        {isMobile ? (
+          <KanbanMobileView
+            issues={filteredIssues}
+            loading={loading}
+            settings={settings}
+            onSelectIssue={(issue) => setSelectedIssueId(issue.id)}
+            onStatusChange={handleStatusChange}
+            onAssignToMe={handleAssignToMe}
+            onQuickAddInStatus={handleQuickAddInStatus}
+            currentUserId={user?.id}
+          />
+        ) : settings.viewMode === 'swimlanes' ? (
+          <KanbanSwimlaneBoard
+            issues={filteredIssues}
+            loading={loading}
+            settings={settings}
+            onSelectIssue={(issue) => setSelectedIssueId(issue.id)}
+            onStatusChange={handleStatusChange}
+            onAssigneeAndStatusChange={handleAssigneeAndStatusChange}
+            onAssignToMe={handleAssignToMe}
+            onQuickAddInStatus={handleQuickAddInStatus}
+            currentUserId={user?.id}
+          />
+        ) : (
+          <KanbanFlatBoard
+            issues={filteredIssues}
+            loading={loading}
+            settings={settings}
+            onSelectIssue={(issue) => setSelectedIssueId(issue.id)}
+            onStatusChange={handleStatusChange}
+            onAssignToMe={handleAssignToMe}
+            onQuickAddInStatus={handleQuickAddInStatus}
+            currentUserId={user?.id}
+          />
+        )}
       </div>
 
       {/* Issue Details Modal */}
@@ -441,16 +460,38 @@ export const KanbanBoardPage: React.FC = () => {
         onClose={() => {
           setIsCreateModalOpen(false);
           setEditingIssue(null);
+          setDefaultCreateAssigneeId(null);
+          setDefaultCreateStatus(null);
         }}
         onIssueSaved={(savedIssue) => {
           if (editingIssue) {
             setIssues((prev) => prev.map((i) => (i.id === savedIssue.id ? savedIssue : i)));
           } else {
-            setIssues((prev) => [savedIssue, ...prev]);
+            // If default status was selected, update status if needed
+            if (defaultCreateStatus && defaultCreateStatus !== savedIssue.status) {
+              api.updateIssueStatus(savedIssue.id, defaultCreateStatus)
+                .then((updated) => {
+                  setIssues((prev) => [updated, ...prev]);
+                })
+                .catch(() => {
+                  setIssues((prev) => [savedIssue, ...prev]);
+                });
+            } else {
+              setIssues((prev) => [savedIssue, ...prev]);
+            }
           }
         }}
         defaultProjectId={selectedProjectId === 'ALL' ? projects[0]?.id : selectedProjectId}
+        defaultAssigneeId={defaultCreateAssigneeId}
         editingIssue={editingIssue}
+      />
+
+      {/* Board Settings Modal */}
+      <KanbanBoardSettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        settings={settings}
+        onUpdateSettings={handleUpdateSettings}
       />
     </div>
   );

@@ -8,7 +8,18 @@ import { LogWorkModal } from '../components/kanban/LogWorkModal';
 import { IssueModal } from '../components/kanban/IssueModal';
 import { IssueLinksSection } from '../components/kanban/IssueLinksSection';
 import { MarkdownContent } from '../components/common/MarkdownContent';
-import { Card, Button, Badge, Tooltip, Modal } from '../components/ui';
+import {
+  Card,
+  Button,
+  Badge,
+  Tooltip,
+  Modal,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '../components/ui';
 import {
   ArrowLeft,
   Calendar,
@@ -428,18 +439,21 @@ export const IssueDetailPage: React.FC = () => {
               </div>
 
               {/* Status Selector */}
-              <select
-                aria-label="Workflow status selector"
+              <Select
                 value={issue.status}
-                onChange={(e) => handleStatusChange(e.target.value as IssueStatus)}
-                className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--md-sys-color-primary)]/20"
+                onValueChange={(val) => handleStatusChange(val as IssueStatus)}
               >
-                <option value="OPEN">To Do</option>
-                <option value="IN_PROGRESS">In Progress</option>
-                <option value="REVIEW">Code Review</option>
-                <option value="RESOLVED">Resolved</option>
-                <option value="CLOSED">Closed</option>
-              </select>
+                <SelectTrigger size="sm" className="rounded-lg bg-[var(--md-sys-color-surface-container)] text-xs font-semibold h-8 border-[var(--md-sys-color-outline-variant)]/40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="OPEN">To Do</SelectItem>
+                  <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                  <SelectItem value="REVIEW">Code Review</SelectItem>
+                  <SelectItem value="RESOLVED">Resolved</SelectItem>
+                  <SelectItem value="CLOSED">Closed</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <h1 className="text-xl sm:text-2xl font-bold text-[var(--md-sys-color-on-surface)] leading-tight">

@@ -103,7 +103,7 @@ export const Badge: React.FC<BadgeProps> = ({
   return (
     <span
       className={cn(
-        'inline-flex items-center font-semibold rounded-md border select-none transition-colors',
+        'inline-flex items-center font-semibold rounded-md border select-none transition-colors whitespace-nowrap shrink-0',
         currentVariant.badge,
         sizeStyles[size],
         className,
@@ -111,7 +111,7 @@ export const Badge: React.FC<BadgeProps> = ({
       {...props}
     >
       {dot && <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', currentVariant.dot)} />}
-      <span>{children}</span>
+      <span className="inline-flex items-center gap-1 leading-none whitespace-nowrap">{children}</span>
     </span>
   );
 };

@@ -16,7 +16,7 @@ import {
   Layers,
   UserPlus,
 } from 'lucide-react';
-import { Modal, Button } from '../ui';
+import { Modal, Button, Input, SelectField } from '../ui';
 
 interface IssueModalProps {
   isOpen: boolean;
@@ -24,6 +24,7 @@ interface IssueModalProps {
   onIssueSaved: (savedIssue: IssueItem) => void;
   editingIssue?: IssueItem | null;
   defaultProjectId?: number;
+  defaultAssigneeId?: number | null;
 }
 
 export const IssueModal: React.FC<IssueModalProps> = ({
@@ -32,6 +33,7 @@ export const IssueModal: React.FC<IssueModalProps> = ({
   onIssueSaved,
   editingIssue,
   defaultProjectId,
+  defaultAssigneeId,
 }) => {
   const { user } = useAuth();
   const [projects, setProjects] = useState<ProjectItem[]>([]);
@@ -88,10 +90,10 @@ export const IssueModal: React.FC<IssueModalProps> = ({
       setPriority('MEDIUM');
       setEstimatedHours('0');
       setSprint('Sprint 1');
-      setAssigneeId('');
+      setAssigneeId(defaultAssigneeId ?? '');
     }
     setValidationError(null);
-  }, [editingIssue, isOpen]);
+  }, [editingIssue, defaultAssigneeId, isOpen]);
 
   if (!isOpen) return null;
 
@@ -181,27 +183,21 @@ export const IssueModal: React.FC<IssueModalProps> = ({
 
         {/* Project & Assignee row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] mb-1">
-              Project *
-            </label>
-            <select
-              value={projectId}
-              onChange={(e) => setProjectId(Number(e.target.value))}
-              disabled={!!editingIssue}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] text-sm focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] disabled:opacity-60"
-            >
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  [{p.key}] {p.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <SelectField
+            label="Project *"
+            placeholder="Select project..."
+            disabled={Boolean(editingIssue)}
+            value={projects.some((p) => p.id === projectId) ? String(projectId) : projects.length > 0 ? String(projects[0].id) : ''}
+            onValueChange={(val) => setProjectId(Number(val))}
+            options={projects.map((p) => ({
+              value: String(p.id),
+              label: `[${p.key}] ${p.name}`,
+            }))}
+          />
 
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)]">
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider select-none">
                 Assignee
               </label>
               {user && assigneeId !== user.id && (
@@ -215,103 +211,79 @@ export const IssueModal: React.FC<IssueModalProps> = ({
                 </button>
               )}
             </div>
-            <select
-              value={assigneeId}
-              onChange={(e) => setAssigneeId(e.target.value === '' ? '' : Number(e.target.value))}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] text-sm focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)]"
-            >
-              <option value="">Unassigned</option>
-              {assignees.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.fullName} ({u.email})
-                </option>
-              ))}
-            </select>
+            <SelectField
+              placeholder="Unassigned"
+              value={assigneeId ? String(assigneeId) : ''}
+              onValueChange={(val) => setAssigneeId(val ? Number(val) : '')}
+              options={[
+                { value: '', label: 'Unassigned' },
+                ...assignees.map((u) => ({
+                  value: String(u.id),
+                  label: `${u.fullName || u.email}`,
+                })),
+              ]}
+            />
           </div>
         </div>
 
         {/* Issue Title */}
-        <div>
-          <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] mb-1">
-            Issue Title *
-          </label>
-          <input
-            type="text"
-            required
-            maxLength={255}
-            placeholder="e.g. Memory leak during large payload ingestion"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] text-sm focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)]"
-          />
-        </div>
+        <Input
+          label="Issue Title *"
+          required
+          maxLength={255}
+          placeholder="e.g. Memory leak during large payload ingestion"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
 
         {/* Issue Attributes: Type, Priority, Severity */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] mb-1">
-              Issue Type
-            </label>
-            <select
-              value={issueType}
-              onChange={(e) => setIssueType(e.target.value as IssueType)}
-              className="w-full px-3 py-2 rounded-xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] text-xs focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)]"
-            >
-              <option value="BUG">🐛 Bug Report</option>
-              <option value="TASK">📋 Task</option>
-              <option value="FEATURE">🚀 Feature Request</option>
-              <option value="IMPROVEMENT">⚡ Improvement</option>
-            </select>
-          </div>
+          <SelectField
+            label="Issue Type"
+            value={issueType}
+            onValueChange={(val) => setIssueType(val as IssueType)}
+            options={[
+              { value: 'BUG', label: 'Bug Report' },
+              { value: 'TASK', label: 'Task' },
+              { value: 'FEATURE', label: 'Feature Request' },
+              { value: 'IMPROVEMENT', label: 'Improvement' },
+            ]}
+          />
 
-          <div>
-            <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] mb-1">
-              Priority
-            </label>
-            <select
-              value={priority}
-              onChange={(e) => setPriority(e.target.value as IssuePriority)}
-              className="w-full px-3 py-2 rounded-xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] text-xs focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)]"
-            >
-              <option value="LOW">Low</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="HIGH">High</option>
-              <option value="CRITICAL">Critical</option>
-            </select>
-          </div>
+          <SelectField
+            label="Priority"
+            value={priority}
+            onValueChange={(val) => setPriority(val as IssuePriority)}
+            options={[
+              { value: 'LOW', label: 'Low' },
+              { value: 'MEDIUM', label: 'Medium' },
+              { value: 'HIGH', label: 'High' },
+              { value: 'CRITICAL', label: 'Critical' },
+            ]}
+          />
         </div>
 
         {/* Time Tracking Estimate & Sprint */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] mb-1 flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
-              <span>Estimated Hours</span>
-            </label>
-            <input
-              type="number"
-              step="0.5"
-              min="0"
-              placeholder="e.g. 4.0"
-              value={estimatedHours}
-              onChange={(e) => setEstimatedHours(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] text-sm focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)]"
-            />
-          </div>
+          <Input
+            label="Estimated Hours"
+            type="number"
+            step="0.5"
+            min="0"
+            placeholder="e.g. 4.0"
+            value={estimatedHours}
+            onChange={(e) => setEstimatedHours(e.target.value)}
+            leftIcon={<Clock className="w-4 h-4 text-[var(--md-sys-color-primary)]" />}
+          />
 
-          <div>
-            <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] mb-1 flex items-center gap-1">
-              <Layers className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
-              <span>Sprint / Backlog</span>
-            </label>
-            <input
-              type="text"
-              placeholder="e.g. Sprint 1, or leave empty for Backlog"
-              value={sprint}
-              onChange={(e) => setSprint(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] text-sm focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)]"
-            />
-          </div>
+          <Input
+            label="Sprint / Backlog"
+            type="text"
+            placeholder="e.g. Sprint 1, or leave empty for Backlog"
+            value={sprint}
+            onChange={(e) => setSprint(e.target.value)}
+            leftIcon={<Layers className="w-4 h-4 text-[var(--md-sys-color-primary)]" />}
+          />
         </div>
 
         {/* Description */}

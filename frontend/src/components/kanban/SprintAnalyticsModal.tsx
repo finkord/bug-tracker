@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { IssueItem } from '../../api/client';
-import { Modal, Button, Badge } from '../ui';
+import { Modal, Button, Badge, Tabs, TabsList, TabsTrigger } from '../ui';
 import {
   TrendingDown,
   BarChart3,
@@ -128,6 +128,7 @@ export const SprintAnalyticsModal: React.FC<SprintAnalyticsModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       size="2xl"
+      bodyClassName="p-0 flex flex-col overflow-hidden"
       title={
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-primary-container)] flex items-center justify-center text-[var(--md-sys-color-on-primary-container)] shrink-0">
@@ -149,50 +150,46 @@ export const SprintAnalyticsModal: React.FC<SprintAnalyticsModalProps> = ({
         </div>
       }
     >
-      <div className="flex flex-col overflow-hidden -mx-6 -my-6">
+      {/* Tab Switcher - Borderless pills */}
+      <div className="px-6 pt-3 pb-1 bg-[var(--md-sys-color-surface-container)] shrink-0">
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => setActiveTab(v as 'BURNDOWN' | 'VELOCITY' | 'REPORT')}
+        >
+          <TabsList variant="pills" className="bg-transparent border-0 p-0 gap-1.5">
+            <TabsTrigger
+              value="BURNDOWN"
+              variant="pills"
+              size="sm"
+              className="rounded-full gap-1.5 font-bold data-[state=active]:bg-[var(--md-sys-color-primary-container)] data-[state=active]:text-[var(--md-sys-color-on-primary-container)]"
+            >
+              <TrendingDown className="w-3.5 h-3.5" />
+              <span>Burndown Curve</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="VELOCITY"
+              variant="pills"
+              size="sm"
+              className="rounded-full gap-1.5 font-bold data-[state=active]:bg-[var(--md-sys-color-primary-container)] data-[state=active]:text-[var(--md-sys-color-on-primary-container)]"
+            >
+              <BarChart3 className="w-3.5 h-3.5" />
+              <span>Team Velocity</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="REPORT"
+              variant="pills"
+              size="sm"
+              className="rounded-full gap-1.5 font-bold data-[state=active]:bg-[var(--md-sys-color-primary-container)] data-[state=active]:text-[var(--md-sys-color-on-primary-container)]"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <span>Executive Report</span>
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
 
-        {/* Tab Switcher */}
-        <div className="flex items-center gap-2 px-6 pt-4 border-b border-[var(--md-sys-color-outline-variant)] bg-[var(--md-sys-color-surface)]">
-          <button
-            type="button"
-            onClick={() => setActiveTab('BURNDOWN')}
-            className={`px-4 py-2 text-xs font-bold rounded-t-xl transition-all border-b-2 flex items-center gap-1.5 ${
-              activeTab === 'BURNDOWN'
-                ? 'border-[var(--md-sys-color-primary)] text-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-surface-container-high)]'
-                : 'border-transparent text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]'
-            }`}
-          >
-            <TrendingDown className="w-3.5 h-3.5" />
-            <span>Burndown Curve</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('VELOCITY')}
-            className={`px-4 py-2 text-xs font-bold rounded-t-xl transition-all border-b-2 flex items-center gap-1.5 ${
-              activeTab === 'VELOCITY'
-                ? 'border-[var(--md-sys-color-primary)] text-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-surface-container-high)]'
-                : 'border-transparent text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]'
-            }`}
-          >
-            <BarChart3 className="w-3.5 h-3.5" />
-            <span>Team Velocity</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('REPORT')}
-            className={`px-4 py-2 text-xs font-bold rounded-t-xl transition-all border-b-2 flex items-center gap-1.5 ${
-              activeTab === 'REPORT'
-                ? 'border-[var(--md-sys-color-primary)] text-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-surface-container-high)]'
-                : 'border-transparent text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]'
-            }`}
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5" />
-            <span>Executive Report</span>
-          </button>
-        </div>
-
-        {/* Modal Body */}
-        <div className="p-6 overflow-y-auto max-h-[70vh] space-y-6">
+      {/* Modal Body - clean scroll area */}
+      <div className="p-6 overflow-y-auto min-h-0 flex-1 space-y-6">
           {/* TAB 1: BURNDOWN CURVE */}
           {activeTab === 'BURNDOWN' && (
             <div className="space-y-6">
@@ -496,7 +493,6 @@ export const SprintAnalyticsModal: React.FC<SprintAnalyticsModalProps> = ({
             </div>
           )}
         </div>
-      </div>
     </Modal>
   );
 };

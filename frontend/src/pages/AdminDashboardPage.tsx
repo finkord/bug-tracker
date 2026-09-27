@@ -9,9 +9,20 @@ import {
 } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { Avatar } from '../components/common/Avatar';
-import { Button } from '../components/ui/Button';
-import { Badge } from '../components/ui/Badge';
-import { Modal } from '../components/ui/Modal';
+import {
+  Button,
+  Badge,
+  Modal,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  SelectField,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '../components/ui';
 import { useBroadcast, type BroadcastSeverity } from '../context/BroadcastContext';
 import {
   ShieldAlert,
@@ -334,62 +345,33 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
       )}
 
       {/* Navigation Tabs Bar */}
-      <div className="flex items-center gap-1.5 p-1.5 rounded-full bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 overflow-x-auto w-fit max-w-full shadow-2xs">
-        <Button
-          type="button"
-          variant={activeTab === 'users' ? 'filled' : 'ghost'}
-          size="sm"
-          className="rounded-full px-4 text-xs font-bold"
-          onClick={() => setActiveTab('users')}
-          leftIcon={<Users className="w-3.5 h-3.5" />}
-        >
-          User Management
-        </Button>
-
-        <Button
-          type="button"
-          variant={activeTab === 'roles' ? 'filled' : 'ghost'}
-          size="sm"
-          className="rounded-full px-4 text-xs font-bold"
-          onClick={() => setActiveTab('roles')}
-          leftIcon={<ShieldAlert className="w-3.5 h-3.5" />}
-        >
-          RBAC & Roles Matrix
-        </Button>
-
-        <Button
-          type="button"
-          variant={activeTab === 'system' ? 'filled' : 'ghost'}
-          size="sm"
-          className="rounded-full px-4 text-xs font-bold"
-          onClick={() => setActiveTab('system')}
-          leftIcon={<ShieldCheck className="w-3.5 h-3.5" />}
-        >
-          System & Security
-        </Button>
-
-        <Button
-          type="button"
-          variant={activeTab === 'projects' ? 'filled' : 'ghost'}
-          size="sm"
-          className="rounded-full px-4 text-xs font-bold"
-          onClick={() => setActiveTab('projects')}
-          leftIcon={<FolderGit2 className="w-3.5 h-3.5" />}
-        >
-          Projects Control
-        </Button>
-
-        <Button
-          type="button"
-          variant={activeTab === 'analytics' ? 'filled' : 'ghost'}
-          size="sm"
-          className="rounded-full px-4 text-xs font-bold"
-          onClick={() => setActiveTab('analytics')}
-          leftIcon={<TrendingUp className="w-3.5 h-3.5" />}
-        >
-          Team Analytics
-        </Button>
-      </div>
+      <Tabs
+        value={activeTab}
+        onValueChange={(val) => setActiveTab(val as 'users' | 'roles' | 'system' | 'projects' | 'analytics')}
+      >
+        <TabsList variant="pills" className="flex-wrap">
+          <TabsTrigger value="users" className="flex items-center gap-1.5 font-bold">
+            <Users className="w-3.5 h-3.5" />
+            <span>User Management</span>
+          </TabsTrigger>
+          <TabsTrigger value="roles" className="flex items-center gap-1.5 font-bold">
+            <ShieldAlert className="w-3.5 h-3.5" />
+            <span>RBAC & Roles Matrix</span>
+          </TabsTrigger>
+          <TabsTrigger value="system" className="flex items-center gap-1.5 font-bold">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>System & Security</span>
+          </TabsTrigger>
+          <TabsTrigger value="projects" className="flex items-center gap-1.5 font-bold">
+            <FolderGit2 className="w-3.5 h-3.5" />
+            <span>Projects Control</span>
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="flex items-center gap-1.5 font-bold">
+            <TrendingUp className="w-3.5 h-3.5" />
+            <span>Team Analytics</span>
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-3">
@@ -416,19 +398,21 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                   />
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <select
+                <div className="flex items-center gap-2 min-w-[160px]">
+                  <SelectField
                     value={userRoleFilter}
-                    onChange={(e) => setUserRoleFilter(e.target.value)}
-                    className="text-xs px-3.5 py-2 rounded-full bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/30 text-[var(--md-sys-color-on-surface)] font-medium cursor-pointer transition-colors focus:ring-2 focus:ring-[var(--md-sys-color-primary)] focus:outline-hidden"
-                  >
-                    <option value="">All Roles</option>
-                    <option value="ADMIN">ADMIN</option>
-                    <option value="PROJECT_MANAGER">PROJECT_MANAGER</option>
-                    <option value="DEVELOPER">DEVELOPER</option>
-                    <option value="QA_ENGINEER">QA_ENGINEER</option>
-                    <option value="USER">USER</option>
-                  </select>
+                    onValueChange={(val) => setUserRoleFilter(val)}
+                    placeholder="All Roles"
+                    size="sm"
+                    options={[
+                      { value: '', label: 'All Roles' },
+                      { value: 'ADMIN', label: 'ADMIN' },
+                      { value: 'PROJECT_MANAGER', label: 'PROJECT_MANAGER' },
+                      { value: 'DEVELOPER', label: 'DEVELOPER' },
+                      { value: 'QA_ENGINEER', label: 'QA_ENGINEER' },
+                      { value: 'USER', label: 'USER' },
+                    ]}
+                  />
                 </div>
               </div>
 
@@ -467,36 +451,63 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
 
                             {/* Job Title */}
                             <td className="py-3 px-4">
-                              <select
-                                value={u.jobTitle || (u.systemRole === 'DEVELOPER' ? 'Software Developer' : u.systemRole === 'QA_ENGINEER' ? 'QA Engineer' : u.systemRole === 'PROJECT_MANAGER' ? 'Project Manager' : u.systemRole === 'ADMIN' ? 'System Administrator' : 'Software Engineer')}
-                                onChange={(e) => handleJobTitleChange(u.id, u.systemRole, e.target.value)}
-                                className="text-xs font-medium px-3 py-1.5 rounded-full bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/30 text-[var(--md-sys-color-on-surface)] cursor-pointer transition-colors focus:ring-2 focus:ring-[var(--md-sys-color-primary)] focus:outline-hidden"
+                              <Select
+                                value={
+                                  u.jobTitle ||
+                                  (u.systemRole === 'DEVELOPER'
+                                    ? 'Software Developer'
+                                    : u.systemRole === 'QA_ENGINEER'
+                                    ? 'QA Engineer'
+                                    : u.systemRole === 'PROJECT_MANAGER'
+                                    ? 'Project Manager'
+                                    : u.systemRole === 'ADMIN'
+                                    ? 'System Administrator'
+                                    : 'Software Engineer')
+                                }
+                                onValueChange={(val) =>
+                                  handleJobTitleChange(u.id, u.systemRole, val)
+                                }
                               >
-                                <option value="Software Developer">Software Developer</option>
-                                <option value="Frontend Developer">Frontend Developer</option>
-                                <option value="Backend Developer">Backend Developer</option>
-                                <option value="Fullstack Developer">Fullstack Developer</option>
-                                <option value="DevOps Engineer">DevOps Engineer</option>
-                                <option value="QA Engineer">QA Engineer</option>
-                                <option value="Project Manager">Project Manager</option>
-                                <option value="System Administrator">System Administrator</option>
-                              </select>
+                                <SelectTrigger size="sm" className="rounded-full bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] text-xs font-medium border-[var(--md-sys-color-outline-variant)]/30 min-w-[150px]">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Software Developer">Software Developer</SelectItem>
+                                  <SelectItem value="Frontend Developer">Frontend Developer</SelectItem>
+                                  <SelectItem value="Backend Developer">Backend Developer</SelectItem>
+                                  <SelectItem value="Fullstack Developer">Fullstack Developer</SelectItem>
+                                  <SelectItem value="DevOps Engineer">DevOps Engineer</SelectItem>
+                                  <SelectItem value="QA Engineer">QA Engineer</SelectItem>
+                                  <SelectItem value="Project Manager">Project Manager</SelectItem>
+                                  <SelectItem value="System Administrator">System Administrator</SelectItem>
+                                </SelectContent>
+                              </Select>
                             </td>
 
                             {/* System Role Selector */}
                             <td className="py-3 px-4">
-                              <select
+                              <Select
                                 value={u.systemRole}
                                 disabled={isSelf}
-                                onChange={(e) => handleRoleChange(u.id, e.target.value as SystemRole, u.jobTitle || undefined)}
-                                className="text-xs font-bold px-3 py-1.5 rounded-full bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/30 text-[var(--md-sys-color-on-surface)] cursor-pointer transition-colors focus:ring-2 focus:ring-[var(--md-sys-color-primary)] focus:outline-hidden disabled:opacity-50"
+                                onValueChange={(val) =>
+                                  handleRoleChange(
+                                    u.id,
+                                    val as SystemRole,
+                                    u.jobTitle || undefined,
+                                  )
+                                }
                               >
-                                <option value="USER">USER</option>
-                                <option value="DEVELOPER">DEVELOPER</option>
-                                <option value="QA_ENGINEER">QA_ENGINEER</option>
-                                <option value="PROJECT_MANAGER">PROJECT_MANAGER</option>
-                                <option value="ADMIN">ADMIN</option>
-                              </select>
+                                <SelectTrigger size="sm" className="rounded-full bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] text-xs font-bold border-[var(--md-sys-color-outline-variant)]/30 min-w-[120px]">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="USER">USER</SelectItem>
+                                  <SelectItem value="DEVELOPER">DEVELOPER</SelectItem>
+                                  <SelectItem value="QA_ENGINEER">QA_ENGINEER</SelectItem>
+                                  <SelectItem value="PROJECT_MANAGER">PROJECT_MANAGER</SelectItem>
+                                  <SelectItem value="ADMIN">ADMIN</SelectItem>
+                                </SelectContent>
+                              </Select>
                             </td>
 
                             {/* Status & Activation */}

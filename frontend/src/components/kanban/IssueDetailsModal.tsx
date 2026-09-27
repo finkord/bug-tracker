@@ -8,7 +8,17 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { Avatar } from '../common/Avatar';
 import { LogWorkModal } from './LogWorkModal';
-import { Modal, Button, Badge, Tooltip } from '../ui';
+import {
+  Modal,
+  Button,
+  Badge,
+  Tooltip,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '../ui';
 import {
   Calendar,
   Send,
@@ -144,30 +154,36 @@ export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
         onClose={onClose}
         size="xl"
         title={
-          <div className="flex items-center justify-between w-full pr-8">
-            <div className="flex items-center gap-2.5">
-              <span className="font-mono text-xs font-bold text-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)] px-2.5 py-1 rounded-lg">
+          <div className="flex items-center justify-between gap-3 w-full pr-1">
+            <div className="flex items-center gap-2.5 min-w-0 flex-wrap">
+              <span className="font-mono text-xs font-bold text-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)] px-2.5 py-1 rounded-lg shrink-0">
                 {issue ? issue.key : '...'}
               </span>
 
               {issue && (
-                <div className="flex items-center gap-2">
-                  <select
-                    value={issue.status}
-                    onChange={(e) => handleStatusChange(e.target.value as IssueStatus)}
-                    className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] cursor-pointer focus:ring-1 focus:ring-[var(--md-sys-color-primary)]"
-                  >
-                    <option value="OPEN">To Do</option>
-                    <option value="IN_PROGRESS">In Progress</option>
-                    <option value="REVIEW">Code Review</option>
-                    <option value="RESOLVED">Resolved</option>
-                    <option value="CLOSED">Closed</option>
-                  </select>
+                <div className="flex items-center gap-2 shrink-0">
+                  <div className="w-36 shrink-0">
+                    <Select
+                      value={issue.status}
+                      onValueChange={(val) => handleStatusChange(val as IssueStatus)}
+                    >
+                      <SelectTrigger size="sm" className="rounded-lg bg-[var(--md-sys-color-surface-container)] text-xs font-semibold h-7 border-[var(--md-sys-color-outline-variant)]/40">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="OPEN">To Do</SelectItem>
+                        <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                        <SelectItem value="REVIEW">Code Review</SelectItem>
+                        <SelectItem value="RESOLVED">Resolved</SelectItem>
+                        <SelectItem value="CLOSED">Closed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
                   {issue.sprint && (
-                    <Badge variant="primary" size="sm">
-                      <Layers className="w-3 h-3 mr-1 inline" />
-                      {issue.sprint}
+                    <Badge variant="primary" size="sm" className="shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 font-bold">
+                      <Layers className="w-3.5 h-3.5 shrink-0 text-[var(--md-sys-color-primary)]" />
+                      <span>{issue.sprint}</span>
                     </Badge>
                   )}
                 </div>
@@ -175,13 +191,13 @@ export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
             </div>
 
             {issue && (
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1 shrink-0">
                 <Tooltip content="Open in full page view">
                   <Link
                     to={`/issues/${issue.key || issue.id}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="p-1.5 rounded-lg text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-highest)] hover:text-[var(--md-sys-color-primary)] transition-colors flex items-center gap-1 text-xs"
+                    className="p-1.5 rounded-lg text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-highest)] hover:text-[var(--md-sys-color-primary)] transition-colors flex items-center gap-1 text-xs shrink-0"
                   >
                     <ExternalLink className="w-4 h-4" />
                   </Link>
@@ -192,7 +208,7 @@ export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
                     <button
                       type="button"
                       onClick={() => onEditClick(issue)}
-                      className="p-1.5 rounded-lg text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-highest)] transition-colors cursor-pointer"
+                      className="p-1.5 rounded-lg text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-highest)] transition-colors cursor-pointer shrink-0"
                     >
                       <Edit className="w-4 h-4" />
                     </button>
@@ -204,7 +220,7 @@ export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
                     type="button"
                     onClick={handleDelete}
                     disabled={deleting}
-                    className="p-1.5 rounded-lg text-[var(--md-sys-color-on-surface-variant)] hover:bg-red-500/10 hover:text-red-500 transition-colors cursor-pointer disabled:opacity-50"
+                    className="p-1.5 rounded-lg text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/30 transition-colors cursor-pointer disabled:opacity-50 shrink-0"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>

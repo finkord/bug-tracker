@@ -8,7 +8,7 @@ import {
   type IssueStatus,
   type IssuePriority,
 } from '../../api/client';
-import { Card, Button, Modal, Tooltip, Badge } from '../ui';
+import { Card, Button, Modal, Tooltip, Badge, SelectField } from '../ui';
 import {
   Link2,
   Plus,
@@ -495,21 +495,17 @@ export const IssueLinksSection: React.FC<IssueLinksSectionProps> = ({
           )}
 
           {/* Relationship Type Selector */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">
-              This issue ({currentIssueKey})
-            </label>
-            <select
-              value={linkType}
-              onChange={(e) => setLinkType(e.target.value as IssueLinkType)}
-              className="w-full px-3 py-2 text-sm rounded-xl border border-[var(--md-sys-color-outline-variant)] bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] focus:border-[var(--md-sys-color-primary)] focus:ring-1 focus:ring-[var(--md-sys-color-primary)] outline-hidden transition-all"
-            >
-              <option value="BLOCKS">Blocks</option>
-              <option value="IS_BLOCKED_BY">Is blocked by</option>
-              <option value="DUPLICATES">Duplicates</option>
-              <option value="RELATES_TO">Relates to</option>
-            </select>
-          </div>
+          <SelectField
+            label={`This issue (${currentIssueKey})`}
+            value={linkType}
+            onValueChange={(val) => setLinkType(val as IssueLinkType)}
+            options={[
+              { value: 'BLOCKS', label: 'Blocks' },
+              { value: 'IS_BLOCKED_BY', label: 'Is blocked by' },
+              { value: 'DUPLICATES', label: 'Duplicates' },
+              { value: 'RELATES_TO', label: 'Relates to' },
+            ]}
+          />
 
           {/* Target Issue Search / Key Input */}
           <div className="space-y-1.5">

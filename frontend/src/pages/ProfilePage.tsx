@@ -6,8 +6,7 @@ import { PasswordStrengthMeter } from '../components/auth/PasswordStrengthMeter'
 import { Link, useSearchParams } from 'react-router-dom';
 import { TimeCalendar, type DayWorklog } from '../components/common/TimeCalendar';
 import { Avatar } from '../components/common/Avatar';
-import { Button } from '../components/ui/Button';
-import { Badge } from '../components/ui/Badge';
+import { Button, Badge, Tabs, TabsList, TabsTrigger } from '../components/ui';
 import {
   Shield,
   ShieldCheck,
@@ -243,28 +242,31 @@ export const ProfilePage: React.FC = () => {
         </div>
       </div>
 
-      {/* Tab Switcher */}
-      <div className="flex items-center gap-2 border-b border-[var(--md-sys-color-outline-variant)] pb-3">
-        <Button
-          type="button"
-          variant={activeTab === 'account' ? 'filled' : 'ghost'}
-          size="sm"
-          onClick={() => setActiveTab('account')}
-          leftIcon={<KeyRound className="w-3.5 h-3.5" />}
-        >
-          Security & Account
-        </Button>
-
-        <Button
-          type="button"
-          variant={activeTab === 'time' ? 'filled' : 'ghost'}
-          size="sm"
-          onClick={() => setActiveTab('time')}
-          leftIcon={<Sparkles className="w-3.5 h-3.5 text-amber-500" />}
-        >
-          Personal Time & Achievements
-        </Button>
-      </div>
+      {/* Tab Navigation */}
+      <Tabs
+        value={activeTab}
+        onValueChange={(val) => setActiveTab(val as 'account' | 'time')}
+        className="w-full"
+      >
+        <TabsList variant="underline" className="w-full grid grid-cols-2 gap-0 p-0 overflow-visible border-b border-[var(--md-sys-color-outline-variant)]/30">
+          <TabsTrigger
+            value="account"
+            variant="underline"
+            className="w-full flex items-center justify-center gap-1.5 sm:gap-2 pb-3 text-xs sm:text-sm font-bold tracking-tight cursor-pointer"
+          >
+            <KeyRound className="w-4 h-4 text-[var(--md-sys-color-primary)] shrink-0" />
+            <span className="truncate">Security & Account</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="time"
+            variant="underline"
+            className="w-full flex items-center justify-center gap-1.5 sm:gap-2 pb-3 text-xs sm:text-sm font-bold tracking-tight cursor-pointer"
+          >
+            <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+            <span className="truncate"><span className="hidden sm:inline">Personal </span>Time & Effort</span>
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {activeTab === 'time' ? (
         <div className="space-y-5">

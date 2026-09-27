@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api, type IssueItem } from '../../api/client';
 import { Clock, Calendar, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
-import { Modal } from '../ui/Modal';
-import { Button } from '../ui/Button';
+import { Modal, Button, SelectField } from '../ui';
 
 interface LogWorkModalProps {
   isOpen: boolean;
@@ -119,25 +118,24 @@ export const LogWorkModal: React.FC<LogWorkModalProps> = ({
       <form onSubmit={handleSubmit} className="space-y-4 pt-1">
         {/* Ticket / Issue Selector */}
         <div>
-          <label className="block text-[11px] font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider mb-1">
-            Associated Ticket *
-          </label>
           {issuesList.length > 0 ? (
-            <select
-              value={selectedIssueId || ''}
-              onChange={(e) => setSelectedIssueId(Number(e.target.value))}
-              required
-              className="w-full text-xs px-3 py-2 rounded-xl bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] font-medium cursor-pointer"
-            >
-              {issuesList.map((issue) => (
-                <option key={issue.id} value={issue.id}>
-                  {issue.key} — {issue.title} ({issue.status})
-                </option>
-              ))}
-            </select>
+            <SelectField
+              label="Associated Ticket *"
+              value={selectedIssueId ? String(selectedIssueId) : ''}
+              onValueChange={(val) => setSelectedIssueId(Number(val))}
+              options={issuesList.map((issue) => ({
+                value: String(issue.id),
+                label: `${issue.key} — ${issue.title} (${issue.status})`,
+              }))}
+            />
           ) : (
-            <div className="p-2.5 rounded-xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-xs text-[var(--md-sys-color-primary)] font-bold">
-              {initialIssueKey || 'Issue'} — {initialIssueTitle || 'Selected ticket'}
+            <div>
+              <label className="block text-[11px] font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider mb-1">
+                Associated Ticket *
+              </label>
+              <div className="p-2.5 rounded-xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-xs text-[var(--md-sys-color-primary)] font-bold">
+                {initialIssueKey || 'Issue'} — {initialIssueTitle || 'Selected ticket'}
+              </div>
             </div>
           )}
         </div>

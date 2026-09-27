@@ -129,7 +129,7 @@ export const Navbar: React.FC = () => {
   };
 
   // Announcement banner is exclusively shown for authenticated logged-in users
-  const showBanner = Boolean(user) && broadcast.enabled && !broadcast.message && !isDismissed;
+  const showBanner = Boolean(user) && broadcast.enabled && Boolean(broadcast.message) && !isDismissed;
   const { bar, icon: BroadcastIcon, title: severityTitle } = severityStripe[broadcast.severity] ?? severityStripe.info;
 
   // Unauthenticated Guest Top Bar
@@ -307,11 +307,18 @@ export const Navbar: React.FC = () => {
                   side="bottom"
                   className="w-64 p-2 rounded-2xl bg-[var(--md-sys-color-surface-container-lowest)] shadow-xl z-50 border border-[var(--md-sys-color-outline-variant)]/20 text-xs animate-in fade-in zoom-in-95 duration-150"
                 >
-                  <DropdownMenuItem asChild>
-                    <Link to="/search" className="flex items-center gap-2 font-bold text-[var(--md-sys-color-primary)] cursor-pointer">
-                      <Search className="w-4 h-4" />
-                      <span>View all filters & search</span>
-                    </Link>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      if (searchQuery.trim()) {
+                        navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+                      } else {
+                        navigate('/search');
+                      }
+                    }}
+                    className="flex items-center gap-2 font-bold text-[var(--md-sys-color-primary)] cursor-pointer"
+                  >
+                    <Search className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
+                    <span>View all filters & search</span>
                   </DropdownMenuItem>
 
                   <DropdownMenuSeparator />
@@ -320,54 +327,74 @@ export const Navbar: React.FC = () => {
                     Quick Filters
                   </div>
 
-                  <DropdownMenuItem asChild>
-                    <Link
-                      to="/search?jql=assignee%20%3D%20currentUser()%20AND%20status%20NOT%20IN%20(%22RESOLVED%22%2C%20%22CLOSED%22)%20ORDER%20BY%20priority%20DESC"
-                      className="flex items-center gap-2 cursor-pointer"
-                    >
-                      <UserCheck className="w-3.5 h-3.5 text-blue-400" />
-                      <span>My open issues</span>
-                    </Link>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      navigate(
+                        '/search?jql=' +
+                          encodeURIComponent(
+                            'assignee = currentUser() AND status NOT IN ("RESOLVED", "CLOSED") ORDER BY priority DESC',
+                          ),
+                      )
+                    }
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <UserCheck className="w-3.5 h-3.5 text-blue-400" />
+                    <span>My open issues</span>
                   </DropdownMenuItem>
 
-                  <DropdownMenuItem asChild>
-                    <Link
-                      to="/search?jql=reporter%20%3D%20currentUser()%20ORDER%20BY%20createdAt%20DESC"
-                      className="flex items-center gap-2 cursor-pointer"
-                    >
-                      <FileCheck2 className="w-3.5 h-3.5 text-indigo-400" />
-                      <span>Reported by me</span>
-                    </Link>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      navigate(
+                        '/search?jql=' +
+                          encodeURIComponent('reporter = currentUser() ORDER BY createdAt DESC'),
+                      )
+                    }
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <FileCheck2 className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Reported by me</span>
                   </DropdownMenuItem>
 
-                  <DropdownMenuItem asChild>
-                    <Link
-                      to="/search?jql=priority%20IN%20(%22CRITICAL%22%2C%20%22HIGH%22)%20AND%20status%20NOT%20IN%20(%22CLOSED%22)%20ORDER%20BY%20priority%20DESC"
-                      className="flex items-center gap-2 cursor-pointer"
-                    >
-                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Critical & High Priority</span>
-                    </Link>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      navigate(
+                        '/search?jql=' +
+                          encodeURIComponent(
+                            'priority IN ("CRITICAL", "HIGH") AND status NOT IN ("CLOSED") ORDER BY priority DESC',
+                          ),
+                      )
+                    }
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Critical & High Priority</span>
                   </DropdownMenuItem>
 
-                  <DropdownMenuItem asChild>
-                    <Link
-                      to="/search?jql=ORDER%20BY%20updatedAt%20DESC"
-                      className="flex items-center gap-2 cursor-pointer"
-                    >
-                      <Clock className="w-3.5 h-3.5 text-teal-400" />
-                      <span>Recently updated</span>
-                    </Link>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      navigate(
+                        '/search?jql=' + encodeURIComponent('ORDER BY updatedAt DESC'),
+                      )
+                    }
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <Clock className="w-3.5 h-3.5 text-teal-400" />
+                    <span>Recently updated</span>
                   </DropdownMenuItem>
 
-                  <DropdownMenuItem asChild>
-                    <Link
-                      to="/search?jql=status%20IN%20(%22RESOLVED%22%2C%20%22CLOSED%22)%20ORDER%20BY%20updatedAt%20DESC"
-                      className="flex items-center gap-2 cursor-pointer"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>Done issues</span>
-                    </Link>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      navigate(
+                        '/search?jql=' +
+                          encodeURIComponent(
+                            'status IN ("RESOLVED", "CLOSED") ORDER BY updatedAt DESC',
+                          ),
+                      )
+                    }
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Done issues</span>
                   </DropdownMenuItem>
 
                   {navSavedFilters.length > 0 && (
@@ -388,14 +415,13 @@ export const Navbar: React.FC = () => {
                         }
 
                         return (
-                          <DropdownMenuItem asChild key={f.id}>
-                            <Link
-                              to={filterUrl}
-                              className="flex items-center gap-2 cursor-pointer truncate"
-                            >
-                              <Star className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                              <span className="truncate">{f.name}</span>
-                            </Link>
+                          <DropdownMenuItem
+                            key={f.id}
+                            onClick={() => navigate(filterUrl)}
+                            className="flex items-center gap-2 cursor-pointer truncate"
+                          >
+                            <Star className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                            <span className="truncate">{f.name}</span>
                           </DropdownMenuItem>
                         );
                       })}
@@ -406,7 +432,14 @@ export const Navbar: React.FC = () => {
 
               {/* Desktop Search Input (hidden on mobile) */}
               <form onSubmit={handleSearchSubmit} className="hidden md:flex relative items-center">
-                <Search className="w-4 h-4 absolute left-3 text-[var(--md-sys-color-on-surface-variant)] pointer-events-none" />
+                <button
+                  type="submit"
+                  className="absolute left-2.5 p-0.5 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] cursor-pointer"
+                  title="Search issues"
+                  aria-label="Search issues"
+                >
+                  <Search className="w-4 h-4" />
+                </button>
                 <input
                   ref={searchInputRef}
                   type="text"
@@ -424,11 +457,12 @@ export const Navbar: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsCreateModalOpen(true)}
-                title="Create new issue / ticket"
-                aria-label="Create new issue / ticket"
-                className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] hover:brightness-115 active:scale-95 flex items-center justify-center transition-all shadow-2xs cursor-pointer shrink-0"
+                title="Create new issue"
+                aria-label="Create new issue"
+                className="w-9 h-9 sm:w-auto sm:px-3 rounded-xl bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] hover:brightness-110 active:scale-95 flex items-center justify-center gap-1.5 text-xs font-semibold transition-all shadow-2xs cursor-pointer shrink-0"
               >
                 <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">New Issue</span>
               </button>
 
               {/* User Avatar Dropdown */}

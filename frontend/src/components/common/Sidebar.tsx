@@ -3,7 +3,6 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSidebar } from '../../context/SidebarContext';
 import { api, type ProjectItem } from '../../api/client';
-import { IssueModal } from '../kanban/IssueModal';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -25,7 +24,6 @@ import {
   Shield,
   ExternalLink,
   SlidersHorizontal,
-  Plus,
   Briefcase,
   Check,
 } from 'lucide-react';
@@ -41,7 +39,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentProjectId }) => {
   const navigate = useNavigate();
 
   const [projects, setProjects] = useState<ProjectItem[]>([]);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -266,18 +263,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentProjectId }) => {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-
-          {/* Quick Create Ticket Button in Sidebar Header */}
-          {!collapsed && (
-            <button
-              type="button"
-              onClick={() => setIsCreateModalOpen(true)}
-              className="w-full h-9 rounded-xl bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] hover:brightness-110 active:scale-[0.98] transition-all text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Create Issue</span>
-            </button>
-          )}
         </div>
 
         {/* ── 3. Navigation items ─────────────────────────────────────────── */}
@@ -486,18 +471,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentProjectId }) => {
             </div>
           </div>
         </div>
-      )}
-
-      {/* Global Create Issue Modal */}
-      {isCreateModalOpen && (
-        <IssueModal
-          isOpen={isCreateModalOpen}
-          onClose={() => setIsCreateModalOpen(false)}
-          onIssueSaved={(savedIssue) => {
-            setIsCreateModalOpen(false);
-            navigate(`/issues/${savedIssue.key || savedIssue.id}`);
-          }}
-        />
       )}
     </>
   );

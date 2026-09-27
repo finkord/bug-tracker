@@ -1,7 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { api, type LoginAuditLogItem, type UserProfile } from '../api/client';
-import { Button } from '../components/ui/Button';
-import { Badge } from '../components/ui/Badge';
+import {
+  Button,
+  Badge,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '../components/ui';
 import {
   ShieldAlert,
   Users,
@@ -126,26 +136,28 @@ export const AdminSecurityAuditPage: React.FC = () => {
         </div>
 
         {/* Tab Controls */}
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant={tab === 'logs' ? 'filled' : 'ghost'}
-            size="sm"
-            onClick={() => setTab('logs')}
-            leftIcon={<ShieldCheck className="w-3.5 h-3.5" />}
-          >
-            Audit Trail ({logsTotal})
-          </Button>
-          <Button
-            type="button"
-            variant={tab === 'users' ? 'filled' : 'ghost'}
-            size="sm"
-            onClick={() => setTab('users')}
-            leftIcon={<Users className="w-3.5 h-3.5" />}
-          >
-            User Accounts & Locks
-          </Button>
-        </div>
+        <Tabs value={tab} onValueChange={(v) => setTab(v as 'logs' | 'users')}>
+          <TabsList variant="pills" className="rounded-full">
+            <TabsTrigger
+              value="logs"
+              variant="pills"
+              size="sm"
+              className="rounded-full gap-1.5 font-bold"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Audit Trail ({logsTotal})</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="users"
+              variant="pills"
+              size="sm"
+              className="rounded-full gap-1.5 font-bold"
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>User Accounts & Locks</span>
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
       {tab === 'logs' ? (
@@ -153,7 +165,7 @@ export const AdminSecurityAuditPage: React.FC = () => {
         <div className="space-y-4">
           {/* Filter Bar */}
           <div className="p-4 rounded-3xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 flex flex-wrap items-center justify-between gap-3 shadow-xs">
-            <div className="flex items-center gap-2.5 flex-1 min-w-[260px]">
+            <div className="flex items-center gap-2.5 flex-1 min-w-[260px] flex-wrap sm:flex-nowrap">
               <div className="relative w-full max-w-sm">
                 <Search className="absolute left-3.5 top-2.5 w-3.5 h-3.5 text-[var(--md-sys-color-on-surface-variant)]" />
                 <input
@@ -165,19 +177,22 @@ export const AdminSecurityAuditPage: React.FC = () => {
                 />
               </div>
 
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3.5 py-1.5 text-xs rounded-full bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]/30 font-medium cursor-pointer outline-none"
-              >
-                <option value="ALL">All Outcomes</option>
-                <option value="SUCCESS">SUCCESS</option>
-                <option value="FAILED_PASSWORD">FAILED_PASSWORD</option>
-                <option value="ACCOUNT_LOCKED">ACCOUNT_LOCKED</option>
-                <option value="REQUIRE_2FA">REQUIRE_2FA</option>
-                <option value="TWO_FACTOR_SUCCESS">TWO_FACTOR_SUCCESS</option>
-                <option value="TWO_FACTOR_FAILED">TWO_FACTOR_FAILED</option>
-              </select>
+              <div className="w-44 shrink-0">
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger size="sm" className="rounded-full bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] text-xs font-medium border-[var(--md-sys-color-outline-variant)]/30">
+                    <SelectValue placeholder="Outcome" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">All Outcomes</SelectItem>
+                    <SelectItem value="SUCCESS">SUCCESS</SelectItem>
+                    <SelectItem value="FAILED_PASSWORD">FAILED_PASSWORD</SelectItem>
+                    <SelectItem value="ACCOUNT_LOCKED">ACCOUNT_LOCKED</SelectItem>
+                    <SelectItem value="REQUIRE_2FA">REQUIRE_2FA</SelectItem>
+                    <SelectItem value="TWO_FACTOR_SUCCESS">TWO_FACTOR_SUCCESS</SelectItem>
+                    <SelectItem value="TWO_FACTOR_FAILED">TWO_FACTOR_FAILED</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <Button
