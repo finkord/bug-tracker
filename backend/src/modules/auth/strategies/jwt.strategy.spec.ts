@@ -93,10 +93,9 @@ describe('JwtStrategy Security Hardening', () => {
   });
 
   it('should reject blocked users', async () => {
-    usersService.findById = vi.fn().mockResolvedValue({
-      ...mockUser,
-      isBlocked: true,
-    });
+    usersService.findById = vi.fn().mockResolvedValue(
+      Object.assign(new User(), mockUser, { isBlocked: true }),
+    );
 
     const payload = {
       sub: 42,
@@ -111,10 +110,9 @@ describe('JwtStrategy Security Hardening', () => {
   });
 
   it('should reject unactivated users', async () => {
-    usersService.findById = vi.fn().mockResolvedValue({
-      ...mockUser,
-      isActivated: false,
-    });
+    usersService.findById = vi.fn().mockResolvedValue(
+      Object.assign(new User(), mockUser, { isActivated: false }),
+    );
 
     const payload = {
       sub: 42,

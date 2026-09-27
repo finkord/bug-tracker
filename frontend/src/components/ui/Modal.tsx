@@ -44,8 +44,8 @@ export const Modal: React.FC<ModalProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
           <Dialog.Content
             className={cn(
-              'w-full bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)]',
-              'border border-[var(--md-sys-color-outline-variant)] rounded-2xl shadow-xl',
+              'w-full bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)]',
+              'border border-[var(--md-sys-color-outline-variant)]/30 rounded-[28px] m3-elevation-3',
               'transition-all duration-200 animate-in fade-in zoom-in-95 focus:outline-none',
               'flex flex-col max-h-[90vh] overflow-hidden',
               sizeStyles[size],
@@ -54,11 +54,11 @@ export const Modal: React.FC<ModalProps> = ({
           >
             {/* Header */}
             {(title || description) && (
-              <div className="px-6 py-4 border-b border-[var(--md-sys-color-outline-variant)] flex items-center justify-between gap-4 shrink-0">
+              <div className="px-6 py-5 border-b border-[var(--md-sys-color-outline-variant)]/20 flex items-center justify-between gap-4 shrink-0">
                 <div className="flex flex-col gap-1 flex-1 min-w-0">
                   {title && (
                     <Dialog.Title asChild>
-                      <div className="text-lg font-semibold tracking-tight text-[var(--md-sys-color-on-surface)] flex-1 min-w-0">
+                      <div className="text-xl font-bold tracking-tight text-[var(--md-sys-color-on-surface)] flex-1 min-w-0">
                         {title}
                       </div>
                     </Dialog.Title>
@@ -74,7 +74,7 @@ export const Modal: React.FC<ModalProps> = ({
                   <button
                     type="button"
                     onClick={onClose}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)] transition-colors cursor-pointer shrink-0"
+                    className="w-9 h-9 rounded-full flex items-center justify-center text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-highest)] hover:text-[var(--md-sys-color-on-surface)] transition-colors cursor-pointer shrink-0"
                     aria-label="Close dialog"
                   >
                     <X className="w-4 h-4" />
@@ -88,7 +88,7 @@ export const Modal: React.FC<ModalProps> = ({
 
             {/* Footer */}
             {footer && (
-              <div className="px-6 py-4 border-t border-[var(--md-sys-color-outline-variant)] bg-[var(--md-sys-color-surface-container-low)] rounded-b-2xl flex items-center justify-end gap-3 shrink-0">
+              <div className="px-6 py-4 border-t border-[var(--md-sys-color-outline-variant)]/20 bg-[var(--md-sys-color-surface-container)] rounded-b-[28px] flex items-center justify-end gap-3 shrink-0">
                 {footer}
               </div>
             )}

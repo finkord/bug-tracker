@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module.js';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -14,6 +15,9 @@ async function bootstrap() {
 
   // Global prefix for all REST endpoints
   app.setGlobalPrefix('api/v1');
+
+  // Global exception filter for unified, secure error handling
+  app.useGlobalFilters(new AllExceptionsFilter());
 
   // Global validation pipe for strict DTO sanitization
   app.useGlobalPipes(

@@ -22,43 +22,43 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private readonly logger = new Logger(EventsGateway.name);
 
-  handleConnection(client: Socket) {
+  handleConnection(client: Socket): void {
     this.logger.log(`Client connected to events namespace: ${client.id}`);
   }
 
-  handleDisconnect(client: Socket) {
+  handleDisconnect(client: Socket): void {
     this.logger.log(`Client disconnected from events namespace: ${client.id}`);
   }
 
   @SubscribeMessage('join:project')
-  handleJoinProject(
+  async handleJoinProject(
     @MessageBody() data: { projectId: number | string },
     @ConnectedSocket() client: Socket,
-  ) {
+  ): Promise<{ event: string; room: string }> {
     const room = `project_${data.projectId}`;
-    client.join(room);
+    await client.join(room);
     this.logger.log(`Socket ${client.id} joined room ${room}`);
     return { event: 'joined:project', room };
   }
 
   @SubscribeMessage('leave:project')
-  handleLeaveProject(
+  async handleLeaveProject(
     @MessageBody() data: { projectId: number | string },
     @ConnectedSocket() client: Socket,
-  ) {
+  ): Promise<{ event: string; room: string }> {
     const room = `project_${data.projectId}`;
-    client.leave(room);
+    await client.leave(room);
     this.logger.log(`Socket ${client.id} left room ${room}`);
     return { event: 'left:project', room };
   }
 
   @SubscribeMessage('join:issue')
-  handleJoinIssue(
+  async handleJoinIssue(
     @MessageBody() data: { issueId: number | string; user?: any },
     @ConnectedSocket() client: Socket,
-  ) {
+  ): Promise<{ event: string; room: string }> {
     const room = `issue_${data.issueId}`;
-    client.join(room);
+    await client.join(room);
     if (data.user) {
       client.to(room).emit('presence:viewing', {
         user: data.user,
@@ -69,24 +69,24 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('leave:issue')
-  handleLeaveIssue(
+  async handleLeaveIssue(
     @MessageBody() data: { issueId: number | string },
     @ConnectedSocket() client: Socket,
-  ) {
+  ): Promise<{ event: string; room: string }> {
     const room = `issue_${data.issueId}`;
-    client.leave(room);
+    await client.leave(room);
     return { event: 'left:issue', room };
   }
 
   // Broadcaster methods for real-time live collaboration
-  broadcastIssueCreated(issue: any) {
+  broadcastIssueCreated(issue: any): void {
     if (this.server) {
       this.server.to(`project_${issue.projectId}`).emit('issue:created', issue);
       this.server.emit('issue:created', issue);
     }
   }
 
-  broadcastIssueUpdated(issue: any) {
+  broadcastIssueUpdated(issue: any): void {
     if (this.server) {
       this.server.to(`project_${issue.projectId}`).emit('issue:updated', issue);
       this.server.to(`issue_${issue.id}`).emit('issue:updated', issue);
@@ -94,7 +94,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  broadcastIssueDeleted(issueId: number, projectId: number) {
+  broadcastIssueDeleted(issueId: number, projectId: number): void {
     if (this.server) {
       this.server.to(`project_${projectId}`).emit('issue:deleted', { issueId, projectId });
       this.server.to(`issue_${issueId}`).emit('issue:deleted', { issueId, projectId });
@@ -102,7 +102,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  broadcastWorklogAdded(payload: { issueId: number; projectId?: number; worklog: any }) {
+  broadcastWorklogAdded(payload: { issueId: number; projectId?: number; worklog: any }): void {
     if (this.server) {
       this.server.to(`issue_${payload.issueId}`).emit('worklog:created', payload);
       if (payload.projectId) {
@@ -112,13 +112,13 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  broadcastCommentAdded(payload: { issueId: number; comment: any }) {
+  broadcastCommentAdded(payload: { issueId: number; comment: any }): void {
     if (this.server) {
       this.server.to(`issue_${payload.issueId}`).emit('comment:created', payload);
     }
   }
 
-  broadcastAttachmentUploaded(payload: { issueId: number; attachment: any }) {
+  broadcastAttachmentUploaded(payload: { issueId: number; attachment: any }): void {
     if (this.server) {
       this.server.to(`issue_${payload.issueId}`).emit('attachment:uploaded', payload);
     }

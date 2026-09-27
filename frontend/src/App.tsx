@@ -4,7 +4,8 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { SidebarProvider } from './context/SidebarContext';
 import { BroadcastProvider } from './context/BroadcastContext';
-import { Navbar } from './components/common/Navbar';
+import { PublicNavbar } from './components/public/PublicNavbar';
+import { WorkspaceHeader } from './components/workspace/WorkspaceHeader';
 import { Sidebar } from './components/common/Sidebar';
 import { Footer } from './components/common/Footer';
 import { ProtectedRoute, AdminRoute } from './components/common/ProtectedRoute';
@@ -28,14 +29,13 @@ import { AdminRbacPage } from './pages/AdminRbacPage';
 import { ProjectSettingsPage } from './pages/ProjectSettingsPage';
 import { OAuthCallbackPage } from './pages/OAuthCallbackPage';
 
-
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
 
   if (!user) {
     return (
       <div className="min-h-screen flex flex-col bg-[var(--md-sys-color-background)] text-[var(--md-sys-color-on-background)] transition-colors duration-200">
-        <Navbar />
+        <PublicNavbar />
         <main className="flex-1 min-w-0">{children}</main>
         <Footer />
       </div>
@@ -49,7 +49,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
       {/* ─── Right Workspace Column: Top Control Strip + Floating Canvas Card ── */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        <Navbar />
+        <WorkspaceHeader />
 
         {/* ─── Elevated Main Canvas Card (Optical Curve Metaphor) ──────────── */}
         <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden mx-1 mb-1 sm:mx-2 sm:mb-2 md:mr-3 md:mb-3 md:mx-0 bg-[var(--md-sys-color-background)] rounded-xl sm:rounded-2xl md:rounded-3xl border border-[var(--md-sys-color-outline-variant)]/25 shadow-xs transition-all duration-200 flex flex-col">

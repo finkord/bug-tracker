@@ -27,4 +27,12 @@ export class Enable2faDto {
   @IsString()
   @Matches(/^\d{6}$/, { message: '2FA code must be exactly 6 digits' })
   code: string;
+
+  @ApiProperty({
+    example: 'JBSWY3DPEHPK3PXP',
+    description: 'TOTP base32 secret if provided during activation',
+    required: false,
+  })
+  @IsString()
+  secret?: string;
 }

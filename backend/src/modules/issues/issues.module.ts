@@ -1,4 +1,3 @@
-import { User } from '../users/entities/user.entity.js';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PassportModule } from '@nestjs/passport';
@@ -7,11 +6,16 @@ import { Comment } from './entities/comment.entity.js';
 import { Worklog } from './entities/worklog.entity.js';
 import { Attachment } from './entities/attachment.entity.js';
 import { IssueLink } from './entities/issue-link.entity.js';
-import { SeaweedFsService } from './services/seaweedfs.service.js';
 import { Project } from '../projects/entities/project.entity.js';
+import { User } from '../users/entities/user.entity.js';
 import { IssuesController } from './issues.controller.js';
 import { IssuesService } from './issues.service.js';
-
+import { IssueCoreService } from './services/issue-core.service.js';
+import { IssueWorklogService } from './services/issue-worklog.service.js';
+import { IssueLinksService } from './services/issue-links.service.js';
+import { IssueCommentsService } from './services/issue-comments.service.js';
+import { IssueAttachmentsService } from './services/issue-attachments.service.js';
+import { SeaweedFsService } from './services/seaweedfs.service.js';
 import { RbacModule } from '../rbac/rbac.module.js';
 
 @Module({
@@ -21,7 +25,23 @@ import { RbacModule } from '../rbac/rbac.module.js';
     RbacModule,
   ],
   controllers: [IssuesController],
-  providers: [IssuesService, SeaweedFsService],
-  exports: [IssuesService, SeaweedFsService],
+  providers: [
+    IssueCoreService,
+    IssueWorklogService,
+    IssueLinksService,
+    IssueCommentsService,
+    IssueAttachmentsService,
+    IssuesService,
+    SeaweedFsService,
+  ],
+  exports: [
+    IssueCoreService,
+    IssueWorklogService,
+    IssueLinksService,
+    IssueCommentsService,
+    IssueAttachmentsService,
+    IssuesService,
+    SeaweedFsService,
+  ],
 })
 export class IssuesModule {}

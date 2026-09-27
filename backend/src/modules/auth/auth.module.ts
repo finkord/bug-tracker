@@ -4,6 +4,11 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service.js';
 import { AuthController } from './auth.controller.js';
+import { LocalAuthService } from './services/local-auth.service.js';
+import { TwoFactorAuthService } from './services/two-factor-auth.service.js';
+import { PasswordResetService } from './services/password-reset.service.js';
+import { TokenSessionService } from './services/token-session.service.js';
+import { OAuthService } from './services/oauth.service.js';
 import { JwtStrategy } from './strategies/jwt.strategy.js';
 import { GithubStrategy } from './strategies/github.strategy.js';
 import { GoogleStrategy } from './strategies/google.strategy.js';
@@ -32,7 +37,26 @@ import { CaptchaModule } from '../captcha/captcha.module.js';
     CaptchaModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, GithubStrategy, GoogleStrategy],
-  exports: [AuthService, JwtModule, PassportModule],
+  providers: [
+    AuthService,
+    LocalAuthService,
+    TwoFactorAuthService,
+    PasswordResetService,
+    TokenSessionService,
+    OAuthService,
+    JwtStrategy,
+    GithubStrategy,
+    GoogleStrategy,
+  ],
+  exports: [
+    AuthService,
+    LocalAuthService,
+    TwoFactorAuthService,
+    PasswordResetService,
+    TokenSessionService,
+    OAuthService,
+    JwtModule,
+    PassportModule,
+  ],
 })
 export class AuthModule {}

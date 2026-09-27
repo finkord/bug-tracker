@@ -157,6 +157,9 @@ export class SeedService {
       jobTitle: string;
       avatarUrl?: string;
     }> = [
+      // Administrators
+      { key: 'admin', fullName: 'System Administrator', email: 'admin@bugtracker.local', systemRole: SystemRole.ADMIN, jobTitle: 'Chief System Administrator' },
+
       // UI / Frontend Team
       { key: 'volodymyr', fullName: 'Volodymyr Fufalko', email: 'volodymyr@bugtracker.local', systemRole: SystemRole.ADMIN, jobTitle: 'Principal Frontend Architect' },
       { key: 'sonya', fullName: 'Sonya Saparava', email: 'sonya@bugtracker.local', systemRole: SystemRole.DEVELOPER, jobTitle: 'Senior UI/UX Engineer' },
@@ -298,7 +301,7 @@ export class SeedService {
     const groupMemberships: Array<{ groupName: string; userKeys: string[] }> = [
       {
         groupName: 'administrators',
-        userKeys: ['volodymyr', 'alex', 'sarah', 'david', 'elena'],
+        userKeys: ['admin', 'volodymyr', 'alex', 'sarah', 'david', 'elena'],
       },
       {
         groupName: 'all-users',
