@@ -1,8 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSidebar } from '../../context/SidebarContext';
 import { api, type ProjectItem } from '../../api/client';
+import { IssueModal } from '../kanban/IssueModal';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '../ui/Dropdown';
 import {
   LayoutDashboard,
   FolderKanban,
@@ -12,10 +20,14 @@ import {
   ShieldAlert,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   X,
   Shield,
   ExternalLink,
   SlidersHorizontal,
+  Plus,
+  Briefcase,
+  Check,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -26,8 +38,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentProjectId }) => {
   const { user } = useAuth();
   const { collapsed, toggleSidebar, mobileOpen, closeMobile, showCollapsedLabels } = useSidebar();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const [projects, setProjects] = useState<ProjectItem[]>([]);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -37,19 +51,27 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentProjectId }) => {
     }
   }, [user]);
 
+  // Extract projectId from URL if present (e.g. /projects/2/board)
+  const urlProjectId = useMemo(() => {
+    const match = location.pathname.match(/\/projects\/(\d+)/);
+    return match ? Number(match[1]) : undefined;
+  }, [location.pathname]);
+
+  const activeProjectId = currentProjectId || urlProjectId || (projects[0]?.id);
+  const activeProject = projects.find((p) => p.id === activeProjectId) || projects[0];
+
   if (!user) return null;
 
-  const selectedProject = projects.find((p) => p.id === currentProjectId) || projects[0];
-  const boardPath = selectedProject ? `/projects/${selectedProject.id}/board` : '/projects';
-  const backlogPath = selectedProject ? `/projects/${selectedProject.id}/backlog` : '/projects';
+  const boardPath = activeProject ? `/projects/${activeProject.id}/board` : '/projects';
+  const backlogPath = activeProject ? `/projects/${activeProject.id}/backlog` : '/projects';
 
   const navItems = [
-    { label: 'Dashboard',         shortLabel: 'Dash',     path: '/',          icon: LayoutDashboard, exact: true },
-    { label: 'Projects',          shortLabel: 'Projects', path: '/projects',  icon: FolderKanban,    exact: true },
+    { label: 'Dashboard',         shortLabel: 'Dash',     path: '/',          icon: LayoutDashboard, exact: true, activeMatch: (p: string) => p === '/' },
+    { label: 'Projects',          shortLabel: 'Projects', path: '/projects',  icon: FolderKanban,    exact: true, activeMatch: (p: string) => p === '/projects' },
     { label: 'Kanban Board',      shortLabel: 'Kanban',   path: boardPath,    icon: Kanban,          activeMatch: (p: string) => p.includes('/board') },
     { label: 'Backlog & Sprints', shortLabel: 'Backlog',  path: backlogPath, icon: Layers,         activeMatch: (p: string) => p.includes('/backlog') },
     { label: 'Filters & Search',  shortLabel: 'Search',   path: '/search',    icon: SlidersHorizontal, activeMatch: (p: string) => p.startsWith('/search') },
-    { label: 'Time Tracking',     shortLabel: 'Time',     path: '/time-tracking', icon: Clock },
+    { label: 'Time Tracking',     shortLabel: 'Time',     path: '/time-tracking', icon: Clock,      activeMatch: (p: string) => p.startsWith('/time-tracking') },
   ];
 
   if (user.systemRole === 'ADMIN') {
@@ -75,6 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentProjectId }) => {
       <NavLink
         key={item.label}
         to={item.path}
+        end={item.exact}
         title={item.label}
         onClick={onClick}
         className={`w-full flex items-center rounded-xl overflow-hidden transition-colors group select-none ${
@@ -132,18 +155,137 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentProjectId }) => {
 
   return (
     <>
-      {/* ─── Desktop Sidebar ──────────────────────────────────────────────── */}
+      {/* ─── Desktop Super-Sidebar (Full-Height 100vh) ────────────────────── */}
       <aside
-        className={`hidden md:flex flex-col h-[calc(100vh-4rem)] sticky top-16 bg-[var(--md-sys-color-surface-container-low)] shrink-0 select-none z-20 overflow-hidden transition-[width] duration-200 ease-in-out ${
+        className={`hidden md:flex flex-col h-screen sticky top-0 bg-[var(--md-sys-color-surface-container-low)] shrink-0 select-none z-20 overflow-hidden transition-[width] duration-200 ease-in-out ${
           collapsed ? 'w-[72px]' : 'w-64'
         }`}
       >
-        {/* ── Navigation items ─────────────────────────────────────────── */}
+        {/* ── 1. Sidebar Brand Header ──────────────────────────────────────── */}
+        <div className="h-16 shrink-0 flex items-center border-b border-[var(--md-sys-color-outline-variant)]/15">
+          <NavLink to="/" className="w-full flex items-center group overflow-hidden" title="BugTracker Workspace">
+            <div className="w-[72px] shrink-0 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] flex items-center justify-center shadow-xs transition-all duration-150 group-hover:brightness-115">
+                <Shield className="w-5 h-5" />
+              </div>
+            </div>
+            <span
+              className={`font-bold text-base tracking-tight text-[var(--md-sys-color-on-surface)] whitespace-nowrap truncate transition-opacity duration-200 ${
+                collapsed ? 'opacity-0 w-0 pointer-events-none' : 'opacity-100 flex-1 pr-3'
+              }`}
+            >
+              BugTracker
+            </span>
+          </NavLink>
+        </div>
+
+        {/* ── 2. Project Context Switcher & Quick Actions ───────────────────── */}
+        <div className="shrink-0 p-2 border-b border-[var(--md-sys-color-outline-variant)]/15 space-y-1.5 overflow-hidden">
+          {/* Project Picker Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className={`w-full flex items-center rounded-xl bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] transition-colors cursor-pointer border border-[var(--md-sys-color-outline-variant)]/30 overflow-hidden ${
+                  collapsed ? 'h-10 justify-center' : 'h-11 px-2.5 justify-between'
+                }`}
+                title={activeProject ? `Project: ${activeProject.name}` : 'Select Project'}
+              >
+                {collapsed ? (
+                  <div className="w-7 h-7 rounded-lg bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center font-black text-xs">
+                    {activeProject ? activeProject.name.charAt(0).toUpperCase() : 'P'}
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <div className="w-7 h-7 rounded-lg bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center font-black text-xs shrink-0">
+                        {activeProject ? activeProject.name.charAt(0).toUpperCase() : 'P'}
+                      </div>
+                      <div className="text-left min-w-0 flex-1">
+                        <p className="text-xs font-bold truncate leading-tight text-[var(--md-sys-color-on-surface)]">
+                          {activeProject ? activeProject.name : 'Select Project'}
+                        </p>
+                        <p className="text-[10px] font-mono text-[var(--md-sys-color-on-surface-variant)] truncate leading-tight">
+                          {activeProject ? (activeProject.key || `PRJ-${activeProject.id}`) : 'Workspace'}
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronDown className="w-3.5 h-3.5 opacity-60 shrink-0 ml-1" />
+                  </>
+                )}
+              </button>
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent
+              align="start"
+              side="bottom"
+              className="w-60 p-2 rounded-2xl bg-[var(--md-sys-color-surface-container-lowest)] shadow-xl z-50 border border-[var(--md-sys-color-outline-variant)]/25 text-xs animate-in fade-in zoom-in-95 duration-150"
+            >
+              <div className="px-2 py-1 text-[10px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
+                Switch Project ({projects.length})
+              </div>
+
+              <DropdownMenuSeparator />
+
+              <div className="max-h-56 overflow-y-auto space-y-0.5">
+                {projects.map((p) => {
+                  const isSelected = p.id === activeProject?.id;
+                  return (
+                    <DropdownMenuItem
+                      key={p.id}
+                      onClick={() => navigate(`/projects/${p.id}/board`)}
+                      className={`flex items-center justify-between px-2.5 py-2 rounded-xl cursor-pointer ${
+                        isSelected
+                          ? 'bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] font-bold'
+                          : 'hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-6 h-6 rounded-md bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center font-bold text-[11px] shrink-0">
+                          {p.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0 truncate">
+                          <p className="truncate text-xs">{p.name}</p>
+                          <p className="text-[10px] font-mono opacity-70 truncate">{p.key || `PRJ-${p.id}`}</p>
+                        </div>
+                      </div>
+                      {isSelected && <Check className="w-3.5 h-3.5 shrink-0 text-[var(--md-sys-color-primary)]" />}
+                    </DropdownMenuItem>
+                  );
+                })}
+              </div>
+
+              <DropdownMenuSeparator />
+
+              <DropdownMenuItem
+                onClick={() => navigate('/projects')}
+                className="flex items-center gap-2 text-xs font-semibold text-[var(--md-sys-color-primary)] hover:bg-[var(--md-sys-color-surface-container-high)] px-2.5 py-2 rounded-xl cursor-pointer"
+              >
+                <Briefcase className="w-4 h-4" />
+                <span>Manage all projects</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Quick Create Ticket Button in Sidebar Header */}
+          {!collapsed && (
+            <button
+              type="button"
+              onClick={() => setIsCreateModalOpen(true)}
+              className="w-full h-9 rounded-xl bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] hover:brightness-110 active:scale-[0.98] transition-all text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Create Issue</span>
+            </button>
+          )}
+        </div>
+
+        {/* ── 3. Navigation items ─────────────────────────────────────────── */}
         <nav className="flex-1 py-3 overflow-y-auto overflow-x-hidden space-y-1">
           {navItems.map((item) => renderNavItem(item))}
         </nav>
 
-        {/* ── Bottom actions (GitLab style): Swagger Docs & Collapse Sidebar ─ */}
+        {/* ── 4. Bottom actions (GitLab style): Swagger Docs & Collapse Sidebar ─ */}
         <div className="shrink-0 pb-3 pt-2 border-t border-[var(--md-sys-color-outline-variant)]/15 flex flex-col gap-1 overflow-hidden">
           {/* Swagger API link */}
           <a
@@ -197,43 +339,134 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentProjectId }) => {
           <div className="fixed inset-0 bg-black/50 backdrop-blur-xs" onClick={closeMobile} />
           <div className="relative w-72 max-w-[85vw] bg-[var(--md-sys-color-surface-container-low)] h-full shadow-2xl flex flex-col z-10 animate-in slide-in-from-left duration-200">
 
-            {/* Mobile header */}
-            <div className="h-16 px-4 flex items-center justify-between border-b border-[var(--md-sys-color-outline-variant)]/15 pt-1">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] flex items-center justify-center shadow-xs">
+            {/* Mobile header with clickable logo */}
+            <div className="h-16 px-4 flex items-center justify-between border-b border-[var(--md-sys-color-outline-variant)]/15">
+              <NavLink
+                to="/"
+                onClick={closeMobile}
+                className="flex items-center gap-3 group"
+                title="Return to Dashboard"
+              >
+                <div className="w-10 h-10 rounded-xl bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] flex items-center justify-center shadow-xs group-hover:brightness-115 transition-all">
                   <Shield className="w-5 h-5" />
                 </div>
                 <span className="font-bold text-base text-[var(--md-sys-color-on-surface)]">BugTracker</span>
-              </div>
+              </NavLink>
               <button
                 type="button"
                 onClick={closeMobile}
-                className="p-1.5 rounded-full text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] cursor-pointer"
+                className="p-2 rounded-full text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] cursor-pointer"
                 aria-label="Close navigation"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
+            {/* Mobile Interactive Project Switcher */}
+            <div className="p-3 border-b border-[var(--md-sys-color-outline-variant)]/15">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="w-full p-2.5 rounded-xl bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/30 flex items-center justify-between cursor-pointer transition-colors shadow-2xs"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1 text-left">
+                      <div className="w-7 h-7 rounded-lg bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center font-black text-xs shrink-0">
+                        {activeProject ? activeProject.name.charAt(0).toUpperCase() : 'P'}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold truncate text-[var(--md-sys-color-on-surface)] leading-tight">
+                          {activeProject?.name || 'Select Project'}
+                        </p>
+                        <p className="text-[10px] font-mono text-[var(--md-sys-color-on-surface-variant)] truncate leading-tight">
+                          {activeProject?.key || 'PRJ'}
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronDown className="w-3.5 h-3.5 opacity-60 shrink-0 ml-1" />
+                  </button>
+                </DropdownMenuTrigger>
+
+                <DropdownMenuContent
+                  align="start"
+                  side="bottom"
+                  className="w-64 p-2 rounded-2xl bg-[var(--md-sys-color-surface-container-lowest)] shadow-xl z-50 border border-[var(--md-sys-color-outline-variant)]/25 text-xs animate-in fade-in zoom-in-95 duration-150"
+                >
+                  <div className="px-2 py-1 text-[10px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
+                    Switch Project ({projects.length})
+                  </div>
+                  <DropdownMenuSeparator />
+                  <div className="max-h-56 overflow-y-auto space-y-0.5">
+                    {projects.map((p) => {
+                      const isSelected = p.id === activeProject?.id;
+                      return (
+                        <DropdownMenuItem
+                          key={p.id}
+                          onClick={() => {
+                            navigate(`/projects/${p.id}/board`);
+                            closeMobile();
+                          }}
+                          className={`flex items-center justify-between px-2.5 py-2 rounded-xl cursor-pointer ${
+                            isSelected
+                              ? 'bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] font-bold'
+                              : 'hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)]'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-6 h-6 rounded-md bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center font-bold text-[11px] shrink-0">
+                              {p.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="min-w-0 truncate">
+                              <p className="truncate text-xs">{p.name}</p>
+                              <p className="text-[10px] font-mono opacity-70 truncate">{p.key || `PRJ-${p.id}`}</p>
+                            </div>
+                          </div>
+                          {isSelected && <Check className="w-3.5 h-3.5 shrink-0 text-[var(--md-sys-color-primary)]" />}
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => {
+                      navigate('/projects');
+                      closeMobile();
+                    }}
+                    className="flex items-center gap-2 text-xs font-semibold text-[var(--md-sys-color-primary)] hover:bg-[var(--md-sys-color-surface-container-high)] px-2.5 py-2 rounded-xl cursor-pointer"
+                  >
+                    <Briefcase className="w-4 h-4" />
+                    <span>Manage all projects</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
             {/* Mobile nav items */}
             <nav className="flex-1 py-3 space-y-1 overflow-y-auto px-2">
-              {navItems.map((item) => (
-                <NavLink
-                  key={item.label}
-                  to={item.path}
-                  onClick={closeMobile}
-                  className={({ isActive }) =>
-                    `w-full h-11 flex items-center gap-3 px-3 rounded-xl text-xs font-medium transition-colors ${
+              {navItems.map((item) => {
+                const isActive = item.activeMatch
+                  ? item.activeMatch(location.pathname)
+                  : item.exact
+                  ? location.pathname === item.path
+                  : location.pathname.startsWith(item.path);
+
+                return (
+                  <NavLink
+                    key={item.label}
+                    to={item.path}
+                    end={item.exact}
+                    onClick={closeMobile}
+                    className={`w-full h-11 flex items-center gap-3 px-3 rounded-xl text-xs font-medium transition-colors ${
                       isActive
                         ? 'bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] font-bold shadow-xs'
                         : 'text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)]'
-                    }`
-                  }
-                >
-                  <item.icon className="w-5 h-5 shrink-0" />
-                  <span className="truncate">{item.label}</span>
-                </NavLink>
-              ))}
+                    }`}
+                  >
+                    <item.icon className="w-5 h-5 shrink-0" />
+                    <span className="truncate">{item.label}</span>
+                  </NavLink>
+                );
+              })}
             </nav>
 
             {/* Mobile bottom: API link */}
@@ -253,6 +486,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentProjectId }) => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Global Create Issue Modal */}
+      {isCreateModalOpen && (
+        <IssueModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onIssueSaved={(savedIssue) => {
+            setIsCreateModalOpen(false);
+            navigate(`/issues/${savedIssue.key || savedIssue.id}`);
+          }}
+        />
       )}
     </>
   );

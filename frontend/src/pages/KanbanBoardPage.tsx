@@ -21,14 +21,14 @@ import {
   CheckCircle2,
   Loader2,
 } from 'lucide-react';
-import { Button, Tooltip } from '../components/ui';
+import { Button, Tooltip, Badge } from '../components/ui';
 
-const COLUMNS: { status: IssueStatus; title: string; badgeColor: string }[] = [
-  { status: 'OPEN', title: 'To Do', badgeColor: 'bg-slate-500/10 text-slate-600 dark:text-slate-400' },
-  { status: 'IN_PROGRESS', title: 'In Progress', badgeColor: 'bg-blue-500/10 text-blue-600 dark:text-blue-400' },
-  { status: 'REVIEW', title: 'Code Review', badgeColor: 'bg-purple-500/10 text-purple-600 dark:text-purple-400' },
-  { status: 'RESOLVED', title: 'Resolved', badgeColor: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' },
-  { status: 'CLOSED', title: 'Closed', badgeColor: 'bg-zinc-500/10 text-zinc-500' },
+const COLUMNS: { status: IssueStatus; title: string; badgeVariant: 'open' | 'in-progress' | 'review' | 'resolved' | 'closed' }[] = [
+  { status: 'OPEN', title: 'To Do', badgeVariant: 'open' },
+  { status: 'IN_PROGRESS', title: 'In Progress', badgeVariant: 'in-progress' },
+  { status: 'REVIEW', title: 'Code Review', badgeVariant: 'review' },
+  { status: 'RESOLVED', title: 'Resolved', badgeVariant: 'resolved' },
+  { status: 'CLOSED', title: 'Closed', badgeVariant: 'closed' },
 ];
 
 export const KanbanBoardPage: React.FC = () => {
@@ -345,7 +345,7 @@ export const KanbanBoardPage: React.FC = () => {
       </div>
 
       {filterSavedMsg && (
-        <div className="mt-3 p-3 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
+        <div className="mt-3 p-3 rounded-2xl bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] text-xs font-semibold flex items-center gap-2 animate-in fade-in">
           <CheckCircle2 className="w-4 h-4 shrink-0" />
           <span>{filterSavedMsg}</span>
         </div>
@@ -353,7 +353,7 @@ export const KanbanBoardPage: React.FC = () => {
 
       {/* Error Banner */}
       {error && (
-        <div className="mt-3 p-3 rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs">
+        <div className="mt-3 p-3 rounded-2xl bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] text-xs">
           {error}
         </div>
       )}
@@ -382,9 +382,9 @@ export const KanbanBoardPage: React.FC = () => {
                   <h3 className="font-bold text-xs uppercase tracking-wider text-[var(--md-sys-color-on-surface)]">
                     {col.title}
                   </h3>
-                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${col.badgeColor}`}>
+                  <Badge variant={col.badgeVariant} size="sm" className="px-2 py-0.5 rounded-full font-bold">
                     {colIssues.length}
-                  </span>
+                  </Badge>
                 </div>
               </div>
 

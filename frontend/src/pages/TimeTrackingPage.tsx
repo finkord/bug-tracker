@@ -197,12 +197,12 @@ export const TimeTrackingPage: React.FC = () => {
       {/* Main View Tabs & Range Controls */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         {/* Navigation Tabs Bar */}
-        <div className="flex items-center gap-1.5 p-1.5 rounded-full bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 overflow-x-auto w-fit max-w-full shadow-2xs">
+        <div className="flex items-center gap-1 p-1 sm:p-1.5 rounded-full bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 overflow-x-auto max-w-full shadow-2xs">
           <Button
             type="button"
             variant={activeTab === 'matrix' ? 'filled' : 'ghost'}
             size="sm"
-            className="rounded-full px-4 text-xs font-bold"
+            className="rounded-full px-3 sm:px-4 text-xs font-bold"
             onClick={() => setActiveTab('matrix')}
             leftIcon={<FileSpreadsheet className="w-3.5 h-3.5" />}
           >
@@ -213,7 +213,7 @@ export const TimeTrackingPage: React.FC = () => {
             type="button"
             variant={activeTab === 'calendar' ? 'filled' : 'ghost'}
             size="sm"
-            className="rounded-full px-4 text-xs font-bold"
+            className="rounded-full px-3 sm:px-4 text-xs font-bold"
             onClick={() => {
               setActiveTab('calendar');
               setRangeMode('month');
@@ -227,7 +227,7 @@ export const TimeTrackingPage: React.FC = () => {
             type="button"
             variant={activeTab === 'personal' ? 'filled' : 'ghost'}
             size="sm"
-            className="rounded-full px-4 text-xs font-bold"
+            className="rounded-full px-3 sm:px-4 text-xs font-bold"
             onClick={() => setActiveTab('personal')}
             leftIcon={<Clock className="w-3.5 h-3.5" />}
           >
@@ -358,7 +358,7 @@ export const TimeTrackingPage: React.FC = () => {
                           key={day}
                           className={`py-2 px-1 text-center w-12 min-w-[44px] font-semibold border-r border-[var(--md-sys-color-outline-variant)]/20 ${
                             isToday
-                              ? 'bg-amber-500/15 text-amber-800 dark:text-amber-200 font-bold'
+                              ? 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] font-bold'
                               : isWeekend
                               ? 'opacity-60 bg-[var(--md-sys-color-surface-container-lowest)]/40'
                               : ''
@@ -494,7 +494,7 @@ export const TimeTrackingPage: React.FC = () => {
                           <td
                             key={day}
                             className={`py-1 px-0.5 text-center border-r border-[var(--md-sys-color-outline-variant)]/20 ${
-                              isToday ? 'bg-amber-500/5' : ''
+                              isToday ? 'bg-[var(--md-sys-color-primary-container)]/25' : ''
                             }`}
                           >
                             {hours > 0 ? (
@@ -533,7 +533,7 @@ export const TimeTrackingPage: React.FC = () => {
                         <td
                           key={`total-${day}`}
                           className={`py-2 px-0.5 text-center border-r border-[var(--md-sys-color-outline-variant)]/20 ${
-                            isToday ? 'bg-amber-500/20 text-amber-900 dark:text-amber-200 font-extrabold' : ''
+                            isToday ? 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] font-extrabold' : ''
                           }`}
                         >
                           {total > 0 ? `${total}h` : '-'}

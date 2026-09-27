@@ -129,7 +129,7 @@ export const ProjectsPage: React.FC = () => {
             <span className="text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
               Active / Open Issues
             </span>
-            <div className="w-8 h-8 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-full bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] flex items-center justify-center">
               <Clock className="w-4 h-4" />
             </div>
           </div>
@@ -143,7 +143,7 @@ export const ProjectsPage: React.FC = () => {
             <span className="text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
               Total Tracked Issues
             </span>
-            <div className="w-8 h-8 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-full bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] flex items-center justify-center">
               <Layers className="w-4 h-4" />
             </div>
           </div>
@@ -162,7 +162,7 @@ export const ProjectsPage: React.FC = () => {
       )}
 
       {error && (
-        <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-sm">
+        <div className="p-4 rounded-2xl bg-[var(--md-sys-color-error-container)] border border-[var(--md-sys-color-error)]/20 text-[var(--md-sys-color-on-error-container)] text-sm font-medium">
           {error}
         </div>
       )}

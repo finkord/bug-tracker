@@ -159,7 +159,7 @@ export const IssueCard: React.FC<IssueCardProps> = ({
               {estimated > 0 && <span className="opacity-60">/ {estimated}h</span>}
             </span>
             {estimated > 0 && (
-              <span className={`text-[10px] font-bold ${isOverEstimate ? 'text-rose-500' : 'text-emerald-600 dark:text-emerald-400'}`}>
+              <span className={`text-[10px] font-bold ${isOverEstimate ? 'text-[var(--md-sys-color-error)]' : 'text-[var(--md-sys-color-success)]'}`}>
                 {progressPercent}%
               </span>
             )}
@@ -168,7 +168,7 @@ export const IssueCard: React.FC<IssueCardProps> = ({
             <div className="w-full h-1.5 rounded-full bg-[var(--md-sys-color-surface-container-highest)] overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all ${
-                  isOverEstimate ? 'bg-rose-500' : 'bg-[var(--md-sys-color-primary)]'
+                  isOverEstimate ? 'bg-[var(--md-sys-color-error)]' : 'bg-[var(--md-sys-color-primary)]'
                 }`}
                 style={{ width: `${progressPercent}%` }}
               />

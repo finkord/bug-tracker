@@ -279,7 +279,7 @@ export const ProfilePage: React.FC = () => {
                   {totalPersonalHours.toFixed(1)}h
                 </p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center">
                 <Clock className="w-5 h-5" />
               </div>
             </div>
@@ -289,11 +289,11 @@ export const ProfilePage: React.FC = () => {
                 <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
                   This Month
                 </span>
-                <p className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                <p className="text-xl sm:text-2xl font-black text-[var(--md-sys-color-success)]">
                   {thisMonthPersonalHours.toFixed(1)}h
                 </p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] flex items-center justify-center">
                 <Trophy className="w-5 h-5" />
               </div>
             </div>
@@ -303,12 +303,12 @@ export const ProfilePage: React.FC = () => {
                 <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
                   Day Streak
                 </span>
-                <p className="text-xl sm:text-2xl font-black text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                <p className="text-xl sm:text-2xl font-black text-[var(--md-sys-color-warning)] flex items-center gap-1">
                   <span>{streak}</span>
                   <span className="text-xs font-normal text-[var(--md-sys-color-on-surface-variant)]">days</span>
                 </p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] flex items-center justify-center">
                 <Flame className="w-5 h-5" />
               </div>
             </div>
@@ -318,11 +318,11 @@ export const ProfilePage: React.FC = () => {
                 <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
                   Worklogs
                 </span>
-                <p className="text-xl sm:text-2xl font-black text-purple-600 dark:text-purple-400">
+                <p className="text-xl sm:text-2xl font-black text-[var(--md-sys-color-tertiary)]">
                   {myLogs.length}
                 </p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-[var(--md-sys-color-tertiary-container)] text-[var(--md-sys-color-on-tertiary-container)] flex items-center justify-center">
                 <Award className="w-5 h-5" />
               </div>
             </div>
@@ -331,16 +331,16 @@ export const ProfilePage: React.FC = () => {
           {/* Achievement Badges Showcase */}
           <div className="p-6 rounded-3xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 space-y-4 shadow-xs">
             <h4 className="text-xs font-bold text-[var(--md-sys-color-on-surface)] flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-amber-500" />
+              <Sparkles className="w-4 h-4 text-[var(--md-sys-color-warning)]" />
               <span>Personal Engineering Milestones & Badges</span>
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className={`p-3.5 rounded-2xl border flex items-center gap-3 transition-colors ${
                 streak >= 3
-                  ? 'border-amber-500/40 bg-amber-500/10'
+                  ? 'border-[var(--md-sys-color-warning)]/40 bg-[var(--md-sys-color-warning-container)]/30'
                   : 'border-[var(--md-sys-color-outline-variant)]/20 bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] opacity-70'
               }`}>
-                <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-sm">
+                <div className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] flex items-center justify-center font-bold text-sm">
                   🔥
                 </div>
                 <div>
@@ -353,10 +353,10 @@ export const ProfilePage: React.FC = () => {
 
               <div className={`p-3.5 rounded-2xl border flex items-center gap-3 transition-colors ${
                 Object.values(myDailyHours).some((h) => h >= 8)
-                  ? 'border-emerald-500/40 bg-emerald-500/10'
+                  ? 'border-[var(--md-sys-color-success)]/40 bg-[var(--md-sys-color-success-container)]/30'
                   : 'border-[var(--md-sys-color-outline-variant)]/20 bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] opacity-70'
               }`}>
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-sm">
+                <div className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] flex items-center justify-center font-bold text-sm">
                   ⚡
                 </div>
                 <div>
@@ -369,10 +369,10 @@ export const ProfilePage: React.FC = () => {
 
               <div className={`p-3.5 rounded-2xl border flex items-center gap-3 transition-colors ${
                 myLogs.length >= 5
-                  ? 'border-blue-500/40 bg-blue-500/10'
+                  ? 'border-[var(--md-sys-color-primary)]/40 bg-[var(--md-sys-color-primary-container)]/30'
                   : 'border-[var(--md-sys-color-outline-variant)]/20 bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] opacity-70'
               }`}>
-                <div className="w-9 h-9 rounded-xl bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-sm">
+                <div className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center font-bold text-sm">
                   🎯
                 </div>
                 <div>
@@ -716,7 +716,7 @@ export const ProfilePage: React.FC = () => {
             </div>
 
             {sessionsRevokedMsg && (
-              <div className="p-3 text-xs rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-medium">
+              <div className="p-3 text-xs rounded-2xl bg-[var(--md-sys-color-success-container)] border border-[var(--md-sys-color-success)]/20 text-[var(--md-sys-color-on-success-container)] font-medium">
                 {sessionsRevokedMsg}
               </div>
             )}

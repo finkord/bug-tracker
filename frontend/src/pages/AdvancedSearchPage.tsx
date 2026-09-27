@@ -246,6 +246,50 @@ export const AdvancedSearchPage: React.FC = () => {
     loadData();
   }, []);
 
+  // Sync state reactively whenever URL searchParams change (e.g. from Navbar quick filters)
+  useEffect(() => {
+    const urlJql = searchParams.get('jql');
+    const urlQ = searchParams.get('q');
+    const urlProjects = searchParams.get('projects');
+    const urlTypes = searchParams.get('types');
+    const urlStatuses = searchParams.get('statuses');
+    const urlPriorities = searchParams.get('priorities');
+    const urlAssignee = searchParams.get('assignee');
+    const urlSprint = searchParams.get('sprint');
+    const urlLayout = searchParams.get('layout');
+    const urlIssue = searchParams.get('issue');
+
+    if (urlJql !== null) {
+      setMode('JQL');
+      setJqlInput(urlJql);
+      setActiveJql(urlJql);
+    } else if (
+      urlQ !== null ||
+      urlProjects !== null ||
+      urlTypes !== null ||
+      urlStatuses !== null ||
+      urlPriorities !== null ||
+      urlAssignee !== null ||
+      urlSprint !== null
+    ) {
+      setMode('BASIC');
+      setQuery(urlQ || '');
+      setSelectedProjectKeys(urlProjects ? urlProjects.split(',') : []);
+      setSelectedTypes(urlTypes ? urlTypes.split(',') : []);
+      setSelectedStatuses(urlStatuses ? urlStatuses.split(',') : []);
+      setSelectedPriorities(urlPriorities ? urlPriorities.split(',') : []);
+      setSelectedAssignee(urlAssignee || 'ALL');
+      setSelectedSprint(urlSprint || 'ALL');
+    }
+
+    if (urlLayout && (urlLayout === 'LIST' || urlLayout === 'DETAIL')) {
+      setLayout(urlLayout);
+    }
+    if (urlIssue) {
+      setSelectedIssueKey(urlIssue);
+    }
+  }, [searchParams]);
+
   // Sync state changes with URL Search Params
   const syncUrl = (updates: Record<string, string | null>) => {
     const next = new URLSearchParams(searchParams);

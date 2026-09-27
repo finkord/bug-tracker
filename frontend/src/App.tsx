@@ -30,26 +30,30 @@ import { OAuthCallbackPage } from './pages/OAuthCallbackPage';
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
 
+  if (!user) {
+    return (
+      <div className="min-h-screen flex flex-col bg-[var(--md-sys-color-background)] text-[var(--md-sys-color-on-background)] transition-colors duration-200">
+        <Navbar />
+        <main className="flex-1 min-w-0">{children}</main>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--md-sys-color-surface-container-low)] text-[var(--md-sys-color-on-background)] transition-colors duration-200">
-      {/* ─── Continuous Full-Width Top Bar (GitLab style) ──────────────────── */}
-      <Navbar />
+    <div className="h-screen w-screen overflow-hidden flex bg-[var(--md-sys-color-surface-container-low)] text-[var(--md-sys-color-on-background)] transition-colors duration-200 select-none">
+      {/* ─── Full-Height Super-Sidebar (y=0 to y=100vh) ────────────────────── */}
+      <Sidebar />
 
-      {/* ─── Workspace Row: Sidebar (left) + Curved Main Canvas (right) ────── */}
-      <div className="flex-1 flex min-w-0 relative">
-        {user && <Sidebar />}
+      {/* ─── Right Workspace Column: Top Control Strip + Floating Canvas Card ── */}
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+        <Navbar />
 
-        <main
-          className={`flex-1 overflow-x-hidden min-w-0 ${user
-              ? 'bg-[var(--md-sys-color-background)] md:rounded-tl-[20px] md:border-t md:border-l md:border-[var(--md-sys-color-outline-variant)]/20 shadow-xs'
-              : 'bg-[var(--md-sys-color-background)]'
-            }`}
-        >
+        {/* ─── Elevated Main Canvas Card (Optical Curve Metaphor) ──────────── */}
+        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden mx-1 mb-1 sm:mx-2 sm:mb-2 md:mr-3 md:mb-3 md:mx-0 bg-[var(--md-sys-color-background)] rounded-xl sm:rounded-2xl md:rounded-3xl border border-[var(--md-sys-color-outline-variant)]/25 shadow-xs transition-all duration-200 flex flex-col">
           {children}
         </main>
       </div>
-
-      {!user && <Footer />}
     </div>
   );
 };

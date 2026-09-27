@@ -54,10 +54,10 @@ const statusBadgeConfig: Record<IssueStatus, { label: string; className: string 
 };
 
 const priorityDot: Record<IssuePriority, string> = {
-  CRITICAL: 'bg-red-500',
-  HIGH: 'bg-orange-500',
-  MEDIUM: 'bg-amber-500',
-  LOW: 'bg-blue-500',
+  CRITICAL: 'bg-[var(--md-sys-color-priority-critical)]',
+  HIGH: 'bg-[var(--md-sys-color-priority-high)]',
+  MEDIUM: 'bg-[var(--md-sys-color-priority-medium)]',
+  LOW: 'bg-[var(--md-sys-color-priority-low)]',
 };
 
 export const IssueLinksSection: React.FC<IssueLinksSectionProps> = ({
@@ -162,13 +162,13 @@ export const IssueLinksSection: React.FC<IssueLinksSectionProps> = ({
 
   const getLinkBadgeStyle = (label: string) => {
     if (label === 'blocks') {
-      return 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30';
+      return 'bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] border border-[var(--md-sys-color-warning)]/30';
     }
     if (label === 'is blocked by') {
       return 'bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] border border-[var(--md-sys-color-error)]/25';
     }
     if (label.includes('duplicate')) {
-      return 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30';
+      return 'bg-[var(--md-sys-color-tertiary-container)] text-[var(--md-sys-color-on-tertiary-container)] border border-[var(--md-sys-color-tertiary)]/30';
     }
     return 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] border border-[var(--md-sys-color-primary)]/20';
   };
@@ -388,16 +388,16 @@ export const IssueLinksSection: React.FC<IssueLinksSectionProps> = ({
           {/* 2. Downstream Blocked */}
           {blocks.length > 0 && (
             <div className="space-y-2">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--md-sys-color-warning)]">
                 <ShieldAlert className="w-4 h-4" />
                 <span>Downstream Blocked Issues (Waiting on this issue)</span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-4 border-l-2 border-amber-500/40">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-4 border-l-2 border-[var(--md-sys-color-warning)]/40">
                 {blocks.map((b) => (
                   <Link
                     key={b.id}
                     to={`/issues/${b.linkedIssue.key}`}
-                    className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 hover:border-amber-500 text-xs flex items-center justify-between gap-2"
+                    className="p-2 rounded-lg bg-[var(--md-sys-color-warning-container)]/30 border border-[var(--md-sys-color-warning)]/30 hover:border-[var(--md-sys-color-warning)] text-xs flex items-center justify-between gap-2"
                   >
                     <span className="font-mono font-bold text-[var(--md-sys-color-primary)]">
                       {b.linkedIssue.key}

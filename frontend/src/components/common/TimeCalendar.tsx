@@ -165,21 +165,21 @@ export const TimeCalendar: React.FC<TimeCalendarProps> = ({
 
           <div className="p-3 rounded-xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]">
             <span className="text-[11px] font-medium text-[var(--md-sys-color-on-surface-variant)]">Active Days</span>
-            <p className="text-base font-bold text-emerald-600 dark:text-emerald-400">
+            <p className="text-base font-bold text-[var(--md-sys-color-success)]">
               {activeDaysCount} days
             </p>
           </div>
 
           <div className="p-3 rounded-xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]">
             <span className="text-[11px] font-medium text-[var(--md-sys-color-on-surface-variant)]">Daily Average</span>
-            <p className="text-base font-bold text-blue-600 dark:text-blue-400">
+            <p className="text-base font-bold text-[var(--md-sys-color-primary)]">
               {activeDaysCount > 0 ? (monthlyTotalHours / activeDaysCount).toFixed(1) : 0}h / day
             </p>
           </div>
 
           <div className="p-3 rounded-xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]">
             <span className="text-[11px] font-medium text-[var(--md-sys-color-on-surface-variant)]">Selected Day</span>
-            <p className="text-base font-bold text-amber-600 dark:text-amber-400">
+            <p className="text-base font-bold text-[var(--md-sys-color-warning)]">
               {selectedDayHours.toFixed(1)}h
             </p>
           </div>

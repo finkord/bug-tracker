@@ -214,10 +214,10 @@ export const SprintAnalyticsModal: React.FC<SprintAnalyticsModalProps> = ({
                   <span className="text-[11px] font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider block">
                     Delivered
                   </span>
-                  <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                  <div className="text-2xl font-black text-[var(--md-sys-color-success)]">
                     {completedHours} <span className="text-xs font-normal text-[var(--md-sys-color-on-surface-variant)]">hrs</span>
                   </div>
-                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">
+                  <span className="text-[10px] text-[var(--md-sys-color-success)] font-bold">
                     {completionRate}% completed
                   </span>
                 </div>
@@ -226,7 +226,7 @@ export const SprintAnalyticsModal: React.FC<SprintAnalyticsModalProps> = ({
                   <span className="text-[11px] font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider block">
                     Remaining
                   </span>
-                  <div className="text-2xl font-black text-blue-600 dark:text-blue-400">
+                  <div className="text-2xl font-black text-[var(--md-sys-color-primary)]">
                     {remainingHours} <span className="text-xs font-normal text-[var(--md-sys-color-on-surface-variant)]">hrs</span>
                   </div>
                   <span className="text-[10px] text-[var(--md-sys-color-on-surface-variant)]">
@@ -238,7 +238,7 @@ export const SprintAnalyticsModal: React.FC<SprintAnalyticsModalProps> = ({
                   <span className="text-[11px] font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider block">
                     Work Logged
                   </span>
-                  <div className="text-2xl font-black text-purple-600 dark:text-purple-400">
+                  <div className="text-2xl font-black text-[var(--md-sys-color-tertiary)]">
                     {totalLoggedHours} <span className="text-xs font-normal text-[var(--md-sys-color-on-surface-variant)]">hrs</span>
                   </div>
                   <span className="text-[10px] text-[var(--md-sys-color-on-surface-variant)]">
@@ -391,19 +391,19 @@ export const SprintAnalyticsModal: React.FC<SprintAnalyticsModalProps> = ({
                             <span>Committed Scope:</span>
                             <span className="font-semibold">{v.planned} hrs</span>
                           </div>
-                          <div className="w-full h-2 rounded-full bg-slate-500/20 overflow-hidden">
-                            <div className="h-full bg-slate-400 rounded-full" style={{ width: `${plannedWidth}%` }} />
+                          <div className="w-full h-2 rounded-full bg-[var(--md-sys-color-secondary-container)] overflow-hidden">
+                            <div className="h-full bg-[var(--md-sys-color-secondary)] rounded-full" style={{ width: `${plannedWidth}%` }} />
                           </div>
                         </div>
 
                         {/* Delivered Bar */}
                         <div className="space-y-0.5">
-                          <div className="flex justify-between text-[10px] text-emerald-600 dark:text-emerald-400">
+                          <div className="flex justify-between text-[10px] text-[var(--md-sys-color-success)] font-bold">
                             <span>Delivered Effort:</span>
                             <span className="font-bold">{v.delivered} hrs</span>
                           </div>
-                          <div className="w-full h-2 rounded-full bg-emerald-500/20 overflow-hidden">
-                            <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${deliveredWidth}%` }} />
+                          <div className="w-full h-2 rounded-full bg-[var(--md-sys-color-success-container)] overflow-hidden">
+                            <div className="h-full bg-[var(--md-sys-color-success)] rounded-full" style={{ width: `${deliveredWidth}%` }} />
                           </div>
                         </div>
                       </div>
@@ -485,7 +485,7 @@ export const SprintAnalyticsModal: React.FC<SprintAnalyticsModalProps> = ({
                         <td className="p-3 text-right font-mono font-semibold text-[var(--md-sys-color-on-surface)]">
                           {issue.estimatedHours || 0}h
                         </td>
-                        <td className="p-3 text-right font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+                        <td className="p-3 text-right font-mono font-semibold text-[var(--md-sys-color-success)]">
                           {issue.loggedHours || 0}h
                         </td>
                       </tr>
