@@ -4,7 +4,7 @@ import { IsEmail, IsNotEmpty, IsString, MinLength, Matches } from 'class-validat
 export class ForgotPasswordDto {
   @ApiProperty({
     example: 'john.doe@example.com',
-    description: 'Email address of the account to receive password reset link (SDSecurity Task 7)',
+    description: 'Email address of the account to receive password reset link',
   })
   @IsEmail({}, { message: 'Invalid email address format' })
   email: string;

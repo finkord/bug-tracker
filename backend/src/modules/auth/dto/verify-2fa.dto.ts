@@ -12,7 +12,7 @@ export class Verify2faDto {
 
   @ApiProperty({
     example: '123456',
-    description: '6-digit time-based one-time passcode from authenticator app (SDSecurity Task 5)',
+    description: '6-digit time-based one-time passcode from authenticator app',
   })
   @IsString()
   @Matches(/^\d{6}$/, { message: '2FA code must be exactly 6 digits' })

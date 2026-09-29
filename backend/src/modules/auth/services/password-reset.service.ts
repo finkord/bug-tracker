@@ -20,7 +20,7 @@ export class PasswordResetService {
   ) {}
 
   /**
-   * Dispatches password recovery link with time-limited single-use token (SDSecurity Task 7).
+   * Dispatches password recovery link with time-limited single-use token.
    */
   async forgotPassword(dto: ForgotPasswordDto) {
     const user = await this.usersService.findByEmail(dto.email);
@@ -61,7 +61,7 @@ export class PasswordResetService {
   }
 
   /**
-   * Resets password using valid single-use token (SDSecurity Task 7).
+   * Resets password using valid single-use token.
    */
   async resetPassword(dto: ResetPasswordDto) {
     const user = await this.usersService.findByResetPasswordToken(dto.token);

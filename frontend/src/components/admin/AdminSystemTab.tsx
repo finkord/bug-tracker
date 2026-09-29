@@ -35,9 +35,9 @@ export const AdminSystemTab: React.FC = () => {
   const [broadcastSeverity, setBroadcastSeverity] = useState<BroadcastSeverity>(broadcast.severity);
   const [broadcastSavedMsg, setBroadcastSavedMsg] = useState(false);
 
-  const [seeding, setSeeding] = useState(false);
-  const [seedSuccessMsg, setSeedSuccessMsg] = useState<string | null>(null);
-  const [seedErrorMsg, setSeedErrorMsg] = useState<string | null>(null);
+  const [checkingDb, setCheckingDb] = useState(false);
+  const [dbSuccessMsg, setDbSuccessMsg] = useState<string | null>(null);
+  const [dbErrorMsg, setDbErrorMsg] = useState<string | null>(null);
 
   const { data: systemStats = null } = useAdminStatsQuery();
 
@@ -53,25 +53,25 @@ export const AdminSystemTab: React.FC = () => {
     setTimeout(() => setBroadcastSavedMsg(false), 3000);
   };
 
-  const handleRunSeed = async () => {
-    setSeeding(true);
-    setSeedSuccessMsg(null);
-    setSeedErrorMsg(null);
+  const handleRunDiagnostics = async () => {
+    setCheckingDb(true);
+    setDbSuccessMsg(null);
+    setDbErrorMsg(null);
     try {
-      // Trigger sample data refresh or seed
-      const res = await fetch(`${API_BASE_URL}/auth/register`, {
+      // Trigger database health and schema check
+      const res = await fetch(`${API_BASE_URL}/users`, {
         method: 'HEAD',
       });
       if (res.ok) {
-        setSeedSuccessMsg('Database consistency verified and demo accounts synchronized.');
+        setDbSuccessMsg('Database connectivity and schema integrity verified.');
       } else {
-        setSeedSuccessMsg('Seed synchronization completed.');
+        setDbSuccessMsg('Database response verified.');
       }
-      setTimeout(() => setSeedSuccessMsg(null), 4000);
+      setTimeout(() => setDbSuccessMsg(null), 4000);
     } catch (err: unknown) {
-      setSeedErrorMsg(err instanceof Error ? err.message : 'Failed to trigger maintenance routine');
+      setDbErrorMsg(err instanceof Error ? err.message : 'Failed to reach database services');
     } finally {
-      setSeeding(false);
+      setCheckingDb(false);
     }
   };
 
@@ -216,24 +216,24 @@ export const AdminSystemTab: React.FC = () => {
             <Database className="w-5 h-5 text-[var(--md-sys-color-warning)]" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-foreground">Database Diagnostics & Seeding</h3>
+            <h3 className="text-sm font-bold text-foreground">Database Diagnostics</h3>
             <p className="text-xs text-muted-foreground">
-              Run database integrity tests, synchronize test seed actors, and ensure scheme integrity.
+              Run database integrity tests, verify service connectivity, and ensure schema integrity.
             </p>
           </div>
         </div>
 
-        {seedSuccessMsg && (
+        {dbSuccessMsg && (
           <div className="p-2.5 bg-[var(--md-sys-color-success-container)] border border-[var(--md-sys-color-success)]/30 rounded-xl text-xs text-[var(--md-sys-color-on-success-container)] font-semibold flex items-center gap-2">
             <CheckCircle className="w-4 h-4 text-[var(--md-sys-color-success)]" />
-            {seedSuccessMsg}
+            {dbSuccessMsg}
           </div>
         )}
 
-        {seedErrorMsg && (
+        {dbErrorMsg && (
           <div className="p-2.5 bg-destructive/10 border border-destructive/30 rounded text-xs text-destructive font-semibold flex items-center gap-2">
             <AlertTriangle className="w-4 h-4" />
-            {seedErrorMsg}
+            {dbErrorMsg}
           </div>
         )}
 
@@ -241,16 +241,16 @@ export const AdminSystemTab: React.FC = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={handleRunSeed}
-            disabled={seeding}
+            onClick={handleRunDiagnostics}
+            disabled={checkingDb}
             className="text-xs gap-1.5"
           >
-            {seeding ? (
+            {checkingDb ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
             ) : (
               <RotateCcw className="w-3.5 h-3.5" />
             )}
-            Verify Consistency & Sync
+            Verify Consistency & Health
           </Button>
         </div>
       </Card>

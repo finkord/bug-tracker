@@ -57,7 +57,7 @@ export class User {
   @Column({ name: 'avatar_url', type: 'varchar', length: 500, nullable: true })
   avatarUrl: string | null;
 
-  // SDSecurity Task 3: Account activation status and token
+  // Account activation status and token
   @Column({ name: 'is_activated', type: 'boolean', default: false })
   isActivated: boolean;
 
@@ -67,7 +67,7 @@ export class User {
   @Column({ name: 'activation_token_expires_at', type: 'timestamptz', nullable: true })
   activationTokenExpiresAt: Date | null;
 
-  // SDSecurity Task 4: Brute force lockout counters
+  // Brute-force lockout counters
   @Column({ name: 'failed_login_attempts', type: 'int', default: 0 })
   failedLoginAttempts: number;
 
@@ -77,7 +77,7 @@ export class User {
   @Column({ name: 'is_blocked', type: 'boolean', default: false })
   isBlocked: boolean;
 
-  // SDSecurity Task 5: Two-Factor Authentication (TOTP)
+  // Two-Factor Authentication (TOTP)
   @Column({ name: 'two_factor_enabled', type: 'boolean', default: false })
   twoFactorEnabled: boolean;
 
@@ -92,7 +92,7 @@ export class User {
   @Column({ name: 'token_version', type: 'int', default: 0 })
   tokenVersion: number;
 
-  // SDSecurity Task 6: External Identity Providers
+  // External Identity Providers
   @Column({
     name: 'oauth_provider',
     type: 'varchar',
@@ -104,7 +104,7 @@ export class User {
   @Column({ name: 'oauth_id', type: 'varchar', length: 255, nullable: true })
   oauthId: string | null;
 
-  // SDSecurity Task 7: Password Reset Token
+  // Password Reset Token
   @Column({ name: 'reset_password_token', type: 'varchar', length: 255, nullable: true })
   resetPasswordToken: string | null;
 

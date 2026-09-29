@@ -165,14 +165,14 @@ export class UsersService {
   }
 
   /**
-   * Blocks user account (SDSecurity Task 4: Admin controls).
+   * Blocks user account (Admin controls).
    */
   async blockUser(id: number): Promise<User> {
     return this.update(id, { isBlocked: true });
   }
 
   /**
-   * Unblocks user account and resets lockout counters (SDSecurity Task 4: Admin controls).
+   * Unblocks user account and resets lockout counters (Admin controls).
    */
   async unblockUser(id: number): Promise<User> {
     return this.update(id, {
@@ -183,7 +183,7 @@ export class UsersService {
   }
 
   /**
-   * Updates user system role with self-demote protection (PPofSE Extended RBAC).
+   * Updates user system role with self-demote protection.
    */
   async updateRole(id: number, role: SystemRole, currentUserId: number, jobTitle?: string): Promise<User> {
     const targetUser = await this.findById(id);
@@ -219,7 +219,7 @@ export class UsersService {
   }
 
   /**
-   * Activates user account directly without email link (SDSecurity Task 3 / Admin action).
+   * Activates user account directly without email link (Admin action).
    */
   async activateUser(id: number): Promise<User> {
     return this.update(id, {
@@ -230,7 +230,7 @@ export class UsersService {
   }
 
   /**
-   * Resets 2FA secret and disables 2FA for an account (SDSecurity Task 5 / Admin action).
+   * Resets 2FA secret and disables 2FA for an account (Admin action).
    */
   async reset2Fa(id: number): Promise<User> {
     return this.update(id, {

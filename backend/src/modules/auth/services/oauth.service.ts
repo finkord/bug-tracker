@@ -24,7 +24,7 @@ export class OAuthService {
   ) {}
 
   /**
-   * Validates or provisions a user account based on OAuth provider claims (SDSecurity Task 6).
+   * Validates or provisions a user account based on OAuth provider claims.
    */
   async validateOrCreateOAuthUser(profileOrDto: {
     provider?: OAuthProvider;

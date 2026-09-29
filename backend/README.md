@@ -1,12 +1,12 @@
 # BugTracker Backend API (`software/backend`)
 
-A robust, enterprise-grade REST & WebSocket API built with **NestJS 12 (TypeScript)**, **PostgreSQL 15**, and **Redis 7**. This backend powers the Bug / Issue Tracking System and fully implements the **SDSecurity Lab 6** (Secure User Account Management System) requirements.
+A robust, enterprise-grade REST & WebSocket API built with **NestJS 12 (TypeScript)**, **PostgreSQL 15**, and **Redis 7**. This backend powers the Bug / Issue Tracking System with comprehensive issue tracking, agile project management, and secure identity management.
 
 ---
 
 ## Features & Security Architecture
 
-1. **Authentication & Identity (SDSecurity Lab 6):**
+1. **Authentication, Identity & Security:**
    - **Argon2id & bcrypt Hashing:** Passwords hashed with high-work-factor salt and pepper.
    - **Strict Password Complexity:** Enforces 8+ characters, uppercase, lowercase, number, and special character.
    - **Bot Prevention (Cloudflare Turnstile):** Server-side verification via Cloudflare `/siteverify` API. Fails closed in production if credentials are missing.

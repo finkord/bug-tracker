@@ -202,7 +202,7 @@ export const IssueLinksSection: React.FC<IssueLinksSectionProps> = ({
               )}
             </div>
             <p className="text-xs text-[var(--md-sys-color-on-surface-variant)]">
-              Lab 3/5 Directed Semantic Dependency Model
+              Directed Semantic Dependency Model
             </p>
           </div>
         </div>

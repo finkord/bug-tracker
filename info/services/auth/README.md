@@ -1,8 +1,6 @@
 # Authentication & Security Service (`AuthModule`) Documentation
 
-This document provides a comprehensive technical reference for the **Authentication & Security Service** implemented within the Bug / Issue Tracking System (`software/backend`). 
-
-This service serves as the security foundation for the entire software engineering project (**PPofSE** Labs 1–7) and directly fulfills all 7 required tasks of the **SDSecurity (Software and Data Security) Lab 6 Project** (15 points).
+This service provides enterprise-grade authentication, identity management, zero-trust session security, and forensic audit logging for the BugTracker platform.
 
 ---
 
@@ -167,17 +165,17 @@ Stores credentials, role assignments, activation status, lockout counters, and s
 | `email` | `VARCHAR(255)` | `NOT NULL, UNIQUE` | Unique email address used for login and notifications. Indexed. |
 | `password_hash` | `VARCHAR(255)` | `NULLABLE` | Argon2id hash of the password. Null for pure OAuth accounts. |
 | `system_role` | `VARCHAR(20)` | `NOT NULL, DEFAULT 'USER'` | Authorization role: `'ADMIN'` or `'USER'`. First user auto-assigned `'ADMIN'`. |
-| `is_activated` | `BOOLEAN` | `NOT NULL, DEFAULT false` | **SDSecurity Task 3:** True if email address verified. |
+| `is_activated` | `BOOLEAN` | `NOT NULL, DEFAULT false` | True if email address verified. |
 | `activation_token` | `VARCHAR(255)` | `NULLABLE` | Cryptographic random hex token (TTL = 24h) for email activation. |
 | `activation_token_expires_at` | `TIMESTAMPTZ` | `NULLABLE` | Expiration timestamp for account activation token. |
-| `failed_login_attempts` | `INT` | `NOT NULL, DEFAULT 0` | **SDSecurity Task 4:** Count of consecutive failed password attempts. |
-| `locked_until` | `TIMESTAMPTZ` | `NULLABLE` | **SDSecurity Task 4:** Timestamp until which account is temporarily locked (15 mins). |
-| `is_blocked` | `BOOLEAN` | `NOT NULL, DEFAULT false` | **SDSecurity Task 4:** Administrative block flag for manual suspension. |
-| `two_factor_enabled` | `BOOLEAN` | `NOT NULL, DEFAULT false` | **SDSecurity Task 5:** True if 2FA TOTP is active on the account. |
-| `two_factor_secret` | `VARCHAR(255)` | `NULLABLE` | **SDSecurity Task 5:** Base32 encoded shared secret for RFC 6238 TOTP. |
-| `oauth_provider` | `VARCHAR(50)` | `NOT NULL, DEFAULT 'LOCAL'` | **SDSecurity Task 6:** Identity source (`'LOCAL'`, `'GITHUB'`, `'GOOGLE'`). |
-| `oauth_id` | `VARCHAR(255)` | `NULLABLE` | **SDSecurity Task 6:** Provider's unique user identifier. |
-| `reset_password_token` | `VARCHAR(255)` | `NULLABLE` | **SDSecurity Task 7:** Cryptographic random hex token (TTL = 15m) for reset flow. |
+| `failed_login_attempts` | `INT` | `NOT NULL, DEFAULT 0` | Count of consecutive failed password attempts. |
+| `locked_until` | `TIMESTAMPTZ` | `NULLABLE` | Timestamp until which account is temporarily locked (15 mins). |
+| `is_blocked` | `BOOLEAN` | `NOT NULL, DEFAULT false` | Administrative block flag for manual suspension. |
+| `two_factor_enabled` | `BOOLEAN` | `NOT NULL, DEFAULT false` | True if 2FA TOTP is active on the account. |
+| `two_factor_secret` | `VARCHAR(255)` | `NULLABLE` | Base32 encoded shared secret for RFC 6238 TOTP. |
+| `oauth_provider` | `VARCHAR(50)` | `NOT NULL, DEFAULT 'LOCAL'` | Identity source (`'LOCAL'`, `'GITHUB'`, `'GOOGLE'`). |
+| `oauth_id` | `VARCHAR(255)` | `NULLABLE` | Provider's unique user identifier. |
+| `reset_password_token` | `VARCHAR(255)` | `NULLABLE` | Cryptographic random hex token (TTL = 15m) for reset flow. |
 | `reset_password_expires_at` | `TIMESTAMPTZ` | `NULLABLE` | Expiration timestamp for password reset token. |
 | `created_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT NOW()` | Account creation timestamp. |
 | `updated_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT NOW()` | Account last update timestamp. |
@@ -186,7 +184,7 @@ Stores credentials, role assignments, activation status, lockout counters, and s
 
 ### Table 2: `login_audit_logs`
 
-Provides a tamper-evident forensic log of all login attempts (SDSecurity Task 4).
+Provides a tamper-evident forensic log of all login attempts.
 
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
@@ -211,9 +209,9 @@ Provides a tamper-evident forensic log of all login attempts (SDSecurity Task 4)
 
 ---
 
-## 5. Security Tasks Implementation (SDSecurity Lab 6)
+## 5. Security Architecture & Controls
 
-### Task 1: Registration with Complex Password Policy
+### 1. Registration with Complex Password Policy
 * **Password Policy:** Enforced via regex in `RegisterDto`:
   * Minimum 8 characters.
   * At least 1 uppercase letter (`(?=.*[A-Z])`).
@@ -224,7 +222,7 @@ Provides a tamper-evident forensic log of all login attempts (SDSecurity Task 4)
 * **RBAC Initialization:** The first registered account automatically receives the `ADMIN` role; subsequent accounts are assigned `USER`.
 * **Profile Endpoint:** Protected via `JwtAuthGuard` at `GET /api/v1/users/me`.
 
-### Task 2: Bot Prevention (CAPTCHA)
+### 2. Bot Prevention (CAPTCHA)
 * **Provider:** Cloudflare Turnstile (privacy-preserving, CAPTCHA-free smart challenge).
 * **Validation Pipeline:**
   * Mandatory `captchaToken` in `RegisterDto` (length validated between 1 and 2048 characters).
@@ -236,7 +234,7 @@ Provides a tamper-evident forensic log of all login attempts (SDSecurity Task 4)
   * Content Security Policy (CSP): `<meta>` tag in `index.html` permits `https://challenges.cloudflare.com` for `script-src`, `frame-src`, and `connect-src`, and allows `'unsafe-eval'` required by Turnstile's challenge runner.
 * **Development Testing:** Recognizes explicit test tokens (`valid-captcha-token`, `test-token`, `bypass-*`) in `development` and `test` environments.
 
-### Task 3: Email Account Activation
+### 3. Email Account Activation
 * **Token Generation:** 32-byte cryptographically secure random token via `crypto.randomBytes(32).toString('hex')`.
 * **TTL:** 24 hours (`activationTokenExpiresAt = new Date(Date.now() + 24 * 3600 * 1000)`).
 * **Delivery:** Dispatched via `MailerService` through Mailpit SMTP (port `1025`). Contains HTML email with clickable activation link: `${FRONTEND_URL}/activate?token=${activationToken}`.
@@ -250,7 +248,7 @@ Provides a tamper-evident forensic log of all login attempts (SDSecurity Task 4)
   * `verify2fa()` and `JwtStrategy` both enforce `!user.isActivated` checks, preventing unactivated accounts from obtaining or using session tokens.
 * **Profile Status:** Active account status is reflected in `GET /api/v1/users/me` and visually badged on the frontend profile card.
 
-### Task 4: Brute-Force Protection & Audit Logging
+### 4. Brute-Force Protection & Audit Logging
 * **Lockout Rule:** On password mismatch, `failedLoginAttempts` increments by 1. When reaching 5 failed attempts:
   * `lockedUntil` is set to `now + 15 minutes` (900 seconds).
   * `failedLoginAttempts` resets to 0.
@@ -262,7 +260,7 @@ Provides a tamper-evident forensic log of all login attempts (SDSecurity Task 4)
   * `PATCH /api/v1/users/:id/block`: Manually block malicious accounts.
   * `PATCH /api/v1/users/:id/unblock`: Restore blocked accounts and clear lockouts.
 
-### Task 5: Two-Factor Authentication (2FA / TOTP)
+### 5. Two-Factor Authentication (2FA / TOTP)
 * **Standard:** RFC 6238 Time-based One-time Password algorithm (SHA-1, 6 digits, 30-second window).
 * **Setup Flow:**
   1. `POST /api/v1/auth/2fa/generate`: Generates Base32 secret via `otplib.generateSecret()`.
@@ -275,7 +273,7 @@ Provides a tamper-evident forensic log of all login attempts (SDSecurity Task 4)
   3. User submits challenge token and 6-digit TOTP code to `POST /api/v1/auth/2fa/verify`.
   4. Server validates passcode via `otplib.verifySync(...)` and issues final access and refresh tokens.
 
-### Task 6: External Identity Providers (OAuth2: GitHub & Google) & Credential Linking
+### 6. External Identity Providers (OAuth2: GitHub & Google) & Credential Linking
 * **GitHub Integration:** Built using `passport-github2` strategy.
   * `GET /api/v1/auth/github`: Initiates GitHub OAuth2 flow by redirecting browser to `https://github.com/login/oauth/authorize`.
   * `GET /api/v1/auth/github/callback`: Receives authorization code, exchanges it for profile claims, provisions or links user (`oauthProvider = GITHUB`), and redirects browser to `${FRONTEND_URL}/oauth/callback?accessToken=...&refreshToken=...`.
@@ -286,9 +284,8 @@ Provides a tamper-evident forensic log of all login attempts (SDSecurity Task 4)
   * Enables OAuth accounts (`passwordHash: null`) to establish an Argon2id password without entering a current password.
   * Enables users with existing passwords to change passwords securely by verifying `currentPassword`.
   * Allows dual-authentication: accounts can be accessed via either OAuth or standard email & password.
-* **Testing & Offline Support:** `POST /api/v1/auth/oauth/mock` accepts provider claims (`provider`, `oauthId`, `email`, `fullName`) and exercises the exact same identity linking and provisioning logic.
 
-### Task 7: Password Reset Flow
+### 7. Password Reset Flow
 * **Initiation:** `POST /api/v1/auth/forgot-password` with email.
 * **Token:** 32-byte cryptographic token with 15-minute TTL (`resetPasswordExpiresAt`).
 * **Delivery:** Dispatched via Mailpit email with link and raw token.
@@ -303,7 +300,7 @@ Provides a tamper-evident forensic log of all login attempts (SDSecurity Task 4)
 
 ## 6. Authentication Flows (Sequence Diagrams)
 
-### Flow 1: Registration and Email Account Activation (Tasks 1, 2, 3)
+### Flow 1: Registration and Email Account Activation
 
 ```mermaid
 sequenceDiagram
@@ -337,7 +334,7 @@ sequenceDiagram
 
 ---
 
-### Flow 2: Login with Brute-Force Lockout (Task 4)
+### Flow 2: Login with Brute-Force Lockout
 
 ```mermaid
 sequenceDiagram
@@ -372,7 +369,7 @@ sequenceDiagram
 
 ---
 
-### Flow 3: Two-Factor Authentication (TOTP) Challenge Flow (Task 5)
+### Flow 3: Two-Factor Authentication (TOTP) Challenge Flow
 
 ```mermaid
 sequenceDiagram
@@ -412,28 +409,29 @@ sequenceDiagram
 
 All endpoints are registered under the global prefix `/api/v1` and documented in Swagger UI at `http://localhost:3000/api/docs`.
 
-| Method | Endpoint | Access | Task | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| `POST` | `/auth/register` | Public | 1, 2, 3 | Register new user account with complex password & CAPTCHA. |
-| `GET` | `/auth/activate` | Public | 3 | Activate account using email token link. |
-| `POST` | `/auth/login` | Public | 1, 4, 5 | Authenticate user credentials; enforces lockout and 2FA challenge. |
-| `POST` | `/auth/2fa/generate` | Bearer JWT | 5 | Generate Base32 TOTP secret and QR code Data URL. |
-| `POST` | `/auth/2fa/enable` | Bearer JWT | 5 | Confirm 6-digit TOTP code and enable 2FA on account. |
-| `POST` | `/auth/2fa/disable` | Bearer JWT | 5 | Confirm code and disable 2FA on account. |
-| `POST` | `/auth/2fa/verify` | Public | 5 | Submit 6-digit TOTP code with challenge token to complete login. |
-| `POST` | `/auth/forgot-password` | Public | 7 | Request single-use 15-minute password reset link via email. |
-| `POST` | `/auth/reset-password` | Public | 7 | Set new password using reset token; clears brute-force lockout. |
-| `POST` | `/auth/set-password` | Bearer JWT | 1, 6 | Establish password on OAuth account or change existing password (Argon2id). |
-| `GET` | `/auth/github` | Public | 6 | Redirect browser to GitHub OAuth2 login. |
-| `GET` | `/auth/github/callback` | Public | 6 | Process GitHub OAuth2 authorization code and redirect to frontend with tokens. |
-| `GET` | `/auth/google` | Public | 6 | Redirect browser to Google OAuth2 consent screen. |
-| `GET` | `/auth/google/callback` | Public | 6 | Process Google OAuth2 authorization code and redirect to frontend with tokens. |
-| `POST` | `/auth/oauth/mock` | Public | 6 | Simulated OAuth2 login for demo and automated test pipelines. |
-| `GET` | `/users/me` | Bearer JWT | 1 | Retrieve profile of the currently authenticated user. |
-| `GET` | `/users` | Admin JWT | 4 | List all registered users (paginated). |
-| `PATCH` | `/users/:id/block` | Admin JWT | 4 | Administratively suspend/block a user account. |
-| `PATCH` | `/users/:id/unblock` | Admin JWT | 4 | Restore access and clear brute-force lockout on user account. |
-| `GET` | `/admin/security/login-logs` | Admin JWT | 4 | Paginated security audit trail with client IP, agent, and failure reasons. |
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/auth/register` | Public | Register new user account with complex password & CAPTCHA. |
+| `GET` | `/auth/activate` | Public | Activate account using email token link. |
+| `POST` | `/auth/login` | Public | Authenticate user credentials; enforces lockout and 2FA challenge. |
+| `POST` | `/auth/2fa/generate` | Bearer JWT | Generate Base32 TOTP secret and QR code Data URL. |
+| `POST` | `/auth/2fa/enable` | Bearer JWT | Confirm 6-digit TOTP code and enable 2FA on account. |
+| `POST` | `/auth/2fa/disable` | Bearer JWT | Confirm code and disable 2FA on account. |
+| `POST` | `/auth/2fa/verify` | Public | Submit 6-digit TOTP code with challenge token to complete login. |
+| `POST` | `/auth/forgot-password` | Public | Request single-use 15-minute password reset link via email. |
+| `POST` | `/auth/reset-password` | Public | Set new password using reset token; clears brute-force lockout. |
+| `POST` | `/auth/set-password` | Bearer JWT | Establish password on OAuth account or change existing password (Argon2id). |
+| `GET` | `/auth/github` | Public | Redirect browser to GitHub OAuth2 login. |
+| `GET` | `/auth/github/callback` | Public | Process GitHub OAuth2 authorization code and redirect to frontend with tokens. |
+| `GET` | `/auth/google` | Public | Redirect browser to Google OAuth2 consent screen. |
+| `GET` | `/auth/google/callback` | Public | Process Google OAuth2 authorization code and redirect to frontend with tokens. |
+| `POST` | `/auth/oauth/exchange` | Public | Exchange one-time authorization code for session JWT tokens. |
+| `POST` | `/auth/logout` | Public / Bearer | Clear auth cookies and invalidate active user session. |
+| `GET` | `/users/me` | Bearer JWT | Retrieve profile of the currently authenticated user. |
+| `GET` | `/users` | Admin JWT | List all registered users (paginated). |
+| `PATCH` | `/users/:id/block` | Admin JWT | Administratively suspend/block a user account. |
+| `PATCH` | `/users/:id/unblock` | Admin JWT | Restore access and clear brute-force lockout on user account. |
+| `GET` | `/admin/security/login-logs` | Admin JWT | Paginated security audit trail with client IP, agent, and failure reasons. |
 
 ---
 
@@ -483,14 +481,14 @@ GOOGLE_CALLBACK_URL=http://localhost:3000/api/v1/auth/google/callback
 
 ---
 
-## 9. Verification & Video Demonstration Guide
+## 9. Verification & Walkthrough Guide
 
-For the **SDSecurity Lab 6 Video Report**, record a 7-step walkthrough utilizing the Swagger UI ([http://localhost:3000/api/docs](http://localhost:3000/api/docs)) and Mailpit Web UI ([http://localhost:8025](http://localhost:8025)):
+To verify all security mechanisms end-to-end, execute this 7-step walkthrough utilizing the Swagger UI ([http://localhost:3000/api/docs](http://localhost:3000/api/docs)) and Mailpit Web UI ([http://localhost:8025](http://localhost:8025)):
 
 1. **Step 1 (Password Policy):** In Swagger, call `POST /auth/register` with password `"weak"`. Show the rejection with HTTP 400. Then register with `"SecurePassword!2026"` and `captchaToken: "valid-captcha-token"`. Show the success response.
 2. **Step 2 (CAPTCHA):** Call `POST /auth/register` with an empty or missing `captchaToken`. Show rejection with HTTP 400 (`"CAPTCHA token is required"`).
 3. **Step 3 (Email Activation):** Open Mailpit at `http://localhost:8025`. Show the activation email. Copy the `activationToken` and execute `GET /auth/activate?token=...` in Swagger. Show `"Account successfully activated"`. Call it again to demonstrate single-use token invalidation.
 4. **Step 4 (Brute-Force & Lockout):** In Swagger, call `POST /auth/login` with an incorrect password 5 consecutive times. On the 5th attempt, show the `"Account locked for 15 minutes"` message. Call `GET /admin/security/login-logs` as Admin and demonstrate the forensic audit log entries.
 5. **Step 5 (2FA TOTP):** Log in, copy the `accessToken`, and call `POST /auth/2fa/generate`. Show the generated Base32 secret and QR code Data URL. Enter the current 6-digit TOTP code into `POST /auth/2fa/enable`. Log in again via `POST /auth/login` to show the `{ require2fa: true, tempToken: "..." }` challenge. Call `POST /auth/2fa/verify` with the code to obtain final tokens.
-6. **Step 6 (OAuth2):** Call `GET /auth/github` and show the HTTP 302 redirect to GitHub OAuth. Call `POST /auth/oauth/mock` to demonstrate instant user provisioning with `oauth_provider: GITHUB`.
+6. **Step 6 (OAuth2):** Call `GET /auth/github` or `GET /auth/google` and observe the HTTP 302 redirect to the respective OAuth provider.
 7. **Step 7 (Password Reset):** Call `POST /auth/forgot-password`. Open Mailpit to show the reset email. Call `POST /auth/reset-password` with the reset token and new password. Demonstrate that the account is unlocked and can log in immediately.

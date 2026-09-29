@@ -23,7 +23,7 @@ export class SecurityAuditService {
   ) {}
 
   /**
-   * Records a user authentication attempt into the immutable security audit log (SDSecurity Task 4).
+   * Records a user authentication attempt into the immutable security audit log.
    */
   async recordLoginAttempt(dto: RecordAttemptDto): Promise<LoginAuditLog> {
     const log = this.auditLogRepository.create({
@@ -55,7 +55,7 @@ export class SecurityAuditService {
   }
 
   /**
-   * Retrieves paginated security login audit logs for administrator review (SDSecurity Task 4).
+   * Retrieves paginated security login audit logs for administrator review.
    */
   async getLoginLogs(page = 1, limit = 50): Promise<{ items: LoginAuditLog[]; total: number }> {
     const [items, total] = await this.auditLogRepository.findAndCount({

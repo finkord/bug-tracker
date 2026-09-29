@@ -34,7 +34,7 @@ export class LocalAuthService {
   ) {}
 
   /**
-   * Registers a new user with complex password policy, CAPTCHA, and email activation link (SDSecurity Tasks 1, 2, 3).
+   * Registers a new user with complex password policy, CAPTCHA, and email activation link.
    */
   async register(dto: RegisterDto, ipAddress: string) {
     if (dto.captchaToken) {
@@ -106,7 +106,7 @@ export class LocalAuthService {
   }
 
   /**
-   * Activates an account using single-use email token (SDSecurity Task 3).
+   * Activates an account using single-use email token.
    */
   async activateAccount(token: string) {
     const recentActivationTime = this.recentlyActivatedTokens.get(token);
@@ -141,7 +141,7 @@ export class LocalAuthService {
   }
 
   /**
-   * Authenticates user with brute-force protection and optional 2FA challenge (SDSecurity Tasks 1, 4, 5).
+   * Authenticates user with brute-force protection and optional 2FA challenge.
    */
   async login(
     dto: LoginDto,

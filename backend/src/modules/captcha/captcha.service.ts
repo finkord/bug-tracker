@@ -17,7 +17,7 @@ export class CaptchaService {
   constructor(private readonly configService: ConfigService) {}
 
   /**
-   * Validates a Cloudflare Turnstile token submitted during registration (SDSecurity Task 2).
+   * Validates a Cloudflare Turnstile token submitted during registration.
    * Follows the canonical Cloudflare Turnstile siteverify specification:
    * https://developers.cloudflare.com/turnstile/get-started/server-side-validation/
    */

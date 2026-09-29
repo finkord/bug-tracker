@@ -16,7 +16,6 @@ import { IssueSecurityScheme } from '../rbac/entities/issue-security-scheme.enti
 import { IssueSecurityLevel } from '../rbac/entities/issue-security-level.entity.js';
 import { IssueSecurityGrant } from '../rbac/entities/issue-security-grant.entity.js';
 import { SeedService } from './seed.service.js';
-import { SeedController } from './seed.controller.js';
 
 @Module({
   imports: [
@@ -38,7 +37,7 @@ import { SeedController } from './seed.controller.js';
       IssueSecurityGrant,
     ]),
   ],
-  controllers: [SeedController],
+  controllers: [],
   providers: [SeedService],
   exports: [SeedService],
 })

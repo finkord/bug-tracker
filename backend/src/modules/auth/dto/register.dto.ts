@@ -29,7 +29,7 @@ export class RegisterDto {
   @ApiProperty({
     example: 'Str0ngP@ssw0rd!',
     description:
-      'Password meeting security policy: min 8 characters, uppercase, lowercase, digit, and special symbol (SDSecurity Task 1)',
+      'Password meeting security policy: min 8 characters, uppercase, lowercase, digit, and special symbol',
   })
   @IsString()
   @MinLength(8, { message: 'Password must be at least 8 characters long' })
@@ -50,7 +50,7 @@ export class RegisterDto {
   @ApiProperty({
     example: 'valid-captcha-token',
     description:
-      'Bot protection token verified by CaptchaService (SDSecurity Task 2). Use "valid-captcha-token" in dev mode.',
+      'Bot protection token verified by CaptchaService. Use "valid-captcha-token" in dev mode.',
   })
   @IsString()
   @IsNotEmpty({ message: 'CAPTCHA token is required' })

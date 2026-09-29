@@ -19,7 +19,7 @@ export class TwoFactorAuthService {
   ) {}
 
   /**
-   * Generates a new TOTP secret and QR code data URL for 2FA onboarding (SDSecurity Task 5).
+   * Generates a new TOTP secret and QR code data URL for 2FA onboarding.
    */
   async generate2faSecret(userOrEmail: User | string) {
     const email = typeof userOrEmail === 'string' ? userOrEmail : userOrEmail.email;
@@ -57,7 +57,7 @@ export class TwoFactorAuthService {
   }
 
   /**
-   * Enables 2FA for the user after confirming a valid TOTP code (SDSecurity Task 5).
+   * Enables 2FA for the user after confirming a valid TOTP code.
    */
   async enable2fa(user: User, dto: Enable2faDto) {
     const code = dto.code || dto.totpCode;
@@ -89,7 +89,7 @@ export class TwoFactorAuthService {
   }
 
   /**
-   * Disables 2FA on the user account (SDSecurity Task 5).
+   * Disables 2FA on the user account.
    */
   async disable2fa(user: User, dto?: Enable2faDto) {
     const code = dto?.code || dto?.totpCode;
@@ -130,7 +130,7 @@ export class TwoFactorAuthService {
   }
 
   /**
-   * Verifies the 6-digit 2FA code during login to issue full JWT tokens (SDSecurity Task 5).
+   * Verifies the 6-digit 2FA code during login to issue full JWT tokens.
    */
   async verify2fa(
     dto: Verify2faDto,

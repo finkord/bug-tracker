@@ -23,7 +23,7 @@ export class SecurityAuditController {
 
   @Get('login-logs')
   @ApiOperation({
-    summary: 'View user login audit logs (SDSecurity Task 4)',
+    summary: 'View user login audit logs',
     description:
       'Allows administrators to inspect who attempted to authenticate, IP addresses, timestamps, and status outcomes.',
   })

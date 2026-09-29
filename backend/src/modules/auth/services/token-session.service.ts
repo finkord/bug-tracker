@@ -100,7 +100,7 @@ export class TokenSessionService {
   }
 
   /**
-   * Invalidates all active user sessions by bumping tokenVersion (SDSecurity & Zero-Trust).
+   * Invalidates all active user sessions by bumping tokenVersion (Zero-Trust session management).
    */
   async logout(userId: number): Promise<{ message: string }> {
     const user = await this.usersService.findById(userId);

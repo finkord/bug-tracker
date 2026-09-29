@@ -86,7 +86,7 @@ export class AuthController {
 
   @Post('register')
   @ApiOperation({
-    summary: 'Register new user account (SDSecurity Tasks 1, 2, 3)',
+    summary: 'Register new user account',
     description:
       'Validates complex password policy, verifies CAPTCHA token, and dispatches email activation link.',
   })
@@ -96,7 +96,7 @@ export class AuthController {
 
   @Get('activate')
   @ApiOperation({
-    summary: 'Activate account via email link (SDSecurity Task 3)',
+    summary: 'Activate account via email link',
     description: 'Validates single-use activation token sent via email and activates account.',
   })
   @ApiQuery({ name: 'token', required: true, type: String })
@@ -107,7 +107,7 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'User authentication with Brute-Force protection (SDSecurity Tasks 1, 4, 5)',
+    summary: 'User authentication with Brute-Force protection',
     description:
       'Authenticates user. Locks account after 5 failed attempts for 15 minutes. Prompts for 2FA if enabled.',
   })
@@ -148,7 +148,7 @@ export class AuthController {
   @Post('2fa/verify')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Verify 2FA TOTP code to complete login (SDSecurity Task 5)',
+    summary: 'Verify 2FA TOTP code to complete login',
     description:
       'Validates 6-digit passcode against user secret and returns final JWT access/refresh tokens.',
   })
@@ -167,7 +167,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
-    summary: 'Generate 2FA secret and QR code (SDSecurity Task 5)',
+    summary: 'Generate 2FA secret and QR code',
     description:
       'Returns a base32 TOTP secret and data URL QR code to scan with Google Authenticator or Authy.',
   })
@@ -179,7 +179,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
-    summary: 'Confirm and enable 2FA on account (SDSecurity Task 5)',
+    summary: 'Confirm and enable 2FA on account',
   })
   async enable2fa(@CurrentUser() user: User, @Body() dto: Enable2faDto) {
     return this.authService.enable2fa(user, dto);
@@ -189,7 +189,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
-    summary: 'Disable 2FA on account (SDSecurity Task 5)',
+    summary: 'Disable 2FA on account',
   })
   async disable2fa(@CurrentUser() user: User, @Body() dto: Enable2faDto) {
     return this.authService.disable2fa(user, dto);
@@ -198,7 +198,7 @@ export class AuthController {
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Request password reset email (SDSecurity Task 7)',
+    summary: 'Request password reset email',
     description:
       'Dispatches an email containing a 15-minute cryptographic reset token to the user.',
   })
@@ -209,7 +209,7 @@ export class AuthController {
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Set new password using reset token (SDSecurity Task 7)',
+    summary: 'Set new password using reset token',
     description:
       'Enforces strict password policy on new password and resets account lockout status.',
   })
@@ -238,7 +238,7 @@ export class AuthController {
   @Get('github')
   @UseGuards(AuthGuard('github'))
   @ApiOperation({
-    summary: 'Initiate GitHub OAuth2 Login (SDSecurity Task 6)',
+    summary: 'Initiate GitHub OAuth2 Login',
     description: 'Redirects browser to GitHub for federated identity authentication.',
   })
   async githubLogin() {
@@ -275,7 +275,7 @@ export class AuthController {
   @Get('google')
   @UseGuards(AuthGuard('google'))
   @ApiOperation({
-    summary: 'Initiate Google OAuth2 Login (SDSecurity Task 6)',
+    summary: 'Initiate Google OAuth2 Login',
     description: 'Redirects browser to Google for federated identity authentication.',
   })
   async googleLogin() {
@@ -334,7 +334,7 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Logout user and invalidate session (SDSecurity Task 1 Polish)',
+    summary: 'Logout user and invalidate session',
     description: 'Acknowledges user logout, clears auth cookies, and invalidates server-side session context.',
   })
   async logout(

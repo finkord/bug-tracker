@@ -223,7 +223,7 @@ export class UsersController {
   @UseGuards(RolesGuard)
   @Roles(SystemRole.ADMIN)
   @ApiOperation({
-    summary: 'Block a user account (SDSecurity Task 4: Admin controls)',
+    summary: 'Block a user account (Admin controls)',
   })
   async blockUser(@Param('id', ParseIntPipe) id: number) {
     const updated = await this.usersService.blockUser(id);
@@ -238,7 +238,7 @@ export class UsersController {
   @UseGuards(RolesGuard)
   @Roles(SystemRole.ADMIN)
   @ApiOperation({
-    summary: 'Unblock a user account (SDSecurity Task 4: Admin controls)',
+    summary: 'Unblock a user account (Admin controls)',
   })
   async unblockUser(@Param('id', ParseIntPipe) id: number) {
     const updated = await this.usersService.unblockUser(id);

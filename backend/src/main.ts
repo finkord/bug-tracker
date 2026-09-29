@@ -36,7 +36,7 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle('Bug / Issue Tracking System API')
     .setDescription(
-      'Core REST API service for Bug Tracking (PPofSE) and Secure User Account Management (SDSecurity Lab 6)',
+      'Core REST API service for Bug / Issue Tracking and Secure User Account Management',
     )
     .setVersion('1.0')
     .addBearerAuth(
