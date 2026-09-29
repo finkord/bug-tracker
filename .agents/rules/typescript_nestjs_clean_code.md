@@ -1,5 +1,6 @@
 ---
-trigger: always_on
+trigger: model_decision
+description: Working on NestJS backend, TypeScript services, controllers or entities
 ---
 
 # Senior TypeScript & NestJS Clean Architecture Guidelines

@@ -115,14 +115,28 @@ This is a **modern React application** with the following characteristics:
 - **Form state** with React Hook Form
 - **URL state** with React Router
 
-## shadcn/ui Guidelines
-- Use **shadcn/ui** as the primary component library
-- **Copy components** from shadcn/ui registry, don't install as package
-- **Customize components** by modifying the copied code
-- Follow **Radix UI** patterns for accessibility
-- Use **TailwindCSS** classes for styling
-- **Compose components** using shadcn/ui primitives
-- **Extend components** by adding new variants and props
+## Material 3 Expressive & UI Design System Invariants
+All frontend UI code MUST adhere strictly to Google Material Design 3 Expressive standards and repository invariants:
+1. **Zero Hardcoded Colors:**
+   - Never use arbitrary Tailwind color utilities (e.g., `text-blue-600`, `bg-emerald-500/10`, `text-slate-500`, `bg-amber-500/15`, `bg-red-500`).
+   - Always consume CSS custom properties defined in `src/index.css` via `var(--md-sys-color-*)` or dedicated UI components.
+2. **Perceptual Contrast & Tone Deltas:**
+   - Always use paired tokens (`on-primary` with `primary`, `on-primary-container` with `primary-container`, `on-success-container` with `success-container`, etc.) to guarantee WCAG 2.1 AAA contrast.
+3. **5-Tier Tonal Surface Elevation:**
+   - Use tonal surface nesting (`surface-container-lowest` to `surface-container-highest`) to denote depth instead of heavy drop shadows or stroke borders.
+4. **Atomic UI Component Kit:**
+   - Always import primitives from `src/components/ui/` (`<Button>`, `<Badge>`, `<Input>`, `<SelectField>`, `<Select>`, `<Tabs>`, `<Modal>`, `<DropdownMenu>`, `<Card>`, `<Tooltip>`).
+   - Never hand-craft custom modal overlays or dropdown outside-click listeners.
+5. **Panel Shell & Curved Layout:**
+   - Maintain the outer framework shell (`h-screen overflow-hidden`) with a full-height Super-Sidebar and an elevated inset canvas card (`rounded-2xl md:rounded-3xl` with margin).
+6. **Mobile Ergonomics:**
+   - Mobile action buttons maintain consolidated `36×36px` (`w-9 h-9`) square bounds with synchronized `16×16px` (`w-4 h-4`) icon scales.
+
+## UI Primitives & Components
+- Import and compose primitives from `src/components/ui/`
+- Follow accessibility patterns for focus rings, ARIA roles, and keyboard navigation
+- Use TailwindCSS classes paired strictly with `var(--md-sys-color-*)` tokens
+- Compose complex modals and views using dedicated atomic components
 
 ## Zustand State Management
 - Use **Zustand** for global state management
