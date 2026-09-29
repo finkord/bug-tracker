@@ -96,7 +96,7 @@ All AI agents must ensure that the authentication service maintains complete com
 6. **Task 6: External Identity Providers (OAuth2 / OIDC)**
    - GitHub OAuth2 (`passport-github2`) and Google OAuth2 (`passport-google-oauth20`).
    - Automatic account linking or creation with `oauth_provider` and `oauth_id`.
-   - **Production Protection:** Mock OAuth route (`POST /auth/oauth/mock`) is strictly rejected with `403 Forbidden` when `NODE_ENV === 'production'`. In frontend, mock UI is guarded by `import.meta.env.DEV` and stripped from production bundles.
+   - Native redirect flows and secure cryptographic state management.
 7. **Task 7: Password Reset Flow**
    - Request reset link via email (`POST /api/v1/auth/forgot-password`).
    - One-time token with short expiry (15 minutes).
@@ -177,7 +177,7 @@ Used during active feature engineering and local debugging:
 - **Backend:** `cd software/backend && npm run start:dev`
 - **Frontend:** `cd software/frontend && npm run dev`
 - **Characteristics:**
-  - Mock OAuth endpoint enabled (`POST /auth/oauth/mock`) with quick "Simulate Mock OAuth" button in UI.
+  - Native GitHub & Google OAuth2 providers supported.
   - Development bypass token (`valid-captcha-token`) permitted when offline.
   - Swagger UI accessible at `http://localhost:3000/api/docs`.
   - Detailed error messages and stack traces visible.
@@ -198,8 +198,6 @@ Used for production deployments, staging validation, and security compliance ver
   npm run preview -- --port 5173
   ```
 - **Characteristics:**
-  - **Zero Backdoors:** Mock OAuth (`/auth/oauth/mock`) strictly rejected with HTTP `403 Forbidden`.
-  - **UI Dead-Code Stripping:** Dev-only shortcuts and mock OAuth buttons are completely tree-shaken from production bundles.
   - **Fail-Closed CAPTCHA:** Turnstile secret and client token are strictly verified; bypass tokens are rejected.
   - **Account Lockout:** Unactivated accounts cannot log in under any circumstances (`401 Unauthorized`).
   - **Zero Secret Leakage:** Single-use tokens are dispatched exclusively via email; never exposed in JSON responses.

@@ -14,14 +14,17 @@ A robust, enterprise-grade REST & WebSocket API built with **NestJS 12 (TypeScri
    - **Brute Force Mitigation:** Account lockout after 5 consecutive failed attempts (15-minute lockout) with `@nestjs/throttler` rate limiting.
    - **Security Audit Logging:** Comprehensive forensic audit trail (`login_audit_logs`) capturing IP address, User-Agent, attempted email, failure reason, and timestamps.
    - **Two-Factor Authentication (2FA):** RFC 6238 TOTP using `otplib` and `qrcode`. Seamless pairing and login challenge flow.
-   - **OAuth2 / OIDC Integration:** GitHub and Google OAuth2 strategies. Dedicated mock OAuth endpoint (`/auth/oauth/mock`) strictly gated behind `NODE_ENV !== 'production'`.
+   - **OAuth2 / OIDC Integration:** Native GitHub and Google OAuth2 strategies with cryptographic state handling.
    - **Password Reset:** Secure single-use email reset tokens (15-minute expiry).
    - **Zero Secret Leakage:** Single-use tokens are never exposed in JSON API responses; they are delivered exclusively via email.
 
 2. **Core Domain Services (PPofSE):**
-   - **User Management & RBAC:** Roles (`ADMIN`, `PROJECT_MANAGER`, `DEVELOPER`, `QA_ENGINEER`).
-   - **Project Workspaces:** Multi-tenant project contexts with member assignments.
+   - **User Management & RBAC Schemes:** Custom project roles, user groups, permission schemes, and issue security schemes.
+   - **Project Workspaces:** Multi-tenant project contexts with member assignments and project keys.
    - **Issue Tracking & FSM:** Formal Finite State Machine transitions (`New` -> `Assigned` -> `In Progress` -> `Pending Reporter` -> `Resolved` -> `Closed`).
+   - **Agile Sprints & Backlogs:** Sprint planning, backlog item organization, and sprint lifecycle transitions.
+   - **Time Tracking & Worklogs:** Forensic worklog submissions, aggregations, timesheet matrices, and original/remaining estimates.
+   - **Real-Time WebSockets:** Socket.IO event gateway broadcasting ticket updates, comments, and presence in real-time.
    - **Attachments & Blobs:** S3-compatible file storage integration (SeaweedFS).
 
 ---
@@ -56,9 +59,15 @@ software/backend/
 │       │   ├── auth.service.ts
 │       │   ├── dto/                  # RegisterDto, LoginDto, Enable2faDto, etc.
 │       │   └── strategies/           # JwtStrategy, LocalStrategy, GitHubStrategy, GoogleStrategy
-│       ├── users/                    # User profile, RBAC, Admin blocking/unblocking
+│       ├── users/                    # User profile, preferences, saved JQL filters
+│       ├── projects/                 # Workspace projects, member assignments
+│       ├── issues/                   # Issues, comments, worklogs, attachments, links
+│       ├── sprints/                  # Agile sprints and backlog management
+│       ├── rbac/                     # Project roles, user groups, permission schemes
+│       ├── events/                   # Socket.IO real-time event gateway
 │       ├── security-audit/           # Login audit logging & forensic reporting
-│       └── captcha/                  # Cloudflare Turnstile server-side verification service
+│       ├── captcha/                  # Cloudflare Turnstile server-side verification service
+│       └── admin/                    # System administration and platform analytics
 ├── test/                             # Unit and integration test suites
 ├── vitest.config.ts                  # Test runner configuration
 └── tsconfig.json                     # Strict TypeScript compiler options
@@ -103,7 +112,7 @@ npm run start:dev
 The API is available at `http://localhost:3000`. Swagger documentation is at `http://localhost:3000/api/docs`.
 
 ### 2. Production Regime (Optimized Build & Serving)
-In production, mock authentication routes are disabled (`401/403`), CAPTCHA fails closed, and optimized bundles are executed:
+In production, strict security controls and fail-closed CAPTCHA are enforced, and optimized production bundles are executed:
 ```bash
 # 1. Build the production distribution
 npm run build

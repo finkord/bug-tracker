@@ -37,8 +37,8 @@ npm run lint
 
 ## Core Features
 - **Design System:** Material Design 3 Expressive with dynamic Dark / Light themes, Google Pixel curves (`rounded-[28px]`, `rounded-[22px]`), and high-contrast readable typography.
-- **Dual OAuth2 Providers:** Native buttons and callback routing for **GitHub OAuth** and **Google OAuth**, plus an offline Mock OAuth simulator.
+- **Dual OAuth2 Providers:** Native integration and callback routing for **GitHub OAuth** and **Google OAuth**.
 - **OAuth Password Setup:** Allows accounts created via OAuth to establish an Argon2id password from the Profile page for dual-authentication support.
 - **Two-Factor Authentication (TOTP):** In-app QR code pairing modal and login challenge prompt compatible with Google Authenticator, Authy, and Microsoft Authenticator.
-- **Security Protections:** Real-time 5-criteria password strength meter, CAPTCHA bot protection widget, and brute-force lockout countdown timers.
+- **Security Protections:** Real-time 5-criteria password strength meter, Cloudflare Turnstile CAPTCHA bot protection widget, and brute-force lockout countdown timers.
 - **Forensic Security Center:** Live audit logs for administrators (`/admin/security-logs`) with client IP inspection and account blocking controls.
