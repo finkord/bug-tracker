@@ -6,6 +6,8 @@ import type {
   PermissionGrantItem,
   IssueSecuritySchemeItem,
   ProjectRoleGrouped,
+  UserGroupMemberItem,
+  ProjectRoleActorItem,
 } from '../types/rbac.types.js';
 import type { ProjectItem } from '../types/projects.types.js';
 
@@ -19,7 +21,7 @@ export const rbacApi = {
     }),
 
   addUserToGroup: (groupId: number, userId: number) =>
-    request<any>(`/rbac/groups/${groupId}/members`, {
+    request<UserGroupMemberItem>(`/rbac/groups/${groupId}/members`, {
       method: 'POST',
       body: JSON.stringify({ userId }),
     }),
@@ -76,7 +78,7 @@ export const rbacApi = {
     roleId: number,
     payload: { actorType: 'USER' | 'GROUP'; userId?: number; groupId?: number },
   ) =>
-    request<any>(`/projects/${projectId}/rbac/roles/${roleId}/actors`, {
+    request<ProjectRoleActorItem>(`/projects/${projectId}/rbac/roles/${roleId}/actors`, {
       method: 'POST',
       body: JSON.stringify(payload),
     }),

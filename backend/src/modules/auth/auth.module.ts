@@ -9,6 +9,7 @@ import { TwoFactorAuthService } from './services/two-factor-auth.service.js';
 import { PasswordResetService } from './services/password-reset.service.js';
 import { TokenSessionService } from './services/token-session.service.js';
 import { OAuthService } from './services/oauth.service.js';
+import { OAuthCodeStoreService } from './services/oauth-code-store.service.js';
 import { JwtStrategy } from './strategies/jwt.strategy.js';
 import { GithubStrategy } from './strategies/github.strategy.js';
 import { GoogleStrategy } from './strategies/google.strategy.js';
@@ -28,7 +29,7 @@ import { CaptchaModule } from '../captcha/captcha.module.js';
           'super_secret_jwt_access_key_change_in_production_min_32_chars',
         ),
         signOptions: {
-          expiresIn: (configService.get<string>('JWT_EXPIRES_IN', '8h') as any),
+          expiresIn: (configService.get<string>('JWT_EXPIRES_IN', '8h') as unknown as import('jsonwebtoken').SignOptions['expiresIn']),
         },
       }),
     }),
@@ -44,6 +45,7 @@ import { CaptchaModule } from '../captcha/captcha.module.js';
     PasswordResetService,
     TokenSessionService,
     OAuthService,
+    OAuthCodeStoreService,
     JwtStrategy,
     GithubStrategy,
     GoogleStrategy,
@@ -55,6 +57,7 @@ import { CaptchaModule } from '../captcha/captcha.module.js';
     PasswordResetService,
     TokenSessionService,
     OAuthService,
+    OAuthCodeStoreService,
     JwtModule,
     PassportModule,
   ],

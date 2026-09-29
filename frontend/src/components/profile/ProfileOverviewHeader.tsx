@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../store';
 import { Avatar } from '../common/Avatar';
 import { Badge, Button } from '../ui';
 import { Edit3 } from 'lucide-react';

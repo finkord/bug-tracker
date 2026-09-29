@@ -98,7 +98,7 @@ export const WorkspaceQuickFiltersMenu: React.FC = () => {
           }
           className="flex items-center gap-2 cursor-pointer"
         >
-          <UserCheck className="w-3.5 h-3.5 text-blue-400" />
+          <UserCheck className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
           <span>My open issues</span>
         </DropdownMenuItem>
 
@@ -108,7 +108,7 @@ export const WorkspaceQuickFiltersMenu: React.FC = () => {
           }
           className="flex items-center gap-2 cursor-pointer"
         >
-          <FileCheck2 className="w-3.5 h-3.5 text-indigo-400" />
+          <FileCheck2 className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
           <span>Reported by me</span>
         </DropdownMenuItem>
 
@@ -120,7 +120,7 @@ export const WorkspaceQuickFiltersMenu: React.FC = () => {
           }
           className="flex items-center gap-2 cursor-pointer"
         >
-          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+          <Sparkles className="w-3.5 h-3.5 text-[var(--md-sys-color-warning)]" />
           <span>Critical & High Priority</span>
         </DropdownMenuItem>
 
@@ -128,7 +128,7 @@ export const WorkspaceQuickFiltersMenu: React.FC = () => {
           onClick={() => handleNavigateJql('ORDER BY updatedAt DESC')}
           className="flex items-center gap-2 cursor-pointer"
         >
-          <Clock className="w-3.5 h-3.5 text-teal-400" />
+          <Clock className="w-3.5 h-3.5 text-[var(--md-sys-color-tertiary)]" />
           <span>Recently updated</span>
         </DropdownMenuItem>
 
@@ -138,7 +138,7 @@ export const WorkspaceQuickFiltersMenu: React.FC = () => {
           }
           className="flex items-center gap-2 cursor-pointer"
         >
-          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+          <CheckCircle2 className="w-3.5 h-3.5 text-[var(--md-sys-color-success)]" />
           <span>Done issues</span>
         </DropdownMenuItem>
 
@@ -154,7 +154,7 @@ export const WorkspaceQuickFiltersMenu: React.FC = () => {
                 onClick={() => handleNavigateCriteria(f.criteria)}
                 className="flex items-center gap-2 cursor-pointer truncate"
               >
-                <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 shrink-0" />
+                <Star className="w-3.5 h-3.5 text-[var(--md-sys-color-warning)] fill-[var(--md-sys-color-warning)] shrink-0" />
                 <span className="truncate">{f.name}</span>
               </DropdownMenuItem>
             ))}

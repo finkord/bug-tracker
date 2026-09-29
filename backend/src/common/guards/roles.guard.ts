@@ -1,15 +1,14 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { DataSource } from 'typeorm';
 import { ROLES_KEY } from '../decorators/roles.decorator.js';
 import { SystemRole, User } from '../../modules/users/entities/user.entity.js';
-import { UserGroup } from '../../modules/rbac/entities/user-group.entity.js';
+import { UsersService } from '../../modules/users/users.service.js';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(
-    private reflector: Reflector,
-    private readonly dataSource: DataSource,
+    private readonly reflector: Reflector,
+    private readonly usersService: UsersService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -31,21 +30,11 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
-    // Check directory group membership for administrator privileges
+    // Check directory group membership for administrator privileges via clean service encapsulation
     if (requiredRoles.includes(SystemRole.ADMIN)) {
-      try {
-        const isAdmin = await this.dataSource.getRepository(UserGroup)
-          .createQueryBuilder('ug')
-          .innerJoin('ug.group', 'g')
-          .where('ug.userId = :userId', { userId: user.id })
-          .andWhere('LOWER(g.name) IN (:...names)', { names: ['administrators', 'admin', 'admins'] })
-          .getExists();
-
-        if (isAdmin) {
-          return true;
-        }
-      } catch {
-        // Fallback
+      const isAdmin = await this.usersService.isMemberOfAdminGroup(user.id);
+      if (isAdmin) {
+        return true;
       }
     }
 
@@ -54,3 +43,4 @@ export class RolesGuard implements CanActivate {
     );
   }
 }
+

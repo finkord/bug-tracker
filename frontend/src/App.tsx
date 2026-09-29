@@ -1,36 +1,77 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import { ThemeProvider } from './context/ThemeContext';
-import { SidebarProvider } from './context/SidebarContext';
-import { BroadcastProvider } from './context/BroadcastContext';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from './api/queryClient';
+import { useAuth } from './store';
+import { SessionExpiredModal } from './components/common/SessionExpiredModal';
 import { PublicNavbar } from './components/public/PublicNavbar';
 import { WorkspaceHeader } from './components/workspace/WorkspaceHeader';
 import { Sidebar } from './components/common/Sidebar';
 import { Footer } from './components/common/Footer';
-import { ProtectedRoute, AdminRoute } from './components/common/ProtectedRoute';
+import { ProtectedRoute, AdminRoute, PublicOnlyRoute } from './components/common/ProtectedRoute';
+import { PageSkeletonLoader } from './components/common/PageSkeletonLoader';
 
-import { HomePage } from './pages/HomePage';
-import { LoginPage } from './pages/LoginPage';
-import { RegisterPage } from './pages/RegisterPage';
-import { ActivatePage } from './pages/ActivatePage';
-import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
-import { ResetPasswordPage } from './pages/ResetPasswordPage';
-import { ProfilePage } from './pages/ProfilePage';
-import { PreferencesPage } from './pages/PreferencesPage';
-import { ProjectsPage } from './pages/ProjectsPage';
-import { KanbanBoardPage } from './pages/KanbanBoardPage';
-import { BacklogPage } from './pages/BacklogPage';
-import { IssueDetailPage } from './pages/IssueDetailPage';
-import { AdvancedSearchPage } from './pages/AdvancedSearchPage';
-import { TimeTrackingPage } from './pages/TimeTrackingPage';
-import { AdminDashboardPage } from './pages/AdminDashboardPage';
-import { AdminRbacPage } from './pages/AdminRbacPage';
-import { ProjectSettingsPage } from './pages/ProjectSettingsPage';
-import { OAuthCallbackPage } from './pages/OAuthCallbackPage';
+const HomePage = React.lazy(() =>
+  import('./pages/HomePage').then((m) => ({ default: m.HomePage })),
+);
+const LoginPage = React.lazy(() =>
+  import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })),
+);
+const RegisterPage = React.lazy(() =>
+  import('./pages/RegisterPage').then((m) => ({ default: m.RegisterPage })),
+);
+const ActivatePage = React.lazy(() =>
+  import('./pages/ActivatePage').then((m) => ({ default: m.ActivatePage })),
+);
+const ForgotPasswordPage = React.lazy(() =>
+  import('./pages/ForgotPasswordPage').then((m) => ({ default: m.ForgotPasswordPage })),
+);
+const ResetPasswordPage = React.lazy(() =>
+  import('./pages/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })),
+);
+const ProfilePage = React.lazy(() =>
+  import('./pages/ProfilePage').then((m) => ({ default: m.ProfilePage })),
+);
+const PreferencesPage = React.lazy(() =>
+  import('./pages/PreferencesPage').then((m) => ({ default: m.PreferencesPage })),
+);
+const ProjectsPage = React.lazy(() =>
+  import('./pages/ProjectsPage').then((m) => ({ default: m.ProjectsPage })),
+);
+const KanbanBoardPage = React.lazy(() =>
+  import('./pages/KanbanBoardPage').then((m) => ({ default: m.KanbanBoardPage })),
+);
+const BacklogPage = React.lazy(() =>
+  import('./pages/BacklogPage').then((m) => ({ default: m.BacklogPage })),
+);
+const IssueDetailPage = React.lazy(() =>
+  import('./pages/IssueDetailPage').then((m) => ({ default: m.IssueDetailPage })),
+);
+const AdvancedSearchPage = React.lazy(() =>
+  import('./pages/AdvancedSearchPage').then((m) => ({ default: m.AdvancedSearchPage })),
+);
+const TimeTrackingPage = React.lazy(() =>
+  import('./pages/TimeTrackingPage').then((m) => ({ default: m.TimeTrackingPage })),
+);
+const AdminDashboardPage = React.lazy(() =>
+  import('./pages/AdminDashboardPage').then((m) => ({ default: m.AdminDashboardPage })),
+);
+const AdminRbacPage = React.lazy(() =>
+  import('./pages/AdminRbacPage').then((m) => ({ default: m.AdminRbacPage })),
+);
+const ProjectSettingsPage = React.lazy(() =>
+  import('./pages/ProjectSettingsPage').then((m) => ({ default: m.ProjectSettingsPage })),
+);
+const OAuthCallbackPage = React.lazy(() =>
+  import('./pages/OAuthCallbackPage').then((m) => ({ default: m.OAuthCallbackPage })),
+);
 
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <PageSkeletonLoader />;
+  }
 
   if (!user) {
     return (
@@ -62,157 +103,182 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 export const App: React.FC = () => {
   return (
-    <ThemeProvider>
+    <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <AuthProvider>
-          <BroadcastProvider>
-            <SidebarProvider>
-              <AppLayout>
-                <Routes>
-                  {/* Public Routes */}
-                  <Route path="/" element={<HomePage />} />
-                  <Route path="/login" element={<LoginPage />} />
-                  <Route path="/register" element={<RegisterPage />} />
-                  <Route path="/activate" element={<ActivatePage />} />
-                  <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                  <Route path="/reset-password" element={<ResetPasswordPage />} />
-                  <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
+        <AppLayout>
+          <React.Suspense fallback={<PageSkeletonLoader />}>
+            <Routes>
+              {/* Public & Guest-Only Routes */}
+              <Route path="/" element={<HomePage />} />
+              <Route
+                path="/login"
+                element={
+                  <PublicOnlyRoute>
+                    <LoginPage />
+                  </PublicOnlyRoute>
+                }
+              />
+              <Route
+                path="/register"
+                element={
+                  <PublicOnlyRoute>
+                    <RegisterPage />
+                  </PublicOnlyRoute>
+                }
+              />
+              <Route path="/activate" element={<ActivatePage />} />
+              <Route
+                path="/forgot-password"
+                element={
+                  <PublicOnlyRoute>
+                    <ForgotPasswordPage />
+                  </PublicOnlyRoute>
+                }
+              />
+              <Route
+                path="/reset-password"
+                element={
+                  <PublicOnlyRoute>
+                    <ResetPasswordPage />
+                  </PublicOnlyRoute>
+                }
+              />
+              <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
 
-                  {/* Protected Workspace & Board Routes */}
-                  <Route
-                    path="/projects"
-                    element={
-                      <ProtectedRoute>
-                        <ProjectsPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/board"
-                    element={
-                      <ProtectedRoute>
-                        <KanbanBoardPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/projects/:projectId/board"
-                    element={
-                      <ProtectedRoute>
-                        <KanbanBoardPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/backlog"
-                    element={
-                      <ProtectedRoute>
-                        <BacklogPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/projects/:projectId/backlog"
-                    element={
-                      <ProtectedRoute>
-                        <BacklogPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/issues/:key"
-                    element={
-                      <ProtectedRoute>
-                        <IssueDetailPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/search"
-                    element={
-                      <ProtectedRoute>
-                        <AdvancedSearchPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/time-tracking"
-                    element={
-                      <ProtectedRoute>
-                        <TimeTrackingPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/profile"
-                    element={
-                      <ProtectedRoute>
-                        <ProfilePage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/preferences"
-                    element={
-                      <ProtectedRoute>
-                        <PreferencesPage />
-                      </ProtectedRoute>
-                    }
-                  />
+              {/* Protected Workspace & Board Routes */}
+              <Route
+                path="/projects"
+                element={
+                  <ProtectedRoute>
+                    <ProjectsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/board"
+                element={
+                  <ProtectedRoute>
+                    <KanbanBoardPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/projects/:projectId/board"
+                element={
+                  <ProtectedRoute>
+                    <KanbanBoardPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/backlog"
+                element={
+                  <ProtectedRoute>
+                    <BacklogPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/projects/:projectId/backlog"
+                element={
+                  <ProtectedRoute>
+                    <BacklogPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/issues/:key"
+                element={
+                  <ProtectedRoute>
+                    <IssueDetailPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/search"
+                element={
+                  <ProtectedRoute>
+                    <AdvancedSearchPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/time-tracking"
+                element={
+                  <ProtectedRoute>
+                    <TimeTrackingPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <ProfilePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/preferences"
+                element={
+                  <ProtectedRoute>
+                    <PreferencesPage />
+                  </ProtectedRoute>
+                }
+              />
 
-                  {/* Project Settings / People */}
-                  <Route
-                    path="/projects/:id/settings"
-                    element={
-                      <ProtectedRoute>
-                        <ProjectSettingsPage />
-                      </ProtectedRoute>
-                    }
-                  />
+              {/* Project Settings / People */}
+              <Route
+                path="/projects/:id/settings"
+                element={
+                  <ProtectedRoute>
+                    <ProjectSettingsPage />
+                  </ProtectedRoute>
+                }
+              />
 
-                  {/* Admin Console Routes */}
-                  <Route
-                    path="/admin"
-                    element={
-                      <AdminRoute>
-                        <AdminDashboardPage defaultTab="users" />
-                      </AdminRoute>
-                    }
-                  />
-                  <Route
-                    path="/admin/dashboard"
-                    element={
-                      <AdminRoute>
-                        <AdminDashboardPage defaultTab="users" />
-                      </AdminRoute>
-                    }
-                  />
-                  <Route
-                    path="/admin/rbac"
-                    element={
-                      <AdminRoute>
-                        <AdminRbacPage />
-                      </AdminRoute>
-                    }
-                  />
-                  <Route
-                    path="/admin/security-logs"
-                    element={
-                      <AdminRoute>
-                        <AdminDashboardPage defaultTab="system" />
-                      </AdminRoute>
-                    }
-                  />
+              {/* Admin Console Routes */}
+              <Route
+                path="/admin"
+                element={
+                  <AdminRoute>
+                    <AdminDashboardPage defaultTab="users" />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/dashboard"
+                element={
+                  <AdminRoute>
+                    <AdminDashboardPage defaultTab="users" />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/rbac"
+                element={
+                  <AdminRoute>
+                    <AdminRbacPage />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/security-logs"
+                element={
+                  <AdminRoute>
+                    <AdminDashboardPage defaultTab="system" />
+                  </AdminRoute>
+                }
+              />
 
-                  {/* Fallback */}
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </AppLayout>
-            </SidebarProvider>
-          </BroadcastProvider>
-        </AuthProvider>
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </React.Suspense>
+        </AppLayout>
+        <SessionExpiredModal />
       </BrowserRouter>
-    </ThemeProvider>
+    </QueryClientProvider>
   );
 };
 

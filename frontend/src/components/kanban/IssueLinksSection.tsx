@@ -126,8 +126,9 @@ export const IssueLinksSection: React.FC<IssueLinksSectionProps> = ({
       });
       setIsModalOpen(false);
       onLinksChanged();
-    } catch (err: any) {
-      setError(err.message || 'Failed to create issue link');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to create issue link';
+      setError(message);
     } finally {
       setSubmitting(false);
     }
@@ -139,8 +140,9 @@ export const IssueLinksSection: React.FC<IssueLinksSectionProps> = ({
     try {
       await api.deleteIssueLink(linkId);
       onLinksChanged();
-    } catch (err: any) {
-      alert(err.message || 'Failed to remove link');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to remove link';
+      alert(message);
     } finally {
       setDeletingId(null);
     }
@@ -323,7 +325,7 @@ export const IssueLinksSection: React.FC<IssueLinksSectionProps> = ({
                       type="button"
                       disabled={deletingId === link.id}
                       onClick={() => handleDeleteLink(link.id)}
-                      className="p-1 rounded-md text-[var(--md-sys-color-on-surface-variant)] hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
+                      className="p-1 rounded-md text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/50 transition-colors cursor-pointer"
                       aria-label="Remove issue link"
                     >
                       {deletingId === link.id ? (

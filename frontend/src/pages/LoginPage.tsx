@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { api, type Login2FaChallenge, type AuthTokens } from '../api/client';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../store';
 import { Shield, KeyRound, ShieldAlert } from 'lucide-react';
 import { LockoutCountdownBanner } from '../components/auth/LockoutCountdownBanner';
 import { TwoFactorChallengeForm } from '../components/auth/TwoFactorChallengeForm';
@@ -13,7 +13,9 @@ import { PasswordLoginForm } from '../components/auth/PasswordLoginForm';
  */
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
+  const destination = (location.state as { from?: { pathname?: string } })?.from?.pathname || '/projects';
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,9 +49,9 @@ export const LoginPage: React.FC = () => {
 
       // Standard login success
       login(res as AuthTokens);
-      navigate('/');
-    } catch (err: any) {
-      const msg: string = err.message || 'Authentication failed';
+      navigate(destination, { replace: true });
+    } catch (err: unknown) {
+      const msg: string = err instanceof Error ? err.message : 'Authentication failed';
       setError(msg);
 
       // Detect brute-force lockout message
@@ -76,9 +78,10 @@ export const LoginPage: React.FC = () => {
         code,
       });
       login(tokens);
-      navigate('/');
-    } catch (err: any) {
-      setError(err.message || 'Invalid two-factor code');
+      navigate(destination, { replace: true });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Invalid two-factor code';
+      setError(message);
     } finally {
       setTwoFactorSubmitting(false);
     }

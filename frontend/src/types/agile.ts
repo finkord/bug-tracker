@@ -2,6 +2,8 @@ export type SprintStatus = 'ACTIVE' | 'PLANNED' | 'COMPLETED';
 export type AgileViewMode = 'backlog' | 'board';
 
 export interface SprintDefinition {
+  id?: number;
+  projectId?: number;
   name: string;
   goal: string;
   startDate: string;

@@ -1,5 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { api, type UserProfile, type SystemRole } from '../../api/client.js';
+import {
+  useUsersQuery,
+  useUpdateUserRoleMutation,
+  useBlockUserMutation,
+  useUnblockUserMutation,
+  useAdminResetUser2FaMutation,
+} from '../../api/queries';
 import { Avatar } from '../common/Avatar.js';
 import {
   Button,
@@ -23,84 +30,69 @@ import {
 } from 'lucide-react';
 
 export const AdminUsersTab: React.FC = () => {
-  const [users, setUsers] = useState<UserProfile[]>([]);
   const [userSearch, setUserSearch] = useState('');
+  const [activeSearch, setActiveSearch] = useState('');
   const [userRoleFilter, setUserRoleFilter] = useState('');
   const [userPage, setUserPage] = useState(1);
-  const [totalUsers, setTotalUsers] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const fetchUsers = async () => {
-    setLoading(true);
-    setErrorMessage(null);
-    try {
-      const data = await api.getUsers({
-        page: userPage,
-        limit: 25,
-        search: userSearch || undefined,
-        role: userRoleFilter || undefined,
-      });
-      setUsers(data.items);
-      setTotalUsers(data.total);
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to fetch users');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    data: usersData,
+    isLoading: loading,
+    refetch: fetchUsers,
+  } = useUsersQuery({
+    page: userPage,
+    limit: 25,
+    search: activeSearch || undefined,
+    role: userRoleFilter || undefined,
+  });
 
-  useEffect(() => {
-    fetchUsers();
-  }, [userPage, userRoleFilter]);
+  const users = usersData?.items || [];
+  const totalUsers = usersData?.total || 0;
+
+  const roleMutation = useUpdateUserRoleMutation();
+  const blockMutation = useBlockUserMutation();
+  const unblockMutation = useUnblockUserMutation();
+  const reset2FaMutation = useAdminResetUser2FaMutation();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setUserPage(1);
-    fetchUsers();
+    setActiveSearch(userSearch);
   };
 
   const handleRoleChange = async (userId: number, newRole: SystemRole) => {
     try {
-      await api.updateUserRole(userId, newRole);
-      setUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, systemRole: newRole } : u)),
-      );
+      await roleMutation.mutateAsync({ id: userId, role: newRole });
       setActionSuccess('User role updated successfully');
       setTimeout(() => setActionSuccess(null), 3000);
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to update role');
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to update role');
     }
   };
 
   const handleToggleBlock = async (userId: number, currentlyBlocked: boolean) => {
     try {
       if (currentlyBlocked) {
-        await api.unblockUser(userId);
+        await unblockMutation.mutateAsync(userId);
       } else {
-        await api.blockUser(userId);
+        await blockMutation.mutateAsync(userId);
       }
-      setUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, isBlocked: !currentlyBlocked } : u)),
-      );
       setActionSuccess(currentlyBlocked ? 'User unblocked' : 'User blocked');
       setTimeout(() => setActionSuccess(null), 3000);
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to update block status');
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to update block status');
     }
   };
 
   const handleReset2Fa = async (userId: number) => {
     try {
-      await api.adminResetUser2Fa(userId);
-      setUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, twoFactorEnabled: false } : u)),
-      );
+      await reset2FaMutation.mutateAsync(userId);
       setActionSuccess('Two-factor authentication reset for user');
       setTimeout(() => setActionSuccess(null), 3000);
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to reset 2FA');
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to reset 2FA');
     }
   };
 
@@ -109,8 +101,8 @@ export const AdminUsersTab: React.FC = () => {
       await api.forgotPassword(email);
       setActionSuccess(`Password reset email sent to ${email}`);
       setTimeout(() => setActionSuccess(null), 3000);
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to send password reset');
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to send password reset');
     }
   };
 
@@ -119,8 +111,8 @@ export const AdminUsersTab: React.FC = () => {
   return (
     <div className="space-y-6">
       {actionSuccess && (
-        <div className="flex items-center gap-2 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-          <CheckCircle className="w-4 h-4 shrink-0" />
+        <div className="flex items-center gap-2 p-3 bg-[var(--md-sys-color-success-container)] border border-[var(--md-sys-color-success)]/30 rounded-xl text-xs font-semibold text-[var(--md-sys-color-on-success-container)]">
+          <CheckCircle className="w-4 h-4 shrink-0 text-[var(--md-sys-color-success)]" />
           {actionSuccess}
         </div>
       )}
@@ -281,7 +273,7 @@ export const AdminUsersTab: React.FC = () => {
                         onClick={() => handleToggleBlock(u.id, u.isBlocked)}
                         className={`h-7 px-2 text-xs ${
                           u.isBlocked
-                            ? 'text-emerald-500 hover:text-emerald-600'
+                            ? 'text-[var(--md-sys-color-success)] hover:opacity-80'
                             : 'text-destructive hover:bg-destructive/10'
                         }`}
                       >

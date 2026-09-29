@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
@@ -13,5 +13,32 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react-router-dom') || id.includes('/react/') || id.includes('/react-dom/')) {
+              return 'vendor';
+            }
+            if (id.includes('@radix-ui')) {
+              return 'radix';
+            }
+            if (id.includes('lucide-react')) {
+              return 'icons';
+            }
+            if (id.includes('@tanstack')) {
+              return 'tanstack';
+            }
+          }
+        },
+      },
+    },
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.ts',
   },
 });

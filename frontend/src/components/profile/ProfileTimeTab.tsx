@@ -1,6 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import { api, type WorklogItem } from '../../api/client';
+import { useMyWorklogsQuery } from '../../api/queries';
 import { TimeCalendar, type DayWorklog } from '../common/TimeCalendar';
 import { Clock, Trophy, Flame, Award, Sparkles } from 'lucide-react';
 
@@ -8,17 +6,8 @@ import { Clock, Trophy, Flame, Award, Sparkles } from 'lucide-react';
  * Material 3 Personal Time & Effort tab with streak calculation, milestone badges, and monthly calendar.
  */
 export const ProfileTimeTab: React.FC = () => {
-  const { user } = useAuth();
-  const [myLogs, setMyLogs] = useState<WorklogItem[]>([]);
+  const { data: myLogs = [] } = useMyWorklogsQuery();
   const [calendarDate, setCalendarDate] = useState<Date>(new Date());
-
-  useEffect(() => {
-    if (user) {
-      api.getMyWorklogs()
-        .then((logs) => setMyLogs(logs))
-        .catch(() => {});
-    }
-  }, [user]);
 
   // Compute daily hours for personal calendar
   const myDailyHours: Record<string, number> = {};

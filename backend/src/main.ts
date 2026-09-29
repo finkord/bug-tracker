@@ -1,15 +1,19 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module.js';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Enable Cross-Origin Resource Sharing
+  // Enable cookie parsing for secure httpOnly authentication cookies
+  app.use(cookieParser());
+
+  // Enable Cross-Origin Resource Sharing — restricted to the configured frontend origin only
   app.enableCors({
-    origin: true,
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
     credentials: true,
   });
 

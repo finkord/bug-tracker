@@ -40,7 +40,7 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({
           elements.push(
             <div
               key={`code-${index}`}
-              className="my-2 p-3 rounded-xl bg-black/80 dark:bg-black/90 text-emerald-400 font-mono text-xs overflow-x-auto border border-white/10"
+              className="my-2 p-3 rounded-xl bg-black/80 dark:bg-black/90 text-[var(--md-sys-color-success)] font-mono text-xs overflow-x-auto border border-white/10"
             >
               <pre className="m-0">{codeBlockContent.join('\n')}</pre>
             </div>,
@@ -135,7 +135,7 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({
       elements.push(
         <div
           key="code-end"
-          className="my-2 p-3 rounded-xl bg-black/80 dark:bg-black/90 text-emerald-400 font-mono text-xs overflow-x-auto"
+          className="my-2 p-3 rounded-xl bg-black/80 dark:bg-black/90 text-[var(--md-sys-color-success)] font-mono text-xs overflow-x-auto"
         >
           <pre className="m-0">{codeBlockContent.join('\n')}</pre>
         </div>,
@@ -170,7 +170,7 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({
         <div key={`img-block-${matchStart}`} className="my-2.5 inline-block w-full max-w-lg">
           {isFailed ? (
             <div className="flex items-center gap-2 p-3 rounded-xl bg-[var(--md-sys-color-error-container)]/40 border border-[var(--md-sys-color-error)]/30 text-[var(--md-sys-color-on-error-container)] text-xs">
-              <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+              <AlertCircle className="w-4 h-4 text-[var(--md-sys-color-error)] shrink-0" />
               <span className="truncate">Image failed to load: {altText}</span>
               <a
                 href={imgUrl}

@@ -24,7 +24,7 @@ export class Group {
   @Column({ name: 'is_system', type: 'boolean', default: false })
   isSystem: boolean;
 
-  @OneToMany('UserGroup', (ug: any) => ug.group)
+  @OneToMany('UserGroup', (ug: UserGroup) => ug.group)
   userGroups: UserGroup[];
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })

@@ -26,6 +26,22 @@ interface SprintAnalyticsModalProps {
   allIssues: IssueItem[];
 }
 
+function getStatusBadgeVariant(status: string): NonNullable<React.ComponentProps<typeof Badge>['variant']> {
+  const normalized = status.toLowerCase().replace('_', '-');
+  if (['open', 'in-progress', 'review', 'resolved', 'closed'].includes(normalized)) {
+    return normalized as NonNullable<React.ComponentProps<typeof Badge>['variant']>;
+  }
+  return 'neutral';
+}
+
+function getPriorityBadgeVariant(priority: string): NonNullable<React.ComponentProps<typeof Badge>['variant']> {
+  const normalized = priority.toLowerCase();
+  if (['low', 'medium', 'high', 'critical'].includes(normalized)) {
+    return normalized as NonNullable<React.ComponentProps<typeof Badge>['variant']>;
+  }
+  return 'neutral';
+}
+
 export const SprintAnalyticsModal: React.FC<SprintAnalyticsModalProps> = ({
   isOpen,
   onClose,
@@ -467,12 +483,12 @@ export const SprintAnalyticsModal: React.FC<SprintAnalyticsModalProps> = ({
                           {issue.title}
                         </td>
                         <td className="p-3">
-                          <Badge variant={issue.status.toLowerCase().replace('_', '-') as any} size="sm">
+                          <Badge variant={getStatusBadgeVariant(issue.status)} size="sm">
                             {issue.status}
                           </Badge>
                         </td>
                         <td className="p-3">
-                          <Badge variant={issue.priority.toLowerCase() as any} size="sm">
+                          <Badge variant={getPriorityBadgeVariant(issue.priority)} size="sm">
                             {issue.priority}
                           </Badge>
                         </td>

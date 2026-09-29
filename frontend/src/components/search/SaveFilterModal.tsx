@@ -92,7 +92,7 @@ export const SaveFilterModal: React.FC<SaveFilterModalProps> = ({
             className="rounded border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-primary)] focus:ring-[var(--md-sys-color-primary)] cursor-pointer"
           />
           <div className="flex items-center gap-1 text-xs font-medium text-[var(--md-sys-color-on-surface)]">
-            <Star className={`w-3.5 h-3.5 ${isFavorite ? 'fill-amber-400 text-amber-400' : 'text-[var(--md-sys-color-on-surface-variant)]'}`} />
+            <Star className={`w-3.5 h-3.5 ${isFavorite ? 'fill-[var(--md-sys-color-warning)] text-[var(--md-sys-color-warning)]' : 'text-[var(--md-sys-color-on-surface-variant)]'}`} />
             <span>Add to Starred Filters</span>
           </div>
         </label>

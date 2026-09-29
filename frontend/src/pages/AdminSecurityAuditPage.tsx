@@ -1,5 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { api, type LoginAuditLogItem, type UserProfile } from '../api/client';
+import React, { useState } from 'react';
+import {
+  useLoginAuditLogsQuery,
+  useUsersQuery,
+  useBlockUserMutation,
+  useUnblockUserMutation,
+} from '../api/queries';
+import type { LoginAuditLogItem, UserProfile } from '../api/client';
 import {
   Button,
   Badge,
@@ -28,62 +34,40 @@ import {
 export const AdminSecurityAuditPage: React.FC = () => {
   const [tab, setTab] = useState<'logs' | 'users'>('logs');
 
-  // Audit Logs State
-  const [logs, setLogs] = useState<LoginAuditLogItem[]>([]);
-  const [logsLoading, setLogsLoading] = useState(true);
-  const [logsTotal, setLogsTotal] = useState(0);
+  // TanStack Query Hooks
+  const {
+    data: logsData,
+    isLoading: logsLoading,
+    refetch: refetchLogs,
+  } = useLoginAuditLogsQuery(1, 100);
+
+  const {
+    data: usersData,
+    isLoading: usersLoading,
+    refetch: refetchUsers,
+  } = useUsersQuery({ page: 1, limit: 100 });
+
+  const blockMutation = useBlockUserMutation();
+  const unblockMutation = useUnblockUserMutation();
+
+  const logs = logsData?.items || [];
+  const logsTotal = logsData?.total || 0;
+  const users = usersData?.items || [];
+
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [searchTerm, setSearchTerm] = useState('');
-
-  // Users State
-  const [users, setUsers] = useState<UserProfile[]>([]);
-  const [usersLoading, setUsersLoading] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
-
-  const fetchLogs = async () => {
-    setLogsLoading(true);
-    try {
-      const data = await api.getLoginAuditLogs(1, 100);
-      setLogs(data.items);
-      setLogsTotal(data.total);
-    } catch {
-      // Ignored
-    } finally {
-      setLogsLoading(false);
-    }
-  };
-
-  const fetchUsers = async () => {
-    setUsersLoading(true);
-    try {
-      const data = await api.getUsers({ page: 1, limit: 100 });
-      setUsers(data.items);
-    } catch {
-      // Ignored
-    } finally {
-      setUsersLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (tab === 'logs') {
-      fetchLogs();
-    } else {
-      fetchUsers();
-    }
-  }, [tab]);
 
   const handleToggleBlock = async (user: UserProfile) => {
     setActionLoadingId(user.id);
     try {
       if (user.isBlocked) {
-        await api.unblockUser(user.id);
+        await unblockMutation.mutateAsync(user.id);
       } else {
-        await api.blockUser(user.id);
+        await blockMutation.mutateAsync(user.id);
       }
-      await fetchUsers();
     } catch {
-      // Ignored
+      // Handled by UI feedback
     } finally {
       setActionLoadingId(null);
     }
@@ -154,118 +138,104 @@ export const AdminSecurityAuditPage: React.FC = () => {
               className="rounded-full gap-1.5 font-bold"
             >
               <Users className="w-3.5 h-3.5" />
-              <span>User Accounts & Locks</span>
+              <span>Identity Protection ({users.length})</span>
             </TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
 
-      {tab === 'logs' ? (
-        /* ================= AUDIT LOGS VIEW ================= */
+      {tab === 'logs' && (
         <div className="space-y-4">
-          {/* Filter Bar */}
-          <div className="p-4 rounded-3xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 flex flex-wrap items-center justify-between gap-3 shadow-xs">
-            <div className="flex items-center gap-2.5 flex-1 min-w-[260px] flex-wrap sm:flex-nowrap">
-              <div className="relative w-full max-w-sm">
-                <Search className="absolute left-3.5 top-2.5 w-3.5 h-3.5 text-[var(--md-sys-color-on-surface-variant)]" />
+          {/* Controls Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 bg-[var(--md-sys-color-surface-container-low)] rounded-2xl border border-[var(--md-sys-color-outline-variant)]">
+            <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-[240px]">
+              <div className="relative flex-1 min-w-[180px] max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--md-sys-color-on-surface-variant)]" />
                 <input
                   type="text"
+                  placeholder="Filter by email, IP address, reason..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search by email, IP address, or reason..."
-                  className="w-full pl-9 pr-3.5 py-1.5 text-xs rounded-full bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]/30 focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] font-medium"
+                  className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] placeholder:text-[var(--md-sys-color-on-surface-variant)] focus:outline-hidden focus:ring-1 focus:ring-[var(--md-sys-color-primary)]"
                 />
               </div>
 
-              <div className="w-44 shrink-0">
+              <div className="w-44">
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger size="sm" className="rounded-full bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] text-xs font-medium border-[var(--md-sys-color-outline-variant)]/30">
-                    <SelectValue placeholder="Outcome" />
+                  <SelectTrigger className="h-8 text-xs rounded-xl">
+                    <SelectValue placeholder="All Event Types" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="ALL">All Outcomes</SelectItem>
-                    <SelectItem value="SUCCESS">SUCCESS</SelectItem>
-                    <SelectItem value="FAILED_PASSWORD">FAILED_PASSWORD</SelectItem>
-                    <SelectItem value="ACCOUNT_LOCKED">ACCOUNT_LOCKED</SelectItem>
-                    <SelectItem value="REQUIRE_2FA">REQUIRE_2FA</SelectItem>
-                    <SelectItem value="TWO_FACTOR_SUCCESS">TWO_FACTOR_SUCCESS</SelectItem>
-                    <SelectItem value="TWO_FACTOR_FAILED">TWO_FACTOR_FAILED</SelectItem>
+                    <SelectItem value="SUCCESS">Success</SelectItem>
+                    <SelectItem value="FAILED_PASSWORD">Failed Password</SelectItem>
+                    <SelectItem value="REQUIRE_2FA">Require 2FA</SelectItem>
+                    <SelectItem value="TWO_FACTOR_SUCCESS">2FA Success</SelectItem>
+                    <SelectItem value="TWO_FACTOR_FAILED">2FA Failed</SelectItem>
+                    <SelectItem value="ACCOUNT_LOCKED">Account Locked</SelectItem>
+                    <SelectItem value="ACCOUNT_BLOCKED">Account Blocked</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
             <Button
-              type="button"
               variant="outline"
               size="sm"
-              onClick={fetchLogs}
-              isLoading={logsLoading}
-              leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
+              onClick={() => refetchLogs()}
+              disabled={logsLoading}
+              leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${logsLoading ? 'animate-spin' : ''}`} />}
             >
-              Refresh Log
+              Refresh Trail
             </Button>
           </div>
 
-          {/* Table Container */}
-          <div className="bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 rounded-3xl overflow-hidden shadow-xs">
+          {/* Logs Table */}
+          <div className="bg-[var(--md-sys-color-surface)] rounded-2xl border border-[var(--md-sys-color-outline-variant)] overflow-hidden shadow-xs">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse table-auto">
-                <thead className="bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider text-[10px] font-bold border-b border-[var(--md-sys-color-outline-variant)]/20">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface-variant)] font-bold uppercase tracking-wider text-[10px] border-b border-[var(--md-sys-color-outline-variant)]">
                   <tr>
-                    <th className="px-4 py-3">ID</th>
-                    <th className="px-4 py-3">Timestamp</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Attempted Email</th>
-                    <th className="px-4 py-3">Client IP</th>
-                    <th className="px-4 py-3">User-Agent</th>
-                    <th className="px-4 py-3">Forensic Context</th>
+                    <th className="py-3 px-4">Event Outcome</th>
+                    <th className="py-3 px-4">Target Identity</th>
+                    <th className="py-3 px-4">Client IP</th>
+                    <th className="py-3 px-4">Failure Telemetry</th>
+                    <th className="py-3 px-4">Timestamp</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)]/20 text-[var(--md-sys-color-on-surface)]">
+                <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)]/60">
                   {logsLoading ? (
                     <tr>
-                      <td colSpan={7} className="px-5 py-12 text-center text-[var(--md-sys-color-on-surface-variant)]">
-                        Loading security audit trail...
+                      <td colSpan={5} className="py-12 text-center text-[var(--md-sys-color-on-surface-variant)]">
+                        <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-[var(--md-sys-color-primary)]" />
+                        Loading forensic logs...
                       </td>
                     </tr>
                   ) : filteredLogs.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-5 py-12 text-center text-[var(--md-sys-color-on-surface-variant)]">
-                        No audit log records match the current filter.
+                      <td colSpan={5} className="py-12 text-center text-[var(--md-sys-color-on-surface-variant)]">
+                        No security logs match active criteria.
                       </td>
                     </tr>
                   ) : (
                     filteredLogs.map((log) => (
-                      <tr key={log.id} className="hover:bg-[var(--md-sys-color-surface-container-high)]/40 transition-colors">
-                        <td className="px-4 py-3 font-mono text-[var(--md-sys-color-on-surface-variant)] font-bold">
-                          #{log.id}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-[var(--md-sys-color-on-surface-variant)]">
-                          {new Date(log.createdAt).toLocaleString()}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
+                      <tr key={log.id} className="hover:bg-[var(--md-sys-color-surface-container-lowest)] transition-colors">
+                        <td className="py-2.5 px-4 font-mono font-medium whitespace-nowrap">
                           <Badge variant={getStatusBadgeVariant(log.status)} size="sm">
                             {log.status}
                           </Badge>
                         </td>
-                        <td className="px-4 py-3 font-medium text-[var(--md-sys-color-on-surface)]">
+                        <td className="py-2.5 px-4 font-medium text-[var(--md-sys-color-on-surface)]">
                           {log.attemptedEmail}
                         </td>
-                        <td className="px-4 py-3 font-mono text-xs text-[var(--md-sys-color-on-surface-variant)]">
+                        <td className="py-2.5 px-4 font-mono text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
                           {log.ipAddress}
                         </td>
-                        <td className="px-4 py-3 max-w-[180px] truncate text-[var(--md-sys-color-on-surface-variant)]" title={log.userAgent}>
-                          {log.userAgent || 'Unknown'}
+                        <td className="py-2.5 px-4 text-[var(--md-sys-color-on-surface-variant)]">
+                          {log.failureReason || '—'}
                         </td>
-                        <td className="px-4 py-3 text-[var(--md-sys-color-on-surface-variant)]">
-                          {log.failureReason ? (
-                            <span className="text-[var(--md-sys-color-error)] font-medium text-xs">
-                              {log.failureReason}
-                            </span>
-                          ) : (
-                            <span className="text-[var(--md-sys-color-success)] font-medium text-xs">—</span>
-                          )}
+                        <td className="py-2.5 px-4 text-[var(--md-sys-color-on-surface-variant)] whitespace-nowrap font-mono text-[11px]">
+                          {new Date(log.createdAt).toLocaleString()}
                         </td>
                       </tr>
                     ))
@@ -275,93 +245,89 @@ export const AdminSecurityAuditPage: React.FC = () => {
             </div>
           </div>
         </div>
-      ) : (
-        /* ================= USER ACCOUNTS & BLOCKING VIEW ================= */
-        <div className="bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 rounded-3xl overflow-hidden shadow-xs">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse table-auto">
-              <thead className="bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider text-[10px] font-bold border-b border-[var(--md-sys-color-outline-variant)]/20">
-                <tr>
-                  <th className="px-4 py-3">ID</th>
-                  <th className="px-4 py-3">User Profile</th>
-                  <th className="px-4 py-3">System Role</th>
-                  <th className="px-4 py-3">Email Activated</th>
-                  <th className="px-4 py-3">2FA TOTP</th>
-                  <th className="px-4 py-3">Account State</th>
-                  <th className="px-4 py-3 text-right">Admin Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)]/20 text-[var(--md-sys-color-on-surface)]">
-                {usersLoading ? (
-                  <tr>
-                    <td colSpan={7} className="px-5 py-12 text-center text-[var(--md-sys-color-on-surface-variant)]">
-                      Loading registered users...
-                    </td>
-                  </tr>
-                ) : (
-                  users.map((u) => (
-                    <tr key={u.id} className="hover:bg-[var(--md-sys-color-surface-container-high)]/40 transition-colors">
-                      <td className="px-4 py-3 font-mono font-bold text-[var(--md-sys-color-on-surface-variant)]">
-                        #{u.id}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="font-semibold text-[var(--md-sys-color-on-surface)]">{u.fullName}</div>
-                        <div className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">{u.email}</div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge variant={u.systemRole === 'ADMIN' ? 'primary' : 'neutral'} size="sm">
-                          {u.systemRole}
+      )}
+
+      {tab === 'users' && (
+        <div className="space-y-4">
+          <div className="p-3.5 bg-[var(--md-sys-color-surface-container-low)] rounded-2xl border border-[var(--md-sys-color-outline-variant)] flex items-center justify-between">
+            <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] font-medium">
+              Administrator authority to manually lock out compromised accounts or restore access.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetchUsers()}
+              disabled={usersLoading}
+              leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${usersLoading ? 'animate-spin' : ''}`} />}
+            >
+              Refresh Accounts
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            {usersLoading ? (
+              <div className="col-span-full py-12 text-center text-xs text-[var(--md-sys-color-on-surface-variant)]">
+                <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-[var(--md-sys-color-primary)]" />
+                Querying identity directory...
+              </div>
+            ) : (
+              users.map((u) => (
+                <div
+                  key={u.id}
+                  className={`p-4 rounded-2xl border transition-all duration-200 flex flex-col justify-between gap-3 ${
+                    u.isBlocked
+                      ? 'bg-[var(--md-sys-color-error-container)]/20 border-[var(--md-sys-color-error)]/40'
+                      : 'bg-[var(--md-sys-color-surface)] border-[var(--md-sys-color-outline-variant)]'
+                  }`}
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-bold text-xs text-[var(--md-sys-color-on-surface)] truncate">
+                        {u.fullName}
+                      </span>
+                      <Badge variant={u.isBlocked ? 'error' : 'success'} size="sm">
+                        {u.isBlocked ? 'Blocked' : 'Active'}
+                      </Badge>
+                    </div>
+
+                    <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] truncate">
+                      {u.email}
+                    </p>
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <Badge variant="neutral" size="sm">
+                        {u.systemRole}
+                      </Badge>
+                      {u.twoFactorEnabled ? (
+                        <Badge variant="primary" size="sm" className="gap-1">
+                          <CheckCircle className="w-3 h-3" />
+                          2FA Active
                         </Badge>
-                      </td>
-                      <td className="px-4 py-3">
-                        {u.isActivated ? (
-                          <span className="text-[var(--md-sys-color-success)] flex items-center gap-1 font-medium">
-                            <CheckCircle className="w-3.5 h-3.5" />
-                            <span>Activated</span>
-                          </span>
-                        ) : (
-                          <span className="text-[var(--md-sys-color-warning)] flex items-center gap-1 font-medium">
-                            <Clock className="w-3.5 h-3.5" />
-                            <span>Pending</span>
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge variant={u.twoFactorEnabled ? 'success' : 'neutral'} size="sm">
-                          {u.twoFactorEnabled ? 'Enabled' : 'Disabled'}
+                      ) : (
+                        <Badge variant="warning" size="sm">
+                          No 2FA
                         </Badge>
-                      </td>
-                      <td className="px-4 py-3">
-                        {u.isBlocked ? (
-                          <Badge variant="error" size="sm">
-                            <Ban className="w-3 h-3 mr-1" />
-                            Blocked
-                          </Badge>
-                        ) : (
-                          <Badge variant="success" size="sm">
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            Active
-                          </Badge>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <Button
-                          type="button"
-                          variant={u.isBlocked ? 'tonal' : 'danger-tonal'}
-                          size="xs"
-                          onClick={() => handleToggleBlock(u)}
-                          disabled={actionLoadingId === u.id || u.systemRole === 'ADMIN'}
-                          isLoading={actionLoadingId === u.id}
-                          leftIcon={u.isBlocked ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-                        >
-                          {u.isBlocked ? 'Unblock' : 'Block User'}
-                        </Button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-[var(--md-sys-color-outline-variant)]/60 flex items-center justify-between">
+                    <span className="text-[10px] text-[var(--md-sys-color-on-surface-variant)] font-mono">
+                      ID #{u.id}
+                    </span>
+                    <Button
+                      variant={u.isBlocked ? 'filled' : 'outline'}
+                      size="sm"
+                      onClick={() => handleToggleBlock(u)}
+                      isLoading={actionLoadingId === u.id}
+                      leftIcon={u.isBlocked ? <Unlock className="w-3.5 h-3.5" /> : <Ban className="w-3.5 h-3.5" />}
+                    >
+                      {u.isBlocked ? 'Restore Access' : 'Block Account'}
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}

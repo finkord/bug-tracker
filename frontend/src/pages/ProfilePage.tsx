@@ -1,6 +1,6 @@
 import React from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../store';
 import { Tabs, TabsList, TabsTrigger } from '../components/ui';
 import { KeyRound, Sparkles } from 'lucide-react';
 import {
@@ -53,7 +53,7 @@ export const ProfilePage: React.FC = () => {
             variant="underline"
             className="w-full flex items-center justify-center gap-1.5 sm:gap-2 pb-3 text-xs sm:text-sm font-bold tracking-tight cursor-pointer"
           >
-            <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+            <Sparkles className="w-4 h-4 text-[var(--md-sys-color-warning)] shrink-0" />
             <span className="truncate">
               <span className="hidden sm:inline">Personal </span>Time & Effort
             </span>

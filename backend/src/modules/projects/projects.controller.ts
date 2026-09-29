@@ -38,6 +38,7 @@ export class ProjectsController {
   }
 
   @Get(':id')
+  @RequireProjectPermission(ProjectPermission.BROWSE_PROJECTS)
   @ApiOperation({ summary: 'Get project details by ID' })
   async findOne(@Param('id', ParseIntPipe) id: number) {
     return this.projectsService.findById(id);

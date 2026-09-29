@@ -1,6 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, type ProjectItem } from '../../api/client.js';
+import {
+  useProjectsQuery,
+  useCreateProjectMutation,
+  useDeleteProjectMutation,
+} from '../../api/queries';
 import { Avatar } from '../common/Avatar.js';
 import {
   Card,
@@ -20,8 +25,10 @@ import {
 } from 'lucide-react';
 
 export const AdminProjectsTab: React.FC = () => {
-  const [projects, setProjects] = useState<ProjectItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: projects = [], isLoading: loading } = useProjectsQuery();
+  const createProjectMutation = useCreateProjectMutation();
+  const deleteProjectMutation = useDeleteProjectMutation();
+
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [newProjectKey, setNewProjectKey] = useState('');
   const [newProjectName, setNewProjectName] = useState('');
@@ -35,22 +42,6 @@ export const AdminProjectsTab: React.FC = () => {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const fetchProjects = async () => {
-    setLoading(true);
-    try {
-      const data = await api.getProjects();
-      setProjects(data);
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to fetch projects');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchProjects();
-  }, []);
-
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProjectKey.trim() || !newProjectName.trim()) return;
@@ -58,20 +49,19 @@ export const AdminProjectsTab: React.FC = () => {
     setSubmitting(true);
     setErrorMsg(null);
     try {
-      const created = await api.createProject({
+      const created = await createProjectMutation.mutateAsync({
         key: newProjectKey.trim().toUpperCase(),
         name: newProjectName.trim(),
         description: newProjectDesc.trim() || undefined,
       });
-      setProjects((prev) => [...prev, created]);
       setCreateModalOpen(false);
       setNewProjectKey('');
       setNewProjectName('');
       setNewProjectDesc('');
       setSuccessMsg(`Project "${created.name}" created successfully`);
       setTimeout(() => setSuccessMsg(null), 3000);
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to create project');
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : 'Failed to create project');
     } finally {
       setSubmitting(false);
     }
@@ -81,14 +71,13 @@ export const AdminProjectsTab: React.FC = () => {
     if (!projectToDelete) return;
     setDeleting(true);
     try {
-      await api.deleteProject(projectToDelete.id);
-      setProjects((prev) => prev.filter((p) => p.id !== projectToDelete.id));
+      await deleteProjectMutation.mutateAsync(projectToDelete.id);
       setDeleteModalOpen(false);
       setProjectToDelete(null);
       setSuccessMsg('Project removed successfully');
       setTimeout(() => setSuccessMsg(null), 3000);
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to delete project');
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : 'Failed to delete project');
     } finally {
       setDeleting(false);
     }
@@ -97,8 +86,8 @@ export const AdminProjectsTab: React.FC = () => {
   return (
     <div className="space-y-6">
       {successMsg && (
-        <div className="flex items-center gap-2 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-          <CheckCircle className="w-4 h-4 shrink-0" />
+        <div className="flex items-center gap-2 p-3 bg-[var(--md-sys-color-success-container)] border border-[var(--md-sys-color-success)]/30 rounded-xl text-xs font-semibold text-[var(--md-sys-color-on-success-container)]">
+          <CheckCircle className="w-4 h-4 shrink-0 text-[var(--md-sys-color-success)]" />
           {successMsg}
         </div>
       )}

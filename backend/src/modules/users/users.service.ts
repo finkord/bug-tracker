@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User, SystemRole } from './entities/user.entity.js';
+import { User, SystemRole, OAuthProvider } from './entities/user.entity.js';
 import { SavedFilter } from './entities/saved-filter.entity.js';
 import { Group } from '../rbac/entities/group.entity.js';
 import { UserGroup } from '../rbac/entities/user-group.entity.js';
@@ -31,6 +31,25 @@ export class UsersService {
     return userGroups.map((ug) => ug.group?.name).filter(Boolean);
   }
 
+  /**
+   * Checks whether the user is a member of any directory administrator group.
+   */
+  async isMemberOfAdminGroup(userId: number): Promise<boolean> {
+    try {
+      return await this.userGroupRepository
+        .createQueryBuilder('ug')
+        .innerJoin('ug.group', 'g')
+        .where('ug.userId = :userId', { userId })
+        .andWhere('LOWER(g.name) IN (:...names)', {
+          names: ['administrators', 'admin', 'admins', 'jira-administrators'],
+        })
+        .getExists();
+    } catch {
+      return false;
+    }
+  }
+
+
   async findByEmail(email: string): Promise<User | null> {
     return this.usersRepository.findOne({
       where: { email: email.toLowerCase().trim() },
@@ -49,9 +68,9 @@ export class UsersService {
     });
   }
 
-  async findByOAuthId(provider: string, oauthId: string): Promise<User | null> {
+  async findByOAuthId(provider: OAuthProvider | string, oauthId: string): Promise<User | null> {
     return this.usersRepository.findOne({
-      where: { oauthProvider: provider as any, oauthId },
+      where: { oauthProvider: provider as OAuthProvider, oauthId },
     });
   }
 
@@ -177,7 +196,7 @@ export class UsersService {
       throw new BadRequestException('Cannot demote your own administrator account');
     }
 
-    const updates: any = { systemRole: role };
+    const updates: Partial<User> = { systemRole: role };
     if (jobTitle !== undefined) {
       updates.jobTitle = jobTitle.trim();
     }
@@ -193,7 +212,7 @@ export class UsersService {
   async updateProfile(userId: number, dto: { fullName?: string; jobTitle?: string }): Promise<User> {
     const user = await this.findById(userId);
     if (!user) throw new NotFoundException('User not found');
-    const updates: any = {};
+    const updates: Partial<User> = {};
     if (dto.fullName) updates.fullName = dto.fullName.trim();
     if (dto.jobTitle !== undefined) updates.jobTitle = dto.jobTitle.trim();
     return this.update(userId, updates);

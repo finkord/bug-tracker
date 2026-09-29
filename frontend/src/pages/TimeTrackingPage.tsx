@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
-  api,
-  type WorklogItem,
-  type WorklogStats,
-  type IssueItem,
-  type TeamTimesheetMatrix,
-} from '../api/client';
+  useWorklogStatsQuery,
+  useTeamTimesheetMatrixQuery,
+  useMyWorklogsQuery,
+  useIssuesQuery,
+} from '../api/queries';
 import type {
   TimeTrackingTab,
   DateRangeMode,
@@ -54,13 +53,6 @@ export const TimeTrackingPage: React.FC = () => {
     formatLocalDate(new Date())
   );
 
-  // Data State
-  const [matrix, setMatrix] = useState<TeamTimesheetMatrix | null>(null);
-  const [stats, setStats] = useState<WorklogStats | null>(null);
-  const [myLogs, setMyLogs] = useState<WorklogItem[]>([]);
-  const [issues, setIssues] = useState<IssueItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-
   // Modal States
   const [logModalOpen, setLogModalOpen] = useState<boolean>(false);
   const [selectedIssueIdForLog, setSelectedIssueIdForLog] = useState<number | undefined>(undefined);
@@ -107,30 +99,36 @@ export const TimeTrackingPage: React.FC = () => {
     return currentDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
   }, [rangeMode, currentDate, dateRange]);
 
-  // Load backend data
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [statsData, matrixData, myLogsData, issuesData] = await Promise.all([
-        api.getWorklogStats().catch(() => null),
-        api.getTeamTimesheetMatrix(dateRange.startDate, dateRange.endDate).catch(() => null),
-        api.getMyWorklogs().catch(() => []),
-        api.getIssues().catch(() => []),
-      ]);
-      setStats(statsData);
-      setMatrix(matrixData);
-      setMyLogs(myLogsData);
-      setIssues(issuesData);
-    } catch {
-      // Graceful error fallback
-    } finally {
-      setLoading(false);
-    }
-  }, [dateRange.startDate, dateRange.endDate]);
+  // TanStack Query Hooks for server state
+  const {
+    data: stats = null,
+    isLoading: statsLoading,
+    refetch: refetchStats,
+  } = useWorklogStatsQuery();
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  const {
+    data: matrix = null,
+    isLoading: matrixLoading,
+    refetch: refetchMatrix,
+  } = useTeamTimesheetMatrixQuery(dateRange.startDate, dateRange.endDate);
+
+  const {
+    data: myLogs = [],
+    isLoading: myLogsLoading,
+    refetch: refetchMyLogs,
+  } = useMyWorklogsQuery();
+
+  const {
+    data: issues = [],
+    isLoading: issuesLoading,
+    refetch: refetchIssues,
+  } = useIssuesQuery();
+
+  const loading = statsLoading || matrixLoading || myLogsLoading || issuesLoading;
+
+  const handleRefresh = async () => {
+    await Promise.all([refetchStats(), refetchMatrix(), refetchMyLogs(), refetchIssues()]);
+  };
 
   // Period Navigation handlers
   const handlePrevPeriod = () => {
@@ -249,7 +247,7 @@ export const TimeTrackingPage: React.FC = () => {
           onOpenLogWork={() => handleOpenLogWork(undefined)}
           onExportCsv={handleExportCsv}
           onExportJson={handleExportJson}
-          onRefresh={loadData}
+          onRefresh={handleRefresh}
           loading={loading}
         />
 
@@ -318,7 +316,7 @@ export const TimeTrackingPage: React.FC = () => {
         }}
         issueId={selectedIssueIdForLog}
         onWorkLogged={() => {
-          loadData();
+          handleRefresh();
         }}
       />
     </div>

@@ -1,11 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { api, type IssueItem, type IssueStatus } from '../api/client.js';
-import { realtimeSocket } from '../api/socket.js';
-import { useAuth } from '../context/AuthContext.js';
-import { LogWorkModal } from '../components/kanban/LogWorkModal.js';
-import { IssueModal } from '../components/kanban/IssueModal.js';
-import { IssueLinksSection } from '../components/kanban/IssueLinksSection.js';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  useIssueDetailQuery,
+  useUpdateIssueStatusMutation,
+  useUpdateIssueSprintMutation,
+  useAssignIssueToMeMutation,
+  useUpdateIssueMutation,
+  useAddIssueCommentMutation,
+  useDeleteAttachmentMutation,
+  useDeleteIssueMutation,
+  issueKeys,
+} from '../api/queries';
+import { api, type IssueStatus } from '../api/client';
+import { realtimeSocket } from '../api/socket';
+import { useAuth } from '../store';
+import { LogWorkModal } from '../components/kanban/LogWorkModal';
+import { IssueModal } from '../components/kanban/IssueModal';
+import { IssueLinksSection } from '../components/kanban/IssueLinksSection';
 import {
   IssueDetailHeader,
   IssueDetailDescription,
@@ -13,8 +25,8 @@ import {
   IssueAttachmentsSection,
   IssueSidebarDetails,
   IssueTimeTrackingCard,
-} from '../components/issue-detail/index.js';
-import { Card, Button, Modal } from '../components/ui/index.js';
+} from '../components/issue-detail';
+import { Card, Button, Modal } from '../components/ui';
 import { Loader2, AlertCircle } from 'lucide-react';
 
 export const IssueDetailPage: React.FC = () => {
@@ -22,38 +34,38 @@ export const IssueDetailPage: React.FC = () => {
   const issueKeyOrId = key || id;
   const navigate = useNavigate();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-  const [issue, setIssue] = useState<IssueItem | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    data: issue = null,
+    isLoading: loading,
+    error: queryError,
+    refetch: fetchIssue,
+  } = useIssueDetailQuery(issueKeyOrId);
+
+  const error = queryError instanceof Error ? queryError.message : queryError ? String(queryError) : null;
 
   const [logWorkOpen, setLogWorkOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const [activeViewers, setActiveViewers] = useState<{ id: number; fullName: string; avatarUrl?: string }[]>([]);
 
-  const fetchIssue = async () => {
-    if (!issueKeyOrId) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await api.getIssue(issueKeyOrId);
-      setIssue(data);
-      if (data?.key && issueKeyOrId !== data.key) {
-        navigate(`/issues/${data.key}`, { replace: true });
-      }
-    } catch (err: any) {
-      setError(err.message || 'Failed to load issue');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const statusMutation = useUpdateIssueStatusMutation();
+  const sprintMutation = useUpdateIssueSprintMutation();
+  const assignMutation = useAssignIssueToMeMutation();
+  const updateMutation = useUpdateIssueMutation();
+  const commentMutation = useAddIssueCommentMutation();
+  const deleteAttachmentMutation = useDeleteAttachmentMutation();
+  const deleteIssueMutation = useDeleteIssueMutation();
 
+  // Redirect to canonical key url if accessed by ID
   useEffect(() => {
-    fetchIssue();
-  }, [issueKeyOrId]);
+    if (issue?.key && issueKeyOrId !== issue.key) {
+      navigate(`/issues/${issue.key}`, { replace: true });
+    }
+  }, [issue?.key, issueKeyOrId, navigate]);
 
+  // Real-time WebSocket subscriptions
   useEffect(() => {
     if (!issue?.id) return;
     realtimeSocket.connect();
@@ -65,17 +77,19 @@ export const IssueDetailPage: React.FC = () => {
 
     const unsubUpdated = realtimeSocket.onIssueUpdated((updated) => {
       if (updated.id === issue.id) {
-        setIssue((prev) => ({ ...prev, ...updated }));
+        queryClient.setQueryData(issueKeys.detail(issueKeyOrId!), (old: typeof issue) =>
+          old ? { ...old, ...updated } : old,
+        );
       }
     });
 
     const unsubComment = realtimeSocket.onCommentCreated(({ issueId, comment }) => {
       if (issueId === issue.id) {
-        setIssue((prev) => {
-          if (!prev) return prev;
-          const comments = prev.comments || [];
-          if (comments.some((cm) => cm.id === comment.id)) return prev;
-          return { ...prev, comments: [...comments, comment] };
+        queryClient.setQueryData(issueKeys.detail(issueKeyOrId!), (old: typeof issue) => {
+          if (!old) return old;
+          const comments = old.comments || [];
+          if (comments.some((cm) => cm.id === comment.id)) return old;
+          return { ...old, comments: [...comments, comment] };
         });
       }
     });
@@ -102,57 +116,31 @@ export const IssueDetailPage: React.FC = () => {
       unsubAtt();
       unsubPresence();
     };
-  }, [issue?.id, user?.id]);
+  }, [issue?.id, user?.id, issueKeyOrId, queryClient, fetchIssue, user]);
 
   const handleStatusChange = async (newStatus: IssueStatus) => {
     if (!issue || issue.status === newStatus) return;
-    try {
-      const updated = await api.updateIssueStatus(issue.id, newStatus);
-      setIssue(updated);
-    } catch (err: any) {
-      setError(err.message || 'Failed to update status');
-    }
+    await statusMutation.mutateAsync({ issueId: issue.id, status: newStatus });
   };
 
   const handleSprintChange = async (newSprint: string | null) => {
     if (!issue) return;
-    try {
-      const updated = await api.updateIssueSprint(issue.id, newSprint);
-      setIssue((prev) => (prev ? { ...prev, sprint: updated.sprint } : null));
-    } catch (err: any) {
-      setError(err.message || 'Failed to update sprint assignment');
-    }
+    await sprintMutation.mutateAsync({ id: issue.id, sprint: newSprint });
   };
 
   const handleAssignToMe = async () => {
     if (!issue || !user) return;
-    try {
-      const updated = await api.assignIssueToMe(issue.id);
-      setIssue(updated);
-    } catch (err: any) {
-      setError(err.message || 'Failed to assign issue');
-    }
+    await assignMutation.mutateAsync(issue.id);
   };
 
   const handleUpdateIssue = async (payload: { title?: string; description?: string }) => {
     if (!issue) return;
-    try {
-      const updated = await api.updateIssue(issue.id, payload);
-      setIssue(updated);
-    } catch (err: any) {
-      setError(err.message || 'Failed to update issue');
-    }
+    await updateMutation.mutateAsync({ id: issue.id, data: payload });
   };
 
   const handleAddComment = async (text: string) => {
     if (!issue) return;
-    const newComment = await api.addIssueComment(issue.id, text);
-    setIssue((prev) => {
-      if (!prev) return prev;
-      const currentComments = prev.comments || [];
-      if (currentComments.some((cm) => cm.id === newComment.id)) return prev;
-      return { ...prev, comments: [...currentComments, newComment] };
-    });
+    await commentMutation.mutateAsync({ issueId: issue.id, text });
   };
 
   const handleUploadScreenshot = async (file: File): Promise<string> => {
@@ -170,25 +158,15 @@ export const IssueDetailPage: React.FC = () => {
 
   const handleDeleteAttachment = async (attachmentId: number) => {
     if (!issue) return;
-    await api.deleteAttachment(issue.id, attachmentId);
-    setIssue((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        attachments: (prev.attachments || []).filter((a) => a.id !== attachmentId),
-      };
-    });
+    await deleteAttachmentMutation.mutateAsync({ issueId: issue.id, attachmentId });
   };
 
   const handleDeleteIssue = async () => {
     if (!issue) return;
-    setDeleting(true);
     try {
-      await api.deleteIssue(issue.id);
+      await deleteIssueMutation.mutateAsync(issue.id);
       navigate(issue.projectId ? `/projects/${issue.projectId}/board` : '/issues');
-    } catch (err: any) {
-      setError(err.message || 'Failed to delete issue');
-      setDeleting(false);
+    } catch {
       setDeleteModalOpen(false);
     }
   };
@@ -222,7 +200,7 @@ export const IssueDetailPage: React.FC = () => {
       <IssueDetailHeader
         issue={issue}
         activeViewers={activeViewers}
-        deleting={deleting}
+        deleting={deleteIssueMutation.isPending}
         onStatusChange={handleStatusChange}
         onEditClick={() => setEditModalOpen(true)}
         onDeleteClick={() => setDeleteModalOpen(true)}
@@ -242,7 +220,7 @@ export const IssueDetailPage: React.FC = () => {
             currentIssueKey={issue.key}
             projectId={issue.projectId}
             links={issue.links}
-            onLinksChanged={fetchIssue}
+            onLinksChanged={() => fetchIssue()}
           />
 
           <IssueCommentsSection
@@ -283,7 +261,7 @@ export const IssueDetailPage: React.FC = () => {
           issueId={issue.id}
           issueKey={issue.key}
           issueTitle={issue.title}
-          onWorkLogged={fetchIssue}
+          onWorkLogged={() => fetchIssue()}
         />
       )}
 
@@ -293,7 +271,7 @@ export const IssueDetailPage: React.FC = () => {
           isOpen={editModalOpen}
           onClose={() => setEditModalOpen(false)}
           editingIssue={issue}
-          onIssueSaved={fetchIssue}
+          onIssueSaved={() => fetchIssue()}
         />
       )}
 
@@ -315,7 +293,7 @@ export const IssueDetailPage: React.FC = () => {
                 variant="ghost"
                 size="sm"
                 onClick={() => setDeleteModalOpen(false)}
-                disabled={deleting}
+                disabled={deleteIssueMutation.isPending}
               >
                 Cancel
               </Button>
@@ -323,9 +301,9 @@ export const IssueDetailPage: React.FC = () => {
                 variant="danger"
                 size="sm"
                 onClick={handleDeleteIssue}
-                disabled={deleting}
+                disabled={deleteIssueMutation.isPending}
               >
-                {deleting ? 'Deleting...' : 'Delete Permanently'}
+                {deleteIssueMutation.isPending ? 'Deleting...' : 'Delete Permanently'}
               </Button>
             </div>
           </div>

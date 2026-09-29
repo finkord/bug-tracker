@@ -33,6 +33,8 @@ import { IssueSecurityScheme } from './modules/rbac/entities/issue-security-sche
 import { IssueSecurityLevel } from './modules/rbac/entities/issue-security-level.entity.js';
 import { IssueSecurityGrant } from './modules/rbac/entities/issue-security-grant.entity.js';
 import { RbacModule } from './modules/rbac/rbac.module.js';
+import { Sprint } from './modules/sprints/entities/sprint.entity.js';
+import { SprintsModule } from './modules/sprints/sprints.module.js';
 
 @Module({
   imports: [
@@ -72,8 +74,9 @@ import { RbacModule } from './modules/rbac/rbac.module.js';
           IssueSecurityScheme,
           IssueSecurityLevel,
           IssueSecurityGrant,
+          Sprint,
         ],
-        synchronize: true, // Automatically synchronize schema in development
+        synchronize: process.env.NODE_ENV !== 'production', // NEVER auto-sync in production
       }),
     }),
 
@@ -112,6 +115,7 @@ import { RbacModule } from './modules/rbac/rbac.module.js';
     EventsModule,
     AdminModule,
     RbacModule,
+    SprintsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

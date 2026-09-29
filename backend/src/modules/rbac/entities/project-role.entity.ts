@@ -24,7 +24,7 @@ export class ProjectRole {
   @Column({ name: 'is_default', type: 'boolean', default: false })
   isDefault: boolean;
 
-  @OneToMany('ProjectRoleActor', (actor: any) => actor.role)
+  @OneToMany('ProjectRoleActor', (actor: ProjectRoleActor) => actor.role)
   actors: ProjectRoleActor[];
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })

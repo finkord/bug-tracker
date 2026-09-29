@@ -22,7 +22,7 @@ export class PermissionScheme {
   @Column({ name: 'is_default', type: 'boolean', default: false })
   isDefault: boolean;
 
-  @OneToMany('PermissionGrant', (grant: any) => grant.scheme)
+  @OneToMany('PermissionGrant', (grant: PermissionGrant) => grant.scheme)
   grants: PermissionGrant[];
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })

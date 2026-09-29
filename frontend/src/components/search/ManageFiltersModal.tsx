@@ -63,13 +63,13 @@ export const ManageFiltersModal: React.FC<ManageFiltersModalProps> = ({
                       <button
                         type="button"
                         onClick={() => onToggleFavorite(filter.id)}
-                        className="p-0.5 rounded text-[var(--md-sys-color-on-surface-variant)] hover:text-amber-400 transition cursor-pointer"
+                        className="p-0.5 rounded text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-warning)] transition cursor-pointer"
                         title={filter.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
                       >
                         <Star
                           className={`w-4 h-4 ${
                             filter.isFavorite
-                              ? 'fill-amber-400 text-amber-400'
+                              ? 'fill-[var(--md-sys-color-warning)] text-[var(--md-sys-color-warning)]'
                               : 'text-[var(--md-sys-color-on-surface-variant)]/60'
                           }`}
                         />

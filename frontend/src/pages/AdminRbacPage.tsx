@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   Shield,
   Users,
@@ -9,14 +9,17 @@ import {
   AlertCircle,
   CheckCircle2,
 } from 'lucide-react';
-import { api } from '../api/client';
-import type {
-  GroupItem,
-  ProjectRoleItem,
-  PermissionSchemeItem,
-  IssueSecuritySchemeItem,
-  UserProfile,
-} from '../api/client';
+import {
+  useGroupsQuery,
+  useProjectRolesQuery,
+  usePermissionSchemesQuery,
+  useSecuritySchemesQuery,
+  useUsersQuery,
+  useCreateGroupMutation,
+  useAddUserToGroupMutation,
+  useRemoveUserFromGroupMutation,
+} from '../api/queries';
+import type { GroupItem } from '../api/client';
 import { Badge } from '../components/ui';
 import { GroupsManagerTab } from '../components/admin/rbac/GroupsManagerTab';
 import { ProjectRolesTab } from '../components/admin/rbac/ProjectRolesTab';
@@ -27,79 +30,53 @@ type RbacTab = 'groups' | 'roles' | 'permissions' | 'security';
 
 export const AdminRbacPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<RbacTab>('groups');
-  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Data states
-  const [groups, setGroups] = useState<GroupItem[]>([]);
-  const [roles, setRoles] = useState<ProjectRoleItem[]>([]);
-  const [permissionSchemes, setPermissionSchemes] = useState<PermissionSchemeItem[]>([]);
-  const [securitySchemes, setSecuritySchemes] = useState<IssueSecuritySchemeItem[]>([]);
-  const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
-  const [selectedGroup, setSelectedGroup] = useState<GroupItem | null>(null);
+  // TanStack Query Hooks for RBAC server state
+  const { data: groups = [], isLoading: groupsLoading } = useGroupsQuery();
+  const { data: roles = [], isLoading: rolesLoading } = useProjectRolesQuery();
+  const { data: permissionSchemes = [], isLoading: schemesLoading } = usePermissionSchemesQuery();
+  const { data: securitySchemes = [], isLoading: securityLoading } = useSecuritySchemesQuery();
+  const { data: usersData, isLoading: usersLoading } = useUsersQuery({ page: 1, limit: 100 });
+  const allUsers = usersData?.items || [];
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [groupsData, rolesData, schemesData, secData, usersData] = await Promise.all([
-        api.getGroups(),
-        api.getProjectRoles(),
-        api.getPermissionSchemes(),
-        api.getSecuritySchemes(),
-        api.getUsers ? api.getUsers() : Promise.resolve({ items: [] }),
-      ]);
+  const createGroupMutation = useCreateGroupMutation();
+  const addUserToGroupMutation = useAddUserToGroupMutation();
+  const removeUserFromGroupMutation = useRemoveUserFromGroupMutation();
 
-      setGroups(groupsData);
-      setRoles(rolesData);
-      setPermissionSchemes(schemesData);
-      setSecuritySchemes(secData);
-      const userList = (usersData as any)?.items || (Array.isArray(usersData) ? usersData : []);
-      setAllUsers(userList);
+  const loading = groupsLoading || rolesLoading || schemesLoading || securityLoading || usersLoading;
 
-      setSelectedGroup((prev) => {
-        if (!prev) return groupsData[0] || null;
-        return groupsData.find((g) => g.id === prev.id) || groupsData[0] || null;
-      });
-    } catch (err: any) {
-      setError(err.message || 'Failed to load RBAC data');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  const selectedGroup: GroupItem | null =
+    groups.find((g) => g.id === selectedGroupId) || groups[0] || null;
 
   const handleCreateGroup = async (name: string, description?: string) => {
     try {
-      const created = await api.createGroup({ name, description });
+      const created = await createGroupMutation.mutateAsync({ name, description });
       setSuccessMsg(`Group "${created.name}" created successfully.`);
-      await loadData();
-    } catch (err: any) {
-      setError(err.message || 'Failed to create group');
+      setSelectedGroupId(created.id);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to create group');
     }
   };
 
   const handleAddUserToGroup = async (groupId: number, userId: number) => {
     try {
-      await api.addUserToGroup(groupId, userId);
+      await addUserToGroupMutation.mutateAsync({ groupId, userId });
       setSuccessMsg('User added to group.');
-      await loadData();
-    } catch (err: any) {
-      setError(err.message || 'Failed to add user to group');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to add user to group');
     }
   };
 
   const handleRemoveUserFromGroup = async (groupId: number, userId: number) => {
     try {
-      await api.removeUserFromGroup(groupId, userId);
+      await removeUserFromGroupMutation.mutateAsync({ groupId, userId });
       setSuccessMsg('User removed from group.');
-      await loadData();
-    } catch (err: any) {
-      setError(err.message || 'Failed to remove user');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to remove user');
     }
   };
 
@@ -225,7 +202,7 @@ export const AdminRbacPage: React.FC = () => {
           groups={groups}
           allUsers={allUsers}
           selectedGroup={selectedGroup}
-          onSelectGroup={setSelectedGroup}
+          onSelectGroup={(g) => setSelectedGroupId(g?.id ?? null)}
           onCreateGroup={handleCreateGroup}
           onAddUserToGroup={handleAddUserToGroup}
           onRemoveUserFromGroup={handleRemoveUserFromGroup}

@@ -7,7 +7,8 @@ import {
   type IssueType,
   type IssuePriority,
 } from '../../api/client';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../store';
+import { useProjectsQuery, useAssigneesQuery } from '../../api/queries';
 import {
   PlusCircle,
   Edit3,
@@ -35,9 +36,8 @@ export const IssueModal: React.FC<IssueModalProps> = ({
   defaultProjectId,
   defaultAssigneeId,
 }) => {
-  const { user } = useAuth();
-  const [projects, setProjects] = useState<ProjectItem[]>([]);
-  const [assignees, setAssignees] = useState<AssigneeUser[]>([]);
+  const { data: projects = [] } = useProjectsQuery();
+  const { data: assignees = [] } = useAssigneesQuery();
 
   // Form states
   const [projectId, setProjectId] = useState<number>(defaultProjectId || 1);
@@ -52,25 +52,16 @@ export const IssueModal: React.FC<IssueModalProps> = ({
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  // Load project list & eligible assignees
+  // Sync project ID when projects load or change
   useEffect(() => {
-    if (isOpen) {
-      api.getProjects()
-        .then((data) => {
-          setProjects(data);
-          if (!editingIssue && defaultProjectId) {
-            setProjectId(defaultProjectId);
-          } else if (!editingIssue && data.length > 0) {
-            setProjectId(data[0].id);
-          }
-        })
-        .catch(() => {});
-
-      api.getAssignees()
-        .then((data) => setAssignees(data))
-        .catch(() => {});
+    if (!editingIssue) {
+      if (defaultProjectId) {
+        setProjectId(defaultProjectId);
+      } else if (projects.length > 0) {
+        setProjectId(projects[0].id);
+      }
     }
-  }, [isOpen, defaultProjectId, editingIssue]);
+  }, [projects, defaultProjectId, editingIssue]);
 
   // Sync state when editing existing issue
   useEffect(() => {
@@ -147,8 +138,9 @@ export const IssueModal: React.FC<IssueModalProps> = ({
 
       onIssueSaved(saved);
       onClose();
-    } catch (err: any) {
-      setValidationError(err.message || 'Failed to save issue.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to save issue.';
+      setValidationError(message);
     } finally {
       setSubmitting(false);
     }
@@ -175,8 +167,8 @@ export const IssueModal: React.FC<IssueModalProps> = ({
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {validationError && (
-          <div className="flex items-start gap-3 p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <div className="flex items-start gap-3 p-3.5 rounded-xl bg-[var(--md-sys-color-error-container)] border border-[var(--md-sys-color-error)]/30 text-[var(--md-sys-color-on-error-container)] text-xs">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-[var(--md-sys-color-error)]" />
             <span>{validationError}</span>
           </div>
         )}

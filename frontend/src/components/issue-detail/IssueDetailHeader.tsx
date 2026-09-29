@@ -87,7 +87,7 @@ export const IssueDetailHeader: React.FC<IssueDetailHeaderProps> = ({
       <div className="flex items-center gap-2.5">
         {activeViewers.length > 0 && (
           <div className="flex items-center gap-1.5 bg-primary/5 px-2.5 py-1 rounded-full border border-primary/20 mr-1">
-            <Radio className="w-3 h-3 text-emerald-500 animate-pulse" />
+            <Radio className="w-3 h-3 text-[var(--md-sys-color-success)] animate-pulse" />
             <span className="text-xs text-muted-foreground mr-1">Viewing:</span>
             <div className="flex -space-x-1.5 overflow-hidden">
               {activeViewers.map((viewer) => (

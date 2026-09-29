@@ -7,7 +7,7 @@ import {
   X,
   Maximize2,
 } from 'lucide-react';
-import { useBroadcast, type BroadcastSeverity } from '../../context/BroadcastContext';
+import { useBroadcast, type BroadcastSeverity } from '../../store';
 import { Modal, Button } from '../ui';
 
 const severityStripe: Record<

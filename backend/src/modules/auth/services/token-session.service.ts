@@ -78,7 +78,10 @@ export class TokenSessionService {
   async refreshTokens(refreshToken: string): Promise<AuthTokens> {
     try {
       const payload = this.jwtService.verify(refreshToken, {
-        secret: this.configService.get<string>('JWT_SECRET', 'super-secret-key-12345'),
+        secret: this.configService.get<string>(
+          'JWT_SECRET',
+          'super_secret_jwt_access_key_change_in_production_min_32_chars',
+        ),
       });
 
       const user = await this.usersService.findById(payload.sub);
@@ -105,6 +108,23 @@ export class TokenSessionService {
       await this.usersService.update(userId, {
         tokenVersion: (user.tokenVersion || 0) + 1,
       });
+    }
+    return { message: 'Successfully logged out' };
+  }
+
+  /**
+   * Gracefully invalidates user sessions by token or userId without throwing errors.
+   */
+  async logoutByToken(token?: string): Promise<{ message: string }> {
+    if (token) {
+      try {
+        const decoded = this.jwtService.decode(token) as { sub?: number } | null;
+        if (decoded?.sub) {
+          return await this.logout(decoded.sub);
+        }
+      } catch {
+        // Token could not be decoded, proceed gracefully
+      }
     }
     return { message: 'Successfully logged out' };
   }

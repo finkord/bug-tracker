@@ -113,12 +113,12 @@ export function parseJql(jqlString: string): JqlQuery {
     }
 
     return { conditions, orderBy, raw, isValid: true };
-  } catch (err: any) {
+  } catch (err: unknown) {
     return {
       conditions: [],
       raw,
       isValid: false,
-      errorMessage: err.message || 'Invalid JQL syntax',
+      errorMessage: err instanceof Error ? err.message : 'Invalid JQL syntax',
     };
   }
 }

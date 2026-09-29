@@ -60,7 +60,7 @@ export class TwoFactorAuthService {
    * Enables 2FA for the user after confirming a valid TOTP code (SDSecurity Task 5).
    */
   async enable2fa(user: User, dto: Enable2faDto) {
-    const code = dto.code || (dto as any).totpCode;
+    const code = dto.code || dto.totpCode;
     if (!code) {
       throw new BadRequestException('6-digit verification code is required');
     }
@@ -91,7 +91,22 @@ export class TwoFactorAuthService {
   /**
    * Disables 2FA on the user account (SDSecurity Task 5).
    */
-  async disable2fa(user: User, _dto?: Enable2faDto) {
+  async disable2fa(user: User, dto?: Enable2faDto) {
+    const code = dto?.code || dto?.totpCode;
+    if (!code) {
+      throw new BadRequestException('6-digit TOTP verification code is required to disable two-factor authentication');
+    }
+
+    const latestUser = (await this.usersService.findById(user.id)) || user;
+    if (!latestUser.twoFactorSecret) {
+      throw new BadRequestException('Two-factor authentication is not active on this account');
+    }
+
+    const isValid = verifySync({ token: code, secret: latestUser.twoFactorSecret });
+    if (!isValid) {
+      throw new BadRequestException('Invalid 6-digit TOTP verification code');
+    }
+
     await this.usersService.update(user.id, {
       twoFactorEnabled: false,
       twoFactorSecret: null,
@@ -122,9 +137,9 @@ export class TwoFactorAuthService {
     ipAddress: string,
     userAgent?: string,
   ): Promise<AuthTokens> {
-    let payload: any;
+    let payload: { sub: number; is2faPending?: boolean; tokenType?: string };
     try {
-      payload = this.jwtService.verify(dto.tempToken);
+      payload = this.jwtService.verify<{ sub: number; is2faPending?: boolean; tokenType?: string }>(dto.tempToken);
     } catch {
       throw new UnauthorizedException('2FA challenge session expired. Please sign in again.');
     }

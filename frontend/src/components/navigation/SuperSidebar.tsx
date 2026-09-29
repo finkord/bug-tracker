@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import { useSidebar } from '../../context/SidebarContext';
-import { api, type ProjectItem } from '../../api/client';
+import { useAuth, useSidebar } from '../../store';
+import { useProjectsQuery } from '../../api/queries';
 import { SidebarBrandHeader } from './SidebarBrandHeader';
 import { SidebarContextSwitcher } from './SidebarContextSwitcher';
 import { SidebarNavList } from './SidebarNavList';
@@ -22,15 +21,7 @@ export const SuperSidebar: React.FC<SuperSidebarProps> = ({ currentProjectId }) 
   const { collapsed, toggleSidebar, mobileOpen, closeMobile, showCollapsedLabels } = useSidebar();
   const location = useLocation();
 
-  const [projects, setProjects] = useState<ProjectItem[]>([]);
-
-  useEffect(() => {
-    if (user) {
-      api.getProjects()
-        .then((data) => setProjects(data))
-        .catch(() => {});
-    }
-  }, [user]);
+  const { data: projects = [] } = useProjectsQuery();
 
   // Global keyboard shortcut to toggle sidebar collapse ('[' key)
   useEffect(() => {

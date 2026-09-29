@@ -85,6 +85,8 @@ export const SprintFormModal: React.FC<SprintFormModalProps> = ({
         : editingSprint?.status || 'PLANNED';
 
     onSave({
+      id: editingSprint?.id,
+      projectId: editingSprint?.projectId,
       name: name.trim(),
       goal: goal.trim(),
       startDate,

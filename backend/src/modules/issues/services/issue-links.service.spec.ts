@@ -44,7 +44,7 @@ describe('IssueLinksService', () => {
   describe('createIssueLink', () => {
     it('should create link between two different issues', async () => {
       // Arrange
-      mockIssueRepo.findOne.mockImplementation(({ where }) => {
+      mockIssueRepo.findOne.mockImplementation(({ where }: any) => {
         if (where.id === 1) return Promise.resolve(mockSourceIssue);
         if (where.id === 2) return Promise.resolve(mockTargetIssue);
         return Promise.resolve(null);
@@ -96,7 +96,7 @@ describe('IssueLinksService', () => {
 
     it('should throw BadRequestException when link already exists', async () => {
       // Arrange
-      mockIssueRepo.findOne.mockImplementation(({ where }) => {
+      mockIssueRepo.findOne.mockImplementation(({ where }: any) => {
         if (where.id === 1) return Promise.resolve(mockSourceIssue);
         if (where.id === 2) return Promise.resolve(mockTargetIssue);
         return Promise.resolve(null);

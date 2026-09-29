@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../store';
 import { api } from '../../api/client';
 import { X, User, Briefcase, Image, Check } from 'lucide-react';
 import { Button } from '../ui';
@@ -58,8 +58,9 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
 
       onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'Failed to update profile');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to update profile';
+      setError(message);
     } finally {
       setIsSubmitting(false);
     }

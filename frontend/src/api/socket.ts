@@ -1,5 +1,10 @@
 import { io, Socket } from 'socket.io-client';
-import type { IssueItem } from './client';
+import type { IssueItem, IssueComment, AttachmentItem } from './types/issues.types.js';
+import type { WorklogItem } from './types/worklogs.types.js';
+import type { UserProfile } from './types/auth.types.js';
+
+export const SOCKET_URL =
+  import.meta.env.VITE_SOCKET_URL || 'http://localhost:3000/events';
 
 class RealtimeSocketService {
   private socket: Socket | null = null;
@@ -10,7 +15,7 @@ class RealtimeSocketService {
   connect() {
     if (this.socket) return this.socket;
 
-    this.socket = io('http://localhost:3000/events', {
+    this.socket = io(SOCKET_URL, {
       transports: ['websocket', 'polling'],
       reconnectionAttempts: 10,
       reconnectionDelay: 1000,
@@ -44,7 +49,7 @@ class RealtimeSocketService {
     this.getSocket().emit('leave:project', { projectId });
   }
 
-  joinIssue(issueId: number | string, user?: any) {
+  joinIssue(issueId: number | string, user?: Partial<UserProfile> | null) {
     this.getSocket().emit('join:issue', { issueId, user });
   }
 
@@ -70,25 +75,25 @@ class RealtimeSocketService {
     return () => { s.off('issue:deleted', callback); };
   }
 
-  onWorklogCreated(callback: (data: { issueId: number; projectId?: number; worklog: any }) => void) {
+  onWorklogCreated(callback: (data: { issueId: number; projectId?: number; worklog: WorklogItem }) => void) {
     const s = this.getSocket();
     s.on('worklog:created', callback);
     return () => { s.off('worklog:created', callback); };
   }
 
-  onCommentCreated(callback: (data: { issueId: number; comment: any }) => void) {
+  onCommentCreated(callback: (data: { issueId: number; comment: IssueComment }) => void) {
     const s = this.getSocket();
     s.on('comment:created', callback);
     return () => { s.off('comment:created', callback); };
   }
 
-  onAttachmentUploaded(callback: (data: { issueId: number; attachment: any }) => void) {
+  onAttachmentUploaded(callback: (data: { issueId: number; attachment: AttachmentItem }) => void) {
     const s = this.getSocket();
     s.on('attachment:uploaded', callback);
     return () => { s.off('attachment:uploaded', callback); };
   }
 
-  onPresenceViewing(callback: (data: { user: any; issueId: number | string }) => void) {
+  onPresenceViewing(callback: (data: { user: Partial<UserProfile>; issueId: number | string }) => void) {
     const s = this.getSocket();
     s.on('presence:viewing', callback);
     return () => { s.off('presence:viewing', callback); };

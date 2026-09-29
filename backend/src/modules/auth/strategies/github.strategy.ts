@@ -3,7 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, Profile } from 'passport-github2';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from '../auth.service.js';
-import { OAuthProvider } from '../../users/entities/user.entity.js';
+import { User, OAuthProvider } from '../../users/entities/user.entity.js';
 
 @Injectable()
 export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
@@ -29,8 +29,8 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
     _accessToken: string,
     _refreshToken: string,
     profile: Profile,
-    done: (err: any, user?: any, info?: any) => void,
-  ): Promise<any> {
+    done: (err: unknown, user?: User | false, info?: unknown) => void,
+  ): Promise<User | void> {
     try {
       const email =
         profile.emails?.[0]?.value || `${profile.username || profile.id}@github.local`;

@@ -11,6 +11,8 @@ import {
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity.js';
 import type { Issue } from '../../issues/entities/issue.entity.js';
+import type { PermissionScheme } from '../../rbac/entities/permission-scheme.entity.js';
+import type { IssueSecurityScheme } from '../../rbac/entities/issue-security-scheme.entity.js';
 
 @Entity('projects')
 export class Project {
@@ -42,14 +44,14 @@ export class Project {
 
   @ManyToOne('PermissionScheme', { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'permission_scheme_id' })
-  permissionScheme: any;
+  permissionScheme: PermissionScheme | null;
 
   @Column({ name: 'security_scheme_id', type: 'int', nullable: true })
   securitySchemeId: number | null;
 
   @ManyToOne('IssueSecurityScheme', { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'security_scheme_id' })
-  securityScheme: any;
+  securityScheme: IssueSecurityScheme | null;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;

@@ -30,7 +30,7 @@ export class SeaweedFsService {
     if (!assignRes.ok) {
       throw new Error(`SeaweedFS master assignment failed: ${assignRes.status}`);
     }
-    const assignData: any = await assignRes.json();
+    const assignData = (await assignRes.json()) as { fid: string; url?: string; publicUrl?: string };
     const fid = assignData.fid;
 
     const formData = new FormData();
@@ -69,8 +69,9 @@ export class SeaweedFsService {
   async deleteFile(fid: string): Promise<void> {
     try {
       await fetch(`${this.volumeUrl}/${fid}`, { method: 'DELETE' });
-    } catch (err: any) {
-      this.logger.warn(`Failed to delete fid ${fid} from SeaweedFS: ${err.message}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Failed to delete fid ${fid} from SeaweedFS: ${message}`);
     }
   }
 }

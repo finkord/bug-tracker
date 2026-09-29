@@ -13,6 +13,7 @@ import { User } from '../../users/entities/user.entity.js';
 import type { Project } from '../../projects/entities/project.entity.js';
 import type { Comment } from './comment.entity.js';
 import type { Worklog } from './worklog.entity.js';
+import type { IssueSecurityLevel } from '../../rbac/entities/issue-security-level.entity.js';
 
 export enum IssueType {
   BUG = 'BUG',
@@ -131,7 +132,7 @@ export class Issue {
 
   @ManyToOne('IssueSecurityLevel', { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'security_level_id' })
-  securityLevel: any;
+  securityLevel: IssueSecurityLevel | null;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;

@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { api } from '../../api/client.js';
-import { useBroadcast, type BroadcastSeverity } from '../../context/BroadcastContext.js';
-import { useAuth } from '../../context/AuthContext.js';
+import React, { useState } from 'react';
+import { api, API_BASE_URL } from '../../api/client.js';
+import { useAdminStatsQuery } from '../../api/queries';
+import { useBroadcast, useAuth, type BroadcastSeverity } from '../../store';
 import {
   Card,
   Button,
@@ -35,35 +35,7 @@ export const AdminSystemTab: React.FC = () => {
   const [broadcastSeverity, setBroadcastSeverity] = useState<BroadcastSeverity>(broadcast.severity);
   const [broadcastSavedMsg, setBroadcastSavedMsg] = useState(false);
 
-  const [systemStats, setSystemStats] = useState<{
-    totalUsers: number;
-    activeUsers: number;
-    blockedUsers: number;
-    twoFactorAdoptionCount: number;
-    twoFactorPercentage: number;
-  } | null>(null);
-
-  const [seeding, setSeeding] = useState(false);
-  const [seedSuccessMsg, setSeedSuccessMsg] = useState<string | null>(null);
-  const [seedErrorMsg, setSeedErrorMsg] = useState<string | null>(null);
-
-  useEffect(() => {
-    setBroadcastEnabled(broadcast.enabled);
-    setBroadcastMessage(broadcast.message);
-    setBroadcastSeverity(broadcast.severity);
-  }, [broadcast]);
-
-  useEffect(() => {
-    const loadStats = async () => {
-      try {
-        const stats = await api.getAdminStats();
-        setSystemStats(stats);
-      } catch {
-        // Fallback stats
-      }
-    };
-    loadStats();
-  }, []);
+  const { data: systemStats = null } = useAdminStatsQuery();
 
   const handleSaveBroadcast = (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,7 +55,7 @@ export const AdminSystemTab: React.FC = () => {
     setSeedErrorMsg(null);
     try {
       // Trigger sample data refresh or seed
-      const res = await fetch('http://localhost:3000/api/v1/auth/register', {
+      const res = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'HEAD',
       });
       if (res.ok) {
@@ -92,8 +64,8 @@ export const AdminSystemTab: React.FC = () => {
         setSeedSuccessMsg('Seed synchronization completed.');
       }
       setTimeout(() => setSeedSuccessMsg(null), 4000);
-    } catch (err: any) {
-      setSeedErrorMsg(err.message || 'Failed to trigger maintenance routine');
+    } catch (err: unknown) {
+      setSeedErrorMsg(err instanceof Error ? err.message : 'Failed to trigger maintenance routine');
     } finally {
       setSeeding(false);
     }
@@ -119,9 +91,9 @@ export const AdminSystemTab: React.FC = () => {
         <Card className="p-4 bg-card/80 border-border/80 space-y-1">
           <div className="flex items-center justify-between text-muted-foreground">
             <span className="text-xs font-semibold uppercase">2FA Adoption</span>
-            <Shield className="w-4 h-4 text-emerald-500" />
+            <Shield className="w-4 h-4 text-[var(--md-sys-color-success)]" />
           </div>
-          <p className="text-2xl font-bold font-mono text-emerald-500">
+          <p className="text-2xl font-bold font-mono text-[var(--md-sys-color-success)]">
             {systemStats?.twoFactorPercentage ?? 0}%
           </p>
           <span className="text-[11px] text-muted-foreground">
@@ -132,7 +104,7 @@ export const AdminSystemTab: React.FC = () => {
         <Card className="p-4 bg-card/80 border-border/80 space-y-1">
           <div className="flex items-center justify-between text-muted-foreground">
             <span className="text-xs font-semibold uppercase">Security Lockouts</span>
-            <AlertTriangle className="w-4 h-4 text-amber-500" />
+            <AlertTriangle className="w-4 h-4 text-[var(--md-sys-color-warning)]" />
           </div>
           <p className="text-2xl font-bold font-mono text-foreground">
             {systemStats?.blockedUsers ?? 0}
@@ -143,10 +115,10 @@ export const AdminSystemTab: React.FC = () => {
         <Card className="p-4 bg-card/80 border-border/80 space-y-1">
           <div className="flex items-center justify-between text-muted-foreground">
             <span className="text-xs font-semibold uppercase">System Health</span>
-            <Activity className="w-4 h-4 text-emerald-500" />
+            <Activity className="w-4 h-4 text-[var(--md-sys-color-success)]" />
           </div>
           <p className="text-2xl font-bold font-mono text-foreground">100%</p>
-          <span className="text-[11px] text-emerald-500 font-medium">All services operational</span>
+          <span className="text-[11px] text-[var(--md-sys-color-success)] font-medium">All services operational</span>
         </Card>
       </div>
 
@@ -166,7 +138,7 @@ export const AdminSystemTab: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <Radio className={`w-3.5 h-3.5 ${broadcastEnabled ? 'text-emerald-500 animate-pulse' : 'text-muted-foreground'}`} />
+            <Radio className={`w-3.5 h-3.5 ${broadcastEnabled ? 'text-[var(--md-sys-color-success)] animate-pulse' : 'text-muted-foreground'}`} />
             <Badge variant={broadcastEnabled ? 'success' : 'neutral'} className="text-xs">
               {broadcastEnabled ? 'Broadcast Active' : 'Off Air'}
             </Badge>
@@ -174,8 +146,8 @@ export const AdminSystemTab: React.FC = () => {
         </div>
 
         {broadcastSavedMsg && (
-          <div className="flex items-center gap-2 p-2.5 bg-emerald-500/10 border border-emerald-500/30 rounded text-xs text-emerald-500 font-semibold">
-            <CheckCircle className="w-4 h-4" />
+          <div className="flex items-center gap-2 p-2.5 bg-[var(--md-sys-color-success-container)] border border-[var(--md-sys-color-success)]/30 rounded-xl text-xs text-[var(--md-sys-color-on-success-container)] font-semibold">
+            <CheckCircle className="w-4 h-4 text-[var(--md-sys-color-success)]" />
             Broadcast announcement updated and propagated to all workspace headers!
           </div>
         )}
@@ -236,8 +208,8 @@ export const AdminSystemTab: React.FC = () => {
       {/* Database Maintenance Actions */}
       <Card className="p-5 bg-card/80 border-border/80 space-y-4">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500">
-            <Database className="w-5 h-5" />
+          <div className="p-2 rounded-lg bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)]">
+            <Database className="w-5 h-5 text-[var(--md-sys-color-warning)]" />
           </div>
           <div>
             <h3 className="text-sm font-bold text-foreground">Database Diagnostics & Seeding</h3>
@@ -248,8 +220,8 @@ export const AdminSystemTab: React.FC = () => {
         </div>
 
         {seedSuccessMsg && (
-          <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/30 rounded text-xs text-emerald-500 font-semibold flex items-center gap-2">
-            <CheckCircle className="w-4 h-4" />
+          <div className="p-2.5 bg-[var(--md-sys-color-success-container)] border border-[var(--md-sys-color-success)]/30 rounded-xl text-xs text-[var(--md-sys-color-on-success-container)] font-semibold flex items-center gap-2">
+            <CheckCircle className="w-4 h-4 text-[var(--md-sys-color-success)]" />
             {seedSuccessMsg}
           </div>
         )}

@@ -22,7 +22,7 @@ export const IssueSidebarDetails: React.FC<IssueSidebarDetailsProps> = ({
   currentUser,
   onAssignToMe,
 }) => {
-  const getPriorityBadgeVariant = (priority: string) => {
+  const getPriorityBadgeVariant = (priority: string): NonNullable<React.ComponentProps<typeof Badge>['variant']> => {
     switch (priority) {
       case 'CRITICAL':
         return 'critical';
@@ -35,7 +35,7 @@ export const IssueSidebarDetails: React.FC<IssueSidebarDetailsProps> = ({
     }
   };
 
-  const getSeverityBadgeVariant = (severity: string) => {
+  const getSeverityBadgeVariant = (severity: string): NonNullable<React.ComponentProps<typeof Badge>['variant']> => {
     switch (severity) {
       case 'BLOCKER':
         return 'error';
@@ -104,7 +104,7 @@ export const IssueSidebarDetails: React.FC<IssueSidebarDetailsProps> = ({
         {/* Priority */}
         <div className="flex items-center justify-between gap-2">
           <span className="text-muted-foreground font-medium">Priority</span>
-          <Badge variant={getPriorityBadgeVariant(issue.priority) as any} className="text-[11px] px-2 py-0.5">
+          <Badge variant={getPriorityBadgeVariant(issue.priority)} className="text-[11px] px-2 py-0.5">
             {issue.priority}
           </Badge>
         </div>
@@ -112,7 +112,7 @@ export const IssueSidebarDetails: React.FC<IssueSidebarDetailsProps> = ({
         {/* Severity */}
         <div className="flex items-center justify-between gap-2">
           <span className="text-muted-foreground font-medium">Severity</span>
-          <Badge variant={getSeverityBadgeVariant(issue.severity) as any} className="text-[11px] px-2 py-0.5">
+          <Badge variant={getSeverityBadgeVariant(issue.severity)} className="text-[11px] px-2 py-0.5">
             {issue.severity}
           </Badge>
         </div>

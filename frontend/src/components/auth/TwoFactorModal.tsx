@@ -32,8 +32,9 @@ export const TwoFactorModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
       const data = await api.generate2fa();
       setSecret(data.secret);
       setQrCodeUrl(data.qrCodeUrl || data.qrCodeDataUrl || '');
-    } catch (err: any) {
-      setError(err.message || 'Failed to generate 2FA secret');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to generate 2FA secret';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -58,8 +59,9 @@ export const TwoFactorModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
       await api.enable2fa({ code, secret });
       onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'Invalid confirmation code');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Invalid confirmation code';
+      setError(message);
     } finally {
       setSubmitting(false);
     }

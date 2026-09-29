@@ -242,7 +242,7 @@ html.dark {
   }
 
   body {
-    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Roboto', 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
     background-color: var(--md-sys-color-background);
     color: var(--md-sys-color-on-background);
     overflow-x: hidden;

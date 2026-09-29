@@ -48,7 +48,7 @@ export const IssueTimeTrackingCard: React.FC<IssueTimeTrackingCardProps> = ({
           <div
             className={`h-full transition-all duration-300 ${
               logged > estimated && estimated > 0
-                ? 'bg-amber-500'
+                ? 'bg-[var(--md-sys-color-warning)]'
                 : 'bg-primary'
             }`}
             style={{ width: `${progressPercent}%` }}

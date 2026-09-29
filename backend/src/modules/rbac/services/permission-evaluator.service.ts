@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, type FindOptionsWhere } from 'typeorm';
 import { User, SystemRole } from '../../users/entities/user.entity.js';
 import { Project } from '../../projects/entities/project.entity.js';
 import { Issue } from '../../issues/entities/issue.entity.js';
@@ -110,7 +110,7 @@ export class PermissionEvaluatorService {
     }
 
     // 6. Resolve project roles held by this user directly or via global groups
-    const actorWhereClauses: any[] = [
+    const actorWhereClauses: FindOptionsWhere<ProjectRoleActor>[] = [
       { projectId, actorType: ProjectActorType.USER, userId },
     ];
     if (userGroupIds.length > 0) {

@@ -50,13 +50,13 @@ export class PasswordResetService {
           expiresInMinutes: 60,
         },
       });
-    } catch (err: any) {
-      this.logger.warn(`Failed to send password reset email to ${user.email}: ${err.message}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Failed to send password reset email to ${user.email}: ${message}`);
     }
 
     return {
       message: 'If an account exists with this email, a recovery link has been sent.',
-      debugResetUrl: resetUrl,
     };
   }
 
@@ -113,7 +113,10 @@ export class PasswordResetService {
       throw new BadRequestException('New password is required');
     }
 
-    if (user.passwordHash && dto.currentPassword) {
+    if (user.passwordHash) {
+      if (!dto.currentPassword) {
+        throw new BadRequestException('Current password is required to change password');
+      }
       const isCurrentValid = await argon2.verify(user.passwordHash, dto.currentPassword);
       if (!isCurrentValid) {
         throw new UnauthorizedException('Current password is incorrect');

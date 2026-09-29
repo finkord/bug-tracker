@@ -11,8 +11,8 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
-  ForbiddenException,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
@@ -24,10 +24,18 @@ import { LoginDto } from './dto/login.dto.js';
 import { Verify2faDto, Enable2faDto } from './dto/verify-2fa.dto.js';
 import { ForgotPasswordDto, ResetPasswordDto } from './dto/password-reset.dto.js';
 import { SetPasswordDto } from './dto/set-password.dto.js';
-import { OAuthMockDto } from './dto/oauth-mock.dto.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { User } from '../users/entities/user.entity.js';
+import { OAuthCodeStoreService } from './services/oauth-code-store.service.js';
+import type { AuthTokens } from './services/token-session.service.js';
+
+interface OAuthAuthenticatedRequest extends Request {
+  user?: User;
+}
+
+const ACCESS_TOKEN_COOKIE_MAX_AGE_MS = 8 * 60 * 60 * 1000;
+const REFRESH_TOKEN_COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 @ApiTags('Authentication & Security')
 @Controller('auth')
@@ -35,7 +43,46 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
+    private readonly oauthCodeStore: OAuthCodeStoreService,
   ) {}
+
+  private setAuthCookies(res: Response, tokens: Partial<AuthTokens>): void {
+    const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
+    if (tokens.accessToken) {
+      res.cookie('accessToken', tokens.accessToken, {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: ACCESS_TOKEN_COOKIE_MAX_AGE_MS,
+      });
+    }
+    if (tokens.refreshToken) {
+      res.cookie('refreshToken', tokens.refreshToken, {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: REFRESH_TOKEN_COOKIE_MAX_AGE_MS,
+      });
+    }
+  }
+
+  private clearAuthCookies(res: Response): void {
+    const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
+    res.clearCookie('accessToken', {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      path: '/',
+    });
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      path: '/',
+    });
+  }
 
   @Post('register')
   @ApiOperation({
@@ -67,9 +114,14 @@ export class AuthController {
   async login(
     @Body() dto: LoginDto,
     @Ip() ip: string,
+    @Res({ passthrough: true }) res: Response,
     @Headers('user-agent') userAgent?: string,
   ) {
-    return this.authService.login(dto, ip, userAgent);
+    const result = await this.authService.login(dto, ip, userAgent);
+    if ('accessToken' in result && typeof result.accessToken === 'string') {
+      this.setAuthCookies(res, result);
+    }
+    return result;
   }
 
   @Post('refresh')
@@ -78,11 +130,19 @@ export class AuthController {
     summary: 'Refresh JWT access token using valid refresh token',
     description: 'Issues a fresh 8-hour access token without requiring user to re-enter credentials.',
   })
-  async refresh(@Body('refreshToken') refreshToken: string) {
-    if (!refreshToken) {
+  async refresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+    @Body('refreshToken') bodyRefreshToken?: string,
+  ) {
+    const cookieRefreshToken = (req.cookies as Record<string, string> | undefined)?.refreshToken;
+    const tokenToUse = bodyRefreshToken || cookieRefreshToken;
+    if (!tokenToUse) {
       throw new BadRequestException('Refresh token is required');
     }
-    return this.authService.refreshTokens(refreshToken);
+    const tokens = await this.authService.refreshTokens(tokenToUse);
+    this.setAuthCookies(res, tokens);
+    return tokens;
   }
 
   @Post('2fa/verify')
@@ -95,9 +155,12 @@ export class AuthController {
   async verify2fa(
     @Body() dto: Verify2faDto,
     @Ip() ip: string,
+    @Res({ passthrough: true }) res: Response,
     @Headers('user-agent') userAgent?: string,
   ) {
-    return this.authService.verify2fa(dto, ip, userAgent);
+    const tokens = await this.authService.verify2fa(dto, ip, userAgent);
+    this.setAuthCookies(res, tokens);
+    return tokens;
   }
 
   @Post('2fa/generate')
@@ -187,28 +250,25 @@ export class AuthController {
   @ApiOperation({
     summary: 'GitHub OAuth2 callback endpoint',
     description:
-      'Processes the authorization code from GitHub, loads profile, and redirects to frontend with session tokens.',
+      'Processes the authorization code from GitHub, issues a short-lived one-time exchange code, and redirects the browser to the frontend. The frontend then POSTs /auth/oauth/exchange to retrieve the actual JWT tokens — tokens never appear in URLs or server logs.',
   })
   async githubCallback(
-    @Req() req: any,
+    @Req() req: OAuthAuthenticatedRequest,
     @Res() res: Response,
     @Ip() ip: string,
     @Headers('user-agent') userAgent?: string,
   ) {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:5173');
     try {
+      if (!req.user) {
+        throw new BadRequestException('GitHub authenticated user payload not found');
+      }
       const tokens = await this.authService.loginOAuthUser(req.user, ip, userAgent);
-      return res.redirect(
-        `${frontendUrl}/oauth/callback?accessToken=${encodeURIComponent(
-          tokens.accessToken,
-        )}&refreshToken=${encodeURIComponent(tokens.refreshToken)}`,
-      );
-    } catch (err: any) {
-      return res.redirect(
-        `${frontendUrl}/oauth/callback?error=${encodeURIComponent(
-          err.message || 'GitHub authentication failed',
-        )}`,
-      );
+      const code = this.oauthCodeStore.createCode(tokens);
+      return res.redirect(`${frontendUrl}/oauth/callback?code=${code}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'GitHub authentication failed';
+      return res.redirect(`${frontendUrl}/oauth/callback?error=${encodeURIComponent(message)}`);
     }
   }
 
@@ -227,61 +287,69 @@ export class AuthController {
   @ApiOperation({
     summary: 'Google OAuth2 callback endpoint',
     description:
-      'Processes the authorization code from Google, loads profile, and redirects to frontend with session tokens.',
+      'Processes the authorization code from Google, issues a short-lived one-time exchange code, and redirects the browser to the frontend. The frontend then POSTs /auth/oauth/exchange to retrieve the actual JWT tokens — tokens never appear in URLs or server logs.',
   })
   async googleCallback(
-    @Req() req: any,
+    @Req() req: OAuthAuthenticatedRequest,
     @Res() res: Response,
     @Ip() ip: string,
     @Headers('user-agent') userAgent?: string,
   ) {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:5173');
     try {
+      if (!req.user) {
+        throw new BadRequestException('Google authenticated user payload not found');
+      }
       const tokens = await this.authService.loginOAuthUser(req.user, ip, userAgent);
-      return res.redirect(
-        `${frontendUrl}/oauth/callback?accessToken=${encodeURIComponent(
-          tokens.accessToken,
-        )}&refreshToken=${encodeURIComponent(tokens.refreshToken)}`,
-      );
-    } catch (err: any) {
-      return res.redirect(
-        `${frontendUrl}/oauth/callback?error=${encodeURIComponent(
-          err.message || 'Google authentication failed',
-        )}`,
-      );
+      const code = this.oauthCodeStore.createCode(tokens);
+      return res.redirect(`${frontendUrl}/oauth/callback?code=${code}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Google authentication failed';
+      return res.redirect(`${frontendUrl}/oauth/callback?error=${encodeURIComponent(message)}`);
     }
   }
 
-  @Post('oauth/mock')
+  @Post('oauth/exchange')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Simulated OAuth2 login for demonstration and testing (SDSecurity Task 6)',
+    summary: 'Exchange one-time OAuth code for JWT tokens',
     description:
-      'Validates or provisions user account based on OAuth provider claims and returns JWT session tokens (strictly disabled in production).',
+      'Accepts the short-lived code issued after a successful OAuth redirect and returns the JWT access and refresh tokens. The code is single-use and expires after 60 seconds.',
   })
-  async mockOAuthLogin(
-    @Body() dto: OAuthMockDto,
-    @Ip() ip: string,
-    @Headers('user-agent') userAgent?: string,
+  async exchangeOAuthCode(
+    @Body('code') code: string,
+    @Res({ passthrough: true }) res: Response,
   ) {
-    const nodeEnv = this.configService.get<string>('NODE_ENV', 'development');
-    if (nodeEnv === 'production') {
-      throw new ForbiddenException('Mock OAuth authentication is strictly disabled in production mode.');
+    if (!code || typeof code !== 'string') {
+      throw new BadRequestException('OAuth exchange code is required');
     }
-
-    const user = await this.authService.validateOrCreateOAuthUser(dto);
-    return this.authService.loginOAuthUser(user, ip, userAgent);
+    const tokens = this.oauthCodeStore.consumeCode(code);
+    if (!tokens) {
+      throw new NotFoundException('OAuth exchange code is invalid or has already been used');
+    }
+    this.setAuthCookies(res, tokens);
+    return tokens;
   }
 
   @Post('logout')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Logout user and invalidate session (SDSecurity Task 1 Polish)',
-    description: 'Acknowledges user logout and invalidates server-side session context.',
+    description: 'Acknowledges user logout, clears auth cookies, and invalidates server-side session context.',
   })
-  async logout(@CurrentUser() user: User) {
-    return this.authService.logout(user.id);
+  async logout(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    this.clearAuthCookies(res);
+    const authHeader = req.headers['authorization'];
+    const bearerToken =
+      typeof authHeader === 'string' && authHeader.startsWith('Bearer ')
+        ? authHeader.slice(7)
+        : undefined;
+    const cookieToken = (req.cookies as Record<string, string> | undefined)?.accessToken;
+    const token = bearerToken || cookieToken;
+
+    return this.authService.logoutByToken(token);
   }
 }

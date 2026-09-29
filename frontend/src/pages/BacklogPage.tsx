@@ -1,13 +1,6 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {
-  api,
-  type ProjectItem,
-  type IssueItem,
-  type IssueStatus,
-} from '../api/client';
-import { realtimeSocket } from '../api/socket';
-import { useAuth } from '../context/AuthContext';
+import { api } from '../api/client';
 import { AgileToolbar } from '../components/agile/AgileToolbar';
 import { SprintContainer } from '../components/agile/SprintContainer';
 import { BacklogSection } from '../components/agile/BacklogSection';
@@ -17,36 +10,52 @@ import { CompleteSprintModal } from '../components/agile/CompleteSprintModal';
 import { SprintAnalyticsModal } from '../components/kanban/SprintAnalyticsModal';
 import { IssueDetailsModal } from '../components/kanban/IssueDetailsModal';
 import { IssueModal } from '../components/kanban/IssueModal';
+import { useAgileBacklog } from '../hooks/useAgileBacklog';
+import { useAuth } from '../store';
 import type {
   SprintDefinition,
   AgileViewMode,
-  AgileFilterState,
 } from '../types/agile';
-import { DEFAULT_AGILE_FILTERS } from '../types/agile';
 import { Loader2 } from 'lucide-react';
+
+import { useProjectsQuery } from '../api/queries';
 
 export const BacklogPage: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // Projects & Issues state
-  const [projects, setProjects] = useState<ProjectItem[]>([]);
-  const [selectedProjectId, setSelectedProjectId] = useState<number>(
-    projectId ? Number(projectId) : 1,
-  );
-  const [issues, setIssues] = useState<IssueItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: projects = [] } = useProjectsQuery();
+  const selectedProjectId = projectId ? Number(projectId) : (projects[0]?.id ?? 1);
+
+  // Hook managing persistent sprint data, issues, websocket events and filtering
+  const {
+    issues,
+    setIssues,
+    sprintDefinitions,
+    loading,
+    error,
+    setError,
+    filters,
+    setFilters,
+    filteredIssues,
+    allSprintNames,
+    activeSprint,
+    sprintList,
+    loadData,
+    handleMoveToSprint,
+    handleStatusChange,
+    handleAssignToMe,
+    handleSaveSprint: saveSprint,
+    handleStartSprint,
+    handleConfirmCompleteSprint,
+    handleDeleteSprint,
+  } = useAgileBacklog(selectedProjectId);
 
   // View Mode: 'backlog' (Planning) vs 'board' (Active Sprint Scrum Execution)
   const [viewMode, setViewMode] = useState<AgileViewMode>('backlog');
 
-  // Filters State
-  const [filters, setFilters] = useState<AgileFilterState>(DEFAULT_AGILE_FILTERS);
-
-  // Sprint Definitions State
-  const [sprintDefinitions, setSprintDefinitions] = useState<Record<string, SprintDefinition>>({});
+  // Collapse toggles state
   const [collapsedSprints, setCollapsedSprints] = useState<Record<string, boolean>>({});
   const [isBacklogCollapsed, setIsBacklogCollapsed] = useState<boolean>(false);
 
@@ -65,271 +74,8 @@ export const BacklogPage: React.FC = () => {
   const [isCreateIssueOpen, setIsCreateIssueOpen] = useState<boolean>(false);
   const [createIssueSprint, setCreateIssueSprint] = useState<string | null>(null);
 
-  // Load project list
-  useEffect(() => {
-    api.getProjects()
-      .then((data) => {
-        setProjects(data);
-        if (projectId) {
-          const found = data.find((p) => p.id === Number(projectId));
-          if (found) setSelectedProjectId(found.id);
-        } else if (data.length > 0) {
-          setSelectedProjectId(data[0].id);
-        }
-      })
-      .catch(() => {});
-  }, [projectId]);
-
-  // Load issues and stored sprints for current project
-  const loadData = useCallback(async () => {
-    if (!selectedProjectId) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const issuesData = await api.getIssues({ projectId: selectedProjectId });
-      setIssues(issuesData);
-
-      // Load stored sprints metadata from localStorage
-      const storageKey = `bt_sprints_${selectedProjectId}`;
-      let storedDefs: Record<string, SprintDefinition> = {};
-      try {
-        const raw = localStorage.getItem(storageKey);
-        if (raw) storedDefs = JSON.parse(raw);
-      } catch {
-        // Fallback
-      }
-
-      // Ensure default Sprint 1 exists if none defined
-      if (Object.keys(storedDefs).length === 0) {
-        storedDefs['Sprint 1'] = {
-          name: 'Sprint 1',
-          goal: 'Core architecture, RBAC auth, and initial milestone deliverables',
-          startDate: new Date().toISOString().split('T')[0],
-          endDate: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
-          status: 'ACTIVE',
-        };
-      }
-
-      // Register any sprints found in existing issues
-      issuesData.forEach((issue) => {
-        if (issue.sprint && issue.sprint.toUpperCase() !== 'BACKLOG' && !storedDefs[issue.sprint]) {
-          storedDefs[issue.sprint] = {
-            name: issue.sprint,
-            goal: 'Feature deliverables and sprint triage',
-            startDate: new Date().toISOString().split('T')[0],
-            endDate: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
-            status: 'PLANNED',
-          };
-        }
-      });
-
-      setSprintDefinitions(storedDefs);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load agile backlog data');
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedProjectId]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  // Real-time WebSocket synchronization
-  useEffect(() => {
-    realtimeSocket.connect();
-    if (selectedProjectId) {
-      realtimeSocket.joinProject(selectedProjectId);
-    }
-
-    const unsubCreated = realtimeSocket.onIssueCreated((newIssue) => {
-      if (newIssue.projectId === selectedProjectId) {
-        setIssues((prev) => (prev.some((i) => i.id === newIssue.id) ? prev : [newIssue, ...prev]));
-      }
-    });
-
-    const unsubUpdated = realtimeSocket.onIssueUpdated((updatedIssue) => {
-      if (updatedIssue.projectId === selectedProjectId) {
-        setIssues((prev) => prev.map((i) => (i.id === updatedIssue.id ? updatedIssue : i)));
-      }
-    });
-
-    const unsubDeleted = realtimeSocket.onIssueDeleted(({ issueId }) => {
-      setIssues((prev) => prev.filter((i) => i.id !== issueId));
-    });
-
-    return () => {
-      if (selectedProjectId) {
-        realtimeSocket.leaveProject(selectedProjectId);
-      }
-      unsubCreated();
-      unsubUpdated();
-      unsubDeleted();
-    };
-  }, [selectedProjectId]);
-
-  // Save sprint definitions helper
-  const saveSprintDefinitions = (newDefs: Record<string, SprintDefinition>) => {
-    setSprintDefinitions(newDefs);
-    if (selectedProjectId) {
-      try {
-        localStorage.setItem(`bt_sprints_${selectedProjectId}`, JSON.stringify(newDefs));
-      } catch {
-        // Ignored
-      }
-    }
-  };
-
-  // Client-side filtering logic
-  const filteredIssues = useMemo(() => {
-    return issues.filter((issue) => {
-      if (filters.filterType !== 'ALL' && issue.issueType !== filters.filterType) return false;
-      if (filters.filterPriority !== 'ALL' && issue.priority !== filters.filterPriority) return false;
-      if (filters.onlyMine && user && issue.assignee?.id !== user.id) return false;
-      if (filters.unassignedOnly && issue.assignee !== null && issue.assignee !== undefined) return false;
-      if (filters.highPriorityOnly && issue.priority !== 'CRITICAL' && issue.priority !== 'HIGH') return false;
-      if (filters.searchTerm.trim()) {
-        const term = filters.searchTerm.toLowerCase();
-        const matchTitle = issue.title.toLowerCase().includes(term);
-        const matchKey = issue.key.toLowerCase().includes(term);
-        const matchDesc = issue.description?.toLowerCase().includes(term) ?? false;
-        if (!matchTitle && !matchKey && !matchDesc) return false;
-      }
-      return true;
-    });
-  }, [issues, filters, user]);
-
-  // Active sprint and sprint names
-  const allSprintNames = useMemo(() => Object.keys(sprintDefinitions), [sprintDefinitions]);
-  const activeSprint = useMemo(() => {
-    const foundName = Object.keys(sprintDefinitions).find(
-      (name) => sprintDefinitions[name].status === 'ACTIVE',
-    );
-    return foundName ? sprintDefinitions[foundName] : null;
-  }, [sprintDefinitions]);
-
-  // Sprints categorized for planning view
-  const sprintList = useMemo(() => {
-    return Object.values(sprintDefinitions).sort((a, b) => {
-      // Active first, then Planned, then Completed
-      const order = { ACTIVE: 0, PLANNED: 1, COMPLETED: 2 };
-      return order[a.status] - order[b.status];
-    });
-  }, [sprintDefinitions]);
-
-  // Move issue to sprint or backlog
-  const handleMoveToSprint = async (issueId: number, sprintName: string | null) => {
-    // Optimistic update
-    setIssues((prev) =>
-      prev.map((i) => (i.id === issueId ? { ...i, sprint: sprintName || null } : i)),
-    );
-
-    try {
-      await api.updateIssueSprint(issueId, sprintName);
-    } catch (err: any) {
-      setError(err.message || 'Failed to move issue');
-      loadData();
-    }
-  };
-
-  // Status transition handler for Scrum board
-  const handleStatusChange = async (issueId: number, nextStatus: IssueStatus) => {
-    setIssues((prev) =>
-      prev.map((i) => (i.id === issueId ? { ...i, status: nextStatus } : i)),
-    );
-
-    try {
-      await api.updateIssueStatus(issueId, nextStatus);
-    } catch (err: any) {
-      setError(err.message || 'Failed to update issue status');
-      loadData();
-    }
-  };
-
-  // Self-assignment handler
-  const handleAssignToMe = async (issueId: number) => {
-    try {
-      const updated = await api.assignIssueToMe(issueId);
-      setIssues((prev) => prev.map((i) => (i.id === issueId ? updated : i)));
-    } catch (err: any) {
-      setError(err.message || 'Failed to assign issue');
-    }
-  };
-
-  // Sprint lifecycle: Save / Edit Sprint
   const handleSaveSprint = (sprintData: SprintDefinition) => {
-    const updated = {
-      ...sprintDefinitions,
-      [sprintData.name]: sprintData,
-    };
-    saveSprintDefinitions(updated);
-  };
-
-  // Sprint lifecycle: Start Sprint
-  const handleStartSprint = (sprintName: string) => {
-    const target = sprintDefinitions[sprintName];
-    if (!target) return;
-
-    // If another sprint was active, mark it planned or keep it
-    const updated: Record<string, SprintDefinition> = {};
-    Object.keys(sprintDefinitions).forEach((k) => {
-      if (k === sprintName) {
-        updated[k] = {
-          ...sprintDefinitions[k],
-          status: 'ACTIVE',
-          startDate: new Date().toISOString().split('T')[0],
-          endDate: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
-        };
-      } else {
-        updated[k] = sprintDefinitions[k];
-      }
-    });
-
-    saveSprintDefinitions(updated);
-  };
-
-  // Sprint lifecycle: Complete Sprint
-  const handleConfirmCompleteSprint = async (sprintName: string, rolloverTarget: string) => {
-    const targetSprint = sprintDefinitions[sprintName];
-    if (!targetSprint) return;
-
-    const sprintIssues = issues.filter((i) => i.sprint === sprintName);
-    const incomplete = sprintIssues.filter(
-      (i) => i.status !== 'RESOLVED' && i.status !== 'CLOSED',
-    );
-
-    // Rollover incomplete issues
-    const newSprintVal = rolloverTarget === 'BACKLOG' ? null : rolloverTarget;
-    for (const issue of incomplete) {
-      await api.updateIssueSprint(issue.id, newSprintVal);
-    }
-
-    const updated: Record<string, SprintDefinition> = {
-      ...sprintDefinitions,
-      [sprintName]: {
-        ...targetSprint,
-        status: 'COMPLETED',
-      },
-    };
-    saveSprintDefinitions(updated);
-    loadData();
-  };
-
-  // Sprint lifecycle: Delete Sprint
-  const handleDeleteSprint = async (sprintName: string) => {
-    if (!window.confirm(`Are you sure you want to delete ${sprintName}? Tickets will be moved to the backlog.`)) {
-      return;
-    }
-
-    const inSprint = issues.filter((i) => i.sprint === sprintName);
-    for (const issue of inSprint) {
-      await api.updateIssueSprint(issue.id, null);
-    }
-
-    const updated = { ...sprintDefinitions };
-    delete updated[sprintName];
-    saveSprintDefinitions(updated);
-    loadData();
+    saveSprint(sprintData, editingSprint);
   };
 
   // Collapse toggles
@@ -341,7 +87,6 @@ export const BacklogPage: React.FC = () => {
   };
 
   const handleSelectProject = (id: number) => {
-    setSelectedProjectId(id);
     navigate(`/projects/${id}/backlog`);
   };
 

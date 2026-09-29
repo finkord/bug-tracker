@@ -33,7 +33,7 @@ export class ProjectRoleActor {
   @Column({ name: 'role_id', type: 'int' })
   roleId: number;
 
-  @ManyToOne('ProjectRole', (r: any) => r.actors, { onDelete: 'CASCADE' })
+  @ManyToOne('ProjectRole', (r: ProjectRole) => r.actors, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'role_id' })
   role: ProjectRole;
 

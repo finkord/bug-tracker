@@ -1,5 +1,6 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { api } from '../api/client';
 import confetti from 'canvas-confetti';
 import { CheckCircle, AlertTriangle, Loader2, ArrowRight } from 'lucide-react';
@@ -8,46 +9,26 @@ export const ActivatePage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
 
-  const [loading, setLoading] = useState(true);
-  const [success, setSuccess] = useState(false);
-  const [message, setMessage] = useState('');
-  const attemptedTokenRef = useRef<string | null>(null);
+  const { data, error, isLoading, isSuccess } = useQuery({
+    queryKey: ['auth', 'activate', token],
+    queryFn: async () => {
+      const res = await api.activate(token!);
+      confetti({
+        particleCount: 80,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#0b57d0', '#137333', '#a8c7fa'],
+      });
+      return res;
+    },
+    enabled: Boolean(token),
+    retry: false,
+    staleTime: Infinity,
+  });
 
-  useEffect(() => {
-    if (!token) {
-      setLoading(false);
-      setMessage('No activation token provided in URL.');
-      return;
-    }
-
-    // Prevent duplicate activation requests (e.g. React StrictMode remount or re-renders)
-    if (attemptedTokenRef.current === token) {
-      return;
-    }
-    attemptedTokenRef.current = token;
-
-    const performActivation = async () => {
-      try {
-        const res = await api.activate(token);
-        setSuccess(true);
-        setMessage(res.message);
-        // Celebration confetti
-        confetti({
-          particleCount: 80,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#0b57d0', '#137333', '#a8c7fa'],
-        });
-      } catch (err: any) {
-        setSuccess(false);
-        setMessage(err.message || 'Activation failed or token has expired.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    performActivation();
-  }, [token]);
+  const loading = Boolean(token && isLoading);
+  const success = Boolean(isSuccess && data);
+  const message = data?.message || (error instanceof Error ? error.message : (!token ? 'No activation token provided in URL.' : 'Activation failed or token has expired.'));
 
   return (
     <div className="flex items-center justify-center min-h-[80vh] px-4">

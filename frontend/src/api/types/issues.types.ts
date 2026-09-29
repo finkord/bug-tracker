@@ -85,7 +85,7 @@ export interface IssueItem {
   } | null;
   commentsCount?: number;
   comments?: IssueComment[];
-  worklogs?: any[];
+  worklogs?: import('./worklogs.types.js').WorklogItem[];
   attachments?: AttachmentItem[];
   links?: IssueLinkItem[];
   createdAt: string;

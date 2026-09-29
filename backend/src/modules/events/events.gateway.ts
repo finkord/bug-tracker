@@ -10,6 +10,22 @@ import {
 import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 
+export interface EventUserPresence {
+  id?: number;
+  fullName?: string;
+  email?: string;
+  avatarUrl?: string | null;
+}
+
+export interface BroadcastIssuePayload {
+  id: number;
+  projectId: number;
+  key?: string;
+  title?: string;
+  status?: string;
+  priority?: string;
+}
+
 @WebSocketGateway({
   cors: {
     origin: '*',
@@ -54,7 +70,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('join:issue')
   async handleJoinIssue(
-    @MessageBody() data: { issueId: number | string; user?: any },
+    @MessageBody() data: { issueId: number | string; user?: EventUserPresence },
     @ConnectedSocket() client: Socket,
   ): Promise<{ event: string; room: string }> {
     const room = `issue_${data.issueId}`;
@@ -79,14 +95,14 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   // Broadcaster methods for real-time live collaboration
-  broadcastIssueCreated(issue: any): void {
+  broadcastIssueCreated(issue: BroadcastIssuePayload): void {
     if (this.server) {
       this.server.to(`project_${issue.projectId}`).emit('issue:created', issue);
       this.server.emit('issue:created', issue);
     }
   }
 
-  broadcastIssueUpdated(issue: any): void {
+  broadcastIssueUpdated(issue: BroadcastIssuePayload): void {
     if (this.server) {
       this.server.to(`project_${issue.projectId}`).emit('issue:updated', issue);
       this.server.to(`issue_${issue.id}`).emit('issue:updated', issue);
@@ -102,7 +118,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  broadcastWorklogAdded(payload: { issueId: number; projectId?: number; worklog: any }): void {
+  broadcastWorklogAdded(payload: { issueId: number; projectId?: number; worklog: unknown }): void {
     if (this.server) {
       this.server.to(`issue_${payload.issueId}`).emit('worklog:created', payload);
       if (payload.projectId) {
@@ -112,13 +128,13 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  broadcastCommentAdded(payload: { issueId: number; comment: any }): void {
+  broadcastCommentAdded(payload: { issueId: number; comment: unknown }): void {
     if (this.server) {
       this.server.to(`issue_${payload.issueId}`).emit('comment:created', payload);
     }
   }
 
-  broadcastAttachmentUploaded(payload: { issueId: number; attachment: any }): void {
+  broadcastAttachmentUploaded(payload: { issueId: number; attachment: unknown }): void {
     if (this.server) {
       this.server.to(`issue_${payload.issueId}`).emit('attachment:uploaded', payload);
     }

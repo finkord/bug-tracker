@@ -22,7 +22,7 @@ export class IssueSecurityScheme {
   @Column({ name: 'default_level_id', type: 'int', nullable: true })
   defaultLevelId: number | null;
 
-  @OneToMany('IssueSecurityLevel', (lvl: any) => lvl.scheme)
+  @OneToMany('IssueSecurityLevel', (lvl: IssueSecurityLevel) => lvl.scheme)
   levels: IssueSecurityLevel[];
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })

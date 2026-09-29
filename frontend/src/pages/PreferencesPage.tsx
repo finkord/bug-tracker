@@ -1,6 +1,5 @@
 import React from 'react';
-import { useSidebar } from '../context/SidebarContext';
-import { useTheme } from '../context/ThemeContext';
+import { useSidebar, useTheme } from '../store';
 import { Button } from '../components/ui';
 import {
   Sliders,
@@ -119,8 +118,8 @@ export const PreferencesPage: React.FC = () => {
                     : 'border-[var(--md-sys-color-outline-variant)]/30 bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container-high)]'
                 }`}
               >
-                <div className="w-10 h-10 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                  <Sun className="w-5 h-5" />
+                <div className="w-10 h-10 rounded-full bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] flex items-center justify-center">
+                  <Sun className="w-5 h-5 text-[var(--md-sys-color-warning)]" />
                 </div>
                 <div className="text-center">
                   <p className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">Light Mode</p>
@@ -145,8 +144,8 @@ export const PreferencesPage: React.FC = () => {
                     : 'border-[var(--md-sys-color-outline-variant)]/30 bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container-high)]'
                 }`}
               >
-                <div className="w-10 h-10 rounded-full bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
-                  <Moon className="w-5 h-5" />
+                <div className="w-10 h-10 rounded-full bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center">
+                  <Moon className="w-5 h-5 text-[var(--md-sys-color-primary)]" />
                 </div>
                 <div className="text-center">
                   <p className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">Dark Mode</p>

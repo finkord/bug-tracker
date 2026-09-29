@@ -1,11 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   api,
   type IssueItem,
   type IssueStatus,
 } from '../../api/client';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../store';
+import {
+  useIssueDetailQuery,
+  useUpdateIssueStatusMutation,
+  useUpdateIssueMutation,
+  useAddIssueCommentMutation,
+  useDeleteIssueMutation,
+} from '../../api/queries';
 import { Avatar } from '../common/Avatar';
 import { LogWorkModal } from './LogWorkModal';
 import {
@@ -50,49 +57,30 @@ export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
   onEditClick,
 }) => {
   const { user } = useAuth();
-  const [issue, setIssue] = useState<IssueItem | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    data: issue = null,
+    isLoading: loading,
+    error: queryError,
+    refetch: fetchIssue,
+  } = useIssueDetailQuery(isOpen && issueId ? issueId : undefined);
 
-  // Discussion state
+  const statusMutation = useUpdateIssueStatusMutation();
+  const updateIssueMutation = useUpdateIssueMutation();
+  const addCommentMutation = useAddIssueCommentMutation();
+  const deleteIssueMutation = useDeleteIssueMutation();
+
   const [commentText, setCommentText] = useState<string>('');
-  const [submittingComment, setSubmittingComment] = useState<boolean>(false);
-  const [deleting, setDeleting] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   const [logWorkOpen, setLogWorkOpen] = useState<boolean>(false);
-
-  // Fetch full issue details
-  const fetchIssue = async () => {
-    if (!issueId) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await api.getIssue(issueId);
-      setIssue(data);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch issue details');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (isOpen && issueId) {
-      fetchIssue();
-      setCommentText('');
-    } else {
-      setIssue(null);
-    }
-  }, [isOpen, issueId]);
 
   // Handle direct status change
   const handleStatusChange = async (newStatus: IssueStatus) => {
     if (!issue) return;
     try {
-      const updated = await api.updateIssueStatus(issue.id, newStatus);
-      setIssue(updated);
-      onIssueUpdated(updated);
-    } catch (err: any) {
-      setError(err.message || 'Failed to update issue status');
+      const updated = await statusMutation.mutateAsync({ issueId: issue.id, status: newStatus });
+      onIssueUpdated?.(updated);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to update issue status');
     }
   };
 
@@ -100,11 +88,13 @@ export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
   const handleAssignToMe = async () => {
     if (!issue || !user) return;
     try {
-      const updated = await api.updateIssue(issue.id, { assigneeId: user.id });
-      setIssue(updated);
-      onIssueUpdated(updated);
-    } catch (err: any) {
-      setError(err.message || 'Failed to reassign issue');
+      const updated = await updateIssueMutation.mutateAsync({
+        id: issue.id,
+        data: { assigneeId: user.id },
+      });
+      onIssueUpdated?.(updated);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to reassign issue');
     }
   };
 
@@ -113,17 +103,11 @@ export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
     e.preventDefault();
     if (!issue || !commentText.trim()) return;
 
-    setSubmittingComment(true);
     try {
-      const newComment = await api.addIssueComment(issue.id, commentText.trim());
-      setIssue((prev) =>
-        prev ? { ...prev, comments: [...(prev.comments || []), newComment] } : prev,
-      );
+      await addCommentMutation.mutateAsync({ issueId: issue.id, text: commentText.trim() });
       setCommentText('');
-    } catch (err: any) {
-      setError(err.message || 'Failed to post comment');
-    } finally {
-      setSubmittingComment(false);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to post comment');
     }
   };
 
@@ -134,14 +118,12 @@ export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
       return;
     }
 
-    setDeleting(true);
     try {
-      await api.deleteIssue(issue.id);
-      onIssueDeleted(issue.id);
+      await deleteIssueMutation.mutateAsync(issue.id);
+      onIssueDeleted?.(issue.id);
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'Failed to delete issue');
-      setDeleting(false);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to delete issue');
     }
   };
 
@@ -239,7 +221,7 @@ export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
           )}
 
           {error && (
-            <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-sm">
+            <div className="p-4 rounded-xl bg-[var(--md-sys-color-error-container)] border border-[var(--md-sys-color-error)]/30 text-[var(--md-sys-color-on-error-container)] text-sm">
               {error}
             </div>
           )}

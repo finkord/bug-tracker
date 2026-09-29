@@ -19,7 +19,7 @@ export class IssueSecurityLevel {
   @Column({ name: 'scheme_id', type: 'int' })
   schemeId: number;
 
-  @ManyToOne('IssueSecurityScheme', (s: any) => s.levels, { onDelete: 'CASCADE' })
+  @ManyToOne('IssueSecurityScheme', (s: IssueSecurityScheme) => s.levels, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'scheme_id' })
   scheme: IssueSecurityScheme;
 
@@ -29,7 +29,7 @@ export class IssueSecurityLevel {
   @Column({ type: 'text', nullable: true })
   description: string | null;
 
-  @OneToMany('IssueSecurityGrant', (grant: any) => grant.securityLevel)
+  @OneToMany('IssueSecurityGrant', (grant: IssueSecurityGrant) => grant.securityLevel)
   grants: IssueSecurityGrant[];
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })

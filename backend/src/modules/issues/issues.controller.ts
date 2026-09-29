@@ -14,16 +14,16 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
+  ForbiddenException,
   Res,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { IssuesService } from './issues.service.js';
-import { SeaweedFsService } from './services/seaweedfs.service.js';
+import { SeaweedFsService, type UploadedFileInput } from './services/seaweedfs.service.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
-import { Public } from '../../common/decorators/public.decorator.js';
 import { User } from '../users/entities/user.entity.js';
 import { IssueStatus } from './entities/issue.entity.js';
 import { CreateIssueDto } from './dto/create-issue.dto.js';
@@ -33,6 +33,7 @@ import { CreateIssueLinkDto } from './dto/create-issue-link.dto.js';
 import { ProjectPermissionGuard } from '../rbac/guards/project-permission.guard.js';
 import { RequireProjectPermission } from '../rbac/decorators/require-permission.decorator.js';
 import { ProjectPermission } from '../rbac/entities/permission-grant.entity.js';
+import { PermissionEvaluatorService } from '../rbac/services/permission-evaluator.service.js';
 
 @ApiTags('Issues & Kanban')
 @ApiBearerAuth('JWT-auth')
@@ -42,6 +43,7 @@ export class IssuesController {
   constructor(
     private readonly issuesService: IssuesService,
     private readonly seaweedFsService: SeaweedFsService,
+    private readonly permissionEvaluator: PermissionEvaluatorService,
   ) {}
 
   @Get()
@@ -81,6 +83,7 @@ export class IssuesController {
   }
 
   @Get(':id')
+  @RequireProjectPermission(ProjectPermission.BROWSE_PROJECTS)
   @ApiOperation({
     summary: 'Get single issue details with comments and worklog history by ID or Issue Key (e.g. PROJ-6)',
   })
@@ -202,7 +205,7 @@ export class IssuesController {
   @ApiOperation({ summary: 'Upload file attachment/evidence to SeaweedFS S3 storage' })
   async uploadAttachment(
     @Param('id', ParseIntPipe) id: number,
-    @UploadedFile() file: any,
+    @UploadedFile() file: UploadedFileInput | undefined,
     @CurrentUser() user: User,
   ) {
     if (!file) {
@@ -217,18 +220,40 @@ export class IssuesController {
     return this.issuesService.getAttachments(id);
   }
 
-  @Public()
   @Get('attachments/:id/file')
-  @ApiOperation({ summary: 'Serve attachment file directly from SeaweedFS' })
+  @ApiOperation({ summary: 'Serve attachment file securely from SeaweedFS' })
   async getAttachmentFile(
     @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: User,
     @Res() res: Response,
   ) {
     const attachment = await this.issuesService.getAttachmentById(id);
+    if (attachment.issue?.projectId) {
+      const hasAccess = await this.permissionEvaluator.hasPermission({
+        userId: user.id,
+        projectId: attachment.issue.projectId,
+        permission: ProjectPermission.BROWSE_PROJECTS,
+        issueId: attachment.issueId,
+      });
+      if (!hasAccess) {
+        throw new ForbiddenException('Insufficient permissions to access attachments in this project.');
+      }
+    }
+
     const { buffer, contentType } = await this.seaweedFsService.getFileBuffer(attachment.fid);
-    res.setHeader('Content-Type', contentType);
-    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(attachment.filename)}"`);
-    res.setHeader('Cache-Control', 'public, max-age=86400');
+    const safeInlineTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+    const isSafeInline = safeInlineTypes.includes(contentType.toLowerCase());
+
+    res.setHeader('Content-Type', isSafeInline ? contentType : 'application/octet-stream');
+    res.setHeader(
+      'Content-Disposition',
+      isSafeInline
+        ? `inline; filename="${encodeURIComponent(attachment.filename)}"`
+        : `attachment; filename="${encodeURIComponent(attachment.filename)}"`,
+    );
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Content-Security-Policy', "default-src 'none'");
+    res.setHeader('Cache-Control', 'private, max-age=3600');
     res.send(buffer);
   }
 

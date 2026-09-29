@@ -4,6 +4,7 @@ import {
   UnauthorizedException,
   Logger,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { MailerService } from '@nestjs-modules/mailer';
 import crypto from 'node:crypto';
 import * as argon2 from 'argon2';
@@ -25,6 +26,7 @@ export class LocalAuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly mailerService: MailerService,
+    private readonly configService: ConfigService,
     private readonly securityAuditService: SecurityAuditService,
     private readonly captchaService: CaptchaService,
     private readonly tokenSessionService: TokenSessionService,
@@ -69,7 +71,8 @@ export class LocalAuthService {
       oauthProvider: OAuthProvider.LOCAL,
     });
 
-    const activationUrl = `http://localhost:5173/activate?token=${activationToken}`;
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:5173');
+    const activationUrl = `${frontendUrl}/activate?token=${activationToken}`;
 
     try {
       await this.mailerService.sendMail({
@@ -82,8 +85,9 @@ export class LocalAuthService {
           expiresInHours: 24,
         },
       });
-    } catch (err: any) {
-      this.logger.warn(`Failed to send activation email to ${newUser.email}: ${err.message}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Failed to send activation email to ${newUser.email}: ${message}`);
     }
 
     await this.securityAuditService.recordLoginAttempt({
@@ -98,7 +102,6 @@ export class LocalAuthService {
       message: 'Account created successfully! Please check your email to activate your account.',
       userId: newUser.id,
       email: newUser.email,
-      debugActivationUrl: activationUrl,
     };
   }
 

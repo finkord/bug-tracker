@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '../store';
+import { api } from '../api/client';
 import { Loader2, AlertCircle, ArrowLeft, ShieldCheck } from 'lucide-react';
 
 export const OAuthCallbackPage: React.FC = () => {
@@ -8,34 +10,30 @@ export const OAuthCallbackPage: React.FC = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const rawError = searchParams.get('error');
+  const code = searchParams.get('code');
 
-  useEffect(() => {
-    const error = searchParams.get('error');
-    const accessToken = searchParams.get('accessToken');
-    const refreshToken = searchParams.get('refreshToken');
+  const { error } = useQuery({
+    queryKey: ['auth', 'oauth-exchange', code],
+    queryFn: async () => {
+      window.history.replaceState(null, '', '/oauth/callback');
+      const tokens = await api.exchangeOAuthCode(code!);
+      await login(tokens);
+      navigate('/', { replace: true });
+      return tokens;
+    },
+    enabled: Boolean(code && !rawError),
+    retry: false,
+    staleTime: Infinity,
+  });
 
-    if (error) {
-      setErrorMessage(decodeURIComponent(error));
-      return;
-    }
-
-    if (!accessToken || !refreshToken) {
-      setErrorMessage('Missing authentication tokens in OAuth callback response.');
-      return;
-    }
-
-    const completeOAuth = async () => {
-      try {
-        await login({ accessToken, refreshToken });
-        navigate('/', { replace: true });
-      } catch (err: any) {
-        setErrorMessage(err.message || 'Failed to load user profile after OAuth authentication.');
-      }
-    };
-
-    completeOAuth();
-  }, [searchParams, login, navigate]);
+  const errorMessage = rawError
+    ? decodeURIComponent(rawError)
+    : !code
+    ? 'Missing OAuth exchange code in callback response.'
+    : error instanceof Error
+    ? error.message
+    : null;
 
   return (
     <div className="flex items-center justify-center min-h-[80vh] px-4 py-8">

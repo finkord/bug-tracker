@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { Menu, Sun, Moon } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
-import { useSidebar } from '../../context/SidebarContext';
+import { useAuth, useTheme, useSidebar } from '../../store';
 import { WorkspaceGlobalSearch } from './WorkspaceGlobalSearch';
 import { WorkspaceBroadcastBanner } from './WorkspaceBroadcastBanner';
 import { WorkspaceQuickFiltersMenu } from './WorkspaceQuickFiltersMenu';
@@ -60,9 +58,9 @@ export const WorkspaceHeader: React.FC = () => {
               className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] flex items-center justify-center transition-colors cursor-pointer border border-[var(--md-sys-color-outline-variant)]/30 shadow-2xs shrink-0 active:scale-95"
             >
               {theme === 'dark' ? (
-                <Sun className="w-4 h-4 text-amber-400" />
+                <Sun className="w-4 h-4 text-[var(--md-sys-color-warning)]" />
               ) : (
-                <Moon className="w-4 h-4 text-indigo-500" />
+                <Moon className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
               )}
             </button>
 

@@ -63,7 +63,7 @@ export class PermissionGrant {
   @Column({ name: 'scheme_id', type: 'int' })
   schemeId: number;
 
-  @ManyToOne('PermissionScheme', (s: any) => s.grants, { onDelete: 'CASCADE' })
+  @ManyToOne('PermissionScheme', (s: PermissionScheme) => s.grants, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'scheme_id' })
   scheme: PermissionScheme;
 

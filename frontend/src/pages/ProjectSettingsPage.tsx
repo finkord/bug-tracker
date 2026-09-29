@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   Shield,
@@ -10,14 +10,17 @@ import {
   Building2,
   FileCheck2,
 } from 'lucide-react';
-import { api } from '../api/client';
-import type {
-  ProjectItem,
-  ProjectRoleGrouped,
-  UserProfile,
-  GroupItem,
-  PermissionSchemeItem,
-} from '../api/client';
+import {
+  useProjectDetailQuery,
+  useProjectPeopleQuery,
+  useUsersQuery,
+  useGroupsQuery,
+  usePermissionSchemesQuery,
+  useMyProjectPermissionsQuery,
+  useAddActorToProjectRoleMutation,
+  useRemoveActorFromProjectRoleMutation,
+  useAssignPermissionSchemeToProjectMutation,
+} from '../api/queries';
 import { Avatar } from '../components/common/Avatar';
 import { Badge, Button } from '../components/ui';
 
@@ -25,14 +28,21 @@ export const ProjectSettingsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const projectId = id ? parseInt(id, 10) : 0;
 
-  const [project, setProject] = useState<ProjectItem | null>(null);
-  const [people, setPeople] = useState<ProjectRoleGrouped[]>([]);
-  const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
-  const [allGroups, setAllGroups] = useState<GroupItem[]>([]);
-  const [permissionSchemes, setPermissionSchemes] = useState<PermissionSchemeItem[]>([]);
-  const [myPermissions, setMyPermissions] = useState<Record<string, boolean>>({});
+  // TanStack Query Hooks for project server state
+  const { data: project = null, isLoading: projectLoading } = useProjectDetailQuery(projectId);
+  const { data: people = [], isLoading: peopleLoading } = useProjectPeopleQuery(projectId);
+  const { data: usersData, isLoading: usersLoading } = useUsersQuery({ page: 1, limit: 100 });
+  const allUsers = usersData?.items || [];
+  const { data: allGroups = [], isLoading: groupsLoading } = useGroupsQuery();
+  const { data: permissionSchemes = [], isLoading: schemesLoading } = usePermissionSchemesQuery();
+  const { data: myPermissions = {}, isLoading: permsLoading } = useMyProjectPermissionsQuery(projectId);
 
-  const [loading, setLoading] = useState(true);
+  const addActorMutation = useAddActorToProjectRoleMutation();
+  const removeActorMutation = useRemoveActorFromProjectRoleMutation();
+  const assignSchemeMutation = useAssignPermissionSchemeToProjectMutation();
+
+  const loading = projectLoading || peopleLoading || usersLoading || groupsLoading || schemesLoading || permsLoading;
+
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
@@ -42,76 +52,45 @@ export const ProjectSettingsPage: React.FC = () => {
   const [selectedUserId, setSelectedUserId] = useState<number | ''>('');
   const [selectedGroupId, setSelectedGroupId] = useState<number | ''>('');
 
-  const loadProjectData = async () => {
-    if (!projectId) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const [proj, peopleData, usersData, groupsData, schemesData, permsData] = await Promise.all([
-        api.getProject(projectId),
-        api.getProjectPeople(projectId),
-        api.getUsers ? api.getUsers() : Promise.resolve({ items: [] }),
-        api.getGroups(),
-        api.getPermissionSchemes(),
-        api.getMyProjectPermissions(projectId),
-      ]);
-
-      setProject(proj);
-      setPeople(peopleData);
-      const userList = (usersData as any)?.items || (Array.isArray(usersData) ? usersData : []);
-      setAllUsers(userList);
-      setAllGroups(groupsData);
-      setPermissionSchemes(schemesData);
-      setMyPermissions(permsData || {});
-    } catch (err: any) {
-      setError(err.message || 'Failed to load project settings');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadProjectData();
-  }, [projectId]);
-
   const handleAddActor = async (roleId: number) => {
     if (actorType === 'USER' && !selectedUserId) return;
     if (actorType === 'GROUP' && !selectedGroupId) return;
 
     try {
-      await api.addActorToProjectRole(projectId, roleId, {
-        actorType,
-        userId: actorType === 'USER' ? Number(selectedUserId) : undefined,
-        groupId: actorType === 'GROUP' ? Number(selectedGroupId) : undefined,
+      await addActorMutation.mutateAsync({
+        projectId,
+        roleId,
+        payload: {
+          actorType,
+          userId: actorType === 'USER' ? Number(selectedUserId) : undefined,
+          groupId: actorType === 'GROUP' ? Number(selectedGroupId) : undefined,
+        },
       });
 
       setSuccessMsg('Member assigned to role successfully.');
       setSelectedRoleId(null);
       setSelectedUserId('');
       setSelectedGroupId('');
-      await loadProjectData();
-    } catch (err: any) {
-      setError(err.message || 'Failed to assign actor to role');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to assign actor to role');
     }
   };
 
   const handleRemoveActor = async (roleId: number, actorId: number) => {
     try {
-      await api.removeActorFromProjectRole(projectId, roleId, actorId);
+      await removeActorMutation.mutateAsync({ projectId, roleId, actorId });
       setSuccessMsg('Member removed from role.');
-      await loadProjectData();
-    } catch (err: any) {
-      setError(err.message || 'Failed to remove member');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to remove member');
     }
   };
 
   const handleSchemeChange = async (schemeId: number) => {
     try {
-      await api.assignPermissionSchemeToProject(projectId, schemeId);
+      await assignSchemeMutation.mutateAsync({ projectId, schemeId });
       setSuccessMsg('Project permission scheme updated.');
-      await loadProjectData();
-    } catch (err: any) {
-      setError(err.message || 'Failed to update permission scheme');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to update permission scheme');
     }
   };
 
@@ -177,7 +156,7 @@ export const ProjectSettingsPage: React.FC = () => {
             <AlertCircle className="w-4 h-4 shrink-0 text-[var(--md-sys-color-error)]" />
             <span>{error}</span>
           </div>
-          <button onClick={() => setError(null)} className="text-xs font-bold hover:underline">
+          <button onClick={() => setError(null)} className="text-xs font-bold hover:underline cursor-pointer">
             Dismiss
           </button>
         </div>
@@ -189,7 +168,7 @@ export const ProjectSettingsPage: React.FC = () => {
             <CheckCircle2 className="w-4 h-4 shrink-0 text-[var(--md-sys-color-success)]" />
             <span>{successMsg}</span>
           </div>
-          <button onClick={() => setSuccessMsg(null)} className="text-xs font-bold hover:underline">
+          <button onClick={() => setSuccessMsg(null)} className="text-xs font-bold hover:underline cursor-pointer">
             Dismiss
           </button>
         </div>
@@ -212,9 +191,9 @@ export const ProjectSettingsPage: React.FC = () => {
         </div>
 
         <select
-          value={(project as any).permissionSchemeId || ''}
+          value={project.permissionSchemeId || ''}
           onChange={(e) => handleSchemeChange(Number(e.target.value))}
-          className="px-3.5 py-2 text-xs rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)]/40 text-[var(--md-sys-color-on-surface)] font-medium focus:outline-hidden"
+          className="px-3.5 py-2 text-xs rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)]/40 text-[var(--md-sys-color-on-surface)] font-medium focus:outline-hidden cursor-pointer"
         >
           {permissionSchemes.map((scheme) => (
             <option key={scheme.id} value={scheme.id}>
@@ -310,7 +289,7 @@ export const ProjectSettingsPage: React.FC = () => {
                       <select
                         value={selectedUserId}
                         onChange={(e) => setSelectedUserId(e.target.value ? Number(e.target.value) : '')}
-                        className="px-3 py-1.5 text-xs rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)]/40 text-[var(--md-sys-color-on-surface)] focus:outline-hidden"
+                        className="px-3 py-1.5 text-xs rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)]/40 text-[var(--md-sys-color-on-surface)] focus:outline-hidden cursor-pointer"
                       >
                         <option value="">Select engineer...</option>
                         {allUsers.map((u) => (
@@ -323,7 +302,7 @@ export const ProjectSettingsPage: React.FC = () => {
                       <select
                         value={selectedGroupId}
                         onChange={(e) => setSelectedGroupId(e.target.value ? Number(e.target.value) : '')}
-                        className="px-3 py-1.5 text-xs rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)]/40 text-[var(--md-sys-color-on-surface)] focus:outline-hidden"
+                        className="px-3 py-1.5 text-xs rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)]/40 text-[var(--md-sys-color-on-surface)] focus:outline-hidden cursor-pointer"
                       >
                         <option value="">Select directory group...</option>
                         {allGroups.map((g) => (

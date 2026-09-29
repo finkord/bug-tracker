@@ -21,7 +21,7 @@ export class IssueSecurityGrant {
   @Column({ name: 'security_level_id', type: 'int' })
   securityLevelId: number;
 
-  @ManyToOne('IssueSecurityLevel', (lvl: any) => lvl.grants, { onDelete: 'CASCADE' })
+  @ManyToOne('IssueSecurityLevel', (lvl: IssueSecurityLevel) => lvl.grants, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'security_level_id' })
   securityLevel: IssueSecurityLevel;
 

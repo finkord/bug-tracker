@@ -68,3 +68,21 @@ export interface AssigneeUser {
   systemRole?: SystemRole;
   jobTitle?: string | null;
 }
+
+export interface RegisterPayload {
+  email: string;
+  password?: string;
+  fullName: string;
+  jobTitle?: string;
+}
+
+export interface LoginPayload {
+  email: string;
+  password?: string;
+}
+
+export interface ResetPasswordPayload {
+  token: string;
+  newPassword?: string;
+  password?: string;
+}

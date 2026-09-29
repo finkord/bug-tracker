@@ -13,6 +13,7 @@ import type {
   IssueSummaryDto,
   IssueDetailDto,
   UserSummaryDto,
+  IssueLinkItemDto,
 } from '../dto/issue-response.dto.js';
 
 /**
@@ -329,7 +330,7 @@ export class IssueCoreService {
     };
   }
 
-  private mapIssueDetail(issue: Issue, attachments: Attachment[], links: any[]): IssueDetailDto {
+  private mapIssueDetail(issue: Issue, attachments: Attachment[], links: IssueLinkItemDto[]): IssueDetailDto {
     return {
       ...this.mapIssueSummary(issue),
       comments: (issue.comments || []).map((c) => ({

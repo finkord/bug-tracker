@@ -3,13 +3,12 @@ import { LocalAuthService } from './services/local-auth.service.js';
 import { TwoFactorAuthService } from './services/two-factor-auth.service.js';
 import { PasswordResetService } from './services/password-reset.service.js';
 import { TokenSessionService, type AuthTokens } from './services/token-session.service.js';
-import { OAuthService } from './services/oauth.service.js';
+import { OAuthService, type GitHubProfile } from './services/oauth.service.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 import { Verify2faDto, Enable2faDto } from './dto/verify-2fa.dto.js';
 import { ForgotPasswordDto, ResetPasswordDto } from './dto/password-reset.dto.js';
 import { SetPasswordDto } from './dto/set-password.dto.js';
-import { OAuthMockDto } from './dto/oauth-mock.dto.js';
 import { User, OAuthProvider, SystemRole } from '../users/entities/user.entity.js';
 
 export { AuthTokens };
@@ -92,15 +91,15 @@ export class AuthService {
     return this.oauthService.loginOAuthUser(user, ipAddress, userAgent);
   }
 
-  async handleGitHubLogin(profile: any, ipAddress: string) {
+  async handleGitHubLogin(profile: GitHubProfile, ipAddress: string) {
     return this.oauthService.handleGitHubLogin(profile, ipAddress);
-  }
-
-  async handleMockOAuth(dto: OAuthMockDto, ipAddress: string) {
-    return this.oauthService.handleMockOAuth(dto, ipAddress);
   }
 
   async logout(userId: number) {
     return this.tokenSessionService.logout(userId);
+  }
+
+  async logoutByToken(token?: string) {
+    return this.tokenSessionService.logoutByToken(token);
   }
 }

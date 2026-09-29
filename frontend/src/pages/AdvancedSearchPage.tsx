@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
-  api,
-  type IssueItem,
-  type ProjectItem,
-  type UserProfile,
-  type IssueStatus,
-} from '../api/client';
-import { useAuth } from '../context/AuthContext';
+  useIssuesQuery,
+  useProjectsQuery,
+  useUsersQuery,
+  useUpdateIssueStatusMutation,
+} from '../api/queries';
+import type { IssueItem, IssueStatus } from '../api/client';
+import { useAuth } from '../store';
 import { SearchToolbar } from '../components/search/SearchToolbar';
 import { BasicFilterBar } from '../components/search/BasicFilterBar';
 import { JqlEditorBar } from '../components/search/JqlEditorBar';
@@ -27,7 +27,6 @@ import {
   evaluateJql,
   buildJqlFromFilters,
 } from '../utils/jqlParser';
-import { Loader2 } from 'lucide-react';
 
 const SAVED_FILTERS_STORAGE_KEY = 'bugtracker_saved_filters';
 
@@ -35,12 +34,14 @@ export const AdvancedSearchPage: React.FC = () => {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Core Data
-  const [issues, setIssues] = useState<IssueItem[]>([]);
-  const [projects, setProjects] = useState<ProjectItem[]>([]);
-  const [users, setUsers] = useState<UserProfile[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  // TanStack Query Hooks for core server data
+  const { data: issues = [], isLoading: issuesLoading, refetch: refetchIssues } = useIssuesQuery();
+  const { data: projects = [], isLoading: projectsLoading, refetch: refetchProjects } = useProjectsQuery();
+  const { data: usersData, isLoading: usersLoading, refetch: refetchUsers } = useUsersQuery({ page: 1, limit: 100 });
+  const users = usersData?.items || [];
+  const loading = issuesLoading || projectsLoading || usersLoading;
+
+  const updateStatusMutation = useUpdateIssueStatusMutation();
 
   // Search Mode & Layout View
   const [mode, setMode] = useState<SearchMode>(() => {
@@ -96,29 +97,9 @@ export const AdvancedSearchPage: React.FC = () => {
     }
   }, [savedFilters]);
 
-  // Fetch initial data
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [issuesRes, projectsRes, usersRes] = await Promise.all([
-        api.getIssues(),
-        api.getProjects(),
-        api.getUsers(1, 100),
-      ]);
-      setIssues(issuesRes);
-      setProjects(projectsRes);
-      setUsers(usersRes.items || []);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load search data');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const handleRefresh = async () => {
+    await Promise.all([refetchIssues(), refetchProjects(), refetchUsers()]);
+  };
 
   // Sync URL search parameters
   const updateUrlParams = useCallback(() => {
@@ -251,8 +232,7 @@ export const AdvancedSearchPage: React.FC = () => {
   // Inline status update
   const handleUpdateStatus = async (issueId: number, status: IssueStatus) => {
     try {
-      const updated = await api.updateIssueStatus(issueId, status);
-      setIssues((prev) => prev.map((i) => (i.id === issueId ? updated : i)));
+      await updateStatusMutation.mutateAsync({ issueId, status });
     } catch (err) {
       console.error('Failed to update issue status:', err);
     }
@@ -330,7 +310,7 @@ export const AdvancedSearchPage: React.FC = () => {
         onViewLayoutChange={setViewLayout}
         onExportCsv={handleExportCsv}
         onExportJson={handleExportJson}
-        onRefresh={fetchData}
+        onRefresh={handleRefresh}
         loading={loading}
         totalResults={filteredIssues.length}
       />
@@ -350,62 +330,35 @@ export const AdvancedSearchPage: React.FC = () => {
           />
         ) : (
           <JqlEditorBar
-            jqlQuery={jqlQuery}
-            onJqlChange={setJqlQuery}
-            onSearch={updateUrlParams}
+            value={jqlQuery}
+            onChange={setJqlQuery}
+            onExecute={updateUrlParams}
             onClear={() => setJqlQuery('')}
             onSwitchToBasic={handleSwitchToBasic}
           />
         )}
       </div>
 
-      {/* Main Results Section */}
-      <div className="flex-1 flex flex-col w-full min-w-0 mt-2">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <Loader2 className="w-7 h-7 animate-spin text-[var(--md-sys-color-primary)]" />
-            <span className="text-xs text-[var(--md-sys-color-on-surface-variant)] font-semibold">
-              Searching issues...
-            </span>
-          </div>
-        ) : error ? (
-          <div className="p-3.5 rounded-2xl bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] text-xs flex items-center justify-between">
-            <span>{error}</span>
-            <button
-              type="button"
-              onClick={() => setError(null)}
-              className="font-bold underline ml-2 cursor-pointer"
-            >
-              Dismiss
-            </button>
-          </div>
+      {/* Main Results View */}
+      <div className="flex-1 mt-4">
+        {viewLayout === 'list' ? (
+          <SearchResultsTable
+            issues={filteredIssues}
+            loading={loading}
+            onSelectIssue={(issue) => setDetailsModalIssue(issue)}
+            onUpdateStatus={handleUpdateStatus}
+            sortBy={sortBy}
+            sortOrder={sortOrder}
+            onSortChange={handleSortChange}
+          />
         ) : (
-          /* Search Results: Table Layout vs Split Detail View */
-          <div className="flex-1 flex flex-col w-full min-w-0">
-            {viewLayout === 'list' ? (
-              <SearchResultsTable
-                issues={filteredIssues}
-                selectedIssueId={selectedIssueId}
-                onSelectIssue={(issue) => setSelectedIssueId(issue.id)}
-                onOpenDetailsModal={(issue) => setDetailsModalIssue(issue)}
-                onUpdateStatus={handleUpdateStatus}
-                sortBy={sortBy}
-                sortOrder={sortOrder}
-                onSortChange={handleSortChange}
-              />
-            ) : (
-              <SearchSplitView
-                issues={filteredIssues}
-                selectedIssueId={selectedIssueId}
-                onSelectIssue={(issue) => setSelectedIssueId(issue.id)}
-                onOpenDetailsModal={(issue) => setDetailsModalIssue(issue)}
-                onUpdateStatus={handleUpdateStatus}
-                onIssueUpdated={(updated) => {
-                  setIssues((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
-                }}
-              />
-            )}
-          </div>
+          <SearchSplitView
+            issues={filteredIssues}
+            loading={loading}
+            selectedIssueId={selectedIssueId}
+            onSelectIssue={setSelectedIssueId}
+            onUpdateStatus={handleUpdateStatus}
+          />
         )}
       </div>
 
@@ -422,30 +375,17 @@ export const AdvancedSearchPage: React.FC = () => {
         isOpen={manageFiltersOpen}
         onClose={() => setManageFiltersOpen(false)}
         savedFilters={savedFilters}
-        onApplyFilter={handleSelectSavedFilter}
+        onSelectFilter={handleSelectSavedFilter}
         onToggleFavorite={handleToggleFavorite}
         onDeleteFilter={handleDeleteFilter}
       />
 
-      {/* Issue Details Modal */}
-      {detailsModalIssue && (
-        <IssueDetailsModal
-          isOpen={!!detailsModalIssue}
-          issueId={detailsModalIssue.id}
-          onClose={() => setDetailsModalIssue(null)}
-          onIssueUpdated={(updated) => {
-            setIssues((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
-            setDetailsModalIssue(updated);
-          }}
-          onIssueDeleted={(deletedId) => {
-            setIssues((prev) => prev.filter((i) => i.id !== deletedId));
-            setDetailsModalIssue(null);
-            if (selectedIssueId === deletedId) setSelectedIssueId(null);
-          }}
-        />
-      )}
+      {/* Detailed Modal on Row Double Click */}
+      <IssueDetailsModal
+        isOpen={!!detailsModalIssue}
+        issueId={detailsModalIssue?.id ?? null}
+        onClose={() => setDetailsModalIssue(null)}
+      />
     </div>
   );
 };
-
-export default AdvancedSearchPage;

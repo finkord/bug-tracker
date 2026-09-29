@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../store';
 import { api } from '../../api/client';
 import { TwoFactorModal } from '../auth/TwoFactorModal';
 import { Badge, Button } from '../ui';
@@ -30,8 +30,9 @@ export const ProfileTwoFactorCard: React.FC = () => {
       setShowDisableForm(false);
       setDisableCode('');
       await refreshUser();
-    } catch (err: any) {
-      setTwoFactorError(err.message || 'Failed to disable 2FA');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to disable 2FA';
+      setTwoFactorError(message);
     } finally {
       setDisabling(false);
     }

@@ -33,8 +33,9 @@ export const ResetPasswordPage: React.FC = () => {
     try {
       await api.resetPassword({ token, newPassword });
       setSuccess(true);
-    } catch (err: any) {
-      setError(err.message || 'Failed to reset password');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to reset password';
+      setError(message);
     } finally {
       setLoading(false);
     }

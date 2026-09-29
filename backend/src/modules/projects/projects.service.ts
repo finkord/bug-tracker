@@ -5,6 +5,38 @@ import { Project } from './entities/project.entity.js';
 import { CreateProjectDto } from './dto/create-project.dto.js';
 import { User } from '../users/entities/user.entity.js';
 
+export interface ProjectWithMetrics {
+  id: number;
+  name: string;
+  key: string;
+  description: string | null;
+  leadId: number | null;
+  lead: {
+    id: number;
+    fullName: string | null;
+    email: string | null;
+  } | null;
+  totalIssues: number;
+  openIssues: number;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
+interface RawProjectRow {
+  id: string | number;
+  name: string;
+  key: string;
+  description: string | null;
+  lead_id_ref?: string | number | null;
+  lead_id?: string | number | null;
+  lead_fullName?: string | null;
+  lead_email?: string | null;
+  totalIssues?: string | number;
+  openIssues?: string | number;
+  created_at_val: Date | string;
+  updated_at_val: Date | string;
+}
+
 @Injectable()
 export class ProjectsService {
   constructor(
@@ -15,8 +47,8 @@ export class ProjectsService {
   /**
    * Retrieves all projects with lead details and aggregated issue counts.
    */
-  async findAll(): Promise<any[]> {
-    const raw = await this.projectRepository
+  async findAll(): Promise<ProjectWithMetrics[]> {
+    const raw: RawProjectRow[] = await this.projectRepository
       .createQueryBuilder('project')
       .leftJoinAndSelect('project.lead', 'lead')
       .leftJoin('project.issues', 'issue')
@@ -37,9 +69,9 @@ export class ProjectsService {
       .groupBy('project.id')
       .addGroupBy('lead.id')
       .orderBy('project.createdAt', 'DESC')
-      .getRawMany();
+      .getRawMany<RawProjectRow>();
 
-    return raw.map((r: any) => ({
+    return raw.map((r: RawProjectRow) => ({
       id: Number(r.id),
       name: r.name,
       key: r.key,
@@ -48,8 +80,8 @@ export class ProjectsService {
       lead: r.lead_id
         ? {
             id: Number(r.lead_id),
-            fullName: r.lead_fullName,
-            email: r.lead_email,
+            fullName: r.lead_fullName ?? null,
+            email: r.lead_email ?? null,
           }
         : null,
       totalIssues: Number(r.totalIssues || 0),

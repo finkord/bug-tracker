@@ -1,9 +1,11 @@
 import type { AuthTokens } from './types/auth.types.js';
 
-export const API_BASE_URL = 'http://localhost:3000/api/v1';
+export const API_BASE_URL =
+  import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
 
 /**
- * Low-level HTTP fetch wrapper with authorization header, automated token refresh, and standardized error handling.
+ * Low-level HTTP fetch wrapper with httpOnly cookie credentials, authorization header fallback,
+ * automated token refresh, and standardized error handling.
  */
 export async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = localStorage.getItem('accessToken');
@@ -17,37 +19,49 @@ export async function request<T>(endpoint: string, options: RequestInit = {}): P
   }
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    credentials: 'include',
     ...options,
     headers,
   });
 
-  if (response.status === 401 && !endpoint.includes('/auth/login') && !endpoint.includes('/auth/refresh')) {
+  if (
+    response.status === 401 &&
+    !endpoint.includes('/auth/login') &&
+    !endpoint.includes('/auth/refresh') &&
+    !endpoint.includes('/auth/logout')
+  ) {
     const refreshToken = localStorage.getItem('refreshToken');
-    if (refreshToken) {
-      try {
-        const refreshRes = await fetch(`${API_BASE_URL}/auth/refresh`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refreshToken }),
-        });
+    try {
+      const refreshRes = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(refreshToken ? { refreshToken } : {}),
+      });
 
-        if (refreshRes.ok) {
-          const data: AuthTokens = await refreshRes.json();
+      if (refreshRes.ok) {
+        const data: AuthTokens = await refreshRes.json();
+        if (data.accessToken) {
           localStorage.setItem('accessToken', data.accessToken);
-          localStorage.setItem('refreshToken', data.refreshToken);
-
-          headers['Authorization'] = `Bearer ${data.accessToken}`;
-          const retryRes = await fetch(`${API_BASE_URL}${endpoint}`, {
-            ...options,
-            headers,
-          });
-          if (retryRes.ok) {
-            return retryRes.json();
-          }
         }
-      } catch {
-        // Fall through to session eviction
+        if (data.refreshToken) {
+          localStorage.setItem('refreshToken', data.refreshToken);
+        }
+
+        if (data.accessToken) {
+          headers['Authorization'] = `Bearer ${data.accessToken}`;
+        }
+        const retryRes = await fetch(`${API_BASE_URL}${endpoint}`, {
+          credentials: 'include',
+          ...options,
+          headers,
+        });
+        if (retryRes.ok) {
+          return retryRes.json();
+        }
       }
+    } catch {
+      // Fall through to session eviction
     }
 
     localStorage.removeItem('accessToken');

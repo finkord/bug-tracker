@@ -48,8 +48,9 @@ export const RegisterPage: React.FC = () => {
         captchaToken,
       });
       setSuccessData(res);
-    } catch (err: any) {
-      setError(err.message || 'Registration failed');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Registration failed';
+      setError(message);
       // Single-use token lifecycle: reset widget on failure so user can re-verify
       captchaRef.current?.reset();
       setCaptchaToken('');

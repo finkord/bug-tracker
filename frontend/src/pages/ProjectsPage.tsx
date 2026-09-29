@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../api/client';
-import type { ProjectItem, CreateProjectPayload } from '../api/client';
+import { useProjectsQuery, useCreateProjectMutation } from '../api/queries';
+import { CreateProjectSchema } from '../schemas';
 import { Button, Input, Modal, Badge } from '../components/ui';
 import {
   FolderGit2,
@@ -16,69 +16,42 @@ import {
 } from 'lucide-react';
 
 export const ProjectsPage: React.FC = () => {
-  const [projects, setProjects] = useState<ProjectItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: projects = [], isLoading: loading, error: queryError } = useProjectsQuery();
+  const createProjectMutation = useCreateProjectMutation();
+
+  const error = queryError ? (queryError instanceof Error ? queryError.message : 'Failed to fetch projects') : null;
 
   // Create Project Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [name, setName] = useState('');
   const [key, setKey] = useState('');
   const [description, setDescription] = useState('');
-  const [submitting, setSubmitting] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
-
-  const loadProjects = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await api.getProjects();
-      setProjects(data);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch projects');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadProjects();
-  }, []);
 
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     setModalError(null);
 
-    const trimmedKey = key.trim().toUpperCase();
-    const trimmedName = name.trim();
+    const validationResult = CreateProjectSchema.safeParse({
+      name: name.trim(),
+      key: key.trim().toUpperCase(),
+      description: description.trim() || undefined,
+    });
 
-    if (!trimmedName) {
-      setModalError('Project name is required');
-      return;
-    }
-    if (!trimmedKey || trimmedKey.length < 2 || trimmedKey.length > 10) {
-      setModalError('Project key must be between 2 and 10 uppercase characters (e.g. CORE, UI)');
+    if (!validationResult.success) {
+      setModalError(validationResult.error.issues[0]?.message ?? 'Invalid project input');
       return;
     }
 
     try {
-      setSubmitting(true);
-      const payload: CreateProjectPayload = {
-        name: trimmedName,
-        key: trimmedKey,
-        description: description.trim() || undefined,
-      };
-
-      const created = await api.createProject(payload);
-      setProjects((prev) => [created, ...prev]);
+      await createProjectMutation.mutateAsync(validationResult.data);
       setIsModalOpen(false);
       setName('');
       setKey('');
       setDescription('');
-    } catch (err: any) {
-      setModalError(err.message || 'Failed to create project');
-    } finally {
-      setSubmitting(false);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to create project';
+      setModalError(msg);
     }
   };
 
@@ -245,8 +218,8 @@ export const ProjectsPage: React.FC = () => {
       >
         <form onSubmit={handleCreateProject} className="space-y-4">
           {modalError && (
-            <div className="flex items-start gap-2.5 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2.5 p-3 rounded-xl bg-[var(--md-sys-color-error-container)] border border-[var(--md-sys-color-error)]/30 text-[var(--md-sys-color-on-error-container)] text-xs">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-[var(--md-sys-color-error)]" />
               <span>{modalError}</span>
             </div>
           )}
@@ -296,7 +269,7 @@ export const ProjectsPage: React.FC = () => {
               type="submit"
               variant="filled"
               size="sm"
-              isLoading={submitting}
+              isLoading={createProjectMutation.isPending}
             >
               Create Workspace
             </Button>

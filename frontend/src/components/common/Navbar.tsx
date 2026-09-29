@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../store';
 import { PublicNavbar } from '../public/PublicNavbar';
 import { WorkspaceHeader } from '../workspace/WorkspaceHeader';
 

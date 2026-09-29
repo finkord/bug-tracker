@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -12,6 +13,21 @@ import { EventsGateway } from '../../events/events.gateway.js';
  */
 @Injectable()
 export class IssueAttachmentsService {
+  private static readonly BLOCKED_EXTENSIONS = new Set([
+    '.exe',
+    '.sh',
+    '.bat',
+    '.cmd',
+    '.ps1',
+    '.vbs',
+    '.msi',
+    '.dll',
+    '.com',
+    '.scr',
+    '.pif',
+    '.jar',
+  ]);
+
   constructor(
     @InjectRepository(Issue)
     private readonly issueRepository: Repository<Issue>,
@@ -25,6 +41,13 @@ export class IssueAttachmentsService {
    * Uploads file attachment to SeaweedFS and links it to the issue.
    */
   async uploadAttachment(issueId: number, file: UploadedFileInput, uploader: User): Promise<Attachment> {
+    const originalname = file?.originalname || '';
+    const ext = path.extname(originalname).toLowerCase();
+    if (ext && IssueAttachmentsService.BLOCKED_EXTENSIONS.has(ext)) {
+      throw new BadRequestException(`File extension "${ext}" is blocked for security reasons.`);
+    }
+
+
     const issue = await this.issueRepository.findOne({ where: { id: issueId } });
     if (!issue) {
       throw new NotFoundException(`Issue with ID #${issueId} not found`);
@@ -36,26 +59,29 @@ export class IssueAttachmentsService {
       fileSize: file.size,
       mimeType: file.mimetype,
       fid,
-      url: '',
+      url: `/api/v1/issues/attachments/${fid}/file`,
       uploaderId: uploader.id,
       uploader,
     });
     const saved = await this.attachmentRepository.save(attachment);
-    saved.url = `http://localhost:3000/api/v1/issues/attachments/${saved.id}/file`;
+    saved.url = `/api/v1/issues/attachments/${saved.id}/file`;
     await this.attachmentRepository.save(saved);
     this.eventsGateway.broadcastAttachmentUploaded({ issueId, attachment: saved });
     return saved;
   }
 
   /**
-   * Retrieves a single attachment by its primary ID.
+   * Retrieves a single attachment by its primary ID with issue relation for authorization.
    */
   async getAttachmentById(id: number): Promise<Attachment> {
-    const attachment = await this.attachmentRepository.findOne({ where: { id } });
+    const attachment = await this.attachmentRepository.findOne({
+      where: { id },
+      relations: { issue: true },
+    });
     if (!attachment) {
       throw new NotFoundException(`Attachment #${id} not found`);
     }
-    attachment.url = `http://localhost:3000/api/v1/issues/attachments/${attachment.id}/file`;
+    attachment.url = `/api/v1/issues/attachments/${attachment.id}/file`;
     return attachment;
   }
 
@@ -69,7 +95,7 @@ export class IssueAttachmentsService {
       order: { createdAt: 'DESC' },
     });
     return attachments.map((a) => {
-      a.url = `http://localhost:3000/api/v1/issues/attachments/${a.id}/file`;
+      a.url = `/api/v1/issues/attachments/${a.id}/file`;
       return a;
     });
   }

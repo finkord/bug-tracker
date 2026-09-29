@@ -72,3 +72,22 @@ export interface ProjectRoleGrouped {
     group: GroupItem;
   }>;
 }
+
+export interface UserGroupMemberItem {
+  id: number;
+  groupId: number;
+  userId: number;
+  createdAt?: string;
+  user?: UserProfile;
+  group?: GroupItem;
+}
+
+export interface ProjectRoleActorItem {
+  id: number;
+  projectId: number;
+  roleId: number;
+  actorType: 'USER' | 'GROUP';
+  userId: number | null;
+  groupId: number | null;
+  createdAt?: string;
+}

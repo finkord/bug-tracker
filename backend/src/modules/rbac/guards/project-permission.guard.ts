@@ -53,17 +53,36 @@ export class ProjectPermissionGuard implements CanActivate {
 
     // 3. Resolve from :id depending on route context
     if (request.params?.id) {
-      const idVal = Number(request.params.id);
+      const rawId = String(request.params.id).trim();
       const url = request.originalUrl || request.url || '';
       if (url.includes('/projects/')) {
-        projectId = idVal;
+        projectId = Number(rawId);
       } else if (url.includes('/issues/')) {
-        issueId = idVal;
+        if (/^\d+$/.test(rawId)) {
+          issueId = Number(rawId);
+        } else {
+          const keyMatch = rawId.match(/^([a-zA-Z0-9_-]+)-(\d+)$/);
+          if (keyMatch) {
+            const [, projectKey, issueNumStr] = keyMatch;
+            const issue = await this.dataSource.getRepository(Issue).findOne({
+              where: {
+                issueNum: parseInt(issueNumStr, 10),
+                project: { key: projectKey.toUpperCase() },
+              },
+              relations: { project: true },
+              select: { id: true, projectId: true },
+            });
+            if (issue) {
+              issueId = issue.id;
+              projectId = issue.projectId;
+            }
+          }
+        }
       }
     }
 
     // 4. If issueId is known but projectId is not, resolve issue from DB
-    if (!projectId && issueId) {
+    if (!projectId && issueId && !Number.isNaN(issueId)) {
       const issue = await this.dataSource.getRepository(Issue).findOne({
         where: { id: issueId },
         select: { id: true, projectId: true },
@@ -72,6 +91,7 @@ export class ProjectPermissionGuard implements CanActivate {
         projectId = issue.projectId;
       }
     }
+
 
     if (!projectId) {
       return true;

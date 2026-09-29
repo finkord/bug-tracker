@@ -62,15 +62,15 @@ export const SearchToolbar: React.FC<SearchToolbarProps> = ({
   const getPresetIcon = (iconName: string) => {
     switch (iconName) {
       case 'UserCheck':
-        return <UserCheck className="w-3.5 h-3.5 text-blue-400 shrink-0" />;
+        return <UserCheck className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)] shrink-0" />;
       case 'FileCheck2':
-        return <FileCheck2 className="w-3.5 h-3.5 text-indigo-400 shrink-0" />;
+        return <FileCheck2 className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)] shrink-0" />;
       case 'Sparkles':
-        return <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />;
+        return <Sparkles className="w-3.5 h-3.5 text-[var(--md-sys-color-warning)] shrink-0" />;
       case 'Clock':
-        return <Clock className="w-3.5 h-3.5 text-teal-400 shrink-0" />;
+        return <Clock className="w-3.5 h-3.5 text-[var(--md-sys-color-tertiary)] shrink-0" />;
       case 'CheckCircle2':
-        return <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />;
+        return <CheckCircle2 className="w-3.5 h-3.5 text-[var(--md-sys-color-success)] shrink-0" />;
       default:
         return <Bookmark className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)] shrink-0" />;
     }
@@ -155,7 +155,7 @@ export const SearchToolbar: React.FC<SearchToolbarProps> = ({
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuLabel className="text-[10px] uppercase font-bold text-[var(--md-sys-color-on-surface-variant)] tracking-wider flex items-center gap-1">
-                    <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                    <Star className="w-3 h-3 fill-[var(--md-sys-color-warning)] text-[var(--md-sys-color-warning)]" />
                     <span>Starred Filters</span>
                   </DropdownMenuLabel>
                   {favoriteFilters.map((filter) => (
@@ -164,7 +164,7 @@ export const SearchToolbar: React.FC<SearchToolbarProps> = ({
                       onClick={() => onSelectSavedFilter(filter.jql)}
                       className="gap-2 text-xs cursor-pointer"
                     >
-                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
+                      <Star className="w-3.5 h-3.5 fill-[var(--md-sys-color-warning)] text-[var(--md-sys-color-warning)] shrink-0" />
                       <span className="truncate">{filter.name}</span>
                     </DropdownMenuItem>
                   ))}

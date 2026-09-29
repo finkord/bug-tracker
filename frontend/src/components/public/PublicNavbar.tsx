@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Shield, Sun, Moon } from 'lucide-react';
-import { useTheme } from '../../context/ThemeContext';
+import { useTheme } from '../../store';
 
 /**
  * Public navigation header for guest/unauthenticated pages.
@@ -32,9 +32,9 @@ export const PublicNavbar: React.FC = () => {
           className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] flex items-center justify-center transition-all cursor-pointer shadow-2xs active:scale-95"
         >
           {theme === 'dark' ? (
-            <Sun className="w-4 h-4 text-amber-400" />
+            <Sun className="w-4 h-4 text-[var(--md-sys-color-warning)]" />
           ) : (
-            <Moon className="w-4 h-4 text-indigo-500" />
+            <Moon className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
           )}
         </button>
 

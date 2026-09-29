@@ -4,7 +4,14 @@ import { SystemRole, OAuthProvider, User } from '../../users/entities/user.entit
 import { TokenSessionService, type AuthTokens } from './token-session.service.js';
 import { SecurityAuditService } from '../../security-audit/security-audit.service.js';
 import { LoginAttemptStatus } from '../../security-audit/entities/login-audit-log.entity.js';
-import { OAuthMockDto } from '../dto/oauth-mock.dto.js';
+
+export interface GitHubProfile {
+  id: string;
+  username: string;
+  displayName?: string;
+  emails?: Array<{ value: string }>;
+  photos?: Array<{ value: string }>;
+}
 
 @Injectable()
 export class OAuthService {
@@ -94,13 +101,7 @@ export class OAuthService {
    * Handles GitHub OAuth profile login.
    */
   async handleGitHubLogin(
-    profile: {
-      id: string;
-      username: string;
-      displayName?: string;
-      emails?: Array<{ value: string }>;
-      photos?: Array<{ value: string }>;
-    },
+    profile: GitHubProfile,
     ipAddress: string,
   ): Promise<AuthTokens> {
     const email = profile.emails?.[0]?.value || `${profile.username.toLowerCase()}@github.local`;
@@ -113,20 +114,6 @@ export class OAuthService {
       email,
       fullName,
       avatarUrl,
-    });
-
-    return await this.loginOAuthUser(user, ipAddress);
-  }
-
-  /**
-   * Mock OAuth2 authentication for testing and demo.
-   */
-  async handleMockOAuth(dto: OAuthMockDto, ipAddress: string): Promise<AuthTokens> {
-    const user = await this.validateOrCreateOAuthUser({
-      provider: dto.provider || OAuthProvider.GITHUB,
-      oauthId: dto.oauthId || 'mock-id-123',
-      email: dto.email,
-      fullName: dto.fullName || 'OAuth User',
     });
 
     return await this.loginOAuthUser(user, ipAddress);

@@ -21,8 +21,9 @@ export const ForgotPasswordPage: React.FC = () => {
       if (res.resetToken) {
         setResetToken(res.resetToken);
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to dispatch password reset email');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to dispatch password reset email';
+      setError(message);
     } finally {
       setLoading(false);
     }

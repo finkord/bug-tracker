@@ -35,4 +35,12 @@ export class Enable2faDto {
   })
   @IsString()
   secret?: string;
+
+  @ApiProperty({
+    example: '123456',
+    description: 'Alias for code for legacy clients',
+    required: false,
+  })
+  @IsString()
+  totpCode?: string;
 }

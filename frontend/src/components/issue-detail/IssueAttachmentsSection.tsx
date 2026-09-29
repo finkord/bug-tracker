@@ -58,6 +58,13 @@ export const IssueAttachmentsSection: React.FC<IssueAttachmentsSectionProps> = (
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
+  const getSecureUrl = (url: string) => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return url;
+    const sep = url.includes('?') ? '&' : '?';
+    return `${url}${sep}token=${encodeURIComponent(token)}`;
+  };
+
   return (
     <div className="space-y-4 pt-2">
       <div className="flex items-center justify-between">
@@ -122,9 +129,9 @@ export const IssueAttachmentsSection: React.FC<IssueAttachmentsSectionProps> = (
                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
                   <div className="p-2 rounded bg-muted/40 text-muted-foreground shrink-0">
                     {isImg ? (
-                      <ImageIcon className="w-4 h-4 text-sky-500" />
+                      <ImageIcon className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
                     ) : (
-                      <FileText className="w-4 h-4 text-emerald-500" />
+                      <FileText className="w-4 h-4 text-[var(--md-sys-color-tertiary)]" />
                     )}
                   </div>
 
@@ -133,11 +140,12 @@ export const IssueAttachmentsSection: React.FC<IssueAttachmentsSectionProps> = (
                       className="text-xs font-semibold text-foreground truncate cursor-pointer hover:underline"
                       title={att.filename}
                       onClick={() => {
+                        const secureUrl = getSecureUrl(att.url);
                         if (isImg) {
-                          setPreviewImageUrl(att.url);
+                          setPreviewImageUrl(secureUrl);
                           setPreviewImageTitle(att.filename);
                         } else {
-                          window.open(att.url, '_blank');
+                          window.open(secureUrl, '_blank');
                         }
                       }}
                     >
@@ -156,7 +164,7 @@ export const IssueAttachmentsSection: React.FC<IssueAttachmentsSectionProps> = (
                       size="sm"
                       className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
                       onClick={() => {
-                        setPreviewImageUrl(att.url);
+                        setPreviewImageUrl(getSecureUrl(att.url));
                         setPreviewImageTitle(att.filename);
                       }}
                     >
@@ -165,7 +173,7 @@ export const IssueAttachmentsSection: React.FC<IssueAttachmentsSectionProps> = (
                   )}
 
                   <a
-                    href={att.url}
+                    href={getSecureUrl(att.url)}
                     download={att.filename}
                     target="_blank"
                     rel="noopener noreferrer"

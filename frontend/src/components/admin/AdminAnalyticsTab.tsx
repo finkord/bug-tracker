@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { api, type WorklogStats } from '../../api/client.js';
 import { Avatar } from '../common/Avatar.js';
 import { Card, Badge } from '../ui/index.js';
@@ -11,24 +11,10 @@ import {
   Loader2,
 } from 'lucide-react';
 
-export const AdminAnalyticsTab: React.FC = () => {
-  const [stats, setStats] = useState<WorklogStats | null>(null);
-  const [loading, setLoading] = useState(true);
+import { useWorklogStatsQuery } from '../../api/queries';
 
-  useEffect(() => {
-    const loadStats = async () => {
-      setLoading(true);
-      try {
-        const data = await api.getWorklogStats();
-        setStats(data);
-      } catch {
-        // Fallback
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadStats();
-  }, []);
+export const AdminAnalyticsTab: React.FC = () => {
+  const { data: stats = null, isLoading: loading } = useWorklogStatsQuery();
 
   if (loading) {
     return (
@@ -61,16 +47,16 @@ export const AdminAnalyticsTab: React.FC = () => {
         <Card className="p-4 bg-card/80 border-border/80 space-y-1">
           <div className="flex items-center justify-between text-muted-foreground">
             <span className="text-xs font-semibold uppercase">Logged Today</span>
-            <Calendar className="w-4 h-4 text-emerald-500" />
+            <Calendar className="w-4 h-4 text-[var(--md-sys-color-success)]" />
           </div>
-          <p className="text-2xl font-bold font-mono text-emerald-500">{today}h</p>
+          <p className="text-2xl font-bold font-mono text-[var(--md-sys-color-success)]">{today}h</p>
           <span className="text-[11px] text-muted-foreground">Daily progress</span>
         </Card>
 
         <Card className="p-4 bg-card/80 border-border/80 space-y-1">
           <div className="flex items-center justify-between text-muted-foreground">
             <span className="text-xs font-semibold uppercase">This Week</span>
-            <TrendingUp className="w-4 h-4 text-amber-500" />
+            <TrendingUp className="w-4 h-4 text-[var(--md-sys-color-warning)]" />
           </div>
           <p className="text-2xl font-bold font-mono text-foreground">{week}h</p>
           <span className="text-[11px] text-muted-foreground">Last 7 days velocity</span>

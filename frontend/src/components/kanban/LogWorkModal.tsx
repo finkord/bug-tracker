@@ -80,8 +80,9 @@ export const LogWorkModal: React.FC<LogWorkModalProps> = ({
       });
       onWorkLogged();
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'Failed to log work hours');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to log work hours';
+      setError(message);
     } finally {
       setLoading(false);
     }

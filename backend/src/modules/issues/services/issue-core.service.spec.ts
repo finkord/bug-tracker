@@ -46,9 +46,11 @@ describe('IssueCoreService', () => {
     project: mockProject,
     comments: [],
     worklogs: [],
+    securityLevelId: null,
+    securityLevel: null,
     createdAt: new Date(),
     updatedAt: new Date(),
-  } as Issue;
+  } as unknown as Issue;
 
   beforeEach(() => {
     mockIssueRepo = {

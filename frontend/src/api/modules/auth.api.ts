@@ -1,8 +1,13 @@
 import { request } from '../http.js';
-import type { AuthTokens } from '../types/auth.types.js';
+import type {
+  AuthTokens,
+  RegisterPayload,
+  LoginPayload,
+  ResetPasswordPayload,
+} from '../types/auth.types.js';
 
 export const authApi = {
-  register: (payload: any) =>
+  register: (payload: RegisterPayload) =>
     request<{ message: string; userId: number }>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(payload),
@@ -14,7 +19,7 @@ export const authApi = {
   activateAccount: (token: string) =>
     request<{ message: string; email: string }>(`/auth/activate?token=${encodeURIComponent(token)}`),
 
-  login: (payload: any) =>
+  login: (payload: LoginPayload) =>
     request<
       | AuthTokens
       | { require2fa: true; tempToken: string; message: string; email: string }
@@ -91,7 +96,7 @@ export const authApi = {
       body: JSON.stringify({ email }),
     }),
 
-  resetPassword: (payload: any) =>
+  resetPassword: (payload: ResetPasswordPayload) =>
     request<{ message: string }>('/auth/reset-password', {
       method: 'POST',
       body: JSON.stringify(payload),
@@ -110,5 +115,11 @@ export const authApi = {
   logout: () =>
     request<{ message: string }>('/auth/logout', {
       method: 'POST',
+    }),
+
+  exchangeOAuthCode: (code: string) =>
+    request<AuthTokens>('/auth/oauth/exchange', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
     }),
 };

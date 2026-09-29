@@ -47,7 +47,7 @@ export const BasicFilterBar: React.FC<BasicFilterBarProps> = ({
   onClearFilters,
   onSwitchToJql,
 }) => {
-  const handleFieldChange = (field: keyof BasicFilterCriteria, value: any) => {
+  const handleFieldChange = <K extends keyof BasicFilterCriteria>(field: K, value: BasicFilterCriteria[K]) => {
     onFiltersChange({
       ...filters,
       [field]: value,

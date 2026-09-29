@@ -48,8 +48,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as any)}>
+      <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as 'users' | 'roles' | 'system' | 'projects' | 'analytics')}>
         <TabsList className="bg-muted/50 p-1 rounded-lg border border-border/60 w-full sm:w-auto flex flex-wrap">
           <TabsTrigger value="users" className="text-xs font-semibold gap-1.5 px-3 py-1.5">
             <Users className="w-3.5 h-3.5" />
