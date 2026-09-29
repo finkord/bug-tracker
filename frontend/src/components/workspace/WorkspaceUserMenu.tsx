@@ -37,7 +37,7 @@ export const WorkspaceUserMenu: React.FC<WorkspaceUserMenuProps> = ({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="rounded-full ring-2 ring-transparent hover:ring-[var(--md-sys-color-primary)] transition-all cursor-pointer select-none"
+          className="w-7 h-7 rounded-full flex items-center justify-center p-0 ring-2 ring-transparent hover:ring-[var(--md-sys-color-primary)] transition-all cursor-pointer select-none shrink-0 outline-none focus:outline-none focus-visible:ring-[var(--md-sys-color-primary)]"
           title={`${displayName} (Profile)`}
           aria-label="User profile and settings menu"
         >

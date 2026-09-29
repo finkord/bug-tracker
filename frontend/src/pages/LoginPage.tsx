@@ -15,7 +15,7 @@ export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
-  const destination = (location.state as { from?: { pathname?: string } })?.from?.pathname || '/projects';
+  const destination = (location.state as { from?: { pathname?: string } })?.from?.pathname || '/dashboard';
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

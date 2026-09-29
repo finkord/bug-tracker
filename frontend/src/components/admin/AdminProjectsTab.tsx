@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api, type ProjectItem } from '../../api/client.js';
+import { type ProjectItem } from '../../api/client.js';
 import {
   useProjectsQuery,
   useCreateProjectMutation,

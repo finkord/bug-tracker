@@ -126,7 +126,7 @@ export function useAddPermissionGrantMutation() {
 export function useRemovePermissionGrantMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ grantId, schemeId }: { grantId: number; schemeId?: number }) =>
+    mutationFn: ({ grantId }: { grantId: number; schemeId?: number }) =>
       api.removePermissionGrant(grantId),
     onSuccess: (_, vars) => {
       if (vars.schemeId) {

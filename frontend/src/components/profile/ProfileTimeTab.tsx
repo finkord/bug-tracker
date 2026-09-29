@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { useMyWorklogsQuery } from '../../api/queries';
 import { TimeCalendar, type DayWorklog } from '../common/TimeCalendar';
 import { Clock, Trophy, Flame, Award, Sparkles } from 'lucide-react';

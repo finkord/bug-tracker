@@ -101,10 +101,15 @@ export const IssueDetailPage: React.FC = () => {
     });
 
     const unsubPresence = realtimeSocket.onPresenceViewing(({ user: viewerUser, issueId }) => {
-      if (Number(issueId) === issue.id && viewerUser?.id !== user?.id) {
+      if (Number(issueId) === issue.id && viewerUser?.id && viewerUser.id !== user?.id) {
+        const viewer = {
+          id: viewerUser.id,
+          fullName: viewerUser.fullName || 'Anonymous',
+          avatarUrl: viewerUser.avatarUrl ?? undefined,
+        };
         setActiveViewers((prev) => {
-          if (prev.some((v) => v.id === viewerUser.id)) return prev;
-          return [...prev, viewerUser];
+          if (prev.some((v) => v.id === viewer.id)) return prev;
+          return [...prev, viewer];
         });
       }
     });

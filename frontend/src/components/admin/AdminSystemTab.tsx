@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { api, API_BASE_URL } from '../../api/client.js';
+import { API_BASE_URL } from '../../api/client.js';
 import { useAdminStatsQuery } from '../../api/queries';
 import { useBroadcast, useAuth, type BroadcastSeverity } from '../../store';
 import {
@@ -34,6 +34,10 @@ export const AdminSystemTab: React.FC = () => {
   const [broadcastMessage, setBroadcastMessage] = useState(broadcast.message);
   const [broadcastSeverity, setBroadcastSeverity] = useState<BroadcastSeverity>(broadcast.severity);
   const [broadcastSavedMsg, setBroadcastSavedMsg] = useState(false);
+
+  const [seeding, setSeeding] = useState(false);
+  const [seedSuccessMsg, setSeedSuccessMsg] = useState<string | null>(null);
+  const [seedErrorMsg, setSeedErrorMsg] = useState<string | null>(null);
 
   const { data: systemStats = null } = useAdminStatsQuery();
 

@@ -147,6 +147,14 @@ export const App: React.FC = () => {
 
               {/* Protected Workspace & Board Routes */}
               <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <HomePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/projects"
                 element={
                   <ProtectedRoute>

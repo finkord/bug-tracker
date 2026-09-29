@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  api,
   type IssueItem,
   type IssueStatus,
 } from '../../api/client';
@@ -43,8 +42,8 @@ interface IssueDetailsModalProps {
   isOpen: boolean;
   issueId: number | null;
   onClose: () => void;
-  onIssueUpdated: (updatedIssue: IssueItem) => void;
-  onIssueDeleted: (issueId: number) => void;
+  onIssueUpdated?: (updatedIssue: IssueItem) => void;
+  onIssueDeleted?: (issueId: number) => void;
   onEditClick?: (issue: IssueItem) => void;
 }
 
@@ -60,7 +59,6 @@ export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
   const {
     data: issue = null,
     isLoading: loading,
-    error: queryError,
     refetch: fetchIssue,
   } = useIssueDetailQuery(isOpen && issueId ? issueId : undefined);
 
@@ -201,7 +199,7 @@ export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
                   <button
                     type="button"
                     onClick={handleDelete}
-                    disabled={deleting}
+                    disabled={deleteIssueMutation.isPending}
                     className="p-1.5 rounded-lg text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/30 transition-colors cursor-pointer disabled:opacity-50 shrink-0"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -411,7 +409,7 @@ export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
                     variant="filled"
                     size="sm"
                     disabled={!commentText.trim()}
-                    isLoading={submittingComment}
+                    isLoading={addCommentMutation.isPending}
                     rightIcon={<Send className="w-3 h-3" />}
                   >
                     Post
@@ -432,7 +430,7 @@ export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
           issueTitle={issue.title}
           onWorkLogged={async () => {
             await fetchIssue();
-            if (issue) onIssueUpdated({ ...issue, loggedHours: (issue.loggedHours || 0) + 1 });
+            if (issue) onIssueUpdated?.({ ...issue, loggedHours: (issue.loggedHours || 0) + 1 });
           }}
         />
       )}

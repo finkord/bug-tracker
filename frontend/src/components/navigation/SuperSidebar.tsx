@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth, useSidebar } from '../../store';
 import { useProjectsQuery } from '../../api/queries';

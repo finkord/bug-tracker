@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { api, type WorklogStats } from '../../api/client.js';
+import React from 'react';
 import { Avatar } from '../common/Avatar.js';
 import { Card, Badge } from '../ui/index.js';
 import {

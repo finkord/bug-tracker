@@ -37,10 +37,10 @@ export const SidebarNavList: React.FC<SidebarNavListProps> = ({
     {
       label: 'Dashboard',
       shortLabel: 'Dash',
-      path: '/',
+      path: '/dashboard',
       icon: LayoutDashboard,
       exact: true,
-      activeMatch: (p) => p === '/',
+      activeMatch: (p) => p === '/' || p === '/dashboard',
     },
     {
       label: 'Projects',

@@ -45,7 +45,7 @@ describe('useAuthStore', () => {
 
   it('should handle logout', async () => {
     localStorage.setItem('accessToken', 'mock-token');
-    useAuthStore.setState({ user: { id: 1, email: 'test@example.com', username: 'test', role: 'ADMIN', isActive: true, createdAt: '', updatedAt: '' } });
+    useAuthStore.setState({ user: { id: 1, email: 'test@example.com', fullName: 'Test User', systemRole: 'ADMIN', isActivated: true, isBlocked: false, twoFactorEnabled: false, createdAt: '' } });
     await useAuthStore.getState().logout();
     expect(useAuthStore.getState().user).toBeNull();
     expect(localStorage.getItem('accessToken')).toBeNull();

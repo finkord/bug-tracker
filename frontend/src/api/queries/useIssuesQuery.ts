@@ -11,7 +11,7 @@ import {
 export const issueKeys = {
   all: ['issues'] as const,
   lists: () => [...issueKeys.all, 'list'] as const,
-  list: (filters?: Record<string, unknown>) => [...issueKeys.lists(), filters ?? {}] as const,
+  list: (filters?: Record<string, unknown> | object) => [...issueKeys.lists(), filters ?? {}] as const,
   details: () => [...issueKeys.all, 'detail'] as const,
   detail: (keyOrId: string | number) => [...issueKeys.details(), String(keyOrId)] as const,
   attachments: (issueId: number) => [...issueKeys.detail(issueId), 'attachments'] as const,
@@ -188,7 +188,7 @@ export function useCreateIssueLinkMutation() {
 export function useDeleteIssueLinkMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ issueId, linkId }: { issueId: number; linkId: number }) =>
+    mutationFn: ({ linkId }: { issueId: number; linkId: number }) =>
       api.deleteIssueLink(linkId),
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: issueKeys.links(vars.issueId) });

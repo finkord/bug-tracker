@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   api,
   type IssueItem,
-  type ProjectItem,
-  type AssigneeUser,
   type IssueType,
   type IssuePriority,
 } from '../../api/client';
@@ -36,6 +34,7 @@ export const IssueModal: React.FC<IssueModalProps> = ({
   defaultProjectId,
   defaultAssigneeId,
 }) => {
+  const { user } = useAuth();
   const { data: projects = [] } = useProjectsQuery();
   const { data: assignees = [] } = useAssigneesQuery();
 

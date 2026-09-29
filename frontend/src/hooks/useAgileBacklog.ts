@@ -12,9 +12,8 @@ import {
   useUpdateIssueStatusMutation,
   useAssignIssueToMeMutation,
   issueKeys,
-  sprintKeys,
 } from '../api/queries';
-import { api, type IssueItem, type IssueStatus } from '../api/client';
+import { type IssueItem, type IssueStatus } from '../api/client';
 import { realtimeSocket } from '../api/socket';
 import { useAuth } from '../store';
 import type {

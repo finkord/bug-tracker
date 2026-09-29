@@ -25,8 +25,6 @@ import {
   RefreshCw,
   Ban,
   CheckCircle,
-  Clock,
-  Lock,
   Unlock,
   ShieldCheck,
 } from 'lucide-react';

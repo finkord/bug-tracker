@@ -55,7 +55,7 @@ export const PublicOnlyRoute: React.FC<{ children: React.ReactNode }> = ({ child
   }
 
   if (user) {
-    return <Navigate to="/projects" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;

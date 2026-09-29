@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { api, type UserProfile, type SystemRole } from '../../api/client.js';
+import { api, type SystemRole } from '../../api/client.js';
 import {
   useUsersQuery,
   useUpdateUserRoleMutation,
@@ -40,7 +40,6 @@ export const AdminUsersTab: React.FC = () => {
   const {
     data: usersData,
     isLoading: loading,
-    refetch: fetchUsers,
   } = useUsersQuery({
     page: userPage,
     limit: 25,

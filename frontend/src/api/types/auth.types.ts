@@ -74,6 +74,7 @@ export interface RegisterPayload {
   password?: string;
   fullName: string;
   jobTitle?: string;
+  captchaToken?: string;
 }
 
 export interface LoginPayload {

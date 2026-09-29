@@ -10,7 +10,7 @@ import {
   useCreateSavedFilterMutation,
   issueKeys,
 } from '../api/queries';
-import { api, type IssueItem, type IssueStatus } from '../api/client';
+import { type IssueItem, type IssueStatus } from '../api/client';
 import { realtimeSocket } from '../api/socket';
 import { useAuth } from '../store';
 import { IssueModal } from '../components/kanban/IssueModal';

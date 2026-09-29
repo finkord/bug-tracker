@@ -12,6 +12,8 @@ export interface ProjectItem {
   } | null;
   totalIssues: number;
   openIssues: number;
+  permissionSchemeId?: number | null;
+  securitySchemeId?: number | null;
   createdAt: string;
   updatedAt: string;
 }

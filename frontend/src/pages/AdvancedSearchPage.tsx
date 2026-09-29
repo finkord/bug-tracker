@@ -330,9 +330,9 @@ export const AdvancedSearchPage: React.FC = () => {
           />
         ) : (
           <JqlEditorBar
-            value={jqlQuery}
-            onChange={setJqlQuery}
-            onExecute={updateUrlParams}
+            jqlQuery={jqlQuery}
+            onJqlChange={setJqlQuery}
+            onSearch={updateUrlParams}
             onClear={() => setJqlQuery('')}
             onSwitchToBasic={handleSwitchToBasic}
           />
@@ -344,7 +344,7 @@ export const AdvancedSearchPage: React.FC = () => {
         {viewLayout === 'list' ? (
           <SearchResultsTable
             issues={filteredIssues}
-            loading={loading}
+            selectedIssueId={selectedIssueId}
             onSelectIssue={(issue) => setDetailsModalIssue(issue)}
             onUpdateStatus={handleUpdateStatus}
             sortBy={sortBy}
@@ -354,9 +354,8 @@ export const AdvancedSearchPage: React.FC = () => {
         ) : (
           <SearchSplitView
             issues={filteredIssues}
-            loading={loading}
             selectedIssueId={selectedIssueId}
-            onSelectIssue={setSelectedIssueId}
+            onSelectIssue={(issue) => setSelectedIssueId(issue.id)}
             onUpdateStatus={handleUpdateStatus}
           />
         )}
@@ -375,7 +374,7 @@ export const AdvancedSearchPage: React.FC = () => {
         isOpen={manageFiltersOpen}
         onClose={() => setManageFiltersOpen(false)}
         savedFilters={savedFilters}
-        onSelectFilter={handleSelectSavedFilter}
+        onApplyFilter={handleSelectSavedFilter}
         onToggleFavorite={handleToggleFavorite}
         onDeleteFilter={handleDeleteFilter}
       />
