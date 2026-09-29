@@ -79,15 +79,37 @@ cd ../frontend && npx tsc --noEmit
 
 ---
 
-## 4. Production Build & Serving
+## 4. Production Deployment (Containerized)
 
-Ensure ports `3000` and `5173` are not blocked before launching:
+The production stack is 100% containerized with zero local Node.js requirement. It compiles the NestJS bundle into a hardened unprivileged `node:24-slim` container and bundles the React 19 SPA directly into `nginx:alpine` with immutable asset caching.
+
 ```bash
-# 1. Build and launch NestJS backend distribution
+# 1. Build and launch the complete production stack
+docker compose -f docker-compose.prod.yml up -d --build
+
+# 2. Check running production containers
+docker compose -f docker-compose.prod.yml ps
+
+# 3. Seed realistic initial dataset inside the production backend container
+docker compose -f docker-compose.prod.yml exec backend npm run seed:prod
+
+# 4. Stream production logs
+docker compose -f docker-compose.prod.yml logs -f
+docker compose -f docker-compose.prod.yml logs -f backend
+docker compose -f docker-compose.prod.yml logs -f nginx
+
+# 5. Gracefully stop the production stack
+docker compose -f docker-compose.prod.yml down
+```
+
+### Local Manual Production Build (Host-Only Alternative)
+If you wish to test production artifacts directly on your host machine:
+```bash
+# Backend build & start
 cd backend && npm run build
 NODE_ENV=production PORT=3000 npm run start:prod
 
-# 2. Build and preview React SPA production bundle
+# Frontend build & preview
 cd frontend && npm run build
 npm run preview -- --port 5173
 ```
