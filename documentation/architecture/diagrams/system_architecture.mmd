@@ -1,0 +1,45 @@
+graph TB
+    subgraph ClientLayer["🖥️ Frontend Client (React 19 + Vite 8)"]
+        SPA["React SPA<br/>(Tailwind v4 + M3 Expressive)"]
+        Router["App Router (19 Pages)"]
+        Stores["Zustand Stores<br/>(auth, ui, theme)"]
+        Query["TanStack Query (Cache & Sync)"]
+        WSClient["Socket.IO Client"]
+        SPA --> Router
+        Router --> Stores
+        Router --> Query
+        SPA --> WSClient
+    end
+
+    subgraph GatewayLayer["🛡️ HTTP & WebSocket Gateway (NestJS 12)"]
+        Main["Fastify / Express API Gateway<br/>Port 3000 (Prefix: /api/v1)"]
+        Pipes["ValidationPipe (class-validator)"]
+        Guards["JwtAuthGuard | RolesGuard | ThrottlerGuard"]
+        Gateway["EventsGateway (Socket.IO)<br/>Real-Time Board Updates"]
+        Main --> Pipes
+        Pipes --> Guards
+    end
+
+    subgraph BackendModules["📦 Modular Monolith Backend Domain"]
+        AuthM["AuthModule & CaptchaModule<br/>(Argon2id, TOTP, OAuth2, Turnstile)"]
+        UserM["UsersModule & AdminModule<br/>(Profiles, Saved Filters, Health)"]
+        IssueM["IssuesModule & SprintsModule<br/>(Tickets, Links, Comments, Worklogs)"]
+        RbacM["RbacModule & SecurityAuditModule<br/>(Schemes, Roles, Audit Logs)"]
+        ProjM["ProjectsModule<br/>(Keys, Team Spaces, Workflows)"]
+    end
+
+    subgraph DataLayer["💾 Persistence & External Infrastructure"]
+        Postgres[("PostgreSQL 15<br/>19 3NF Entities")]
+        RedisCache[("Redis 7<br/>Rate-limiting & Pub/Sub")]
+        Seaweed[("SeaweedFS S3<br/>Attachments & Dumps")]
+        Mailpit[("Mailpit SMTP<br/>Port 1025 / UI 8025")]
+    end
+
+    SPA -- "REST HTTP (httpOnly Cookies)" --> Main
+    WSClient -- "WebSocket WSS" --> Gateway
+    Guards --> BackendModules
+
+    BackendModules --> Postgres
+    BackendModules --> RedisCache
+    BackendModules --> Seaweed
+    BackendModules --> Mailpit

@@ -1,0 +1,38 @@
+sequenceDiagram
+    autonumber
+    actor Client as User / Browser
+    participant API as NestJS AuthController
+    participant Captcha as CaptchaService
+    participant Users as UsersService
+    participant Audit as SecurityAuditService
+    participant Mail as Mailpit SMTP
+    participant DB as PostgreSQL 15
+
+    Note over Client, DB: 1. Registration with Turnstile Captcha
+    Client->>API: POST /api/v1/auth/register (Email, Password, Turnstile Token)
+    API->>Captcha: validateToken(turnstileToken)
+    Captcha-->>API: Validated (OK)
+    API->>Users: hashPassword(Argon2id)
+    API->>DB: INSERT User (isActive = false, activationToken)
+    API->>Mail: sendActivationEmail(activationLink)
+    API-->>Client: 201 Created ("Check your email")
+
+    Note over Client, DB: 2. Single-Use Email Activation
+    Client->>API: GET /api/v1/auth/activate?token=XYZ
+    API->>DB: UPDATE User SET isActive = true, activationToken = NULL
+    API-->>Client: 200 OK ("Account activated")
+
+    Note over Client, DB: 3. Secure Login & 2FA Challenge
+    Client->>API: POST /api/v1/auth/login (Email, Password)
+    API->>Users: verifyPassword(Argon2id)
+    alt Invalid Password
+        API->>Audit: recordFailure(email, ip, bad_credentials)
+        API-->>Client: 401 Unauthorized
+    else Valid Password & 2FA Enabled
+        API->>Audit: recordChallenge(email, ip, 2fa_required)
+        API-->>Client: 200 OK { requires2FA: true, tempToken }
+        Client->>API: POST /api/v1/auth/2fa/verify (tempToken, totpCode)
+        API->>API: otplib.verify(totpCode, twoFactorSecret)
+        API->>Audit: recordSuccess(email, ip, login_success)
+        API-->>Client: 200 OK + Set-Cookie: access_token, refresh_token (httpOnly)
+    end

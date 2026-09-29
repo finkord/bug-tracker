@@ -6,9 +6,9 @@
 
 ## Overview
 
-This repository contains the production implementation of a lightweight, high-performance, enterprise-ready **Bug / Issue Tracking System**. The project satisfies two core engineering and security curricula:
-1. **PPofSE (Labs 1–7):** Enterprise software engineering lifecycle, 3NF PostgreSQL database, modular monolith architecture, Agile sprints, Kanban swimlanes, time tracking matrices, role-based access control (RBAC), real-time WebSockets, and a modern React Single Page Application (SPA).
-2. **SDSecurity (Lab 6 Project):** Enterprise-grade identity, access management, and cybersecurity controls (Argon2id hashing, RFC 6238 TOTP 2FA, GitHub/Google OAuth2 OIDC, brute-force mitigation & account lockout, Cloudflare Turnstile CAPTCHA, email activation, and forensic security audit logs).
+This repository contains the production implementation of a lightweight, high-performance, enterprise-ready **Bug / Issue Tracking System**. The platform delivers a comprehensive suite of project management, quality engineering, and security controls:
+- **Core Engineering & Lifecycle:** 3NF PostgreSQL database, modular monolith architecture, Agile sprints, Kanban swimlanes, hierarchical issue tracking, time tracking matrices, role-based access control (RBAC), real-time WebSockets, and a modern Material Design 3 React Single Page Application (SPA).
+- **Enterprise Identity & Cybersecurity Controls:** Argon2id password hashing, RFC 6238 TOTP 2FA, GitHub and Google OAuth2 OIDC, brute-force mitigation with automatic account lockout, Cloudflare Turnstile CAPTCHA, cryptographic email activation, and forensic security audit logs.
 
 ---
 
@@ -29,20 +29,33 @@ This repository contains the production implementation of a lightweight, high-pe
 
 ## Documentation Index
 
-Detailed technical documentation for all subsystems is organized in `info/`:
+Comprehensive technical documentation for all architectural layers, subsystems, and operational workflows is organized in [`documentation/`](documentation/INDEX.md):
 
-### Core Subsystems (`info/services/`)
-- **[Authentication & Security Service](file:///home/finkord/dev/PPofSE/software/info/services/auth/README.md)** (`info/services/auth/README.md`): Complete security specification (Argon2id, TOTP 2FA, OAuth2 OIDC, Turnstile CAPTCHA, lockout, sequence diagrams, SDSecurity Lab 6).
-- **[Projects, Issues & Agile Boards](file:///home/finkord/dev/PPofSE/software/info/services/projects-issues/README.md)** (`info/services/projects-issues/README.md`): Issue tracking, Finite State Machine workflows, Agile Kanban boards, and sprint cycles.
-- **[Role-Based Access Control (RBAC)](file:///home/finkord/dev/PPofSE/software/info/services/rbac/README.md)** (`info/services/rbac/README.md`): Custom roles, user groups, permission schemes, and issue security schemes.
-- **[Time Tracking & Effort Forensics](file:///home/finkord/dev/PPofSE/software/info/services/time-tracking/README.md)** (`info/services/time-tracking/README.md`): Timesheet matrix, worklog aggregations, calendar views, and estimate forecasting.
-- **[Database Seeding & Realistic Dataset Generator](file:///home/finkord/dev/PPofSE/software/info/services/seeding/README.md)** (`info/services/seeding/README.md`): 5 engineering teams (`UI`, `CORE`, `MON`, `INFRA`, `NET`), 30 engineers, 46 sprint tickets, 18 links, and 70 worklogs.
-- **[Frontend Architecture & Design System](file:///home/finkord/dev/PPofSE/software/info/services/frontend/README.md)** (`info/services/frontend/README.md`): Material Design 3 Expressive UI, Google Pixel OS curves, color tokens, and state management.
+### Architecture & Schemas
+- **[System Architecture & Overview](documentation/architecture/system-overview.md)**: High-level modular monolith, ports, and runtime infrastructure.
+- **[Database Schema & ERD](documentation/architecture/database-schema.md)**: All 19 TypeORM domain entities, foreign key relations, and rendered ER diagrams.
+- **[Architecture Diagrams](documentation/architecture/diagrams)**: Maintained Mermaid source code and high-resolution PNG renders.
 
-### Architecture & Operations
-- **[Agent Workflow & Coding Standards](file:///home/finkord/dev/PPofSE/software/info/default_instructions.md)** (`info/default_instructions.md`): Core AI context, strict engineering rules, and clean code principles.
-- **[Operational Commands Reference](file:///home/finkord/dev/PPofSE/software/info/commands.bash)** (`info/commands.bash`): Operational scripts, testing commands, and database management.
-- **[Tech Stack & Evaluation (Archive)](file:///home/finkord/dev/PPofSE/software/info/deprecated/TECH_STACK_AND_AUTH_PREPARATION.md)** (`info/deprecated/TECH_STACK_AND_AUTH_PREPARATION.md`): Initial architectural design, trade-offs, and capacity planning.
+### Backend Subsystems (`documentation/backend/`)
+- **[Authentication & Security](documentation/backend/auth.md)**: Argon2id hashing, TOTP 2FA, OAuth2, Turnstile CAPTCHA, lockout forensics.
+- **[Users & Profiles](documentation/backend/users.md)**: User accounts, profile preferences, and saved search filters.
+- **[Projects & Workspaces](documentation/backend/projects.md)**: Team spaces, keys, and lead assignments.
+- **[Issues & Worklogs](documentation/backend/issues.md)**: Finite State Machine tickets, attachments, links, and comments.
+- **[Sprints & Planning](documentation/backend/sprints.md)**: Agile sprint lifecycles and backlog management.
+- **[RBAC & Permissions](documentation/backend/rbac.md)**: Dual-layer authorization, project roles, user groups, and security levels.
+- **[Security Audit](documentation/backend/security-audit.md)**: Forensic audit logs, IP tracking, and failure analysis.
+- **[WebSockets & Events](documentation/backend/events.md)**: Real-time Socket.IO board events and user presence.
+- **[Admin Console](documentation/backend/admin.md)**: System diagnostics, health checks, and user management.
+- **[Database Seeder](documentation/backend/seeding.md)**: Multi-team engineering dataset (5 teams, 30 engineers, 46 issues).
+
+### Frontend & Operations
+- **[Frontend Architecture](documentation/frontend/overview.md)**: React 19 + Vite 8 SPA structure and state management.
+- **[Pages & Routing (19 Views)](documentation/frontend/pages-and-routing.md)**: Route catalog, access guards, and view hierarchy.
+- **[M3 Design System](documentation/frontend/design-system.md)**: Material Design 3 Expressive tokens, Pixel OS curved shell.
+- **[Operational Commands & Runbook](documentation/operations/commands.md)**: Docker Compose, dev servers, builds, and test commands.
+- **[API Verification Test Suite](documentation/operations/verification-api.md)**: Automated curl verification recipes.
+- **[Product Backlog & Ideas](documentation/backlog/product_ideas.md)**: Product epics and developer notes.
+- **[AI Agent Protocol](documentation/AGENTS.md)**: Agent rules and Doc-as-Code hygiene guidelines.
 
 ---
 
@@ -52,21 +65,18 @@ Detailed technical documentation for all subsystems is organized in `info/`:
 software/
 ├── README.md                               # Project overview and quick start guide (this file)
 ├── docker-compose.yml                      # PostgreSQL 15, Redis 7, Mailpit, SeaweedFS
-├── info/                                   # Architectural documentation, guides, and manuals
-│   ├── default_instructions.md             # Developer & AI agent coding standards
-│   ├── commands.bash                       # Operational CLI scripts
-│   └── services/                           # Dedicated subsystem documentation
-│       ├── auth/                           # Authentication & Security service docs
-│       ├── frontend/                       # Frontend architecture & M3 design system docs
-│       ├── projects-issues/                # Issue tracking & Agile lifecycle docs
-│       ├── rbac/                           # RBAC & permission scheme docs
-│       ├── seeding/                        # Realistic dataset generator docs
-│       └── time-tracking/                  # Timesheet & worklog analytics docs
+├── documentation/                          # Single source of truth technical documentation
+│   ├── INDEX.md                            # Central agent and developer router
+│   ├── AGENTS.md                           # AI agent rules & doc hygiene protocol
+│   ├── architecture/                       # System overview, ERD, and diagrams (MMD + PNG)
+│   ├── backend/                            # 10 Domain backend module specifications
+│   ├── frontend/                           # React 19 architecture, 19 views, M3 design
+│   ├── operations/                         # CLI runbooks and API verification suites
+│   └── backlog/                            # Feature backlog and raw notes
 ├── backend/                                # NestJS 12 REST & WebSocket API application
 │   ├── src/
 │   │   ├── main.ts                         # App bootstrap, Swagger, CORS, ValidationPipe
 │   │   ├── app.module.ts                   # Root NestJS module wiring TypeORM, Mailer, Redis
-│   │   ├── database/                       # Migrations and automated seed runner
 │   │   └── modules/                        # Domain feature modules
 │   │       ├── auth/                       # Argon2id, JWT, 2FA, OAuth2, Account Lockout
 │   │       ├── users/                      # User profile, preferences, saved JQL filters

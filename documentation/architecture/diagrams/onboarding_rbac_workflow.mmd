@@ -1,0 +1,22 @@
+sequenceDiagram
+    autonumber
+    actor Employee as Employee / New User
+    participant Frontend as React 19 Frontend
+    participant Gateway as NestJS API Gateway
+    participant Kanban as Security/Admins Board
+    actor Admin as Admin / Security Lead
+    participant DB as PostgreSQL 15
+
+    Employee->>Frontend: Creates ticket "Onboarding: Access to CORE Team"
+    Frontend->>Gateway: POST /api/v1/issues (email, targetTeam, requirements)
+    Gateway->>DB: INSERT Issue (queue = Admins/Security)
+    Gateway-->>Kanban: WebSocket Broadcast (New ticket in Backlog)
+    Admin->>Kanban: Assigns ticket to self, moves to "In Progress"
+    Admin->>Frontend: Navigates to Admin Center -> User Management
+    Admin->>Gateway: GET /api/v1/admin/users?query=employee@example.com
+    Admin->>Gateway: PATCH /api/v1/admin/users/:id/roles (Assigns CORE-Dev Role & Group)
+    Gateway->>DB: INSERT UserGroup / ProjectRoleActor
+    Gateway-->>Frontend: 200 OK (Roles updated)
+    Admin->>Kanban: Transitions ticket to "Pending Reporter"
+    Employee->>Frontend: Verifies access, leaves confirmation comment
+    Admin->>Kanban: Transitions ticket to "Resolved / Done"

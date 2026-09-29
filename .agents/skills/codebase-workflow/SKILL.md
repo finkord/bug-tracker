@@ -18,7 +18,7 @@ Execute every step in order. Do not skip.
 1. **Classify the task domain** using the table in `resources/MODULE_MAP.md` (read that file now).
 2. **Identify the affected module(s)** — get exact entry-point paths from the MODULE_MAP.
 3. **Load the matching rule(s)** from the Rule Selection Matrix below.
-4. **Check `info/planning/`** for an existing plan for this feature — continue it if found.
+4. **Check `documentation/INDEX.md` and `documentation/backlog/`** for relevant architecture docs and feature requirements.
 5. **Read a maximum of 5 source files** before forming the implementation plan.
 
 ---
@@ -110,8 +110,8 @@ cd frontend && npx tsc --noEmit
 |----------------------------------------------------|-----------------------------------------------------------------|
 | `list_dir node_modules/`                           | Read `package.json` only                                        |
 | Read all 10 backend modules upfront                | Read only the module(s) in scope via MODULE_MAP paths           |
-| Start writing code before creating a plan          | Write `info/planning/<feature>.md` first                        |
-| Rely on deprecated `default_instructions.md`       | Active code is source of truth; use `MODULE_MAP.md`            |
+| Start writing code before creating a plan          | Check `documentation/INDEX.md` & write plan artifact first      |
+| Rely on obsolete documentation                     | Active code is source of truth; use `documentation/` & `MODULE_MAP.md` |
 | Run `npm run build` after every small edit         | Use `oxlint` / targeted `vitest run <file>.spec.ts` during work |
 | Hard-code Tailwind color utilities                 | Use `var(--md-sys-color-*)` tokens from `src/index.css`         |
 | Import from another module's private `entities/`  | Use the module's public service or DTO exports only             |

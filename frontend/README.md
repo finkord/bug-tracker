@@ -1,10 +1,12 @@
 # BugTracker Frontend Web Application
 
-The frontend single page application for the Bug / Issue Tracking System (**PPofSE** project), featuring a **Material Design 3 Expressive** aesthetic inspired by Google Pixel OS.
+The frontend single page application for the Bug / Issue Tracking System, featuring a **Material Design 3 Expressive** aesthetic inspired by Google Pixel OS.
 
-For full architectural details, component breakdowns, and security specifications, see:
-- [Frontend Service Documentation](file:///home/finkord/dev/PPofSE/software/info/services/frontend/README.md)
-- [Backend Authentication Service Documentation](file:///home/finkord/dev/PPofSE/software/info/services/auth/README.md)
+For full architectural details, component breakdowns, and design specifications, see:
+- [Frontend Architecture Documentation](../documentation/frontend/overview.md)
+- [Frontend Route & Page Catalog](../documentation/frontend/pages-and-routing.md)
+- [M3 Expressive Design System](../documentation/frontend/design-system.md)
+- [Backend Authentication Service Documentation](../documentation/backend/auth.md)
 
 ---
 

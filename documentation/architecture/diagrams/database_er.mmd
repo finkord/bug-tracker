@@ -1,0 +1,108 @@
+erDiagram
+    User ||--o{ SavedFilter : "creates"
+    User ||--o{ Project : "leads"
+    User ||--o{ Issue : "reports"
+    User ||--o{ Issue : "assigned_to"
+    User ||--o{ Comment : "authors"
+    User ||--o{ Worklog : "logs_effort"
+    User ||--o{ Attachment : "uploads"
+    User ||--o{ UserGroup : "belongs_to"
+    User ||--o{ LoginAuditLog : "generates"
+
+    Project ||--o{ Sprint : "contains"
+    Project ||--o{ Issue : "owns"
+    Project ||--o{ ProjectRoleActor : "configures"
+
+    Sprint ||--o{ Issue : "schedules"
+
+    Issue ||--o{ Comment : "has"
+    Issue ||--o{ Worklog : "tracks"
+    Issue ||--o{ Attachment : "attaches"
+    Issue ||--o{ IssueLink : "source_of"
+    Issue ||--o{ IssueLink : "target_of"
+
+    Group ||--o{ UserGroup : "includes"
+
+    PermissionScheme ||--o{ PermissionGrant : "defines"
+    ProjectRole ||--o{ ProjectRoleActor : "assigned_in"
+
+    IssueSecurityScheme ||--o{ IssueSecurityLevel : "contains"
+    IssueSecurityLevel ||--o{ IssueSecurityGrant : "governs"
+
+    User {
+        uuid id PK
+        string email UK
+        string fullName
+        string systemRole
+        boolean isTwoFactorEnabled
+        boolean isActive
+    }
+
+    Project {
+        uuid id PK
+        string key UK
+        string name
+        uuid leadId FK
+    }
+
+    Sprint {
+        uuid id PK
+        uuid projectId FK
+        string name
+        string status
+        timestamp startDate
+        timestamp endDate
+    }
+
+    Issue {
+        uuid id PK
+        string key UK
+        uuid projectId FK
+        uuid sprintId FK
+        string title
+        string type
+        string status
+        string priority
+        uuid reporterId FK
+        uuid assigneeId FK
+    }
+
+    Worklog {
+        uuid id PK
+        uuid issueId FK
+        uuid authorId FK
+        int timeSpentSeconds
+        timestamp startedAt
+    }
+
+    Comment {
+        uuid id PK
+        uuid issueId FK
+        uuid authorId FK
+        text body
+    }
+
+    Attachment {
+        uuid id PK
+        uuid issueId FK
+        uuid uploaderId FK
+        string filename
+        string s3Key
+        int sizeBytes
+    }
+
+    IssueLink {
+        uuid id PK
+        uuid sourceIssueId FK
+        uuid targetIssueId FK
+        string type
+    }
+
+    LoginAuditLog {
+        uuid id PK
+        string email
+        string ipAddress
+        string status
+        string failureReason
+        timestamp createdAt
+    }

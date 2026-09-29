@@ -235,18 +235,19 @@
 
 ---
 
-## Documentation (`info/`)
+## Documentation (`documentation/`)
 
 | Path                                     | Purpose                                               |
 |------------------------------------------|-------------------------------------------------------|
-| `info/planning/`                         | Feature plans — **check before implementing**         |
-| `info/planning/codebase_analysis_report.md` | Comprehensive codebase analysis report             |
-| `info/services/auth/README.md`           | Auth service deep technical specification             |
-| `info/services/seeding/README.md`        | Database seeding & realistic dataset docs             |
-| `info/services/time-tracking/README.md`  | Time tracking subsystem docs                          |
-| `info/notes_report.md`                   | Accumulated dev notes, architectural decisions        |
-| `info/M3_PRECISION_DESIGN_SYSTEM_PLAN.md`| M3 design system implementation plan                 |
-| `info/commands.bash`                     | CLI command cheatsheet (Docker, npm, DB commands)     |
+| `documentation/INDEX.md`                 | Central router for coding agents & fast lookup        |
+| `documentation/AGENTS.md`                | Agent rules & Doc-as-Code hygiene protocol            |
+| `documentation/architecture/`            | Modular monolith architecture, ERD & diagram renders  |
+| `documentation/backend/`                 | 10 Active backend module specifications               |
+| `documentation/backend/auth.md`          | Auth service deep technical specification             |
+| `documentation/backend/seeding.md`       | Database seeding & multi-team dataset docs            |
+| `documentation/frontend/`                | React 19 architecture, 19 views, M3 design system     |
+| `documentation/operations/commands.md`   | CLI command cheatsheet (Docker, dev, DB, prod)        |
+| `documentation/backlog/product_ideas.md` | Feature ideas backlog from developer notes            |
 
 ---
 
