@@ -1,6 +1,6 @@
 # Product Ideas & Requirements Backlog
 
-This document organizes and structures the core vision, feature ideas, and workflows originating from the project developer's original notes ([`raw_notes.txt`](raw_notes.txt)).
+This document organizes and structures the core vision, feature ideas, and workflows originating from the project developer's original notes ([`raw_notes.txt`](raw_notes.txt)) as well as the initial system architecture blueprint.
 
 ---
 
@@ -27,6 +27,12 @@ mindmap
       Personal Dashboard & Profile
       Preferences & Dark/Light theme
       Time Tracking & Analytics
+    Blueprint Architecture Epics
+      Git Webhook Connector (GitHub / GitLab)
+      Issue Attribute History & Audit Trail
+      Telegram Bot & Multi-Channel Notifications
+      Nginx Production Ingress & TLS Cache
+      Attachment Sanitization & Media Pipeline
     Engineering & UX Standards
       Material 3 Expressive System
       Shared reusable components
@@ -71,7 +77,77 @@ mindmap
 
 ---
 
-## 3. UI/UX Rules from Developer Notes
+## 3. Architecture Evolution Epics (Derived from Initial Blueprint Analysis)
+
+These high-priority epics originate directly from the original architectural blueprint, addressing capabilities designed in the initial vision that remain to be implemented in the active codebase:
+
+### Epic 5: Git Repository Webhook Integration (`GitHub / GitLab Webhooks`)
+* **Rationale & Blueprint Context**:  
+  The blueprint included external Git triggers feeding into the ingress layer. Currently, GitHub is used exclusively for OAuth2 user authentication, leaving developer repository activity decoupled from issue tickets.
+* **Proposed Implementation**:
+  1. **Webhook Receiver Endpoint**:
+     * Implement `POST /api/v1/webhooks/github` and `/gitlab` with HMAC-SHA256 signature verification (`X-Hub-Signature-256`).
+  2. **Smart Commit & PR Parsing**:
+     * Extract issue keys via regex matching (e.g., `/(UI|CORE|MON|INFRA|NET)-\d+/i`).
+     * Transition triggers: `Fixes CORE-101`, `Closes CORE-101`, or `Resolves CORE-101` automatically transitions the issue to `RESOLVED`.
+     * Worklog capture: `Work on CORE-101: 2h 30m` automatically creates a worklog entry linked to the committer's email.
+  3. **Frontend Development Panel**:
+     * Add a "Development" section to [`IssueDetailPage`](../../frontend/src/pages/IssueDetailPage.tsx) displaying linked branches, pull requests, commit hashes, and CI/CD status badges.
+
+### Epic 6: Immutable Issue Attribute History & Audit Trail (`Audit & History Service`)
+* **Rationale & Blueprint Context**:  
+  The blueprint featured an *“immutable audit trail of defect attribute changes”* (Незмінний аудитний слід змін атрибутів дефектів). While `SecurityAuditModule` records user authentication forensics, ticket-level changes (status transitions, priority bumps, re-assignments) are currently not versioned.
+* **Proposed Implementation**:
+  1. **Data Model**:
+     * Create `IssueAuditLog` entity: `id`, `issueId`, `authorId`, `fieldName` (e.g., `status`, `priority`, `assigneeId`, `estimateHours`, `title`), `oldValue`, `newValue`, `createdAt`.
+  2. **Automatic Mutation Interceptor**:
+     * Attach a TypeORM Entity Subscriber (`IssueSubscriber`) or service interceptor that diffs incoming changes in `PATCH /api/v1/issues/:id` and records transactional log entries.
+  3. **Visual Change Timeline**:
+     * Implement an "Activity / Changelog" tab on [`IssueDetailPage`](../../frontend/src/pages/IssueDetailPage.tsx) showing an audit trail:  
+       * *“Alex Mercer changed Status from OPEN to IN_PROGRESS (2 hours ago)”*  
+       * *“Sarah Chen reassigned ticket from Unassigned to David Miller (yesterday)”*.
+
+### Epic 7: Multi-Channel Notification Dispatcher (`Telegram Bot API / SMTP Push`)
+* **Rationale & Blueprint Context**:  
+  The blueprint designed an asynchronous notification engine pushing alerts to both Telegram Bot API and SMTP. Currently, the system only sends transactional authentication emails and ephemeral in-browser WebSocket toasts.
+* **Proposed Implementation**:
+  1. **Asynchronous Background Queue**:
+     * Integrate `@nestjs/bullmq` backed by Redis 7 to process outgoing push dispatches without blocking HTTP request execution.
+  2. **Telegram Bot Service (`TelegramNotificationService`)**:
+     * Allow users to pair their Telegram account on [`ProfilePage`](../../frontend/src/pages/ProfilePage.tsx) using a deep link token (`https://t.me/BugTrackerBot?start=<LINK_TOKEN>`).
+     * Dispatch instant markdown alerts for:
+       * Direct ticket assignment (`🚨 CRITICAL bug assigned to you: NET-42`).
+       * Mentions in comments (`💬 @volodymyr mentioned you in CORE-101`).
+       * Onboarding ticket status updates (`✅ Access to team CORE approved`).
+  3. **Notification Preferences**:
+     * Expand [`PreferencesPage`](../../frontend/src/pages/PreferencesPage.tsx) with a multi-channel matrix enabling users to toggle In-App vs. Email vs. Telegram notifications per category.
+
+### Epic 8: Production Ingress & Edge Proxy (`Nginx Ingress Tier`)
+* **Rationale & Blueprint Context**:  
+  The blueprint placed an Nginx edge proxy in front of the API gateway to handle TLS 1.3, HTTP/2 multiplexing, rate-limiting, and static caching. In development, ports 3000 and 5173 are accessed directly.
+* **Proposed Implementation**:
+  1. **Nginx Container in `docker-compose.yml`**:
+     * Deploy a hardened Nginx reverse proxy serving as the single entry point (`port 80/443`).
+  2. **Edge Security & Performance**:
+     * Route `/api/*` to NestJS and `/events/*` to the Socket.IO WebSocket gateway.
+     * Serve pre-compressed production Vite bundles with immutable cache headers (`Cache-Control: public, max-age=31536000, immutable`).
+     * Terminate TLS 1.3 with automated Let's Encrypt / Certbot renewal.
+     * Enforce edge-level connection limits and IP throttling (`limit_req_zone`) to absorb Layer 7 DDoS floods before they reach Node.js.
+
+### Epic 9: Attachment Processing & Security Pipeline (`Attachment Service`)
+* **Rationale & Blueprint Context**:  
+  The blueprint highlighted file attachment processing as a distinct security boundary requiring MIME validation, 25 MB size caps, and file sanitization.
+* **Proposed Implementation**:
+  1. **SVG Disinfection**:
+     * Sanitize uploaded `.svg` files using DOMPurify to strip embedded `<script>`, `onload`, and foreign XML objects, preventing stored Cross-Site Scripting (XSS).
+  2. **Image Optimization & Thumbnails**:
+     * Process image uploads through `sharp` to generate 200x200 `.webp` thumbnails, drastically speeding up image preview loading on Kanban boards.
+  3. **Pluggable Malware Scanning**:
+     * Add an asynchronous ClamAV / VirusTotal scanner hook that verifies binary attachments before marking them active in SeaweedFS S3.
+
+---
+
+## 4. UI/UX Rules from Developer Notes
 * **Design Consistency**: Every page must derive from shared tokens and atomic components; no page should recreate custom layouts from scratch.
 * **Palette Selection**: Strict use of predefined, high-contrast Material 3 Expressive palettes ($\Delta\text{Tone} \ge 60$ between foreground and background).
 * **Architecture Maintenance**: Completed modules must maintain technical documentation accompanied by both Mermaid source and PNG diagrams.
