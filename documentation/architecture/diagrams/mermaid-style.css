@@ -1,0 +1,104 @@
+/* ==============================================================================
+   Material Design 3 Expressive Styling for Mermaid Diagrams
+   ============================================================================== */
+
+/* Global Typography */
+text {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  letter-spacing: -0.01em;
+}
+
+/* 1. Flowchart Elements */
+.node rect,
+.node circle,
+.node polygon {
+  rx: 12px !important;
+  ry: 12px !important;
+  stroke-width: 1.5px !important;
+  filter: drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.04));
+}
+
+.node .label {
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* Subgraphs / Clusters (Pixel OS Optical Card Metaphor) */
+.cluster rect {
+  rx: 16px !important;
+  ry: 16px !important;
+  stroke-width: 1.5px !important;
+  stroke: #C4C7C5 !important;
+  fill: #F8F9FE !important;
+  stroke-dasharray: 6 4;
+}
+
+.cluster span.nodeLabel {
+  font-weight: 700 !important;
+  font-size: 13.5px !important;
+  color: #1A1C1E !important;
+}
+
+/* Connection Edges & Arrows */
+.edgePath path.path {
+  stroke-width: 1.75px !important;
+  stroke: #44474E !important;
+}
+
+.edgeLabel {
+  background-color: #FFFFFF !important;
+  border-radius: 6px !important;
+  padding: 2px 6px !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: #44474E !important;
+  border: 1px solid #E0E2EC !important;
+}
+
+.marker {
+  fill: #44474E !important;
+  stroke: #44474E !important;
+}
+
+/* 2. Sequence Diagrams */
+rect.actor {
+  rx: 12px !important;
+  ry: 12px !important;
+  stroke-width: 1.5px !important;
+  filter: drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.04));
+}
+
+text.actor > tspan {
+  font-weight: 600 !important;
+}
+
+.messageLine0,
+.messageLine1 {
+  stroke-width: 1.75px !important;
+  stroke: #005FB0 !important;
+}
+
+.messageText {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+
+.note {
+  rx: 8px !important;
+  ry: 8px !important;
+  stroke-width: 1.25px !important;
+  filter: drop-shadow(0px 2px 3px rgba(0, 0, 0, 0.03));
+}
+
+/* 3. Entity-Relationship Diagrams */
+.er.entityBox {
+  rx: 10px !important;
+  ry: 10px !important;
+  stroke-width: 1.5px !important;
+  filter: drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.04));
+}
+
+.er.relationshipLine {
+  stroke-width: 1.75px !important;
+  stroke: #005FB0 !important;
+}

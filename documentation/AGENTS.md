@@ -44,8 +44,13 @@ Architecture diagrams are stored as paired files under `documentation/architectu
 ### Protocol for Updating Diagrams
 When system architecture, database entities, or authentication flows change:
 1. Update the `.mmd` definition file (e.g. `database_er.mmd`).
-2. Re-render the `.png` image using `mmdc`:
+2. Re-render the `.png` image using `mmdc` with the M3 styling configurations:
    ```bash
-   npx -y @mermaid-js/mermaid-cli -i documentation/architecture/diagrams/<name>.mmd -o documentation/architecture/diagrams/<name>.png -b white -s 2
+   npx -y @mermaid-js/mermaid-cli \
+     -i documentation/architecture/diagrams/<name>.mmd \
+     -o documentation/architecture/diagrams/<name>.png \
+     -c documentation/architecture/diagrams/mermaid-config.json \
+     -C documentation/architecture/diagrams/mermaid-style.css \
+     -b white -s 2
    ```
 3. Verify that the referencing markdown files embed the updated PNG.

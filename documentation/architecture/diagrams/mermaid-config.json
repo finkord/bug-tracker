@@ -1,0 +1,69 @@
+{
+  "theme": "base",
+  "themeVariables": {
+    "fontFamily": "Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    "fontSize": "13px",
+    "darkMode": false,
+
+    "primaryColor": "#EEF4FF",
+    "primaryTextColor": "#001D35",
+    "primaryBorderColor": "#005FB0",
+
+    "secondaryColor": "#E8DEF8",
+    "secondaryTextColor": "#1D192B",
+    "secondaryBorderColor": "#6750A4",
+
+    "tertiaryColor": "#FFD8E4",
+    "tertiaryTextColor": "#31111D",
+    "tertiaryBorderColor": "#7D5260",
+
+    "mainBkg": "#FDFBFF",
+    "nodeBorder": "#74777F",
+    "clusterBkg": "#F8F9FE",
+    "clusterBorder": "#C4C7C5",
+    "titleColor": "#1A1C1E",
+    "edgeLabelBackground": "#FFFFFF",
+    "lineColor": "#44474E",
+
+    "actorBkg": "#EEF4FF",
+    "actorBorder": "#005FB0",
+    "actorTextColor": "#001D35",
+    "actorLineColor": "#005FB0",
+    "signalColor": "#005FB0",
+    "signalTextColor": "#1A1C1E",
+    "activationBorderColor": "#005FB0",
+    "activationBkgColor": "#D1E4FF",
+    "noteBkgColor": "#FFF8E1",
+    "noteBorderColor": "#FFE082",
+    "noteTextColor": "#3E2723"
+  },
+  "flowchart": {
+    "htmlLabels": true,
+    "curve": "basis",
+    "padding": 16,
+    "nodeSpacing": 45,
+    "rankSpacing": 50
+  },
+  "sequence": {
+    "diagramMarginX": 30,
+    "diagramMarginY": 25,
+    "actorMargin": 60,
+    "width": 160,
+    "height": 48,
+    "boxMargin": 12,
+    "boxTextMargin": 6,
+    "noteMargin": 10,
+    "messageMargin": 35,
+    "mirrorActors": false
+  },
+  "er": {
+    "diagramPadding": 25,
+    "layoutDirection": "TB",
+    "minEntityWidth": 130,
+    "minEntityHeight": 55,
+    "entityPadding": 15,
+    "stroke": "#005FB0",
+    "fill": "#EEF4FF",
+    "fontSize": 12
+  }
+}

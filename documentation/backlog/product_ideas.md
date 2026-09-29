@@ -122,17 +122,16 @@ These high-priority epics originate directly from the original architectural blu
   3. **Notification Preferences**:
      * Expand [`PreferencesPage`](../../frontend/src/pages/PreferencesPage.tsx) with a multi-channel matrix enabling users to toggle In-App vs. Email vs. Telegram notifications per category.
 
-### Epic 8: Production Ingress & Edge Proxy (`Nginx Ingress Tier`)
+### Epic 8: Production Ingress & Edge Proxy (`Nginx Ingress Tier`) `[STATUS: COMPLETED]`
 * **Rationale & Blueprint Context**:  
-  The blueprint placed an Nginx edge proxy in front of the API gateway to handle TLS 1.3, HTTP/2 multiplexing, rate-limiting, and static caching. In development, ports 3000 and 5173 are accessed directly.
-* **Proposed Implementation**:
-  1. **Nginx Container in `docker-compose.yml`**:
-     * Deploy a hardened Nginx reverse proxy serving as the single entry point (`port 80/443`).
-  2. **Edge Security & Performance**:
-     * Route `/api/*` to NestJS and `/events/*` to the Socket.IO WebSocket gateway.
-     * Serve pre-compressed production Vite bundles with immutable cache headers (`Cache-Control: public, max-age=31536000, immutable`).
-     * Terminate TLS 1.3 with automated Let's Encrypt / Certbot renewal.
-     * Enforce edge-level connection limits and IP throttling (`limit_req_zone`) to absorb Layer 7 DDoS floods before they reach Node.js.
+  The blueprint placed an Nginx edge proxy in front of the API gateway to handle TLS 1.3, HTTP/2 multiplexing, rate-limiting, and static caching.
+* **Implemented Architecture**:
+  1. **Nginx Service in `docker-compose.yml`**:
+     * Runs an optimized `nginx:alpine` container as the unified edge ingress (`port 80`).
+  2. **Configuration & Reverse Proxy Topology**:
+     * [`nginx/nginx.conf`](../../nginx/nginx.conf): Gzip compression for CSS/JS/SVG/JSON, connection limiter, and Layer 7 IP rate limiting (`limit_req_zone $binary_remote_addr zone=api_limit:10m rate=20r/s;`). 25 MB max body size for attachments.
+     * [`nginx/conf.d/default.conf`](../../nginx/conf.d/default.conf): Routes `/api/` to backend with standard proxy headers, proxies `/events/` to the WebSocket gateway with `Upgrade` headers, and serves `/` to production static Vite files with SPA client routing fallback (`try_files $uri $uri/ @frontend_fallback`).
+     * Host integration: Configured with `extra_hosts: ["host.docker.internal:host-gateway"]` to route seamlessly to both local host development servers and containerized production backends.
 
 ### Epic 9: Attachment Processing & Security Pipeline (`Attachment Service`)
 * **Rationale & Blueprint Context**:  

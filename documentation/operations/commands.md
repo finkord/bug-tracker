@@ -6,17 +6,24 @@ This runbook catalogs the standard CLI operations for managing infrastructure co
 
 ## 1. Local Infrastructure (Docker Compose)
 
-The environment runs PostgreSQL 15, Redis 7, Mailpit, and SeaweedFS in Docker.
+The environment runs PostgreSQL 15, Redis 7, Mailpit, SeaweedFS, and Nginx Ingress Proxy in Docker.
 
 ```bash
-# Start all infrastructure containers in the background
+# Start all infrastructure containers in the background (Postgres, Redis, Mailpit, SeaweedFS, Nginx)
 docker compose up -d
 
 # Check status of running containers
 docker compose ps
 
-# Tail infrastructure logs
+# Tail infrastructure logs (or specifically Nginx)
 docker compose logs -f
+docker compose logs -f nginx
+
+# Test Nginx configuration syntax
+docker compose exec nginx nginx -t
+
+# Reload Nginx configuration without downtime
+docker compose exec nginx nginx -s reload
 
 # Stop containers without losing data
 docker compose down
@@ -91,7 +98,8 @@ npm run preview -- --port 5173
 
 | Service | Access URL | Credentials / Notes |
 |---|---|---|
-| **Frontend Web App** | `http://localhost:5173` | Main user and admin interface |
+| **Nginx Ingress Proxy** | `http://localhost` (Port `80`) | Unified entry point routing `/api` to backend and `/*` to SPA |
+| **Frontend Web App (Direct)**| `http://localhost:5173` | Main user and admin interface (Vite dev server) |
 | **Backend REST API & Swagger** | `http://localhost:3000/api/docs` | Interactive OpenAPI documentation |
 | **Mailpit Web Inbox** | `http://localhost:8025` | Inspect activation links & reset tokens |
 | **SeaweedFS Master Console** | `http://localhost:9333` | Volume status & cluster diagnostics |
