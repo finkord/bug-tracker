@@ -76,7 +76,9 @@ import { SprintsModule } from './modules/sprints/sprints.module.js';
           IssueSecurityGrant,
           Sprint,
         ],
-        synchronize: process.env.NODE_ENV !== 'production', // NEVER auto-sync in production
+        synchronize:
+          configService.get<string>('DB_SYNCHRONIZE') === 'true' ||
+          configService.get<string>('NODE_ENV') !== 'production',
       }),
     }),
 

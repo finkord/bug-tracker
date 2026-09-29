@@ -74,12 +74,17 @@ services:
       dockerfile: Dockerfile
     container_name: bugtracker-backend-prod
     restart: always
+    env_file:
+      - ./backend/.env
+    ports:
+      - "${BACKEND_PORT:-3000}:3000"
     environment:
       NODE_ENV: production
       PORT: 3000
       API_PREFIX: api/v1
       DB_HOST: postgres
       DB_PORT: 5432
+      DB_SYNCHRONIZE: "true"
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       DB_NAME: ${DB_NAME:-bug_tracker}
@@ -94,7 +99,8 @@ services:
       S3_SECRET_ACCESS_KEY: any
       S3_BUCKET_NAME: bugtracker-attachments
       S3_FORCE_PATH_STYLE: "true"
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost,http://localhost:5173}
       JWT_SECRET: ${JWT_SECRET:-super_secret_jwt_access_key_change_in_production_min_32_chars}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-super_secret_jwt_refresh_key_change_in_production_min_32_chars}
     depends_on:
