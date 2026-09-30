@@ -66,8 +66,31 @@ export function useSavedFiltersQuery() {
 export function useCreateSavedFilterMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ name, criteria }: { name: string; criteria: string }) =>
-      api.createSavedFilter(name, criteria),
+    mutationFn: (payload: {
+      name: string;
+      criteria: string;
+      description?: string;
+      isFavorite?: boolean;
+    }) => api.createSavedFilter(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: userKeys.savedFilters() });
+    },
+  });
+}
+
+export function useUpdateSavedFilterMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      ...payload
+    }: {
+      id: number;
+      name?: string;
+      criteria?: string;
+      description?: string;
+      isFavorite?: boolean;
+    }) => api.updateSavedFilter(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: userKeys.savedFilters() });
     },

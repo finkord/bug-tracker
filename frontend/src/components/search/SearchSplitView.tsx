@@ -26,10 +26,17 @@ import {
   Loader2,
   Copy,
   Check,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 interface SearchSplitViewProps {
   issues: IssueItem[];
+  total?: number;
+  page?: number;
+  limit?: number;
+  totalPages?: number;
+  onPageChange?: (page: number) => void;
   selectedIssueId: number | null;
   onSelectIssue: (issue: IssueItem) => void;
   onOpenDetailsModal?: (issue: IssueItem) => void;
@@ -47,6 +54,11 @@ const STATUS_OPTIONS: { label: string; value: IssueStatus }[] = [
 
 export const SearchSplitView: React.FC<SearchSplitViewProps> = ({
   issues,
+  total: _total,
+  page = 1,
+  limit: _limit = 50,
+  totalPages = 1,
+  onPageChange,
   selectedIssueId,
   onSelectIssue,
   onUpdateStatus,
@@ -240,6 +252,33 @@ export const SearchSplitView: React.FC<SearchSplitViewProps> = ({
             );
           })}
         </div>
+
+        {/* Left Pane Pagination */}
+        {totalPages > 1 && onPageChange && (
+          <div className="p-2 border-t border-[var(--md-sys-color-outline-variant)]/30 flex items-center justify-between text-xs text-[var(--md-sys-color-on-surface-variant)] bg-[var(--md-sys-color-surface-container)]">
+            <button
+              type="button"
+              onClick={() => onPageChange(page - 1)}
+              disabled={page <= 1}
+              className="p-1 rounded border border-[var(--md-sys-color-outline-variant)] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--md-sys-color-surface-container-high)] transition cursor-pointer"
+              title="Previous page"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+            <span>
+              Page {page} of {totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={() => onPageChange(page + 1)}
+              disabled={page >= totalPages}
+              className="p-1 rounded border border-[var(--md-sys-color-outline-variant)] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--md-sys-color-surface-container-high)] transition cursor-pointer"
+              title="Next page"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Right Detail Preview Pane */}

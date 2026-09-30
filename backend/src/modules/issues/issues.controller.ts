@@ -35,6 +35,7 @@ import { ProjectPermissionGuard } from '../rbac/guards/project-permission.guard.
 import { RequireProjectPermission } from '../rbac/decorators/require-permission.decorator.js';
 import { ProjectPermission } from '../rbac/entities/permission-grant.entity.js';
 import { PermissionEvaluatorService } from '../rbac/services/permission-evaluator.service.js';
+import type { PaginatedIssuesResponseDto } from './dto/issue-response.dto.js';
 
 @ApiTags('Issues & Kanban')
 @ApiBearerAuth('JWT-auth')
@@ -51,8 +52,11 @@ export class IssuesController {
   @ApiOperation({
     summary: 'List issues with multi-criteria filters (Kanban Board & Backlog)',
   })
-  async findAll(@Query() query: ListIssuesQueryDto) {
-    return this.issuesService.findAll(query);
+  async findAll(
+    @Query() query: ListIssuesQueryDto,
+    @CurrentUser() user: User,
+  ): Promise<PaginatedIssuesResponseDto> {
+    return this.issuesService.findAll(query, user);
   }
 
   @Get('worklogs/me')

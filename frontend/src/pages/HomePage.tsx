@@ -25,9 +25,10 @@ export const HomePage: React.FC = () => {
 
   const [selectedIssueId, setSelectedIssueId] = useState<number | null>(null);
 
-  const { data: assignedIssues = [], isLoading: issuesLoading } = useIssuesQuery(
+  const { data: assignedIssuesData, isLoading: issuesLoading } = useIssuesQuery(
     user ? { assigneeId: user.id } : undefined,
   );
+  const assignedIssues = assignedIssuesData?.items ?? [];
   const { data: projects = [], isLoading: projectsLoading } = useProjectsQuery();
   const { data: savedFilters = [], isLoading: filtersLoading } = useSavedFiltersQuery();
 

@@ -21,6 +21,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { User, SystemRole } from './entities/user.entity.js';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto.js';
 import { ListUsersQueryDto } from './dto/list-users-query.dto.js';
+import { CreateSavedFilterDto, UpdateSavedFilterDto } from './dto/saved-filter.dto.js';
 
 @ApiTags('Users & Profile')
 @ApiBearerAuth('JWT-auth')
@@ -107,9 +108,22 @@ export class UsersController {
   })
   async createFilter(
     @CurrentUser() user: User,
-    @Body() dto: { name: string; criteria: string },
+    @Body() dto: CreateSavedFilterDto,
   ) {
-    return this.usersService.createSavedFilter(user.id, dto.name, dto.criteria);
+    return this.usersService.createSavedFilter(user.id, dto);
+  }
+
+  @Patch('me/filters/:id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Update a saved search filter (name, criteria, description, favorite)',
+  })
+  async updateFilter(
+    @CurrentUser() user: User,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateSavedFilterDto,
+  ) {
+    return this.usersService.updateSavedFilter(user.id, id, dto);
   }
 
   @Delete('me/filters/:id')

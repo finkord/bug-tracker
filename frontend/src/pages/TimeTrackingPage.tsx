@@ -119,10 +119,11 @@ export const TimeTrackingPage: React.FC = () => {
   } = useMyWorklogsQuery();
 
   const {
-    data: issues = [],
+    data: issuesData,
     isLoading: issuesLoading,
     refetch: refetchIssues,
   } = useIssuesQuery();
+  const issues = issuesData?.items ?? [];
 
   const loading = statsLoading || matrixLoading || myLogsLoading || issuesLoading;
 

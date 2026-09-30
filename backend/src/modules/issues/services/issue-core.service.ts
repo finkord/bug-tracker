@@ -3,18 +3,21 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Issue, IssueStatus } from '../entities/issue.entity.js';
 import { Project } from '../../projects/entities/project.entity.js';
-import { User } from '../../users/entities/user.entity.js';
+import { User, SystemRole } from '../../users/entities/user.entity.js';
 import { Attachment } from '../entities/attachment.entity.js';
 import { Sprint } from '../../sprints/entities/sprint.entity.js';
 import { EventsGateway } from '../../events/events.gateway.js';
 import { CreateIssueDto } from '../dto/create-issue.dto.js';
 import { ListIssuesQueryDto } from '../dto/list-issues-query.dto.js';
 import { IssueLinksService } from './issue-links.service.js';
+import { JqlParserService } from './jql-parser.service.js';
+import { PermissionEvaluatorService } from '../../rbac/services/permission-evaluator.service.js';
 import type {
   IssueSummaryDto,
   IssueDetailDto,
   UserSummaryDto,
   IssueLinkItemDto,
+  PaginatedIssuesResponseDto,
 } from '../dto/issue-response.dto.js';
 
 /**
@@ -33,12 +36,32 @@ export class IssueCoreService {
     private readonly sprintRepository: Repository<Sprint>,
     private readonly issueLinksService: IssueLinksService,
     private readonly eventsGateway: EventsGateway,
+    private readonly jqlParserService: JqlParserService,
+    private readonly permissionEvaluator: PermissionEvaluatorService,
   ) {}
 
   /**
-   * Retrieves list of issues with multi-criteria filtering.
+   * Retrieves paginated list of issues with multi-criteria filtering, JQL search, and RBAC isolation.
    */
-  async findAll(query: ListIssuesQueryDto): Promise<IssueSummaryDto[]> {
+  async findAll(query: ListIssuesQueryDto, user?: User): Promise<PaginatedIssuesResponseDto> {
+    const page = Math.max(1, Number(query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(query.limit) || 50));
+
+    // 1. Enforce tenant project isolation and row-level security if user is provided
+    let accessibleProjectIds: number[] | 'ALL' = 'ALL';
+    if (user) {
+      accessibleProjectIds = await this.permissionEvaluator.getAccessibleProjectIds(user.id);
+      if (accessibleProjectIds !== 'ALL' && accessibleProjectIds.length === 0) {
+        return {
+          items: [],
+          total: 0,
+          page,
+          limit,
+          totalPages: 0,
+        };
+      }
+    }
+
     const qb = this.issueRepository
       .createQueryBuilder('issue')
       .leftJoinAndSelect('issue.project', 'project')
@@ -47,41 +70,92 @@ export class IssueCoreService {
       .leftJoinAndSelect('issue.sprint', 'sprint')
       .loadRelationIdAndMap('issue.commentIds', 'issue.comments');
 
-    if (query.projectId) {
-      qb.andWhere('issue.projectId = :projectId', { projectId: query.projectId });
-    }
-    if (query.status) {
-      qb.andWhere('issue.status = :status', { status: query.status });
-    }
-    if (query.priority) {
-      qb.andWhere('issue.priority = :priority', { priority: query.priority });
-    }
-    if (query.issueType) {
-      qb.andWhere('issue.issueType = :issueType', { issueType: query.issueType });
-    }
-    if (query.assigneeId) {
-      qb.andWhere('issue.assigneeId = :assigneeId', { assigneeId: query.assigneeId });
-    }
-    if (query.sprintId) {
-      if (query.sprintId.toUpperCase() === 'BACKLOG' || query.sprintId === '0') {
-        qb.andWhere('issue.sprintId IS NULL');
-      } else {
-        qb.andWhere('issue.sprintId = :sprintId', { sprintId: Number(query.sprintId) });
+    if (user) {
+      if (accessibleProjectIds !== 'ALL') {
+        qb.andWhere('issue.projectId IN (:...accessibleProjectIds)', { accessibleProjectIds });
+      }
+
+      if (user.systemRole !== SystemRole.ADMIN) {
+        qb.andWhere(
+          '(issue.securityLevelId IS NULL OR issue.reporterId = :currentUserId OR issue.assigneeId = :currentUserId)',
+          { currentUserId: user.id },
+        );
       }
     }
-    if (query.search && query.search.trim()) {
-      const rawTerm = query.search.trim();
-      const term = `%${rawTerm.toLowerCase()}%`;
-      qb.andWhere(
-        '(LOWER(issue.title) LIKE :term OR LOWER(issue.description) LIKE :term OR LOWER(project.key) LIKE :term OR to_tsvector(\'simple\', coalesce(issue.title, \'\') || \' \' || coalesce(issue.description, \'\')) @@ plainto_tsquery(\'simple\', :rawTerm))',
-        { term, rawTerm },
-      );
+
+    // 2. Apply JQL search expression if provided
+    let hasCustomOrder = false;
+    if (query.jql && query.jql.trim()) {
+      hasCustomOrder = this.jqlParserService.applyToQueryBuilder(qb, query.jql, user?.id);
+    } else {
+      if (query.projectId) {
+        qb.andWhere('issue.projectId = :projectId', { projectId: query.projectId });
+      }
+      if (query.status) {
+        qb.andWhere('issue.status = :status', { status: query.status });
+      }
+      if (query.priority) {
+        qb.andWhere('issue.priority = :priority', { priority: query.priority });
+      }
+      if (query.issueType) {
+        qb.andWhere('issue.issueType = :issueType', { issueType: query.issueType });
+      }
+      if (query.assigneeId) {
+        qb.andWhere('issue.assigneeId = :assigneeId', { assigneeId: query.assigneeId });
+      }
+      if (query.sprintId) {
+        if (query.sprintId.toUpperCase() === 'BACKLOG' || query.sprintId === '0') {
+          qb.andWhere('issue.sprintId IS NULL');
+        } else {
+          qb.andWhere('issue.sprintId = :sprintId', { sprintId: Number(query.sprintId) });
+        }
+      }
+      if (query.search && query.search.trim()) {
+        const rawTerm = query.search.trim();
+        const term = `%${rawTerm.toLowerCase()}%`;
+        qb.andWhere(
+          '(LOWER(issue.title) LIKE :term OR LOWER(issue.description) LIKE :term OR LOWER(project.key) LIKE :term OR to_tsvector(\'english\', coalesce(issue.title, \'\') || \' \' || coalesce(issue.description, \'\')) @@ plainto_tsquery(\'english\', :rawTerm))',
+          { term, rawTerm },
+        );
+      }
     }
 
-    qb.orderBy('issue.createdAt', 'DESC');
-    const issues = await qb.getMany();
+    // 3. Apply sorting if not already handled by JQL ORDER BY
+    if (!hasCustomOrder) {
+      if (query.sortBy) {
+        const allowedSortCols: Record<string, string> = {
+          createdAt: 'issue.createdAt',
+          updatedAt: 'issue.updatedAt',
+          priority: 'issue.priority',
+          status: 'issue.status',
+          title: 'issue.title',
+          issueNum: 'issue.issueNum',
+        };
+        const sortCol = allowedSortCols[query.sortBy] || 'issue.createdAt';
+        const sortDirection = (query.sortOrder || 'DESC').toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+        qb.orderBy(sortCol, sortDirection);
+      } else {
+        qb.orderBy('issue.createdAt', 'DESC');
+      }
+    }
 
-    return issues.map((i) => this.mapIssueSummary(i, (i as unknown as { commentIds?: number[] }).commentIds));
+    // 4. Server-side pagination
+    const skip = (page - 1) * limit;
+
+    qb.skip(skip).take(limit);
+
+    const [issues, total] = await qb.getManyAndCount();
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      items: issues.map((i) =>
+        this.mapIssueSummary(i, (i as unknown as { commentIds?: number[] }).commentIds),
+      ),
+      total,
+      page,
+      limit,
+      totalPages,
+    };
   }
 
   /**

@@ -13,10 +13,29 @@ export const usersApi = {
 
   getSavedFilters: () => request<SavedFilterItem[]>('/users/me/filters'),
 
-  createSavedFilter: (name: string, criteria: string) =>
+  createSavedFilter: (payload: {
+    name: string;
+    criteria: string;
+    description?: string;
+    isFavorite?: boolean;
+  }) =>
     request<SavedFilterItem>('/users/me/filters', {
       method: 'POST',
-      body: JSON.stringify({ name, criteria }),
+      body: JSON.stringify(payload),
+    }),
+
+  updateSavedFilter: (
+    id: number,
+    payload: {
+      name?: string;
+      criteria?: string;
+      description?: string;
+      isFavorite?: boolean;
+    },
+  ) =>
+    request<SavedFilterItem>(`/users/me/filters/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
     }),
 
   deleteSavedFilter: (id: number) =>

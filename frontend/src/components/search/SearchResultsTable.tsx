@@ -22,10 +22,18 @@ import {
   ArrowDown,
   ExternalLink,
   Layers,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 interface SearchResultsTableProps {
   issues: IssueItem[];
+  total?: number;
+  page?: number;
+  limit?: number;
+  totalPages?: number;
+  onPageChange?: (page: number) => void;
+  onLimitChange?: (limit: number) => void;
   selectedIssueId?: number | null;
   onSelectIssue?: (issue: IssueItem) => void;
   onOpenDetailsModal?: (issue: IssueItem) => void;
@@ -45,6 +53,12 @@ const STATUS_OPTIONS: { label: string; value: IssueStatus }[] = [
 
 export const SearchResultsTable: React.FC<SearchResultsTableProps> = ({
   issues,
+  total,
+  page = 1,
+  limit = 50,
+  totalPages = 1,
+  onPageChange,
+  onLimitChange,
   selectedIssueId,
   onSelectIssue,
   onUpdateStatus,
@@ -333,9 +347,57 @@ export const SearchResultsTable: React.FC<SearchResultsTableProps> = ({
         </table>
       </div>
 
-      {/* Footer summary */}
-      <div className="py-2.5 px-4 bg-[var(--md-sys-color-surface-container)] border-t border-[var(--md-sys-color-outline-variant)]/40 text-xs font-medium text-[var(--md-sys-color-on-surface-variant)] flex items-center justify-between">
-        <span>Showing {issues.length} {issues.length === 1 ? 'issue' : 'issues'}</span>
+      {/* Footer pagination */}
+      <div className="py-2.5 px-4 bg-[var(--md-sys-color-surface-container)] border-t border-[var(--md-sys-color-outline-variant)]/40 text-xs font-medium text-[var(--md-sys-color-on-surface-variant)] flex flex-wrap items-center justify-between gap-3">
+        <span>
+          {total !== undefined
+            ? `Showing ${total === 0 ? 0 : (page - 1) * limit + 1} to ${Math.min(page * limit, total)} of ${total} issues`
+            : `Showing ${issues.length} ${issues.length === 1 ? 'issue' : 'issues'}`}
+        </span>
+
+        <div className="flex items-center gap-4">
+          {onLimitChange && (
+            <div className="flex items-center gap-1.5">
+              <span>Rows:</span>
+              <select
+                value={limit}
+                onChange={(e) => onLimitChange(Number(e.target.value))}
+                className="bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-[var(--md-sys-color-primary)] cursor-pointer"
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+          )}
+
+          {totalPages !== undefined && totalPages > 1 && onPageChange && (
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => onPageChange(page - 1)}
+                disabled={page <= 1}
+                className="p-1 rounded-md border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--md-sys-color-surface-container-high)] transition cursor-pointer"
+                title="Previous page"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="px-1 text-xs">
+                Page {page} of {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => onPageChange(page + 1)}
+                disabled={page >= totalPages}
+                className="p-1 rounded-md border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--md-sys-color-surface-container-high)] transition cursor-pointer"
+                title="Next page"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -29,6 +29,8 @@ export interface SavedFilterItem {
   userId: number;
   name: string;
   criteria: string;
+  description?: string | null;
+  isFavorite?: boolean;
   createdAt: string;
 }
 

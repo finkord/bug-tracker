@@ -46,6 +46,11 @@ export enum IssueSeverity {
 
 @Entity('issues')
 @Index(['projectId', 'issueNum'], { unique: true })
+@Index(['projectId', 'status'])
+@Index(['assigneeId'])
+@Index(['reporterId'])
+@Index(['createdAt'])
+@Index(['priority'])
 export class Issue {
   @PrimaryGeneratedColumn('increment')
   id: number;

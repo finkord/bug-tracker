@@ -10,7 +10,7 @@ import {
   useCreateSavedFilterMutation,
   issueKeys,
 } from '../api/queries';
-import { type IssueItem, type IssueStatus } from '../api/client';
+import { type IssueItem, type IssueStatus, type PaginatedIssuesResponse } from '../api/client';
 import { realtimeSocket } from '../api/socket';
 import { useAuth } from '../store';
 import { IssueModal } from '../components/kanban/IssueModal';
@@ -50,10 +50,11 @@ export const KanbanBoardPage: React.FC = () => {
   );
 
   const {
-    data: issues = [],
+    data: issuesData,
     isLoading: loading,
     refetch: loadIssues,
   } = useIssuesQuery(issueFilter);
+  const issues = issuesData?.items ?? [];
 
   const updateStatusMutation = useUpdateIssueStatusMutation();
   const updateIssueMutation = useUpdateIssueMutation();
@@ -144,28 +145,50 @@ export const KanbanBoardPage: React.FC = () => {
     }
 
     const unsubCreated = realtimeSocket.onIssueCreated((newIssue) => {
-      queryClient.setQueryData<IssueItem[]>(issueKeys.list(issueFilter), (old = []) => {
-        if (old.some((i) => i.id === newIssue.id)) return old;
+      queryClient.setQueryData<PaginatedIssuesResponse>(issueKeys.list(issueFilter), (old) => {
+        const items = old?.items ?? [];
+        if (items.some((i) => i.id === newIssue.id)) return old;
         if (selectedProjectId !== 'ALL' && newIssue.projectId !== selectedProjectId) return old;
-        return [newIssue, ...old];
+        const nextItems = [newIssue, ...items];
+        return {
+          items: nextItems,
+          total: (old?.total ?? 0) + 1,
+          page: old?.page ?? 1,
+          limit: old?.limit ?? 50,
+          totalPages: Math.ceil(((old?.total ?? 0) + 1) / (old?.limit ?? 50)),
+        };
       });
     });
 
     const unsubUpdated = realtimeSocket.onIssueUpdated((updatedIssue) => {
-      queryClient.setQueryData<IssueItem[]>(issueKeys.list(issueFilter), (old = []) => {
-        const exists = old.some((i) => i.id === updatedIssue.id);
+      queryClient.setQueryData<PaginatedIssuesResponse>(issueKeys.list(issueFilter), (old) => {
+        if (!old) return old;
+        const exists = old.items.some((i) => i.id === updatedIssue.id);
+        let nextItems: IssueItem[];
         if (exists) {
-          return old.map((i) => (i.id === updatedIssue.id ? updatedIssue : i));
+          nextItems = old.items.map((i) => (i.id === updatedIssue.id ? updatedIssue : i));
         } else if (selectedProjectId === 'ALL' || updatedIssue.projectId === selectedProjectId) {
-          return [updatedIssue, ...old];
+          nextItems = [updatedIssue, ...old.items];
+        } else {
+          return old;
         }
-        return old;
+        return {
+          ...old,
+          items: nextItems,
+          total: nextItems.length,
+        };
       });
     });
 
     const unsubDeleted = realtimeSocket.onIssueDeleted(({ issueId }) => {
-      queryClient.setQueryData<IssueItem[]>(issueKeys.list(issueFilter), (old = []) => {
-        return old.filter((i) => i.id !== issueId);
+      queryClient.setQueryData<PaginatedIssuesResponse>(issueKeys.list(issueFilter), (old) => {
+        if (!old) return old;
+        const nextItems = old.items.filter((i) => i.id !== issueId);
+        return {
+          ...old,
+          items: nextItems,
+          total: Math.max(0, old.total - 1),
+        };
       });
     });
 

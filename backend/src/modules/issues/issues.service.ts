@@ -22,6 +22,7 @@ import type {
   WorklogStatsResponseDto,
   IssueLinkItemDto,
   CommentItemDto,
+  PaginatedIssuesResponseDto,
 } from './dto/issue-response.dto.js';
 
 /**
@@ -41,8 +42,8 @@ export class IssuesService {
   /**
    * Retrieves list of issues with multi-criteria filtering.
    */
-  async findAll(query: ListIssuesQueryDto): Promise<IssueSummaryDto[]> {
-    return this.issueCoreService.findAll(query);
+  async findAll(query: ListIssuesQueryDto, user?: User): Promise<PaginatedIssuesResponseDto> {
+    return this.issueCoreService.findAll(query, user);
   }
 
   /**

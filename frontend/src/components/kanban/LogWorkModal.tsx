@@ -36,7 +36,8 @@ export const LogWorkModal: React.FC<LogWorkModalProps> = ({
     if (isOpen) {
       setSelectedIssueId(initialIssueId);
       api.getIssues()
-        .then((items) => {
+        .then((res) => {
+          const items = res.items || [];
           setIssuesList(items);
           if (!initialIssueId && items.length > 0) {
             setSelectedIssueId(items[0].id);

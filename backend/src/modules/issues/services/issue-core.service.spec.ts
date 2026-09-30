@@ -81,6 +81,13 @@ describe('IssueCoreService', () => {
       broadcastIssueUpdated: vi.fn(),
       broadcastIssueDeleted: vi.fn(),
     };
+    const mockJqlParser = {
+      parse: vi.fn(),
+      applyToQueryBuilder: vi.fn().mockReturnValue(false),
+    };
+    const mockPermissionEvaluator = {
+      getAccessibleProjectIds: vi.fn().mockResolvedValue('ALL'),
+    };
 
     service = new IssueCoreService(
       mockIssueRepo,
@@ -89,7 +96,75 @@ describe('IssueCoreService', () => {
       mockSprintRepo,
       mockIssueLinksService,
       mockEventsGateway,
+      mockJqlParser as any,
+      mockPermissionEvaluator as any,
     );
+  });
+
+  describe('findAll', () => {
+    it('should return paginated issues with server-side limit and offset', async () => {
+      const mockQb = {
+        leftJoinAndSelect: vi.fn().mockReturnThis(),
+        loadRelationIdAndMap: vi.fn().mockReturnThis(),
+        andWhere: vi.fn().mockReturnThis(),
+        orderBy: vi.fn().mockReturnThis(),
+        skip: vi.fn().mockReturnThis(),
+        take: vi.fn().mockReturnThis(),
+        getManyAndCount: vi.fn().mockResolvedValue([[mockIssue], 1]),
+      };
+      mockIssueRepo.createQueryBuilder.mockReturnValue(mockQb);
+
+      const result = await service.findAll({ page: 1, limit: 10 }, mockUser);
+
+      expect(mockQb.skip).toHaveBeenCalledWith(0);
+      expect(mockQb.take).toHaveBeenCalledWith(10);
+      expect(result).toEqual({
+        items: expect.arrayContaining([expect.objectContaining({ id: 10 })]),
+        total: 1,
+        page: 1,
+        limit: 10,
+        totalPages: 1,
+      });
+    });
+
+    it('should filter accessible projects for non-admin users', async () => {
+      const mockQb = {
+        leftJoinAndSelect: vi.fn().mockReturnThis(),
+        loadRelationIdAndMap: vi.fn().mockReturnThis(),
+        andWhere: vi.fn().mockReturnThis(),
+        orderBy: vi.fn().mockReturnThis(),
+        skip: vi.fn().mockReturnThis(),
+        take: vi.fn().mockReturnThis(),
+        getManyAndCount: vi.fn().mockResolvedValue([[mockIssue], 1]),
+      };
+      mockIssueRepo.createQueryBuilder.mockReturnValue(mockQb);
+
+      const mockPermEvaluator = (service as any).permissionEvaluator;
+      mockPermEvaluator.getAccessibleProjectIds.mockResolvedValue([1, 2]);
+
+      const result = await service.findAll({ page: 1, limit: 25 }, mockUser);
+
+      expect(mockQb.andWhere).toHaveBeenCalledWith(
+        'issue.projectId IN (:...accessibleProjectIds)',
+        { accessibleProjectIds: [1, 2] },
+      );
+      expect(result.total).toBe(1);
+    });
+
+    it('should return empty envelope if non-admin has no accessible projects', async () => {
+      const mockPermEvaluator = (service as any).permissionEvaluator;
+      mockPermEvaluator.getAccessibleProjectIds.mockResolvedValue([]);
+
+      const result = await service.findAll({ page: 1, limit: 25 }, mockUser);
+
+      expect(result).toEqual({
+        items: [],
+        total: 0,
+        page: 1,
+        limit: 25,
+        totalPages: 0,
+      });
+    });
   });
 
   describe('create', () => {

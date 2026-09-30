@@ -17,6 +17,7 @@ import { IssueLinksService } from './services/issue-links.service.js';
 import { IssueCommentsService } from './services/issue-comments.service.js';
 import { IssueAttachmentsService } from './services/issue-attachments.service.js';
 import { SeaweedFsService } from './services/seaweedfs.service.js';
+import { JqlParserService } from './services/jql-parser.service.js';
 import { RbacModule } from '../rbac/rbac.module.js';
 
 @Module({
@@ -34,6 +35,7 @@ import { RbacModule } from '../rbac/rbac.module.js';
     IssueAttachmentsService,
     IssuesService,
     SeaweedFsService,
+    JqlParserService,
   ],
   exports: [
     IssueCoreService,
@@ -43,6 +45,7 @@ import { RbacModule } from '../rbac/rbac.module.js';
     IssueAttachmentsService,
     IssuesService,
     SeaweedFsService,
+    JqlParserService,
   ],
 })
 export class IssuesModule {}

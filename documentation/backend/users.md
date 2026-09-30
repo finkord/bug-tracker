@@ -23,7 +23,8 @@ The `UsersModule` manages user identities, profile settings, avatar storage, and
 | `PATCH` | `/me/profile` | Update personal profile details (full name, job title) | JWT (`JwtAuthGuard`) |
 | `PATCH` | `/me/avatar` | Update current user avatar URL or preset | JWT (`JwtAuthGuard`) |
 | `GET` | `/me/filters` | List all saved search filters for the current user | JWT (`JwtAuthGuard`) |
-| `POST` | `/me/filters` | Save a new custom search filter | JWT (`JwtAuthGuard`) |
+| `POST` | `/me/filters` | Save a new custom search filter (name, criteria, description, isFavorite) | JWT (`JwtAuthGuard`) |
+| `PATCH` | `/me/filters/:id` | Update an existing saved filter (name, criteria, description, isFavorite) | JWT (`JwtAuthGuard`) |
 | `DELETE` | `/me/filters/:id` | Delete an existing saved filter | JWT (`JwtAuthGuard`) |
 | `GET` | `/assignees` | List active users eligible for issue assignment | JWT (`JwtAuthGuard`) |
 | `GET` | `/` | Paginated search of all users with role/status filters | Admin (`Roles('ADMIN')`) |

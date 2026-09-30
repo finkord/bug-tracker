@@ -4,10 +4,13 @@ import {
   useIssuesQuery,
   useProjectsQuery,
   useUsersQuery,
+  useSavedFiltersQuery,
+  useCreateSavedFilterMutation,
+  useUpdateSavedFilterMutation,
+  useDeleteSavedFilterMutation,
   useUpdateIssueStatusMutation,
 } from '../api/queries';
 import type { IssueItem, IssueStatus } from '../api/client';
-import { useAuth } from '../store';
 import { SearchToolbar } from '../components/search/SearchToolbar';
 import { BasicFilterBar } from '../components/search/BasicFilterBar';
 import { JqlEditorBar } from '../components/search/JqlEditorBar';
@@ -22,26 +25,10 @@ import type {
   BasicFilterCriteria,
   SavedFilterPreset,
 } from '../types/search';
-import {
-  parseJql,
-  evaluateJql,
-  buildJqlFromFilters,
-} from '../utils/jqlParser';
-
-const SAVED_FILTERS_STORAGE_KEY = 'bugtracker_saved_filters';
+import { buildJqlFromFilters } from '../utils/jqlParser';
 
 export const AdvancedSearchPage: React.FC = () => {
-  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-
-  // TanStack Query Hooks for core server data
-  const { data: issues = [], isLoading: issuesLoading, refetch: refetchIssues } = useIssuesQuery();
-  const { data: projects = [], isLoading: projectsLoading, refetch: refetchProjects } = useProjectsQuery();
-  const { data: usersData, isLoading: usersLoading, refetch: refetchUsers } = useUsersQuery({ page: 1, limit: 100 });
-  const users = usersData?.items || [];
-  const loading = issuesLoading || projectsLoading || usersLoading;
-
-  const updateStatusMutation = useUpdateIssueStatusMutation();
 
   // Search Mode & Layout View
   const [mode, setMode] = useState<SearchMode>(() => {
@@ -70,35 +57,82 @@ export const AdvancedSearchPage: React.FC = () => {
   const [sortBy, setSortBy] = useState<string>('updatedAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
+  // Server-side Pagination
+  const [page, setPage] = useState<number>(1);
+  const [limit, setLimit] = useState<number>(50);
+
   // Selected Issue for Split View / Details Modal
   const [selectedIssueId, setSelectedIssueId] = useState<number | null>(null);
   const [detailsModalIssue, setDetailsModalIssue] = useState<IssueItem | null>(null);
-
-  // Saved Filters
-  const [savedFilters, setSavedFilters] = useState<SavedFilterPreset[]>(() => {
-    try {
-      const stored = localStorage.getItem(SAVED_FILTERS_STORAGE_KEY);
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  });
 
   // Modals
   const [saveModalOpen, setSaveModalOpen] = useState<boolean>(false);
   const [manageFiltersOpen, setManageFiltersOpen] = useState<boolean>(false);
 
-  // Sync Saved Filters to localStorage
+  // Saved Filters from backend database
+  const { data: savedFiltersData = [], isLoading: filtersLoading, refetch: refetchSavedFilters } = useSavedFiltersQuery();
+  const createFilterMutation = useCreateSavedFilterMutation();
+  const updateFilterMutation = useUpdateSavedFilterMutation();
+  const deleteFilterMutation = useDeleteSavedFilterMutation();
+  const updateStatusMutation = useUpdateIssueStatusMutation();
+
+  const savedFilters: SavedFilterPreset[] = useMemo(() => {
+    return (savedFiltersData || []).map((f) => ({
+      id: String(f.id),
+      name: f.name,
+      description: f.description || '',
+      jql: f.criteria,
+      isFavorite: Boolean(f.isFavorite),
+      createdAt: f.createdAt,
+    }));
+  }, [savedFiltersData]);
+
+  // Compute effective JQL representation
+  const effectiveJql = useMemo(() => {
+    if (mode === 'jql') return jqlQuery;
+    return buildJqlFromFilters({
+      query: searchQuery,
+      projectKey: basicFilters.projectKey,
+      statuses: basicFilters.statuses,
+      priorities: basicFilters.priorities,
+      issueTypes: basicFilters.issueTypes,
+      assignee: basicFilters.assignee,
+      sprint: basicFilters.sprint,
+      sortBy,
+      sortOrder,
+    });
+  }, [mode, jqlQuery, searchQuery, basicFilters, sortBy, sortOrder]);
+
+  // TanStack Query Hooks for core server data with server-side JQL execution & pagination
+  const {
+    data: issuesData,
+    isLoading: issuesLoading,
+    refetch: refetchIssues,
+  } = useIssuesQuery({
+    jql: effectiveJql.trim() || undefined,
+    page,
+    limit,
+    sortBy,
+    sortOrder: sortOrder.toUpperCase() as 'ASC' | 'DESC',
+  });
+
+  const { data: projects = [], isLoading: projectsLoading, refetch: refetchProjects } = useProjectsQuery();
+  const { data: usersData, isLoading: usersLoading, refetch: refetchUsers } = useUsersQuery({ page: 1, limit: 100 });
+  const users = usersData?.items || [];
+
+  const issues = issuesData?.items || [];
+  const totalResults = issuesData?.total || 0;
+  const totalPages = issuesData?.totalPages || 1;
+
+  const loading = issuesLoading || projectsLoading || usersLoading || filtersLoading;
+
+  // Reset page to 1 whenever search criteria change
   useEffect(() => {
-    try {
-      localStorage.setItem(SAVED_FILTERS_STORAGE_KEY, JSON.stringify(savedFilters));
-    } catch (e) {
-      console.error('Failed to persist saved filters:', e);
-    }
-  }, [savedFilters]);
+    setPage(1);
+  }, [effectiveJql]);
 
   const handleRefresh = async () => {
-    await Promise.all([refetchIssues(), refetchProjects(), refetchUsers()]);
+    await Promise.all([refetchIssues(), refetchProjects(), refetchUsers(), refetchSavedFilters()]);
   };
 
   // Sync URL search parameters
@@ -138,28 +172,6 @@ export const AdvancedSearchPage: React.FC = () => {
     updateUrlParams();
   }, [updateUrlParams]);
 
-  // Compute effective JQL representation
-  const effectiveJql = useMemo(() => {
-    if (mode === 'jql') return jqlQuery;
-    return buildJqlFromFilters({
-      query: searchQuery,
-      projectKey: basicFilters.projectKey,
-      statuses: basicFilters.statuses,
-      priorities: basicFilters.priorities,
-      issueTypes: basicFilters.issueTypes,
-      assignee: basicFilters.assignee,
-      sprint: basicFilters.sprint,
-      sortBy,
-      sortOrder,
-    });
-  }, [mode, jqlQuery, searchQuery, basicFilters, sortBy, sortOrder]);
-
-  // Compute filtered issues
-  const filteredIssues = useMemo(() => {
-    const parsed = parseJql(effectiveJql);
-    return evaluateJql(issues, parsed, user?.id);
-  }, [issues, effectiveJql, user?.id]);
-
   // Handle Switch to JQL
   const handleSwitchToJql = () => {
     const generated = buildJqlFromFilters({
@@ -194,39 +206,58 @@ export const AdvancedSearchPage: React.FC = () => {
       sprint: 'ALL',
     });
     setJqlQuery('');
+    setPage(1);
   };
 
   // Handle Saved Filter selection
   const handleSelectSavedFilter = (jql: string) => {
     setJqlQuery(jql);
     setMode('jql');
+    setPage(1);
   };
 
-  // Handle Saving Filter
-  const handleSaveFilter = (newFilter: {
+  // Handle Saving Filter to backend
+  const handleSaveFilter = async (newFilter: {
     name: string;
     description: string;
     jql: string;
     isFavorite: boolean;
   }) => {
-    const created: SavedFilterPreset = {
-      id: `filter_${Date.now()}`,
-      ...newFilter,
-      createdAt: new Date().toISOString(),
-    };
-    setSavedFilters((prev) => [created, ...prev]);
+    try {
+      await createFilterMutation.mutateAsync({
+        name: newFilter.name,
+        criteria: newFilter.jql,
+        description: newFilter.description,
+        isFavorite: newFilter.isFavorite,
+      });
+      setSaveModalOpen(false);
+    } catch (err) {
+      console.error('Failed to save filter to backend:', err);
+    }
   };
 
-  // Handle Toggle Star
-  const handleToggleFavorite = (filterId: string) => {
-    setSavedFilters((prev) =>
-      prev.map((f) => (f.id === filterId ? { ...f, isFavorite: !f.isFavorite } : f)),
-    );
+  // Handle Toggle Star via backend API
+  const handleToggleFavorite = async (filterId: string) => {
+    const target = savedFilters.find((f) => String(f.id) === String(filterId));
+    if (target) {
+      try {
+        await updateFilterMutation.mutateAsync({
+          id: Number(filterId),
+          isFavorite: !target.isFavorite,
+        });
+      } catch (err) {
+        console.error('Failed to update filter favorite state:', err);
+      }
+    }
   };
 
-  // Handle Delete Filter
-  const handleDeleteFilter = (filterId: string) => {
-    setSavedFilters((prev) => prev.filter((f) => f.id !== filterId));
+  // Handle Delete Filter via backend API
+  const handleDeleteFilter = async (filterId: string) => {
+    try {
+      await deleteFilterMutation.mutateAsync(Number(filterId));
+    } catch (err) {
+      console.error('Failed to delete filter:', err);
+    }
   };
 
   // Inline status update
@@ -246,13 +277,14 @@ export const AdvancedSearchPage: React.FC = () => {
       setSortBy(column);
       setSortOrder('desc');
     }
+    setPage(1);
   };
 
   // CSV Export
   const handleExportCsv = () => {
-    if (filteredIssues.length === 0) return;
+    if (issues.length === 0) return;
     const headers = ['Key', 'Title', 'Type', 'Status', 'Priority', 'Sprint', 'Assignee', 'Created', 'Updated'];
-    const rows = filteredIssues.map((issue) => [
+    const rows = issues.map((issue) => [
       issue.key,
       `"${(issue.title || '').replace(/"/g, '""')}"`,
       issue.issueType,
@@ -277,8 +309,8 @@ export const AdvancedSearchPage: React.FC = () => {
 
   // JSON Export
   const handleExportJson = () => {
-    if (filteredIssues.length === 0) return;
-    const blob = new Blob([JSON.stringify(filteredIssues, null, 2)], {
+    if (issues.length === 0) return;
+    const blob = new Blob([JSON.stringify(issues, null, 2)], {
       type: 'application/json',
     });
     const url = URL.createObjectURL(blob);
@@ -312,7 +344,7 @@ export const AdvancedSearchPage: React.FC = () => {
         onExportJson={handleExportJson}
         onRefresh={handleRefresh}
         loading={loading}
-        totalResults={filteredIssues.length}
+        totalResults={totalResults}
       />
 
       {/* Basic Filters or JQL Editor based on active search mode */}
@@ -343,7 +375,16 @@ export const AdvancedSearchPage: React.FC = () => {
       <div className="flex-1 mt-4">
         {viewLayout === 'list' ? (
           <SearchResultsTable
-            issues={filteredIssues}
+            issues={issues}
+            total={totalResults}
+            page={page}
+            limit={limit}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            onLimitChange={(newLimit) => {
+              setLimit(newLimit);
+              setPage(1);
+            }}
             selectedIssueId={selectedIssueId}
             onSelectIssue={(issue) => setDetailsModalIssue(issue)}
             onUpdateStatus={handleUpdateStatus}
@@ -353,7 +394,12 @@ export const AdvancedSearchPage: React.FC = () => {
           />
         ) : (
           <SearchSplitView
-            issues={filteredIssues}
+            issues={issues}
+            total={totalResults}
+            page={page}
+            limit={limit}
+            totalPages={totalPages}
+            onPageChange={setPage}
             selectedIssueId={selectedIssueId}
             onSelectIssue={(issue) => setSelectedIssueId(issue.id)}
             onUpdateStatus={handleUpdateStatus}

@@ -9,10 +9,10 @@ import type { UserGroup } from '../rbac/entities/user-group.entity.js';
 
 describe('UsersService - Root Administrator Protections', () => {
   let service: UsersService;
-  let mockUserRepo: Partial<Repository<User>>;
-  let mockSavedFilterRepo: Partial<Repository<SavedFilter>>;
-  let mockGroupRepo: Partial<Repository<Group>>;
-  let mockUserGroupRepo: Partial<Repository<UserGroup>>;
+  let mockUserRepo: any;
+  let mockSavedFilterRepo: any;
+  let mockGroupRepo: any;
+  let mockUserGroupRepo: any;
 
   const mockAdminUser: User = Object.assign(new User(), {
     id: 1,
@@ -64,6 +64,7 @@ describe('UsersService - Root Administrator Protections', () => {
       create: vi.fn() as any,
       save: vi.fn() as any,
       delete: vi.fn(),
+      remove: vi.fn(),
     };
 
     mockGroupRepo = {
@@ -228,6 +229,79 @@ describe('UsersService - Root Administrator Protections', () => {
       // Assert
       expect(result.message).toContain('User #10 has been deleted');
       expect(mockUserRepo.delete).toHaveBeenCalledWith(10);
+    });
+  });
+
+  describe('Saved Filters', () => {
+    it('should retrieve saved filters ordered by favorite and recency', async () => {
+      const mockFilters = [
+        { id: 1, userId: 10, name: 'Starred Filter', criteria: 'status = "OPEN"', isFavorite: true },
+        { id: 2, userId: 10, name: 'Recent Filter', criteria: 'priority = "HIGH"', isFavorite: false },
+      ];
+      mockSavedFilterRepo.find.mockResolvedValue(mockFilters);
+
+      const result = await service.getSavedFilters(10);
+
+      expect(mockSavedFilterRepo.find).toHaveBeenCalledWith({
+        where: { userId: 10 },
+        order: { isFavorite: 'DESC', createdAt: 'DESC' },
+      });
+      expect(result).toEqual(mockFilters);
+    });
+
+    it('should create a saved filter with favorite and description', async () => {
+      const dto = {
+        name: 'Urgent Tasks',
+        criteria: 'priority = "CRITICAL"',
+        description: 'Triage queue',
+        isFavorite: true,
+      };
+      const createdEntity = { id: 3, userId: 10, ...dto };
+      mockSavedFilterRepo.create.mockReturnValue(createdEntity);
+      mockSavedFilterRepo.save.mockResolvedValue(createdEntity);
+
+      const result = await service.createSavedFilter(10, dto);
+
+      expect(mockSavedFilterRepo.create).toHaveBeenCalledWith({
+        userId: 10,
+        name: 'Urgent Tasks',
+        criteria: 'priority = "CRITICAL"',
+        description: 'Triage queue',
+        isFavorite: true,
+      });
+      expect(result).toEqual(createdEntity);
+    });
+
+    it('should update an existing saved filter', async () => {
+      const existing = {
+        id: 3,
+        userId: 10,
+        name: 'Old Name',
+        criteria: 'status = "OPEN"',
+        description: null,
+        isFavorite: false,
+      };
+      mockSavedFilterRepo.findOne.mockResolvedValue(existing);
+      mockSavedFilterRepo.save.mockImplementation((entity: any) => Promise.resolve(entity));
+
+      const result = await service.updateSavedFilter(10, 3, {
+        name: 'New Name',
+        isFavorite: true,
+      });
+
+      expect(result.name).toBe('New Name');
+      expect(result.isFavorite).toBe(true);
+      expect(mockSavedFilterRepo.save).toHaveBeenCalled();
+    });
+
+    it('should delete a saved filter', async () => {
+      const existing = { id: 3, userId: 10 };
+      mockSavedFilterRepo.findOne.mockResolvedValue(existing);
+      mockSavedFilterRepo.remove.mockResolvedValue(existing);
+
+      await service.deleteSavedFilter(10, 3);
+
+      expect(mockSavedFilterRepo.remove).toHaveBeenCalledWith(existing);
     });
   });
 });

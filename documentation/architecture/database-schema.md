@@ -55,7 +55,9 @@ erDiagram
    - Primary table: `users`
    - Attributes: `id` (UUID), `email` (UK), `fullName`, `passwordHash` (Argon2id), `systemRole` (`ADMIN`, `USER`), `twoFactorSecret`, `isTwoFactorEnabled`, `isActive`, `activationToken`, `lockoutUntil`, `failedLoginAttempts`, `avatarUrl`, `themePreference`.
 2. **[`SavedFilter`](../../backend/src/modules/users/entities/saved-filter.entity.ts)**:
-   - Saved custom JQL/query filters per user (`userId`, `name`, `query`, `isFavorite`).
+   - Primary table: `saved_filters`
+   - Attributes: `id` (int), `userId` (FK to `users`), `name`, `criteria` (JQL), `description` (varchar 255, nullable), `isFavorite` (boolean, default: false), `createdAt`.
+   - Indexes: B-Tree on `userId`, Composite B-Tree `IDX_b662ff97a9da4077e8bcc07377` on `(userId, isFavorite)`.
 
 ### B. Projects, Sprints & Planning (`modules/projects/`, `modules/sprints/`)
 3. **[`Project`](../../backend/src/modules/projects/entities/project.entity.ts)**:
@@ -69,6 +71,10 @@ erDiagram
 5. **[`Issue`](../../backend/src/modules/issues/entities/issue.entity.ts)**:
    - Primary table: `issues`
    - Attributes: `id`, `key` (UK, e.g. `CORE-101`), `title`, `description`, `type` (`BUG`, `TASK`, `STORY`, `EPIC`), `status` (`OPEN`, `IN_PROGRESS`, `RESOLVED`, `CLOSED`), `priority` (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`), `projectId`, `sprintId` (indexed FK to `sprints.id`, `onDelete: SET NULL`), `reporterId`, `assigneeId`, `estimateHours`, `timeSpentHours`.
+   - Indexes:
+     - B-Tree: `(projectId, status)`, `projectId`, `priority`, `assigneeId`, `reporterId`, `createdAt`, `sprintId`.
+     - Unique B-Tree: `(projectId, issueNum)`.
+     - GIN Index: `idx_issues_search_vector` on `to_tsvector('english', coalesce(title, '') || ' ' || coalesce(description, ''))` for sub-5ms full-text search.
 6. **[`Worklog`](../../backend/src/modules/issues/entities/worklog.entity.ts)**:
    - Tracks logged engineering effort: `id`, `issueId`, `authorId`, `timeSpentSeconds`, `startedAt`, `description`.
 7. **[`Comment`](../../backend/src/modules/issues/entities/comment.entity.ts)**:

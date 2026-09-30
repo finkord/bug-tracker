@@ -436,24 +436,52 @@ export class UsersService {
   }
 
   /**
-   * Retrieves saved search filters for a given user.
+   * Retrieves saved search filters for a given user ordered by favorite first then recency.
    */
   async getSavedFilters(userId: number): Promise<SavedFilter[]> {
     return this.savedFilterRepository.find({
       where: { userId },
-      order: { createdAt: 'DESC' },
+      order: { isFavorite: 'DESC', createdAt: 'DESC' },
     });
   }
 
   /**
    * Creates a new saved search filter for a given user.
    */
-  async createSavedFilter(userId: number, name: string, criteria: string): Promise<SavedFilter> {
+  async createSavedFilter(
+    userId: number,
+    dto: { name: string; criteria: string; description?: string; isFavorite?: boolean },
+  ): Promise<SavedFilter> {
     const filter = this.savedFilterRepository.create({
       userId,
-      name,
-      criteria,
+      name: dto.name.trim(),
+      criteria: dto.criteria.trim(),
+      description: dto.description ? dto.description.trim() : null,
+      isFavorite: Boolean(dto.isFavorite),
     });
+    return this.savedFilterRepository.save(filter);
+  }
+
+  /**
+   * Updates an existing saved search filter owned by the user.
+   */
+  async updateSavedFilter(
+    userId: number,
+    filterId: number,
+    dto: { name?: string; criteria?: string; description?: string; isFavorite?: boolean },
+  ): Promise<SavedFilter> {
+    const filter = await this.savedFilterRepository.findOne({
+      where: { id: filterId, userId },
+    });
+    if (!filter) {
+      throw new NotFoundException(`Saved filter #${filterId} not found or unauthorized`);
+    }
+
+    if (dto.name !== undefined) filter.name = dto.name.trim();
+    if (dto.criteria !== undefined) filter.criteria = dto.criteria.trim();
+    if (dto.description !== undefined) filter.description = dto.description ? dto.description.trim() : null;
+    if (dto.isFavorite !== undefined) filter.isFavorite = Boolean(dto.isFavorite);
+
     return this.savedFilterRepository.save(filter);
   }
 

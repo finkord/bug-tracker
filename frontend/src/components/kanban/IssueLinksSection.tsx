@@ -86,8 +86,9 @@ export const IssueLinksSection: React.FC<IssueLinksSectionProps> = ({
       setLoadingSuggestions(true);
       api
         .getIssues({ projectId })
-        .then((items) => {
+        .then((res) => {
           // Filter out current issue
+          const items = res.items || [];
           setProjectIssues(items.filter((i) => i.id !== issueId));
         })
         .catch(() => {})

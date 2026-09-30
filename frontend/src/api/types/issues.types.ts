@@ -108,3 +108,26 @@ export interface CreateIssuePayload {
   sprintId?: number | null;
   assigneeId?: number;
 }
+
+export interface PaginatedIssuesResponse {
+  items: IssueItem[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface GetIssuesParams {
+  projectId?: number;
+  status?: IssueStatus;
+  priority?: IssuePriority;
+  issueType?: IssueType;
+  assigneeId?: number;
+  sprintId?: string | number;
+  search?: string;
+  jql?: string;
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: 'ASC' | 'DESC';
+}

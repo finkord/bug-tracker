@@ -9,30 +9,32 @@ import {
 import type {
   IssueItem,
   IssueStatus,
-  IssuePriority,
-  IssueType,
+  PaginatedIssuesResponse,
+  GetIssuesParams,
 } from '../api/client';
 
-export interface UseIssuesParams {
-  projectId?: number;
-  status?: IssueStatus;
-  priority?: IssuePriority;
-  issueType?: IssueType;
-  assigneeId?: number;
-  sprint?: string;
-  search?: string;
-}
+export type UseIssuesParams = GetIssuesParams;
 
 export function useIssues(params?: UseIssuesParams) {
   const queryClient = useQueryClient();
-  const { data: issues = [], isLoading: loading, error, refetch } = useIssuesQuery(params);
+  const { data: issuesData, isLoading: loading, error, refetch } = useIssuesQuery(params);
+  const issues = issuesData?.items ?? [];
+  const total = issuesData?.total ?? 0;
   const statusMutation = useUpdateIssueStatusMutation();
   const assignMutation = useAssignIssueToMeMutation();
   const deleteMutation = useDeleteIssueMutation();
 
   const setIssues = (updater: IssueItem[] | ((prev: IssueItem[]) => IssueItem[])) => {
-    queryClient.setQueryData<IssueItem[]>(issueKeys.list(params), (old = []) => {
-      return typeof updater === 'function' ? updater(old) : updater;
+    queryClient.setQueryData<PaginatedIssuesResponse>(issueKeys.list(params), (old) => {
+      const currentItems = old?.items ?? [];
+      const nextItems = typeof updater === 'function' ? updater(currentItems) : updater;
+      return {
+        items: nextItems,
+        total: nextItems.length,
+        page: old?.page ?? 1,
+        limit: old?.limit ?? 50,
+        totalPages: Math.ceil(nextItems.length / (old?.limit ?? 50)),
+      };
     });
   };
 
@@ -50,6 +52,7 @@ export function useIssues(params?: UseIssuesParams) {
 
   return {
     issues,
+    total,
     setIssues,
     loading,
     error: error instanceof Error ? error.message : error ? String(error) : null,

@@ -37,6 +37,14 @@ export interface IssueSummaryDto {
   updatedAt: Date;
 }
 
+export interface PaginatedIssuesResponseDto {
+  items: IssueSummaryDto[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export interface CommentItemDto {
   id: number;
   text: string;

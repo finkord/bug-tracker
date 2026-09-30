@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import * as argon2 from 'argon2';
 import { ARGON2_OPTIONS } from '../auth/constants/argon2.constants.js';
 import { User, SystemRole } from '../users/entities/user.entity.js';
@@ -49,6 +49,7 @@ export class SystemInitService implements OnApplicationBootstrap {
     private readonly securityLevelRepository: Repository<IssueSecurityLevel>,
     @InjectRepository(IssueSecurityGrant)
     private readonly securityGrantRepository: Repository<IssueSecurityGrant>,
+    private readonly dataSource: DataSource,
   ) {}
 
   /**
@@ -98,6 +99,9 @@ export class SystemInitService implements OnApplicationBootstrap {
     // 6. Reconcile Admin Users into 'administrators' Group and Active Users into 'all-users' Group
     await this.reconcileUserSystemGroups(groupsMap);
 
+    // 7. Ensure High-Performance Database Indexes (GIN Full-Text Vector)
+    await this.ensureDatabaseIndexes();
+
     this.logger.log('System initialization finished successfully.');
 
     return {
@@ -108,6 +112,19 @@ export class SystemInitService implements OnApplicationBootstrap {
       permissionSchemeId: permissionScheme.id,
       securitySchemeId: securityScheme.id,
     };
+  }
+
+  private async ensureDatabaseIndexes(): Promise<void> {
+    try {
+      await this.dataSource.query(`
+        CREATE INDEX IF NOT EXISTS idx_issues_search_vector
+        ON issues USING gin (to_tsvector('english', coalesce(title, '') || ' ' || coalesce(description, '')));
+      `);
+      this.logger.log('Verified PostgreSQL GIN search vector index.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Could not ensure GIN index on issues: ${msg}`);
+    }
   }
 
   private async ensureSystemGroups(): Promise<Record<string, Group>> {

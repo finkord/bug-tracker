@@ -13,7 +13,7 @@ import {
   useAssignIssueToMeMutation,
   issueKeys,
 } from '../api/queries';
-import { type IssueItem, type IssueStatus } from '../api/client';
+import { type IssueItem, type IssueStatus, type PaginatedIssuesResponse } from '../api/client';
 import { realtimeSocket } from '../api/socket';
 import { useAuth } from '../store';
 import type {
@@ -36,11 +36,12 @@ export function useAgileBacklog(selectedProjectId: number | null) {
   );
 
   const {
-    data: issues = [],
+    data: issuesData,
     isLoading: issuesLoading,
     error: issuesError,
     refetch: refetchIssues,
   } = useIssuesQuery(issueFilter);
+  const issues = useMemo(() => issuesData?.items ?? [], [issuesData?.items]);
 
   // TanStack Query for sprints in selected project
   const {
@@ -71,23 +72,42 @@ export function useAgileBacklog(selectedProjectId: number | null) {
 
     const unsubCreated = realtimeSocket.onIssueCreated((newIssue) => {
       if (newIssue.projectId === selectedProjectId) {
-        queryClient.setQueryData<IssueItem[]>(issueKeys.list(issueFilter), (old = []) => {
-          return old.some((i) => i.id === newIssue.id) ? old : [newIssue, ...old];
+        queryClient.setQueryData<PaginatedIssuesResponse>(issueKeys.list(issueFilter), (old) => {
+          const items = old?.items ?? [];
+          if (items.some((i) => i.id === newIssue.id)) return old;
+          const updatedItems = [newIssue, ...items];
+          return {
+            items: updatedItems,
+            total: (old?.total ?? 0) + 1,
+            page: old?.page ?? 1,
+            limit: old?.limit ?? 50,
+            totalPages: Math.ceil(((old?.total ?? 0) + 1) / (old?.limit ?? 50)),
+          };
         });
       }
     });
 
     const unsubUpdated = realtimeSocket.onIssueUpdated((updatedIssue) => {
       if (updatedIssue.projectId === selectedProjectId) {
-        queryClient.setQueryData<IssueItem[]>(issueKeys.list(issueFilter), (old = []) => {
-          return old.map((i) => (i.id === updatedIssue.id ? updatedIssue : i));
+        queryClient.setQueryData<PaginatedIssuesResponse>(issueKeys.list(issueFilter), (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            items: old.items.map((i) => (i.id === updatedIssue.id ? updatedIssue : i)),
+          };
         });
       }
     });
 
     const unsubDeleted = realtimeSocket.onIssueDeleted(({ issueId }) => {
-      queryClient.setQueryData<IssueItem[]>(issueKeys.list(issueFilter), (old = []) => {
-        return old.filter((i) => i.id !== issueId);
+      queryClient.setQueryData<PaginatedIssuesResponse>(issueKeys.list(issueFilter), (old) => {
+        if (!old) return old;
+        const filtered = old.items.filter((i) => i.id !== issueId);
+        return {
+          ...old,
+          items: filtered,
+          total: Math.max(0, old.total - 1),
+        };
       });
     });
 
@@ -163,8 +183,16 @@ export function useAgileBacklog(selectedProjectId: number | null) {
   };
 
   const setIssues = (updater: IssueItem[] | ((prev: IssueItem[]) => IssueItem[])) => {
-    queryClient.setQueryData<IssueItem[]>(issueKeys.list(issueFilter), (old = []) => {
-      return typeof updater === 'function' ? updater(old) : updater;
+    queryClient.setQueryData<PaginatedIssuesResponse>(issueKeys.list(issueFilter), (old) => {
+      const currentItems = old?.items ?? [];
+      const nextItems = typeof updater === 'function' ? updater(currentItems) : updater;
+      return {
+        items: nextItems,
+        total: nextItems.length,
+        page: old?.page ?? 1,
+        limit: old?.limit ?? 50,
+        totalPages: Math.ceil(nextItems.length / (old?.limit ?? 50)),
+      };
     });
   };
 

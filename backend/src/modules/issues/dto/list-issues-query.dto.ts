@@ -1,4 +1,4 @@
-import { IsOptional, IsEnum, IsInt, IsString } from 'class-validator';
+import { IsOptional, IsEnum, IsInt, IsString, Min, Max, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IssueStatus, IssuePriority, IssueType } from '../entities/issue.entity.js';
@@ -40,4 +40,34 @@ export class ListIssuesQueryDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @ApiPropertyOptional({ example: 'status = "OPEN" AND priority = "CRITICAL"', description: 'JQL search expression' })
+  @IsOptional()
+  @IsString()
+  jql?: string;
+
+  @ApiPropertyOptional({ example: 1, default: 1, description: 'Page number (1-based)' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number = 1;
+
+  @ApiPropertyOptional({ example: 25, default: 50, description: 'Items per page (max 100)' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit?: number = 50;
+
+  @ApiPropertyOptional({ example: 'createdAt', description: 'Sort field (createdAt, updatedAt, priority, key, title)' })
+  @IsOptional()
+  @IsString()
+  sortBy?: string;
+
+  @ApiPropertyOptional({ enum: ['ASC', 'DESC'], description: 'Sort direction' })
+  @IsOptional()
+  @IsIn(['ASC', 'DESC'])
+  sortOrder?: 'ASC' | 'DESC';
 }

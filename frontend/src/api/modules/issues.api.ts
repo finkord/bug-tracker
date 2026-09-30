@@ -9,19 +9,13 @@ import type {
   IssueComment,
   IssueLinkItem,
   IssueLinkType,
+  PaginatedIssuesResponse,
+  GetIssuesParams,
 } from '../types/issues.types.js';
 import type { AuthTokens } from '../types/auth.types.js';
 
 export const issuesApi = {
-  getIssues: (params: {
-    projectId?: number;
-    status?: IssueStatus;
-    priority?: IssuePriority;
-    issueType?: IssueType;
-    assigneeId?: number;
-    sprintId?: string | number;
-    search?: string;
-  } = {}) => {
+  getIssues: (params: GetIssuesParams = {}) => {
     const query = new URLSearchParams();
     if (params.projectId) query.set('projectId', String(params.projectId));
     if (params.status) query.set('status', params.status);
@@ -30,8 +24,13 @@ export const issuesApi = {
     if (params.assigneeId) query.set('assigneeId', String(params.assigneeId));
     if (params.sprintId !== undefined && params.sprintId !== null) query.set('sprintId', String(params.sprintId));
     if (params.search) query.set('search', params.search);
+    if (params.jql) query.set('jql', params.jql);
+    if (params.page) query.set('page', String(params.page));
+    if (params.limit) query.set('limit', String(params.limit));
+    if (params.sortBy) query.set('sortBy', params.sortBy);
+    if (params.sortOrder) query.set('sortOrder', params.sortOrder);
     const qs = query.toString();
-    return request<IssueItem[]>(`/issues${qs ? `?${qs}` : ''}`);
+    return request<PaginatedIssuesResponse>(`/issues${qs ? `?${qs}` : ''}`);
   },
 
   getIssue: (idOrKey: string | number) => request<IssueItem>(`/issues/${idOrKey}`),

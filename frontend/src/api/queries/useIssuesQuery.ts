@@ -6,6 +6,7 @@ import {
   type IssueType,
   type CreateIssuePayload,
   type IssueLinkType,
+  type GetIssuesParams,
 } from '../client';
 
 export const issueKeys = {
@@ -18,15 +19,7 @@ export const issueKeys = {
   links: (issueId: number) => [...issueKeys.detail(issueId), 'links'] as const,
 };
 
-export function useIssuesQuery(filters?: {
-  projectId?: number;
-  status?: IssueStatus;
-  priority?: IssuePriority;
-  issueType?: IssueType;
-  assigneeId?: number;
-  sprintId?: string | number;
-  search?: string;
-}) {
+export function useIssuesQuery(filters?: GetIssuesParams) {
   return useQuery({
     queryKey: issueKeys.list(filters),
     queryFn: () => api.getIssues(filters),
