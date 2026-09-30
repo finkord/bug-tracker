@@ -1,5 +1,5 @@
 import React from 'react';
-import { ExternalLink, ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react';
 import { Tooltip } from '../ui/Tooltip';
 import { useTheme } from '../../store';
 
@@ -10,12 +10,11 @@ interface SidebarBottomActionsProps {
 }
 
 /**
- * Bottom action utilities for the Super-Sidebar (Theme switcher, Docs link & Collapse trigger).
+ * Bottom action utilities for the Super-Sidebar (Theme switcher & Collapse trigger).
  */
 export const SidebarBottomActions: React.FC<SidebarBottomActionsProps> = ({
   collapsed = false,
   onToggleSidebar,
-  onNavigate,
 }) => {
   const { theme, toggleTheme } = useTheme();
 
@@ -44,30 +43,6 @@ export const SidebarBottomActions: React.FC<SidebarBottomActionsProps> = ({
         {theme === 'dark' ? 'Light mode' : 'Dark mode'}
       </span>
     </button>
-  );
-
-  const swaggerLink = (
-    <a
-      href="http://localhost:3000/api/docs"
-      target="_blank"
-      rel="noreferrer"
-      onClick={onNavigate}
-      title="Swagger OpenAPI Documentation"
-      className="w-full h-11 flex items-center rounded-xl text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)] text-xs font-medium transition-colors overflow-hidden group select-none"
-    >
-      <div className="w-[72px] shrink-0 flex items-center justify-center">
-        <div className="w-14 h-8 rounded-full flex items-center justify-center transition-colors group-hover:bg-[var(--md-sys-color-surface-container-high)]">
-          <ExternalLink className="w-5 h-5" />
-        </div>
-      </div>
-      <span
-        className={`truncate whitespace-nowrap transition-opacity duration-200 ${
-          collapsed ? 'opacity-0 w-0 pointer-events-none' : 'opacity-100 flex-1 text-left pr-3'
-        }`}
-      >
-        Swagger Docs
-      </span>
-    </a>
   );
 
   const toggleButton = (
@@ -104,14 +79,6 @@ export const SidebarBottomActions: React.FC<SidebarBottomActionsProps> = ({
       )}
 
       {collapsed ? (
-        <Tooltip content="Swagger Docs" side="right">
-          {swaggerLink}
-        </Tooltip>
-      ) : (
-        swaggerLink
-      )}
-
-      {collapsed ? (
         <Tooltip
           content={
             <span>
@@ -128,4 +95,5 @@ export const SidebarBottomActions: React.FC<SidebarBottomActionsProps> = ({
     </div>
   );
 };
+
 

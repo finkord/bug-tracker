@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Menu, Sun, Moon } from 'lucide-react';
-import { useAuth, useTheme, useSidebar } from '../../store';
+import { Menu } from 'lucide-react';
+import { useAuth, useSidebar } from '../../store';
 import { WorkspaceGlobalSearch } from './WorkspaceGlobalSearch';
 import { WorkspaceBroadcastBanner } from './WorkspaceBroadcastBanner';
 import { WorkspaceQuickFiltersMenu } from './WorkspaceQuickFiltersMenu';
@@ -13,7 +13,6 @@ import { WorkspaceUserMenu } from './WorkspaceUserMenu';
  */
 export const WorkspaceHeader: React.FC = () => {
   const { user, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const { toggleMobile } = useSidebar();
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
 
@@ -43,26 +42,11 @@ export const WorkspaceHeader: React.FC = () => {
             <WorkspaceBroadcastBanner />
           </div>
 
-          {/* Right Controls: Quick Filters, Create Action, Theme Toggle, User Avatar Menu */}
+          {/* Right Controls: Quick Filters, Create Action, User Avatar Menu */}
           <div className="shrink-0 flex items-center gap-1.5 sm:gap-2">
             <WorkspaceQuickFiltersMenu />
 
             <WorkspaceCreateIssueAction />
-
-            {/* Theme Toggle Button */}
-            <button
-              type="button"
-              onClick={toggleTheme}
-              title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
-              aria-label="Toggle theme"
-              className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] flex items-center justify-center transition-colors cursor-pointer border border-[var(--md-sys-color-outline-variant)]/30 shadow-2xs shrink-0 active:scale-95"
-            >
-              {theme === 'dark' ? (
-                <Sun className="w-4 h-4 text-[var(--md-sys-color-warning)]" />
-              ) : (
-                <Moon className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
-              )}
-            </button>
 
             <WorkspaceUserMenu user={user} onLogout={logout} />
           </div>
@@ -71,3 +55,4 @@ export const WorkspaceHeader: React.FC = () => {
     </header>
   );
 };
+
