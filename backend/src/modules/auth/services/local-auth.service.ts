@@ -11,17 +11,20 @@ import * as argon2 from 'argon2';
 import { UsersService } from '../../users/users.service.js';
 import { SecurityAuditService } from '../../security-audit/security-audit.service.js';
 import { CaptchaService } from '../../captcha/captcha.service.js';
-import { User, SystemRole, OAuthProvider } from '../../users/entities/user.entity.js';
+import { RedisService } from '../../redis/redis.service.js';
+import { SystemRole, OAuthProvider } from '../../users/entities/user.entity.js';
 import { LoginAttemptStatus } from '../../security-audit/entities/login-audit-log.entity.js';
 import { RegisterDto } from '../dto/register.dto.js';
 import { LoginDto } from '../dto/login.dto.js';
 import { TokenSessionService, type AuthTokens } from './token-session.service.js';
 import { TwoFactorAuthService } from './two-factor-auth.service.js';
+import { LoginRateLimiterService } from './login-rate-limiter.service.js';
+import { ARGON2_OPTIONS } from '../constants/argon2.constants.js';
 
 @Injectable()
 export class LocalAuthService {
   private readonly logger = new Logger(LocalAuthService.name);
-  private readonly recentlyActivatedTokens = new Map<string, number>();
+  private static readonly ACTIVATION_DEDUP_TTL_SECONDS = 300; // 5 minutes
 
   constructor(
     private readonly usersService: UsersService,
@@ -31,10 +34,13 @@ export class LocalAuthService {
     private readonly captchaService: CaptchaService,
     private readonly tokenSessionService: TokenSessionService,
     private readonly twoFactorAuthService: TwoFactorAuthService,
+    private readonly loginRateLimiter: LoginRateLimiterService,
+    private readonly redisService: RedisService,
   ) {}
 
   /**
    * Registers a new user with complex password policy, CAPTCHA, and email activation link.
+   * Utilizes RFC 9106 / OWASP recommended Argon2id parameters to avoid thread pool starvation.
    */
   async register(dto: RegisterDto, ipAddress: string) {
     if (dto.captchaToken) {
@@ -49,12 +55,7 @@ export class LocalAuthService {
       throw new BadRequestException('An account with this email address already exists.');
     }
 
-    const passwordHash = await argon2.hash(dto.password, {
-      type: argon2.argon2id,
-      memoryCost: 65536,
-      timeCost: 3,
-      parallelism: 4,
-    });
+    const passwordHash = await argon2.hash(dto.password, ARGON2_OPTIONS);
 
     const activationToken = crypto.randomBytes(32).toString('hex');
     const activationTokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
@@ -106,11 +107,12 @@ export class LocalAuthService {
   }
 
   /**
-   * Activates an account using single-use email token.
+   * Activates an account using single-use email token with distributed Redis deduplication.
    */
   async activateAccount(token: string) {
-    const recentActivationTime = this.recentlyActivatedTokens.get(token);
-    if (recentActivationTime && Date.now() - recentActivationTime < 5 * 60 * 1000) {
+    const activationKey = `auth:activation:${token}`;
+    const isRecentlyActivated = await this.redisService.get(activationKey);
+    if (isRecentlyActivated) {
       return {
         message: 'Account successfully activated! You can now log into the system.',
         isActivated: true,
@@ -126,7 +128,7 @@ export class LocalAuthService {
       throw new BadRequestException('Activation token has expired. Please request a new one.');
     }
 
-    this.recentlyActivatedTokens.set(token, Date.now());
+    await this.redisService.set(activationKey, '1', LocalAuthService.ACTIVATION_DEDUP_TTL_SECONDS);
 
     await this.usersService.update(user.id, {
       isActivated: true,
@@ -141,7 +143,8 @@ export class LocalAuthService {
   }
 
   /**
-   * Authenticates user with brute-force protection and optional 2FA challenge.
+   * Authenticates user with distributed Redis brute-force protection and optional 2FA challenge.
+   * Eliminates database row lock contention by delegating failed attempts to Redis sliding window.
    */
   async login(
     dto: LoginDto,
@@ -162,7 +165,7 @@ export class LocalAuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    // 2. Blocked by admin
+    // 2. Blocked by administrator
     if (user.isBlocked) {
       await this.securityAuditService.recordLoginAttempt({
         userId: user.id,
@@ -175,7 +178,23 @@ export class LocalAuthService {
       throw new UnauthorizedException('This account has been blocked by an administrator.');
     }
 
-    // 3. Brute-force lockout active
+    // 3. Brute-force lockout active via Redis sliding window (zero database row lock contention)
+    const lockoutStatus = await this.loginRateLimiter.isLocked(dto.email);
+    if (lockoutStatus.isLocked) {
+      await this.securityAuditService.recordLoginAttempt({
+        userId: user.id,
+        attemptedEmail: dto.email,
+        ipAddress,
+        userAgent,
+        status: LoginAttemptStatus.ACCOUNT_LOCKED,
+        failureReason: `Account locked. Remaining seconds: ${lockoutStatus.remainingSeconds}`,
+      });
+      throw new UnauthorizedException(
+        `Account is temporarily locked due to multiple failed login attempts. Try again in ${lockoutStatus.remainingSeconds} seconds.`,
+      );
+    }
+
+    // Legacy fallback check for database lockout timestamps created prior to Redis migration
     if (user.lockedUntil && user.lockedUntil > new Date()) {
       const remainingSeconds = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 1000);
       await this.securityAuditService.recordLoginAttempt({
@@ -202,28 +221,20 @@ export class LocalAuthService {
     }
 
     if (!isPasswordValid) {
-      const newFailedAttempts = (user.failedLoginAttempts || 0) + 1;
-      const shouldLock = newFailedAttempts >= 5;
-      const lockDurationMs = 15 * 60 * 1000; // 15 minutes lockout
-      const lockedUntil = shouldLock ? new Date(Date.now() + lockDurationMs) : null;
-
-      await this.usersService.update(user.id, {
-        failedLoginAttempts: newFailedAttempts,
-        lockedUntil,
-      });
+      const failedResult = await this.loginRateLimiter.recordFailedAttempt(dto.email);
 
       await this.securityAuditService.recordLoginAttempt({
         userId: user.id,
         attemptedEmail: dto.email,
         ipAddress,
         userAgent,
-        status: shouldLock ? LoginAttemptStatus.ACCOUNT_LOCKED : LoginAttemptStatus.FAILED_PASSWORD,
-        failureReason: shouldLock
+        status: failedResult.isLocked ? LoginAttemptStatus.ACCOUNT_LOCKED : LoginAttemptStatus.FAILED_PASSWORD,
+        failureReason: failedResult.isLocked
           ? 'Exceeded 5 failed attempts. Account locked for 15 minutes.'
-          : `Failed password attempt ${newFailedAttempts}/5`,
+          : `Failed password attempt ${failedResult.attempts}/5`,
       });
 
-      if (shouldLock) {
+      if (failedResult.isLocked) {
         throw new UnauthorizedException(
           'Account has been temporarily locked for 15 minutes due to 5 consecutive failed login attempts.',
         );
@@ -232,11 +243,16 @@ export class LocalAuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    // 5. Successful password: reset lockout counters
-    await this.usersService.update(user.id, {
-      failedLoginAttempts: 0,
-      lockedUntil: null,
-    });
+    // 5. Successful password: reset lockout counters in Redis
+    await this.loginRateLimiter.resetAttempts(dto.email);
+
+    // Clean up legacy database counters if present
+    if ((user.failedLoginAttempts && user.failedLoginAttempts > 0) || user.lockedUntil) {
+      await this.usersService.update(user.id, {
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+      });
+    }
 
     // 6. Check activation status
     if (!user.isActivated) {

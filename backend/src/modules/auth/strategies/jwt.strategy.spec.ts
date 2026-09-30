@@ -3,12 +3,14 @@ import { UnauthorizedException } from '@nestjs/common';
 import { JwtStrategy } from './jwt.strategy.js';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../../users/users.service.js';
+import { RedisService } from '../../redis/redis.service.js';
 import { User, SystemRole, OAuthProvider } from '../../users/entities/user.entity.js';
 
 describe('JwtStrategy Security Hardening', () => {
   let strategy: JwtStrategy;
   let usersService: Partial<UsersService>;
   let configService: Partial<ConfigService>;
+  let redisService: Partial<RedisService>;
 
   const mockUser = {
     id: 42,
@@ -43,14 +45,20 @@ describe('JwtStrategy Security Hardening', () => {
     usersService = {
       findById: vi.fn().mockResolvedValue(mockUser),
     };
+    redisService = {
+      get: vi.fn().mockResolvedValue(null),
+      set: vi.fn().mockResolvedValue('OK'),
+      del: vi.fn().mockResolvedValue(1),
+    };
 
     strategy = new JwtStrategy(
       configService as ConfigService,
       usersService as UsersService,
+      redisService as RedisService,
     );
   });
 
-  it('should accept valid JWT payload with matching tokenVersion', async () => {
+  it('should accept valid JWT payload and populate cache on cache miss', async () => {
     const payload = {
       sub: 42,
       email: 'test@example.com',
@@ -61,6 +69,29 @@ describe('JwtStrategy Security Hardening', () => {
     const user = await strategy.validate(payload);
     expect(user).toBeDefined();
     expect(user.id).toBe(42);
+    expect(usersService.findById).toHaveBeenCalledWith(42);
+    expect(redisService.set).toHaveBeenCalledWith(
+      'user:session:42',
+      expect.any(String),
+      300,
+    );
+  });
+
+  it('should read from Redis cache on cache hit without querying PostgreSQL', async () => {
+    redisService.get = vi.fn().mockResolvedValue(JSON.stringify(mockUser));
+
+    const payload = {
+      sub: 42,
+      email: 'test@example.com',
+      role: 'DEVELOPER',
+      tokenVersion: 2,
+    };
+
+    const user = await strategy.validate(payload);
+    expect(user).toBeDefined();
+    expect(user.id).toBe(42);
+    expect(redisService.get).toHaveBeenCalledWith('user:session:42');
+    expect(usersService.findById).not.toHaveBeenCalled();
   });
 
   it('should reject temporary 2FA challenge tokens to prevent 2FA bypass', async () => {

@@ -2,9 +2,10 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import * as argon2 from 'argon2';
 import { LocalAuthService } from './local-auth.service.js';
-import { User, SystemRole, OAuthProvider } from '../../users/entities/user.entity.js';
+import { User, SystemRole } from '../../users/entities/user.entity.js';
 import { RegisterDto } from '../dto/register.dto.js';
 import { LoginDto } from '../dto/login.dto.js';
+import { ARGON2_OPTIONS } from '../constants/argon2.constants.js';
 
 describe('LocalAuthService', () => {
   let service: LocalAuthService;
@@ -15,6 +16,8 @@ describe('LocalAuthService', () => {
   let mockCaptchaService: any;
   let mockTokenSessionService: any;
   let mockTwoFactorAuthService: any;
+  let mockLoginRateLimiter: any;
+  let mockRedisService: any;
 
   const mockUser: User = {
     id: 1,
@@ -31,9 +34,7 @@ describe('LocalAuthService', () => {
   } as User;
 
   beforeEach(async () => {
-    const defaultPasswordHash = await argon2.hash('SecurePassword123!', {
-      type: argon2.argon2id,
-    });
+    const defaultPasswordHash = await argon2.hash('SecurePassword123!', ARGON2_OPTIONS);
     mockUser.passwordHash = defaultPasswordHash;
     mockUser.failedLoginAttempts = 0;
     mockUser.lockedUntil = null;
@@ -81,6 +82,18 @@ describe('LocalAuthService', () => {
       createChallengeToken: vi.fn().mockReturnValue('mock-temp-2fa-token'),
     };
 
+    mockLoginRateLimiter = {
+      isLocked: vi.fn().mockResolvedValue({ isLocked: false, remainingSeconds: 0 }),
+      recordFailedAttempt: vi.fn().mockResolvedValue({ isLocked: false, attempts: 1, remainingSeconds: 0 }),
+      resetAttempts: vi.fn().mockResolvedValue(undefined),
+    };
+
+    mockRedisService = {
+      get: vi.fn().mockResolvedValue(null),
+      set: vi.fn().mockResolvedValue('OK'),
+      del: vi.fn().mockResolvedValue(1),
+    };
+
     service = new LocalAuthService(
       mockUsersService,
       mockMailerService,
@@ -89,6 +102,8 @@ describe('LocalAuthService', () => {
       mockCaptchaService,
       mockTokenSessionService,
       mockTwoFactorAuthService,
+      mockLoginRateLimiter,
+      mockRedisService,
     );
   });
 
@@ -135,6 +150,42 @@ describe('LocalAuthService', () => {
     });
   });
 
+  describe('activateAccount', () => {
+    it('should deduplicate activation requests via Redis without updating DB again', async () => {
+      mockRedisService.get.mockResolvedValue('1');
+
+      const result = await service.activateAccount('test-token');
+
+      expect(result).toEqual({
+        message: 'Account successfully activated! You can now log into the system.',
+        isActivated: true,
+      });
+      expect(mockUsersService.findByActivationToken).not.toHaveBeenCalled();
+    });
+
+    it('should activate user and set Redis deduplication key', async () => {
+      mockRedisService.get.mockResolvedValue(null);
+      mockUsersService.findByActivationToken.mockResolvedValue(mockUser);
+
+      const result = await service.activateAccount('valid-token');
+
+      expect(result).toEqual({
+        message: 'Account successfully activated! You can now log into the system.',
+        isActivated: true,
+      });
+      expect(mockRedisService.set).toHaveBeenCalledWith(
+        'auth:activation:valid-token',
+        '1',
+        300,
+      );
+      expect(mockUsersService.update).toHaveBeenCalledWith(mockUser.id, {
+        isActivated: true,
+        activationToken: null,
+        activationTokenExpiresAt: null,
+      });
+    });
+  });
+
   describe('login', () => {
     it('should throw UnauthorizedException when user does not exist', async () => {
       // Arrange
@@ -165,41 +216,45 @@ describe('LocalAuthService', () => {
       );
     });
 
-    it('should lock account after 5 consecutive failed login attempts', async () => {
+    it('should lock account after 5 consecutive failed login attempts via Redis without DB row locks', async () => {
       // Arrange
       const inputDto: LoginDto = {
         email: 'engineer@company.com',
         password: 'WrongPassword!',
       };
-      mockUser.failedLoginAttempts = 4;
       mockUsersService.findByEmail.mockResolvedValue(mockUser);
+      mockLoginRateLimiter.recordFailedAttempt.mockResolvedValue({
+        isLocked: true,
+        attempts: 5,
+        remainingSeconds: 900,
+      });
 
       // Act & Assert
       await expect(service.login(inputDto, '127.0.0.1')).rejects.toThrow(
         'Account has been temporarily locked for 15 minutes due to 5 consecutive failed login attempts.',
       );
-      expect(mockUsersService.update).toHaveBeenCalledWith(
-        mockUser.id,
-        expect.objectContaining({
-          failedLoginAttempts: 5,
-          lockedUntil: expect.any(Date),
-        }),
-      );
+      expect(mockLoginRateLimiter.recordFailedAttempt).toHaveBeenCalledWith('engineer@company.com');
+      // Crucial: usersService.update is NOT called on failed attempts, preventing PostgreSQL row lock contention!
+      expect(mockUsersService.update).not.toHaveBeenCalled();
     });
 
-    it('should throw UnauthorizedException if account is currently locked', async () => {
+    it('should throw UnauthorizedException if account is currently locked in Redis', async () => {
       // Arrange
       const inputDto: LoginDto = {
         email: 'engineer@company.com',
         password: 'SecurePassword123!',
       };
-      mockUser.lockedUntil = new Date(Date.now() + 600000);
       mockUsersService.findByEmail.mockResolvedValue(mockUser);
+      mockLoginRateLimiter.isLocked.mockResolvedValue({
+        isLocked: true,
+        remainingSeconds: 600,
+      });
 
       // Act & Assert
       await expect(service.login(inputDto, '127.0.0.1')).rejects.toThrow(
-        /Account is temporarily locked/,
+        /Account is temporarily locked due to multiple failed login attempts/,
       );
+      expect(mockUsersService.update).not.toHaveBeenCalled();
     });
 
     it('should require email verification if account is not activated', async () => {
@@ -236,9 +291,10 @@ describe('LocalAuthService', () => {
         tempToken: 'mock-temp-2fa-token',
         message: 'Password verified. Please enter the 6-digit TOTP code from your authenticator app.',
       });
+      expect(mockLoginRateLimiter.resetAttempts).toHaveBeenCalledWith('engineer@company.com');
     });
 
-    it('should return access and refresh tokens on valid credentials', async () => {
+    it('should return access and refresh tokens on valid credentials and reset Redis attempts', async () => {
       // Arrange
       const inputDto: LoginDto = {
         email: 'engineer@company.com',
@@ -254,10 +310,7 @@ describe('LocalAuthService', () => {
         accessToken: 'mock-access-token',
         refreshToken: 'mock-refresh-token',
       });
-      expect(mockUsersService.update).toHaveBeenCalledWith(mockUser.id, {
-        failedLoginAttempts: 0,
-        lockedUntil: null,
-      });
+      expect(mockLoginRateLimiter.resetAttempts).toHaveBeenCalledWith('engineer@company.com');
     });
   });
 });

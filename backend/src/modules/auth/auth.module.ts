@@ -10,6 +10,7 @@ import { PasswordResetService } from './services/password-reset.service.js';
 import { TokenSessionService } from './services/token-session.service.js';
 import { OAuthService } from './services/oauth.service.js';
 import { OAuthCodeStoreService } from './services/oauth-code-store.service.js';
+import { LoginRateLimiterService } from './services/login-rate-limiter.service.js';
 import { JwtStrategy } from './strategies/jwt.strategy.js';
 import { GithubStrategy } from './strategies/github.strategy.js';
 import { GoogleStrategy } from './strategies/google.strategy.js';
@@ -46,6 +47,7 @@ import { CaptchaModule } from '../captcha/captcha.module.js';
     TokenSessionService,
     OAuthService,
     OAuthCodeStoreService,
+    LoginRateLimiterService,
     JwtStrategy,
     GithubStrategy,
     GoogleStrategy,
@@ -58,6 +60,7 @@ import { CaptchaModule } from '../captcha/captcha.module.js';
     TokenSessionService,
     OAuthService,
     OAuthCodeStoreService,
+    LoginRateLimiterService,
     JwtModule,
     PassportModule,
   ],

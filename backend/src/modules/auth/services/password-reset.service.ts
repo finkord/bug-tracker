@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, UnauthorizedException, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException, UnauthorizedException, Logger, Optional } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
 import crypto from 'node:crypto';
 import * as argon2 from 'argon2';
@@ -8,6 +8,8 @@ import { LoginAttemptStatus } from '../../security-audit/entities/login-audit-lo
 import { ForgotPasswordDto, ResetPasswordDto } from '../dto/password-reset.dto.js';
 import { SetPasswordDto } from '../dto/set-password.dto.js';
 import { User } from '../../users/entities/user.entity.js';
+import { ARGON2_OPTIONS } from '../constants/argon2.constants.js';
+import { LoginRateLimiterService } from './login-rate-limiter.service.js';
 
 @Injectable()
 export class PasswordResetService {
@@ -17,6 +19,8 @@ export class PasswordResetService {
     private readonly usersService: UsersService,
     private readonly mailerService: MailerService,
     private readonly securityAuditService: SecurityAuditService,
+    @Optional()
+    private readonly loginRateLimiter?: LoginRateLimiterService,
   ) {}
 
   /**
@@ -73,12 +77,7 @@ export class PasswordResetService {
       throw new BadRequestException('Password reset token has expired. Please request a new one.');
     }
 
-    const passwordHash = await argon2.hash(dto.newPassword, {
-      type: argon2.argon2id,
-      memoryCost: 65536,
-      timeCost: 3,
-      parallelism: 4,
-    });
+    const passwordHash = await argon2.hash(dto.newPassword, ARGON2_OPTIONS);
 
     // Revoke previous sessions by bumping tokenVersion & clear lockout counters
     await this.usersService.update(user.id, {
@@ -89,6 +88,10 @@ export class PasswordResetService {
       lockedUntil: null,
       tokenVersion: (user.tokenVersion || 0) + 1,
     });
+
+    if (this.loginRateLimiter) {
+      await this.loginRateLimiter.resetAttempts(user.email);
+    }
 
     return { message: 'Password has been successfully updated. You can now sign in with your new password.' };
   }
@@ -123,12 +126,7 @@ export class PasswordResetService {
       }
     }
 
-    const passwordHash = await argon2.hash(newPassword, {
-      type: argon2.argon2id,
-      memoryCost: 65536,
-      timeCost: 3,
-      parallelism: 4,
-    });
+    const passwordHash = await argon2.hash(newPassword, ARGON2_OPTIONS);
 
     await this.usersService.update(userId, {
       passwordHash,

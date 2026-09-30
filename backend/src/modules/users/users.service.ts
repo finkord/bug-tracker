@@ -1,10 +1,11 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User, SystemRole, OAuthProvider } from './entities/user.entity.js';
 import { SavedFilter } from './entities/saved-filter.entity.js';
 import { Group } from '../rbac/entities/group.entity.js';
 import { UserGroup } from '../rbac/entities/user-group.entity.js';
+import { RedisService } from '../redis/redis.service.js';
 
 @Injectable()
 export class UsersService {
@@ -17,6 +18,8 @@ export class UsersService {
     private readonly groupRepository: Repository<Group>,
     @InjectRepository(UserGroup)
     private readonly userGroupRepository: Repository<UserGroup>,
+    @Optional()
+    private readonly redisService?: RedisService,
   ) {}
 
   async findById(id: number): Promise<User | null> {
@@ -102,6 +105,9 @@ export class UsersService {
 
   async update(id: number, updateData: Partial<User>): Promise<User> {
     await this.usersRepository.update(id, updateData);
+    if (this.redisService) {
+      await this.redisService.del(`user:session:${id}`);
+    }
     const updated = await this.findById(id);
     if (!updated) {
       throw new NotFoundException(`User with ID ${id} not found`);
@@ -201,13 +207,30 @@ export class UsersService {
     }
 
     await this.usersRepository.delete(id);
+    if (this.redisService) {
+      await this.redisService.del(`user:session:${id}`);
+    }
     return { message: `User #${id} has been deleted` };
   }
 
   /**
-   * Unblocks user account and resets lockout counters (Admin controls).
+   * Unblocks user account and resets lockout counters in PostgreSQL and Redis (Admin controls).
    */
   async unblockUser(id: number): Promise<User> {
+    const targetUser = await this.findById(id);
+    if (!targetUser) {
+      throw new NotFoundException(`User with ID #${id} not found`);
+    }
+
+    if (this.redisService) {
+      const emailKey = targetUser.email.toLowerCase().trim();
+      await this.redisService.del(
+        `auth:attempts:${emailKey}`,
+        `auth:lockout:${emailKey}`,
+        `user:session:${id}`,
+      );
+    }
+
     return this.update(id, {
       isBlocked: false,
       failedLoginAttempts: 0,

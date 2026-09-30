@@ -22,6 +22,7 @@ import { CaptchaModule } from './modules/captcha/captcha.module.js';
 import { ProjectsModule } from './modules/projects/projects.module.js';
 import { IssuesModule } from './modules/issues/issues.module.js';
 import { AdminModule } from './modules/admin/admin.module.js';
+import { RedisModule } from './modules/redis/redis.module.js';
 
 import { Group } from './modules/rbac/entities/group.entity.js';
 import { UserGroup } from './modules/rbac/entities/user-group.entity.js';
@@ -108,6 +109,7 @@ import { SprintsModule } from './modules/sprints/sprints.module.js';
     }),
 
     // Application business modules
+    RedisModule,
     AuthModule,
     UsersModule,
     SecurityAuditModule,

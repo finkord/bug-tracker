@@ -264,7 +264,7 @@ export class AuthController {
         throw new BadRequestException('GitHub authenticated user payload not found');
       }
       const tokens = await this.authService.loginOAuthUser(req.user, ip, userAgent);
-      const code = this.oauthCodeStore.createCode(tokens);
+      const code = await this.oauthCodeStore.createCode(tokens);
       return res.redirect(`${frontendUrl}/oauth/callback?code=${code}`);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'GitHub authentication failed';
@@ -301,7 +301,7 @@ export class AuthController {
         throw new BadRequestException('Google authenticated user payload not found');
       }
       const tokens = await this.authService.loginOAuthUser(req.user, ip, userAgent);
-      const code = this.oauthCodeStore.createCode(tokens);
+      const code = await this.oauthCodeStore.createCode(tokens);
       return res.redirect(`${frontendUrl}/oauth/callback?code=${code}`);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Google authentication failed';
@@ -323,7 +323,7 @@ export class AuthController {
     if (!code || typeof code !== 'string') {
       throw new BadRequestException('OAuth exchange code is required');
     }
-    const tokens = this.oauthCodeStore.consumeCode(code);
+    const tokens = await this.oauthCodeStore.consumeCode(code);
     if (!tokens) {
       throw new NotFoundException('OAuth exchange code is invalid or has already been used');
     }
