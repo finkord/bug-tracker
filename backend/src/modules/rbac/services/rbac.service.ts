@@ -105,6 +105,11 @@ export class RbacService {
           'Root administrator accounts cannot be removed from the administrators group',
         );
       }
+
+      if (user && user.systemRole === SystemRole.ADMIN) {
+        user.systemRole = SystemRole.USER;
+        await this.userRepository.save(user);
+      }
     }
 
     await this.userGroupRepository.delete({ groupId, userId });

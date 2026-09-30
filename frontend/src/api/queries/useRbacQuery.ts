@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../client';
 import { projectKeys } from './useProjectsQuery';
+import { userKeys } from './useUsersQuery';
 
 export const rbacKeys = {
   all: ['rbac'] as const,
@@ -64,6 +65,7 @@ export function useAddUserToGroupMutation() {
       api.addUserToGroup(groupId, userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: rbacKeys.groups() });
+      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
     },
   });
 }
@@ -75,6 +77,7 @@ export function useRemoveUserFromGroupMutation() {
       api.removeUserFromGroup(groupId, userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: rbacKeys.groups() });
+      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
     },
   });
 }

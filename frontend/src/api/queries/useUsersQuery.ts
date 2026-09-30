@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, type SystemRole } from '../client';
+import { rbacKeys } from './useRbacQuery';
 
 export const userKeys = {
   all: ['users'] as const,
@@ -118,6 +119,7 @@ export function useUpdateUserRoleMutation() {
     }) => api.updateUserRole(id, role, jobTitle),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: userKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: rbacKeys.groups() });
     },
   });
 }

@@ -94,6 +94,9 @@ export class SystemInitService implements OnApplicationBootstrap {
     // 5. Initialize Initial Administrator Account
     const { adminUser, created } = await this.ensureAdminUser(options, groupsMap);
 
+    // 6. Reconcile Admin Users into 'administrators' Group and Active Users into 'all-users' Group
+    await this.reconcileUserSystemGroups(groupsMap);
+
     this.logger.log('System initialization finished successfully.');
 
     return {
@@ -429,5 +432,52 @@ export class SystemInitService implements OnApplicationBootstrap {
     }
 
     return { adminUser: admin, created: true };
+  }
+
+  /**
+   * Reconciles existing system administrators and active users with baseline directory groups.
+   */
+  private async reconcileUserSystemGroups(groups: Record<string, Group>): Promise<void> {
+    const adminGroup = groups['administrators'];
+    const allUsersGroup = groups['all-users'];
+
+    if (adminGroup) {
+      const adminUsers = await this.userRepository.find({
+        where: { systemRole: SystemRole.ADMIN },
+      });
+      for (const admin of adminUsers) {
+        const existing = await this.userGroupRepository.findOne({
+          where: { userId: admin.id, groupId: adminGroup.id },
+        });
+        if (!existing) {
+          await this.userGroupRepository.save(
+            this.userGroupRepository.create({
+              userId: admin.id,
+              groupId: adminGroup.id,
+            }),
+          );
+          this.logger.log(`Reconciled administrator group membership for: ${admin.email}`);
+        }
+      }
+    }
+
+    if (allUsersGroup) {
+      const activatedUsers = await this.userRepository.find({
+        where: { isActivated: true },
+      });
+      for (const u of activatedUsers) {
+        const existing = await this.userGroupRepository.findOne({
+          where: { userId: u.id, groupId: allUsersGroup.id },
+        });
+        if (!existing) {
+          await this.userGroupRepository.save(
+            this.userGroupRepository.create({
+              userId: u.id,
+              groupId: allUsersGroup.id,
+            }),
+          );
+        }
+      }
+    }
   }
 }
