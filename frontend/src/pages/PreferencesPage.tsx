@@ -17,7 +17,7 @@ export const PreferencesPage: React.FC = () => {
   const { theme, setTheme } = useTheme();
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-in fade-in duration-200">
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6 animate-in fade-in duration-200">
       {/* Page Header */}
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-2.5">
@@ -35,9 +35,9 @@ export const PreferencesPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Left 2 Columns: Settings Controls */}
-        <div className="md:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left Column: Settings Controls */}
+        <div className="lg:col-span-8 space-y-6">
 
           {/* Setting Card 1: Collapsed Sidebar Labels */}
           <div className="p-6 space-y-5 rounded-3xl border border-[var(--md-sys-color-outline-variant)]/20 bg-[var(--md-sys-color-surface-container-low)] shadow-xs">
@@ -163,8 +163,8 @@ export const PreferencesPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Right 1 Column: Live Interactive Preview */}
-        <div className="space-y-4">
+        {/* Right Column: Live Interactive Preview */}
+        <div className="lg:col-span-4 space-y-4 lg:sticky lg:top-6">
           <div className="p-6 rounded-3xl border border-[var(--md-sys-color-outline-variant)]/20 bg-[var(--md-sys-color-surface-container-low)] space-y-4 shadow-xs">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-[var(--md-sys-color-primary)]" />

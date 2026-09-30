@@ -22,6 +22,19 @@ describe('Footer Component', () => {
     expect(screen.queryByRole('link', { name: /create account/i })).not.toBeInTheDocument();
   });
 
+  it('renders with full width inner container without max-w restriction', () => {
+    const { container } = render(
+      <MemoryRouter>
+        <Footer />
+      </MemoryRouter>,
+    );
+
+    const innerDiv = container.querySelector('footer > div') as HTMLElement;
+    expect(innerDiv).toBeInTheDocument();
+    expect(innerDiv.className).toContain('w-full');
+    expect(innerDiv.className).not.toContain('max-w-7xl');
+  });
+
 
   it('does not render status indicator or removed developer tools and product links', () => {
     render(

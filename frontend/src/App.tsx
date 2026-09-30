@@ -56,9 +56,6 @@ const TimeTrackingPage = React.lazy(() =>
 const AdminDashboardPage = React.lazy(() =>
   import('./pages/AdminDashboardPage').then((m) => ({ default: m.AdminDashboardPage })),
 );
-const AdminRbacPage = React.lazy(() =>
-  import('./pages/AdminRbacPage').then((m) => ({ default: m.AdminRbacPage })),
-);
 const ProjectSettingsPage = React.lazy(() =>
   import('./pages/ProjectSettingsPage').then((m) => ({ default: m.ProjectSettingsPage })),
 );

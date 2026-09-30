@@ -5,7 +5,7 @@ import { Shield } from 'lucide-react';
 export const Footer: React.FC = () => {
   return (
     <footer className="w-full bg-[var(--md-sys-color-surface-container-low)] border-t border-[var(--md-sys-color-outline-variant)]/15 transition-colors duration-200 mt-auto rounded-b-xl sm:rounded-b-2xl md:rounded-b-3xl">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[var(--md-sys-color-on-surface-variant)]">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[var(--md-sys-color-on-surface-variant)]">
         {/* Left: Brand Identity & Concise Description */}
         <div className="flex flex-wrap items-center gap-2.5">
           <Link to="/" className="flex items-center gap-2 group" title="BugTracker Home">

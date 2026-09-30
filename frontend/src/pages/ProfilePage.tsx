@@ -26,7 +26,7 @@ export const ProfilePage: React.FC = () => {
   if (!user) return null;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-6 animate-in fade-in duration-200">
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6 animate-in fade-in duration-200">
       {/* 1. Profile Overview Header Card with Inline Profile Editing */}
       <ProfileOverviewHeader />
 
@@ -65,7 +65,7 @@ export const ProfilePage: React.FC = () => {
       {activeTab === 'time' ? (
         <ProfileTimeTab />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start animate-in fade-in duration-200">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start animate-in fade-in duration-200">
           <ProfileSecurityCard />
           <ProfileTwoFactorCard />
           <ProfileSessionsCard />

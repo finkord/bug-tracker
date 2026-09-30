@@ -96,7 +96,7 @@ export const ProjectSettingsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="max-w-6xl mx-auto px-4 py-16 text-center text-xs text-[var(--md-sys-color-on-surface-variant)]">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-16 text-center text-xs text-[var(--md-sys-color-on-surface-variant)]">
         Loading project access settings...
       </div>
     );
@@ -104,14 +104,14 @@ export const ProjectSettingsPage: React.FC = () => {
 
   if (!project) {
     return (
-      <div className="max-w-6xl mx-auto px-4 py-16 text-center text-xs text-[var(--md-sys-color-error)]">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-16 text-center text-xs text-[var(--md-sys-color-error)]">
         Project not found.
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-8 animate-in fade-in duration-200">
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6 animate-in fade-in duration-200">
       {/* Back button & Header */}
       <div className="space-y-3 border-b border-[var(--md-sys-color-outline-variant)]/20 pb-6">
         <Link
@@ -392,17 +392,17 @@ export const ProjectSettingsPage: React.FC = () => {
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
                             <Avatar
-                              name={ua.user.fullName}
-                              avatarUrl={ua.user.avatarUrl}
-                              role={ua.user.systemRole}
+                              name={ua.user?.fullName || 'User'}
+                              avatarUrl={ua.user?.avatarUrl}
+                              role={ua.user?.systemRole}
                               size="sm"
                             />
                             <div className="min-w-0">
                               <p className="text-xs font-bold text-[var(--md-sys-color-on-surface)] truncate">
-                                {ua.user.fullName}
+                                {ua.user?.fullName || 'Assigned User'}
                               </p>
                               <p className="text-[10px] text-[var(--md-sys-color-on-surface-variant)] truncate">
-                                {ua.user.email}
+                                {ua.user?.email || ''}
                               </p>
                             </div>
                           </div>

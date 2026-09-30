@@ -186,8 +186,8 @@ export const IssueDetailPage: React.FC = () => {
 
   if (error || !issue) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <Card className="p-8 text-center border-destructive/30 bg-destructive/5 space-y-4">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-8 flex justify-center">
+        <Card className="max-w-md w-full p-8 text-center border-destructive/30 bg-destructive/5 space-y-4">
           <AlertCircle className="w-10 h-10 text-destructive mx-auto" />
           <h2 className="text-lg font-bold text-foreground">Error Loading Issue</h2>
           <p className="text-sm text-muted-foreground">{error || 'Issue not found'}</p>
@@ -200,7 +200,7 @@ export const IssueDetailPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6 animate-in fade-in duration-200">
       {/* Top Header Bar */}
       <IssueDetailHeader
         issue={issue}
@@ -211,10 +211,10 @@ export const IssueDetailPage: React.FC = () => {
         onDeleteClick={() => setDeleteModalOpen(true)}
       />
 
-      {/* Main Two-Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        {/* Left Column (2 cols): Title, Description, Links, Comments, Attachments */}
-        <div className="lg:col-span-2 space-y-6">
+      {/* Main Responsive Grid Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left Column: Title, Description, Links, Comments, Attachments */}
+        <div className="lg:col-span-8 xl:col-span-8 2xl:col-span-9 space-y-6">
           <IssueDetailDescription
             issue={issue}
             onUpdateIssue={handleUpdateIssue}
@@ -242,8 +242,8 @@ export const IssueDetailPage: React.FC = () => {
           />
         </div>
 
-        {/* Right Column (1 col): Attributes & Time Tracking */}
-        <div className="space-y-5">
+        {/* Right Column: Attributes & Time Tracking */}
+        <div className="lg:col-span-4 xl:col-span-4 2xl:col-span-3 space-y-5 lg:sticky lg:top-6">
           <IssueSidebarDetails
             issue={issue}
             currentUser={user}
