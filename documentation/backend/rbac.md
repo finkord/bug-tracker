@@ -69,6 +69,18 @@ Layer 2: Project-Scoped Roles (ProjectRoleActor)
   * The Project Lead, or
   * The Current Assignee.
 
+### Single-Pass RBAC Evaluation & Redis Caching
+* **Single-Pass SQL Optimization**: `PermissionEvaluatorService.getEffectivePermissions(userId, projectId)` queries all effective permissions in a single SQL query joining `projects`, `permission_schemes`, `permission_grants`, `project_role_actors`, and `user_group_memberships`. This completely eliminates the previous 100+ sequential N+1 query loop.
+* **Redis Effective Permissions Cache (`rbac:user:${userId}:project:${projectId}`)**:
+  * Evaluated permissions are cached with a 300s TTL.
+  * Invalidation hooks automatically purge affected user/project keys when project role actors, user groups, or permission schemes are updated.
+* **Multi-Tenant Project Isolation**: `PermissionEvaluatorService.getAccessibleProjectIds(userId)` calculates all project IDs a user is authorized to browse, enforcing strict tenant separation across project listing endpoints.
+
+### Fail-Closed Project Permission Guard
+* `ProjectPermissionGuard` enforces fail-closed authorization.
+* If a project ID cannot be resolved from route parameters (`:projectId`, `:id`), query string (`?projectId=`), request body, or ticket lookup, the guard immediately throws `ForbiddenException('Project context required for permission verification')`.
+* This prevents any unauthenticated or ambient privilege escalation bypasses.
+
 ### Issue Security Schemes
 * Protects high-confidentiality issues (e.g. zero-day security reports, internal HR tickets).
 * Issues assigned an `IssueSecurityLevel` are hidden from users unless they match an `IssueSecurityGrant`.

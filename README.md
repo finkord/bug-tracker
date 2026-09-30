@@ -206,8 +206,12 @@ make prod-down
 * **Zero Secret Leakage:** Single-use tokens (`activationToken`, `resetPasswordToken`) are never returned in JSON HTTP responses; they are delivered exclusively via cryptographic email links.
 * **Fail-Closed CAPTCHA:** Cloudflare Turnstile token validation strictly rejects test bypass tokens in production.
 * **Enforced Activation Lock:** Unactivated accounts cannot log in under any circumstances (HTTP `401 Unauthorized`).
-* **Real OAuth2 OIDC Integration:** Native integration with GitHub and Google OAuth2 providers.
+* **Real OAuth2 OIDC Integration:** Native integration with GitHub and Google OAuth2 providers with distributed Redis code exchange.
+* **Distributed Redis Session Cache & Rate Limiting:** JWT user sessions cached in Redis with instant global revocation via `tokenVersion`; sliding-window rate limiting prevents distributed brute-force attacks.
 * **Brute-Force Throttling & Account Lockout:** 5 consecutive failed login attempts trigger an immediate 15-minute account lockout, audited in `login_audit_logs`.
 * **RFC 6238 TOTP Two-Factor Authentication:** Cryptographically verified time-based one-time passwords for enhanced account protection.
+* **Single-Pass RBAC Evaluation & Fail-Closed Guards:** Zero N+1 query cascades via single-pass SQL evaluation and Redis caching; fail-closed authorization eliminates ambient access vulnerabilities.
+* **Multi-Tenant Workspace Isolation:** Project queries strictly scoped via dynamic permission evaluation; project creation atomically provisions default schemes and lead administrator roles.
+* **Relational Sprints & Zero-Leak Real-Time WebSockets:** Relational `sprint_id` foreign keys with atomic rollovers; Socket.IO real-time events strictly scoped to authenticated, authorized rooms with zero global broadcast leaks.
 * **Forensic Security Audit Trail:** Live forensic audit log capturing IP address, User-Agent, failure reasons, and timestamps.
 * **Pure Dynamic RBAC & Root Administrator Immutability:** Legacy static role enums retired to pure `ADMIN` and `USER` system roles; coworker titles captured in `jobTitle`; root administrator accounts cannot be demoted, blocked, deleted, or evicted from the administrators group.

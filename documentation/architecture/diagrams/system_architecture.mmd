@@ -40,7 +40,7 @@ graph TB
 
     subgraph DataTier["Level 4: Persistence & Storage Tier"]
         Postgres[("PostgreSQL 15<br/>19 3NF Entities")]
-        RedisCache[("Redis 7<br/>Rate-limiting & Pub/Sub")]
+        RedisCache[("Redis 7<br/>Session Cache, Rate-limiting & Socket.IO Pub/Sub")]
         Seaweed[("SeaweedFS S3<br/>Attachments & Dumps")]
         Mailpit[("Mailpit SMTP<br/>Port 1025 / Web 8025")]
     end

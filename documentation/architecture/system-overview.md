@@ -85,7 +85,7 @@ graph TB
 | **Backend API** | NestJS 12 (TypeScript) | Node.js 24 LTS / Port `3000` | Modular monolith architecture (`/api/v1`), Swagger (`/api/docs`), JWT cookies, input validation. |
 | **Frontend SPA** | React 19 + Vite 8 | Port `5173` | Single-page application, Tailwind CSS v4, Material Design 3 Expressive theme, TanStack Query. |
 | **Relational Database** | PostgreSQL 15 | Port `5432` | Relational 3NF persistence managed via TypeORM with 19 domain entities. |
-| **Cache & Pub/Sub** | Redis 7 | Port `6379` | Throttling/rate-limit tracking, session state, and WebSocket distribution. |
+| **Cache & Pub/Sub** | Redis 7 | Port `6379` | Fast session caching (`user:session:*`), RBAC permissions caching, sliding-window rate limiting, and horizontal Socket.IO Redis adapter distribution. |
 | **Object Storage** | SeaweedFS (S3 API) | S3 Port `8333` / Master `9333` | S3-compatible blob storage for bug attachments, crash dumps, and avatars. |
 | **Mail Testing** | Mailpit | SMTP `1025` / Web UI `8025` | Local zero-dependency mail server capturing activation links and password reset tokens. |
 | **Real-time Gateway** | Socket.IO | WSS via Port `3000` / `/events`| Real-time push events for Kanban board updates and issue status changes. |
