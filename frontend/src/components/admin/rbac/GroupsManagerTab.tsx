@@ -4,10 +4,12 @@ import {
   Search,
   UserPlus,
   Trash2,
+  CheckCircle2,
 } from 'lucide-react';
 import type { GroupItem, UserProfile } from '../../../api/client';
 import { Avatar } from '../../common/Avatar';
-import { Badge, Button, Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../../ui';
+import { Badge, Button, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectEmpty } from '../../ui';
+import { AddGroupMembersModal } from './AddGroupMembersModal';
 
 interface GroupsManagerTabProps {
   readonly groups: GroupItem[];
@@ -17,6 +19,7 @@ interface GroupsManagerTabProps {
   readonly onCreateGroup: (name: string, description?: string) => Promise<void>;
   readonly onAddUserToGroup: (groupId: number, userId: number) => Promise<void>;
   readonly onRemoveUserFromGroup: (groupId: number, userId: number) => Promise<void>;
+  readonly onBatchAddUsers?: (groupId: number, userIds: number[]) => Promise<void>;
 }
 
 export const GroupsManagerTab: React.FC<GroupsManagerTabProps> = ({
@@ -27,12 +30,14 @@ export const GroupsManagerTab: React.FC<GroupsManagerTabProps> = ({
   onCreateGroup,
   onAddUserToGroup,
   onRemoveUserFromGroup,
+  onBatchAddUsers,
 }) => {
   const [groupSearch, setGroupSearch] = useState('');
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupDesc, setNewGroupDesc] = useState('');
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [selectedUserIdToAdd, setSelectedUserIdToAdd] = useState<number | ''>('');
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,6 +52,16 @@ export const GroupsManagerTab: React.FC<GroupsManagerTabProps> = ({
     if (!selectedGroup || !selectedUserIdToAdd) return;
     await onAddUserToGroup(selectedGroup.id, Number(selectedUserIdToAdd));
     setSelectedUserIdToAdd('');
+  };
+
+  const handleBatchAdd = async (groupId: number, userIds: number[]) => {
+    if (onBatchAddUsers) {
+      await onBatchAddUsers(groupId, userIds);
+    } else {
+      for (const uid of userIds) {
+        await onAddUserToGroup(groupId, uid);
+      }
+    }
   };
 
   const filteredGroups = groups.filter(
@@ -177,36 +192,65 @@ export const GroupsManagerTab: React.FC<GroupsManagerTabProps> = ({
               </div>
 
               {/* Add user to group */}
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <div className="w-56 sm:w-64">
-                  <Select
-                    value={selectedUserIdToAdd ? String(selectedUserIdToAdd) : ''}
-                    onValueChange={(val) => setSelectedUserIdToAdd(val ? Number(val) : '')}
-                  >
-                    <SelectTrigger size="sm" className="h-9 text-xs rounded-xl bg-[var(--md-sys-color-surface)]">
-                      <SelectValue placeholder="Select engineer to add..." />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-60">
-                      {allUsers
-                        .filter((u) => !selectedGroup.userGroups?.some((ug) => ug.userId === u.id))
-                        .map((u) => (
-                          <SelectItem key={u.id} value={String(u.id)}>
-                            <span className="truncate">{u.fullName} ({u.email})</span>
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button
-                  variant="filled"
-                  size="sm"
-                  onClick={handleAddUser}
-                  disabled={!selectedUserIdToAdd}
-                  leftIcon={<UserPlus className="w-3.5 h-3.5" />}
-                >
-                  Add
-                </Button>
-              </div>
+              {(() => {
+                const existingMemberUserIds = new Set(selectedGroup.userGroups?.map((ug) => ug.userId) || []);
+                const availableUsers = allUsers.filter((u) => !existingMemberUserIds.has(u.id));
+                const allEnrolled = allUsers.length > 0 && availableUsers.length === 0;
+
+                return (
+                  <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                    {allEnrolled && (
+                      <Badge variant="neutral" size="sm" className="hidden sm:inline-flex">
+                        <CheckCircle2 className="w-3.5 h-3.5 mr-1 text-[var(--md-sys-color-primary)]" />
+                        All Users Enrolled
+                      </Badge>
+                    )}
+
+                    <div className="w-56 sm:w-60">
+                      <Select
+                        value={selectedUserIdToAdd ? String(selectedUserIdToAdd) : ''}
+                        onValueChange={(val) => setSelectedUserIdToAdd(val ? Number(val) : '')}
+                        disabled={allEnrolled}
+                      >
+                        <SelectTrigger size="sm" className="h-9 text-xs rounded-xl bg-[var(--md-sys-color-surface)]">
+                          <SelectValue
+                            placeholder={allEnrolled ? 'All users already in group' : 'Select engineer to add...'}
+                          />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-60">
+                          {availableUsers.length === 0 ? (
+                            <SelectEmpty>All workspace users are already in this group</SelectEmpty>
+                          ) : (
+                            availableUsers.map((u) => (
+                              <SelectItem key={u.id} value={String(u.id)}>
+                                <span className="truncate">{u.fullName} ({u.email})</span>
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <Button
+                      variant="tonal"
+                      size="sm"
+                      onClick={handleAddUser}
+                      disabled={!selectedUserIdToAdd || allEnrolled}
+                    >
+                      Add
+                    </Button>
+
+                    <Button
+                      variant="filled"
+                      size="sm"
+                      onClick={() => setIsAddModalOpen(true)}
+                      leftIcon={<UserPlus className="w-3.5 h-3.5" />}
+                    >
+                      Add Members
+                    </Button>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Member Table */}
@@ -262,6 +306,16 @@ export const GroupsManagerTab: React.FC<GroupsManagerTabProps> = ({
           </div>
         )}
       </div>
+
+      {/* Add Members Enterprise Modal */}
+      {selectedGroup && isAddModalOpen && (
+        <AddGroupMembersModal
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          group={selectedGroup}
+          onAddUsers={handleBatchAdd}
+        />
+      )}
     </div>
   );
 };

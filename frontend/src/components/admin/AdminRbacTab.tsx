@@ -83,6 +83,17 @@ export const AdminRbacTab: React.FC = () => {
     }
   };
 
+  const handleBatchAddUsersToGroup = async (groupId: number, userIds: number[]) => {
+    try {
+      await Promise.all(
+        userIds.map((userId) => addUserToGroupMutation.mutateAsync({ groupId, userId })),
+      );
+      setSuccessMsg(`Successfully added ${userIds.length} member${userIds.length === 1 ? '' : 's'} to group.`);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to add members to group');
+    }
+  };
+
   const handleRemoveUserFromGroup = async (groupId: number, userId: number) => {
     try {
       await removeUserFromGroupMutation.mutateAsync({ groupId, userId });
@@ -207,6 +218,7 @@ export const AdminRbacTab: React.FC = () => {
             onCreateGroup={handleCreateGroup}
             onAddUserToGroup={handleAddUserToGroup}
             onRemoveUserFromGroup={handleRemoveUserFromGroup}
+            onBatchAddUsers={handleBatchAddUsersToGroup}
           />
         )}
 

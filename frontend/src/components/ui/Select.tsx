@@ -130,6 +130,20 @@ export const SelectSeparator = React.forwardRef<
 ));
 SelectSeparator.displayName = SelectPrimitive.Separator.displayName;
 
+export const SelectEmpty: React.FC<{ children?: React.ReactNode; className?: string }> = ({
+  children = 'No options available',
+  className,
+}) => (
+  <div
+    className={cn(
+      'py-3.5 px-3 text-center text-xs text-[var(--md-sys-color-on-surface-variant)] select-none',
+      className,
+    )}
+  >
+    {children}
+  </div>
+);
+
 /* ─── High-Level Convenience SelectField Component ─────────────────────── */
 export interface SelectOption {
   value: string;
@@ -176,24 +190,28 @@ export const SelectField: React.FC<SelectFieldProps> = ({
         value={value !== undefined && value !== null ? String(value) : undefined}
         defaultValue={defaultValue}
         onValueChange={onValueChange}
-        disabled={disabled}
+        disabled={disabled || options.length === 0}
       >
         <SelectTrigger error={Boolean(error)} size={size}>
-          <SelectValue placeholder={placeholder} />
+          <SelectValue placeholder={options.length === 0 ? 'No options available' : placeholder} />
         </SelectTrigger>
         <SelectContent>
-          {options.map((opt) => (
-            <SelectItem key={opt.value} value={opt.value} disabled={opt.disabled}>
-              {opt.icon ? (
-                <span className="flex items-center gap-2">
-                  {opt.icon}
-                  <span>{opt.label}</span>
-                </span>
-              ) : (
-                opt.label
-              )}
-            </SelectItem>
-          ))}
+          {options.length === 0 ? (
+            <SelectEmpty>{placeholder || 'No options available'}</SelectEmpty>
+          ) : (
+            options.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value} disabled={opt.disabled}>
+                {opt.icon ? (
+                  <span className="flex items-center gap-2">
+                    {opt.icon}
+                    <span>{opt.label}</span>
+                  </span>
+                ) : (
+                  opt.label
+                )}
+              </SelectItem>
+            ))
+          )}
         </SelectContent>
       </Select>
       {error ? (
