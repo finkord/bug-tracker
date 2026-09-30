@@ -63,7 +63,7 @@ export class PermissionEvaluatorService {
     const userAdminGroup = await this.userGroupRepository.createQueryBuilder('ug')
       .innerJoin('ug.group', 'g')
       .where('ug.userId = :userId', { userId })
-      .andWhere('LOWER(g.name) IN (:...names)', { names: ['administrators', 'admin', 'admins', 'jira-administrators'] })
+      .andWhere('LOWER(g.name) IN (:...names)', { names: ['administrators', 'admin', 'admins'] })
       .getOne();
 
     if (userAdminGroup) {
@@ -239,7 +239,7 @@ export class PermissionEvaluatorService {
     const userAdminGroup = await this.userGroupRepository.createQueryBuilder('ug')
       .innerJoin('ug.group', 'g')
       .where('ug.userId = :userId', { userId })
-      .andWhere('LOWER(g.name) IN (:...names)', { names: ['administrators', 'admin', 'admins', 'jira-administrators'] })
+      .andWhere('LOWER(g.name) IN (:...names)', { names: ['administrators', 'admin', 'admins'] })
       .getOne();
 
     if (user.systemRole === SystemRole.ADMIN || userAdminGroup) {

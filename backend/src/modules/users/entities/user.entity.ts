@@ -11,11 +11,6 @@ import { LoginAuditLog } from '../../security-audit/entities/login-audit-log.ent
 
 export enum SystemRole {
   ADMIN = 'ADMIN',
-  PROJECT_MANAGER = 'PROJECT_MANAGER',
-  DEVELOPER = 'DEVELOPER',
-  QA_ENGINEER = 'QA_ENGINEER',
-  DEVOPS_ENGINEER = 'DEVOPS_ENGINEER',
-  SECURITY_ENGINEER = 'SECURITY_ENGINEER',
   USER = 'USER',
 }
 

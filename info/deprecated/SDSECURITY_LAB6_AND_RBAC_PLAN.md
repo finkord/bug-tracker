@@ -209,10 +209,10 @@ The current `/admin/security-logs` route will be upgraded into a unified **Admin
 ├─────────────────────────────────────────────────────────────────────────────────────────┤
 │ ID  │ User                │ Email               │ Role       │ Auth   │ 2FA │ Status    │ Actions │
 ├─────┼─────────────────────┼─────────────────────┼────────────┼────────┼─────┼───────────┼─────────┤
-│ #1  │ Volodymyr Fufalko   │ v.fufalko@test.com  │ ADMIN    ▼ │ GITHUB │  ✓  │ Active    │ [Block] │
-│ #2  │ Jane Smith (Dev)    │ j.smith@dev.local   │ USER     ▼ │ LOCAL  │  ✓  │ Active    │ [Block] │
-│ #3  │ Suspicious User     │ bot@attack.ru       │ USER     ▼ │ LOCAL  │  ✗  │ BLOCKED   │ [Unblock]
-│ #4  │ Alex QA             │ alex.qa@test.com    │ USER     ▼ │ GOOGLE │  ✓  │ Pending   │ [Activate]
+│ #1  │ Volodymyr Fufalko   │ v.fufalko@test.com  │ ADMIN    ▼ │ GITHUB │  [PASS]  │ Active    │ [Block] │
+│ #2  │ Jane Smith (Dev)    │ j.smith@dev.local   │ USER     ▼ │ LOCAL  │  [PASS]  │ Active    │ [Block] │
+│ #3  │ Suspicious User     │ bot@attack.ru       │ USER     ▼ │ LOCAL  │  [FAIL]  │ BLOCKED   │ [Unblock]
+│ #4  │ Alex QA             │ alex.qa@test.com    │ USER     ▼ │ GOOGLE │  [PASS]  │ Pending   │ [Activate]
 └─────┴─────────────────────┴─────────────────────┴────────────┴────────┴─────┴───────────┴─────────┘
 ```
 

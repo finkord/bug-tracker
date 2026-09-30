@@ -1,4 +1,4 @@
-# 📋 План заміни застарілих/сирих елементів на уніфіковані UI-компоненти (UI Components Replacement Plan)
+# [TASK] План заміни застарілих/сирих елементів на уніфіковані UI-компоненти (UI Components Replacement Plan)
 
 > **Мета:** Замінити всі сирі `<select>`, кастомні вкладки та нетипізовані поля на уніфіковані компоненти з `@/components/ui/` (`SelectField`, `Select`, `Tabs`, `Button`, `Badge`, `Input`, `Modal`, `DropdownMenu`).
 

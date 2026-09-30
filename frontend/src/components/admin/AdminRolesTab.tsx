@@ -84,7 +84,7 @@ export const AdminRolesTab: React.FC = () => {
           <div>
             <h3 className="text-sm font-bold text-foreground">Advanced RBAC & Security Schemes</h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Configure fine-grained Jira-grade permission schemes, project roles, and issue security levels.
+              Configure fine-grained enterprise-grade permission schemes, project roles, and issue security levels.
             </p>
           </div>
         </div>

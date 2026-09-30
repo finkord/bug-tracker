@@ -20,8 +20,10 @@
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
-    "seed": "tsx src/database/seed.ts",
-    "seed:prod": "node dist/database/seed.js"
+    "init:system": "tsx src/database/init-system.ts",
+    "init:system:prod": "node dist/database/init-system.js",
+    "seed": "tsx src/database/init-system.ts",
+    "seed:demo": "tsx src/database/seed.ts"
   },
   "dependencies": {
     "@nestjs-modules/mailer": "^2.3.7",

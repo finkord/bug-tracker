@@ -162,43 +162,43 @@ export class SeedService {
 
       // UI / Frontend Team
       { key: 'volodymyr', fullName: 'Volodymyr Fufalko', email: 'volodymyr@bugtracker.local', systemRole: SystemRole.ADMIN, jobTitle: 'Principal Frontend Architect' },
-      { key: 'sonya', fullName: 'Sonya Saparava', email: 'sonya@bugtracker.local', systemRole: SystemRole.DEVELOPER, jobTitle: 'Senior UI/UX Engineer' },
-      { key: 'olena', fullName: 'Olena Melnyk', email: 'olena@bugtracker.local', systemRole: SystemRole.DEVELOPER, jobTitle: 'Design Systems Developer' },
-      { key: 'daniel', fullName: 'Daniel Kim', email: 'daniel.kim@bugtracker.local', systemRole: SystemRole.DEVELOPER, jobTitle: 'Frontend Engineer' },
-      { key: 'sophia', fullName: 'Sophia Martinez', email: 'sophia.m@bugtracker.local', systemRole: SystemRole.QA_ENGINEER, jobTitle: 'Lead QA Automation Engineer' },
-      { key: 'lucas', fullName: 'Lucas Weber', email: 'lucas.w@bugtracker.local', systemRole: SystemRole.DEVELOPER, jobTitle: 'Accessibility & CSS Specialist' },
+      { key: 'sonya', fullName: 'Sonya Saparava', email: 'sonya@bugtracker.local', systemRole: SystemRole.USER, jobTitle: 'Senior UI/UX Engineer' },
+      { key: 'olena', fullName: 'Olena Melnyk', email: 'olena@bugtracker.local', systemRole: SystemRole.USER, jobTitle: 'Design Systems Developer' },
+      { key: 'daniel', fullName: 'Daniel Kim', email: 'daniel.kim@bugtracker.local', systemRole: SystemRole.USER, jobTitle: 'Frontend Engineer' },
+      { key: 'sophia', fullName: 'Sophia Martinez', email: 'sophia.m@bugtracker.local', systemRole: SystemRole.USER, jobTitle: 'Lead QA Automation Engineer' },
+      { key: 'lucas', fullName: 'Lucas Weber', email: 'lucas.w@bugtracker.local', systemRole: SystemRole.USER, jobTitle: 'Accessibility & CSS Specialist' },
 
       // CORE / Platform Team
-      { key: 'alex', fullName: 'Alex Mercer', email: 'alex.mercer@bugtracker.local', systemRole: SystemRole.PROJECT_MANAGER, jobTitle: 'Core Platform Engineering Lead' },
-      { key: 'marcus', fullName: 'Marcus Vance', email: 'marcus.v@bugtracker.local', systemRole: SystemRole.DEVELOPER, jobTitle: 'Senior Backend Engineer (Postgres/ORM)' },
-      { key: 'taras', fullName: 'Taras Shevchenko', email: 'taras.sh@bugtracker.local', systemRole: SystemRole.DEVELOPER, jobTitle: 'Distributed Systems Engineer' },
-      { key: 'rachel', fullName: 'Rachel Green', email: 'rachel.g@bugtracker.local', systemRole: SystemRole.DEVELOPER, jobTitle: 'Backend Security & Auth Engineer' },
-      { key: 'dmitry', fullName: 'Dmitry Volkov', email: 'dmitry.v@bugtracker.local', systemRole: SystemRole.DEVELOPER, jobTitle: 'API Gateway & GraphQL Specialist' },
-      { key: 'liam', fullName: 'Liam O\'Connor', email: 'liam.oc@bugtracker.local', systemRole: SystemRole.QA_ENGINEER, jobTitle: 'Backend QA & Performance Tester' },
+      { key: 'alex', fullName: 'Alex Mercer', email: 'alex.mercer@bugtracker.local', systemRole: SystemRole.USER, jobTitle: 'Core Platform Engineering Lead' },
+      { key: 'marcus', fullName: 'Marcus Vance', email: 'marcus.v@bugtracker.local', systemRole: SystemRole.USER, jobTitle: 'Senior Backend Engineer (Postgres/ORM)' },
+      { key: 'taras', fullName: 'Taras Shevchenko', email: 'taras.sh@bugtracker.local', systemRole: SystemRole.USER, jobTitle: 'Distributed Systems Engineer' },
+      { key: 'rachel', fullName: 'Rachel Green', email: 'rachel.g@bugtracker.local', systemRole: SystemRole.USER, jobTitle: 'Backend Security & Auth Engineer' },
+      { key: 'dmitry', fullName: 'Dmitry Volkov', email: 'dmitry.v@bugtracker.local', systemRole: SystemRole.USER, jobTitle: 'API Gateway & GraphQL Specialist' },
+      { key: 'liam', fullName: 'Liam O\'Connor', email: 'liam.oc@bugtracker.local', systemRole: SystemRole.USER, jobTitle: 'Backend QA & Performance Tester' },
 
       // MONOPS / Observability Team
-      { key: 'sarah', fullName: 'Sarah Chen', email: 'sarah.chen@bugtracker.local', systemRole: SystemRole.DEVOPS_ENGINEER, jobTitle: 'Lead SRE & Observability Architect' },
-      { key: 'ethan', fullName: 'Ethan Davis', email: 'ethan.davis@bugtracker.local', systemRole: SystemRole.DEVOPS_ENGINEER, jobTitle: 'Prometheus & Alertmanager Specialist' },
-      { key: 'yuliia', fullName: 'Yuliia Kovalenko', email: 'yuliia.k@bugtracker.local', systemRole: SystemRole.DEVOPS_ENGINEER, jobTitle: 'Grafana & Telemetry Dashboard Engineer' },
-      { key: 'kevin', fullName: 'Kevin Zhang', email: 'kevin.zhang@bugtracker.local', systemRole: SystemRole.DEVELOPER, jobTitle: 'OpenTelemetry Trace Instrumentation Dev' },
-      { key: 'maya', fullName: 'Maya Patel', email: 'maya.patel@bugtracker.local', systemRole: SystemRole.QA_ENGINEER, jobTitle: 'Chaos Engineering & Reliability QA' },
-      { key: 'noah', fullName: 'Noah Garcia', email: 'noah.g@bugtracker.local', systemRole: SystemRole.DEVOPS_ENGINEER, jobTitle: 'Logs & Elasticsearch Engineer' },
+      { key: 'sarah', fullName: 'Sarah Chen', email: 'sarah.chen@bugtracker.local', systemRole: SystemRole.USER, jobTitle: 'Lead SRE & Observability Architect' },
+      { key: 'ethan', fullName: 'Ethan Davis', email: 'ethan.davis@bugtracker.local', systemRole: SystemRole.USER, jobTitle: 'Prometheus & Alertmanager Specialist' },
+      { key: 'yuliia', fullName: 'Yuliia Kovalenko', email: 'yuliia.k@bugtracker.local', systemRole: SystemRole.USER, jobTitle: 'Grafana & Telemetry Dashboard Engineer' },
+      { key: 'kevin', fullName: 'Kevin Zhang', email: 'kevin.zhang@bugtracker.local', systemRole: SystemRole.USER, jobTitle: 'OpenTelemetry Trace Instrumentation Dev' },
+      { key: 'maya', fullName: 'Maya Patel', email: 'maya.patel@bugtracker.local', systemRole: SystemRole.USER, jobTitle: 'Chaos Engineering & Reliability QA' },
+      { key: 'noah', fullName: 'Noah Garcia', email: 'noah.g@bugtracker.local', systemRole: SystemRole.USER, jobTitle: 'Logs & Elasticsearch Engineer' },
 
       // INFRAOPS / Cloud Platform Team
-      { key: 'david', fullName: 'David Miller', email: 'david.miller@bugtracker.local', systemRole: SystemRole.DEVOPS_ENGINEER, jobTitle: 'Principal Cloud Platform Architect' },
-      { key: 'brandon', fullName: 'Brandon Lee', email: 'brandon.lee@bugtracker.local', systemRole: SystemRole.DEVOPS_ENGINEER, jobTitle: 'Kubernetes Cluster Administrator' },
-      { key: 'andrii', fullName: 'Andrii Boyko', email: 'andrii.b@bugtracker.local', systemRole: SystemRole.DEVOPS_ENGINEER, jobTitle: 'Terraform & Infrastructure-as-Code Dev' },
-      { key: 'chloe', fullName: 'Chloe Dubois', email: 'chloe.dubois@bugtracker.local', systemRole: SystemRole.DEVOPS_ENGINEER, jobTitle: 'Redis & DB Cluster Ops Engineer' },
-      { key: 'victor', fullName: 'Victor Stone', email: 'victor.stone@bugtracker.local', systemRole: SystemRole.DEVOPS_ENGINEER, jobTitle: 'CI/CD Pipeline Automation Specialist' },
-      { key: 'benjamin', fullName: 'Benjamin Taylor', email: 'benjamin.t@bugtracker.local', systemRole: SystemRole.QA_ENGINEER, jobTitle: 'Infrastructure Integration QA' },
+      { key: 'david', fullName: 'David Miller', email: 'david.miller@bugtracker.local', systemRole: SystemRole.USER, jobTitle: 'Principal Cloud Platform Architect' },
+      { key: 'brandon', fullName: 'Brandon Lee', email: 'brandon.lee@bugtracker.local', systemRole: SystemRole.USER, jobTitle: 'Kubernetes Cluster Administrator' },
+      { key: 'andrii', fullName: 'Andrii Boyko', email: 'andrii.b@bugtracker.local', systemRole: SystemRole.USER, jobTitle: 'Terraform & Infrastructure-as-Code Dev' },
+      { key: 'chloe', fullName: 'Chloe Dubois', email: 'chloe.dubois@bugtracker.local', systemRole: SystemRole.USER, jobTitle: 'Redis & DB Cluster Ops Engineer' },
+      { key: 'victor', fullName: 'Victor Stone', email: 'victor.stone@bugtracker.local', systemRole: SystemRole.USER, jobTitle: 'CI/CD Pipeline Automation Specialist' },
+      { key: 'benjamin', fullName: 'Benjamin Taylor', email: 'benjamin.t@bugtracker.local', systemRole: SystemRole.USER, jobTitle: 'Infrastructure Integration QA' },
 
       // NETOPS / Security Operations Team
-      { key: 'elena', fullName: 'Elena Rostova', email: 'elena.rostova@bugtracker.local', systemRole: SystemRole.SECURITY_ENGINEER, jobTitle: 'Head of Information Security' },
-      { key: 'maxim', fullName: 'Maxim Petrov', email: 'maxim.petrov@bugtracker.local', systemRole: SystemRole.SECURITY_ENGINEER, jobTitle: 'Application Security & Penetration Tester' },
-      { key: 'ryan', fullName: 'Ryan Murphy', email: 'ryan.murphy@bugtracker.local', systemRole: SystemRole.SECURITY_ENGINEER, jobTitle: 'Cloudflare Edge & WAF Specialist' },
-      { key: 'oksana', fullName: 'Oksana Bondarenko', email: 'oksana.b@bugtracker.local', systemRole: SystemRole.SECURITY_ENGINEER, jobTitle: 'Identity & Access Management (IAM) Dev' },
-      { key: 'arthur', fullName: 'Arthur Pendelton', email: 'arthur.p@bugtracker.local', systemRole: SystemRole.SECURITY_ENGINEER, jobTitle: 'Network Security & Firewall Engineer' },
-      { key: 'grace', fullName: 'Grace Hopper', email: 'grace.h@bugtracker.local', systemRole: SystemRole.SECURITY_ENGINEER, jobTitle: 'Compliance & Cryptographic Auditor' },
+      { key: 'elena', fullName: 'Elena Rostova', email: 'elena.rostova@bugtracker.local', systemRole: SystemRole.USER, jobTitle: 'Head of Information Security' },
+      { key: 'maxim', fullName: 'Maxim Petrov', email: 'maxim.petrov@bugtracker.local', systemRole: SystemRole.USER, jobTitle: 'Application Security & Penetration Tester' },
+      { key: 'ryan', fullName: 'Ryan Murphy', email: 'ryan.murphy@bugtracker.local', systemRole: SystemRole.USER, jobTitle: 'Cloudflare Edge & WAF Specialist' },
+      { key: 'oksana', fullName: 'Oksana Bondarenko', email: 'oksana.b@bugtracker.local', systemRole: SystemRole.USER, jobTitle: 'Identity & Access Management (IAM) Dev' },
+      { key: 'arthur', fullName: 'Arthur Pendelton', email: 'arthur.p@bugtracker.local', systemRole: SystemRole.USER, jobTitle: 'Network Security & Firewall Engineer' },
+      { key: 'grace', fullName: 'Grace Hopper', email: 'grace.h@bugtracker.local', systemRole: SystemRole.USER, jobTitle: 'Compliance & Cryptographic Auditor' },
     ];
 
     const result: Record<string, User> = {};

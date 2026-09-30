@@ -66,7 +66,7 @@ Solid Button     : [On-Primary T20 #062E6F] on [Primary T80 #A8C7FA]         →
 Tonal Container  : [On-Container T90 #D3E3FD] on [Container T30 #0842A0]   → ΔT = 60 (Pass AAA)
 ```
 
-### ⚠️ Critical Violation: Ad-Hoc Opacity Classes Break Contrast Curves
+### [WARN] Critical Violation: Ad-Hoc Opacity Classes Break Contrast Curves
 Several pages bypass M3 tokens and use arbitrary Tailwind opacity classes (e.g. `bg-emerald-500/10 text-emerald-600 dark:text-emerald-400` or `bg-blue-500/15 text-blue-600`):
 
 1. **Unpredictable Background Luminance:** `bg-emerald-500/10` creates an alpha-blended tone that varies depending on whether it sits on `surface-container-low` vs `surface-container-high`.
@@ -112,18 +112,18 @@ A comprehensive codebase audit was conducted across all pages in [`src/pages/`](
 ├─────────────────────────┬──────────────┬───────────────────┬───────────────────────────┤
 │ Page / Area             │ Token Status │ Contrast Status   │ Identified Issues         │
 ├─────────────────────────┼──────────────┼───────────────────┼───────────────────────────┤
-│ 1. Kanban Board Page    │ 🟡 80%       │ 🟡 85%            │ Hardcoded badge classes   │
-│ 2. Backlog & Sprints    │ 🟢 95%       │ 🟢 95%            │ Minor sprint badge opacity│
-│ 3. Issue Detail Page    │ 🟢 90%       │ 🟢 95%            │ Issue links ad-hoc badges │
-│ 4. Advanced Search Page │ 🟢 95%       │ 🟢 95%            │ High compliance           │
-│ 5. Projects Page        │ 🟡 75%       │ 🟡 80%            │ Metric circle avatars     │
-│ 6. Time Tracking Page   │ 🟡 70%       │ 🟡 75%            │ Amber date cell opacities │
-│ 7. Profile Page         │ 🔴 60%       │ 🟡 70%            │ Multi-color role tiles    │
-│ 8. Preferences Page     │ 🟢 90%       │ 🟢 95%            │ Theme cards compliant     │
-│ 9. Admin Dashboard      │ 🟢 90%       │ 🟢 95%            │ High compliance           │
-│ 10. Admin Security      │ 🟢 90%       │ 🟢 95%            │ High compliance           │
-│ 11. Auth Pages          │ 🟢 95%       │ 🟢 98%            │ High compliance           │
-│ 12. UI Component Kit    │ 🟢 100%      │ 🟢 100%           │ Full M3 Precision standard│
+│ 1. Kanban Board Page    │ [MEDIUM] 80%       │ [MEDIUM] 85%            │ Hardcoded badge classes   │
+│ 2. Backlog & Sprints    │ [LOW] 95%       │ [LOW] 95%            │ Minor sprint badge opacity│
+│ 3. Issue Detail Page    │ [LOW] 90%       │ [LOW] 95%            │ Issue links ad-hoc badges │
+│ 4. Advanced Search Page │ [LOW] 95%       │ [LOW] 95%            │ High compliance           │
+│ 5. Projects Page        │ [MEDIUM] 75%       │ [MEDIUM] 80%            │ Metric circle avatars     │
+│ 6. Time Tracking Page   │ [MEDIUM] 70%       │ [MEDIUM] 75%            │ Amber date cell opacities │
+│ 7. Profile Page         │ [CRITICAL] 60%       │ [MEDIUM] 70%            │ Multi-color role tiles    │
+│ 8. Preferences Page     │ [LOW] 90%       │ [LOW] 95%            │ Theme cards compliant     │
+│ 9. Admin Dashboard      │ [LOW] 90%       │ [LOW] 95%            │ High compliance           │
+│ 10. Admin Security      │ [LOW] 90%       │ [LOW] 95%            │ High compliance           │
+│ 11. Auth Pages          │ [LOW] 95%       │ [LOW] 98%            │ High compliance           │
+│ 12. UI Component Kit    │ [LOW] 100%      │ [LOW] 100%           │ Full M3 Precision standard│
 └─────────────────────────┴──────────────┴───────────────────┴───────────────────────────┘
 ```
 
@@ -132,7 +132,7 @@ A comprehensive codebase audit was conducted across all pages in [`src/pages/`](
 #### 1. Kanban Board Page ([`KanbanBoardPage.tsx`](file:///home/finkord/dev/PPofSE/software/frontend/src/pages/KanbanBoardPage.tsx))
 - **Lines 27–31:** Column status badges declare raw Tailwind strings:
   ```tsx
-  // ❌ VIOLATION:
+  // [FAIL] VIOLATION:
   { status: 'OPEN', badgeColor: 'bg-slate-500/10 text-slate-600 dark:text-slate-400' }
   { status: 'IN_PROGRESS', badgeColor: 'bg-blue-500/10 text-blue-600 dark:text-blue-400' }
   { status: 'RESOLVED', badgeColor: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' }
@@ -142,7 +142,7 @@ A comprehensive codebase audit was conducted across all pages in [`src/pages/`](
 #### 2. Projects Page ([`ProjectsPage.tsx`](file:///home/finkord/dev/PPofSE/software/frontend/src/pages/ProjectsPage.tsx))
 - **Lines 132, 146:** Hardcoded indicator circles:
   ```tsx
-  // ❌ VIOLATION:
+  // [FAIL] VIOLATION:
   <div className="w-8 h-8 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400">
   <div className="w-8 h-8 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
   ```
@@ -151,7 +151,7 @@ A comprehensive codebase audit was conducted across all pages in [`src/pages/`](
 #### 3. Time Tracking Page ([`TimeTrackingPage.tsx`](file:///home/finkord/dev/PPofSE/software/frontend/src/pages/TimeTrackingPage.tsx))
 - **Lines 361, 497, 536:** Raw amber calendar cells:
   ```tsx
-  // ❌ VIOLATION:
+  // [FAIL] VIOLATION:
   isToday ? 'bg-amber-500/20 text-amber-900 dark:text-amber-200' : ''
   ```
 - **Fix:** Use `bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)]` to anchor "today" to the primary system tone.

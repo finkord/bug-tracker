@@ -128,9 +128,9 @@
   3. **Personal Time & Achievements in User Profile (`/profile?tab=time`):**
      - Tailored specifically for the individual engineer.
      - Tracks **Active Day Streak** (consecutive logging days), monthly targets, and unlockable achievement badges:
-       - 🥇 *Consistency Hero* (3+ day streak)
-       - ⚡ *Daily 8h Sprinter* (8+ hours logged in one day)
-       - 🎯 *Active Contributor* (5+ submitted worklogs)
+       - [RANK-1] *Consistency Hero* (3+ day streak)
+       -  *Daily 8h Sprinter* (8+ hours logged in one day)
+       - [GOAL] *Active Contributor* (5+ submitted worklogs)
      - Interactive personal calendar grid with day-by-day task details.
 
 ---

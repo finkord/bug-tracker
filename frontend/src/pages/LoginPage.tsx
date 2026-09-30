@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { api, type Login2FaChallenge, type AuthTokens } from '../api/client';
 import { useAuth } from '../store';
-import { Shield, KeyRound, ShieldAlert } from 'lucide-react';
+import { KeyRound, ShieldAlert } from 'lucide-react';
 import { LockoutCountdownBanner } from '../components/auth/LockoutCountdownBanner';
 import { TwoFactorChallengeForm } from '../components/auth/TwoFactorChallengeForm';
 import { PasswordLoginForm } from '../components/auth/PasswordLoginForm';
@@ -94,21 +94,32 @@ export const LoginPage: React.FC = () => {
         <div className="absolute -inset-1.5 bg-gradient-to-r from-[var(--md-sys-color-primary)]/15 via-[var(--md-sys-color-tertiary)]/10 to-[var(--md-sys-color-primary)]/15 rounded-[32px] blur-xl opacity-60 -z-10 pointer-events-none" />
 
         <div className="w-full p-8 m3-card shadow-xl relative overflow-hidden">
-          {/* Dynamic Header */}
-          <div className="flex items-center gap-3.5 mb-6">
-            <div className="w-12 h-12 rounded-[18px] bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center shadow-xs">
-              {twoFactorChallenge ? <KeyRound className="w-6 h-6" /> : <Shield className="w-6 h-6" />}
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-[var(--md-sys-color-on-surface)] tracking-tight">
-                {twoFactorChallenge ? 'Two-Step Verification' : 'Welcome to BugTracker'}
-              </h2>
-              <p className="text-xs text-[var(--md-sys-color-on-surface-variant)]">
-                {twoFactorChallenge
-                  ? 'Enter the security code from your authenticator'
-                  : 'Sign in to access your dashboard'}
-              </p>
-            </div>
+          {/* Header */}
+          <div className="mb-6">
+            {twoFactorChallenge ? (
+              <div className="flex items-center gap-3.5">
+                <div className="w-11 h-11 rounded-2xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-primary)] flex items-center justify-center shrink-0 shadow-2xs border border-[var(--md-sys-color-primary)]/15">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+                <div>
+                  <h1 className="text-2xl sm:text-[26px] font-extrabold text-[var(--md-sys-color-on-surface)] tracking-tight leading-tight">
+                    Two-Step Verification
+                  </h1>
+                  <p className="text-xs sm:text-sm text-[var(--md-sys-color-on-surface-variant)] mt-1">
+                    Enter the security code from your authenticator
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <>
+                <h1 className="text-2xl sm:text-[26px] font-extrabold text-[var(--md-sys-color-on-surface)] tracking-tight leading-tight">
+                  Welcome to <span className="text-[var(--md-sys-color-primary)]">BugTracker</span>
+                </h1>
+                <p className="text-xs sm:text-sm text-[var(--md-sys-color-on-surface-variant)] mt-1.5">
+                  Sign in to your account to continue
+                </p>
+              </>
+            )}
           </div>
 
           {/* Brute-Force Lockout Active Alert */}

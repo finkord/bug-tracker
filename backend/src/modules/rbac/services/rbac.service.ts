@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Group } from '../entities/group.entity.js';
@@ -73,7 +73,7 @@ export class RbacService {
     if (!user) throw new NotFoundException('User not found');
 
     // If added to an administrative group, upgrade user's systemRole to ADMIN
-    const isAdminGroup = ['administrators', 'admin', 'admins', 'jira-administrators'].includes(
+    const isAdminGroup = ['administrators', 'admin', 'admins'].includes(
       group.name.toLowerCase().trim(),
     );
     if (isAdminGroup && user.systemRole !== SystemRole.ADMIN) {
@@ -90,29 +90,22 @@ export class RbacService {
 
   async removeUserFromGroup(groupId: number, userId: number): Promise<void> {
     const group = await this.groupRepository.findOne({ where: { id: groupId } });
-    await this.userGroupRepository.delete({ groupId, userId });
+    if (!group) throw new NotFoundException('Group not found');
 
-    if (group) {
-      const isAdminGroup = ['administrators', 'admin', 'admins', 'jira-administrators'].includes(
-        group.name.toLowerCase().trim(),
-      );
-      if (isAdminGroup) {
-        // Check if user belongs to any other admin groups
-        const remainingAdminGroups = await this.userGroupRepository.createQueryBuilder('ug')
-          .innerJoin('ug.group', 'g')
-          .where('ug.userId = :userId', { userId })
-          .andWhere('LOWER(g.name) IN (:...names)', { names: ['administrators', 'admin', 'admins'] })
-          .getCount();
+    const isAdminGroup = ['administrators', 'admin', 'admins'].includes(
+      group.name.toLowerCase().trim(),
+    );
 
-        if (remainingAdminGroups === 0) {
-          const user = await this.userRepository.findOne({ where: { id: userId } });
-          if (user && user.systemRole === SystemRole.ADMIN) {
-            user.systemRole = SystemRole.USER;
-            await this.userRepository.save(user);
-          }
-        }
+    if (isAdminGroup) {
+      const user = await this.userRepository.findOne({ where: { id: userId } });
+      if (user && user.systemRole === SystemRole.ADMIN) {
+        throw new ForbiddenException(
+          'Root administrator accounts cannot be removed from the administrators group',
+        );
       }
     }
+
+    await this.userGroupRepository.delete({ groupId, userId });
   }
 
   // ================= PROJECT ROLES =================

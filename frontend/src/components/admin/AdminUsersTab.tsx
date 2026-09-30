@@ -144,12 +144,7 @@ export const AdminUsersTab: React.FC = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="">All Roles</SelectItem>
-                <SelectItem value="ADMIN">Admin</SelectItem>
-                <SelectItem value="PROJECT_MANAGER">Project Manager</SelectItem>
-                <SelectItem value="DEVELOPER">Developer</SelectItem>
-                <SelectItem value="QA_ENGINEER">QA Engineer</SelectItem>
-                <SelectItem value="DEVOPS_ENGINEER">DevOps Engineer</SelectItem>
-                <SelectItem value="SECURITY_ENGINEER">Security Engineer</SelectItem>
+                <SelectItem value="ADMIN">Administrator</SelectItem>
                 <SelectItem value="USER">Standard User</SelectItem>
               </SelectContent>
             </Select>
@@ -202,29 +197,38 @@ export const AdminUsersTab: React.FC = () => {
                         <div>
                           <div className="font-semibold text-foreground text-xs">{u.fullName}</div>
                           <div className="text-muted-foreground text-[11px] font-mono">{u.email}</div>
+                          {u.jobTitle && (
+                            <div className="text-[10px] text-[var(--md-sys-color-primary)] font-medium mt-0.5">
+                              {u.jobTitle}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>
                     <td className="py-3 px-4">
-                      <div className="w-40">
-                        <Select
-                          value={u.systemRole}
-                          onValueChange={(val) => handleRoleChange(u.id, val as SystemRole)}
-                        >
-                          <SelectTrigger className="h-7 text-xs font-medium">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="ADMIN">Admin</SelectItem>
-                            <SelectItem value="PROJECT_MANAGER">Project Manager</SelectItem>
-                            <SelectItem value="DEVELOPER">Developer</SelectItem>
-                            <SelectItem value="QA_ENGINEER">QA Engineer</SelectItem>
-                            <SelectItem value="DEVOPS_ENGINEER">DevOps</SelectItem>
-                            <SelectItem value="SECURITY_ENGINEER">Security</SelectItem>
-                            <SelectItem value="USER">User</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      {u.systemRole === 'ADMIN' ? (
+                        <div title="Root Administrator accounts cannot be demoted">
+                          <Badge variant="primary" className="text-[11px] font-semibold px-2 py-0.5 flex items-center gap-1 w-fit">
+                            <Lock className="w-3 h-3" />
+                            Root Admin
+                          </Badge>
+                        </div>
+                      ) : (
+                        <div className="w-32">
+                          <Select
+                            value={u.systemRole}
+                            onValueChange={(val) => handleRoleChange(u.id, val as SystemRole)}
+                          >
+                            <SelectTrigger className="h-7 text-xs font-medium">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="ADMIN">Admin</SelectItem>
+                              <SelectItem value="USER">User</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
                     </td>
                     <td className="py-3 px-4">
                       {u.isBlocked ? (
@@ -266,28 +270,41 @@ export const AdminUsersTab: React.FC = () => {
                         <RotateCcw className="w-3.5 h-3.5 mr-1" />
                         Reset Pwd
                       </Button>
-                      <Button
-                        variant={u.isBlocked ? 'outline' : 'ghost'}
-                        size="sm"
-                        onClick={() => handleToggleBlock(u.id, u.isBlocked)}
-                        className={`h-7 px-2 text-xs ${
-                          u.isBlocked
-                            ? 'text-[var(--md-sys-color-success)] hover:opacity-80'
-                            : 'text-destructive hover:bg-destructive/10'
-                        }`}
-                      >
-                        {u.isBlocked ? (
-                          <>
-                            <Unlock className="w-3.5 h-3.5 mr-1" />
-                            Unblock
-                          </>
-                        ) : (
-                          <>
-                            <Lock className="w-3.5 h-3.5 mr-1" />
-                            Block
-                          </>
-                        )}
-                      </Button>
+                      {u.systemRole === 'ADMIN' ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled
+                          className="h-7 px-2 text-xs opacity-40 cursor-not-allowed text-muted-foreground"
+                          title="Root administrator accounts cannot be blocked"
+                        >
+                          <Lock className="w-3.5 h-3.5 mr-1" />
+                          Protected
+                        </Button>
+                      ) : (
+                        <Button
+                          variant={u.isBlocked ? 'outline' : 'ghost'}
+                          size="sm"
+                          onClick={() => handleToggleBlock(u.id, u.isBlocked)}
+                          className={`h-7 px-2 text-xs ${
+                            u.isBlocked
+                              ? 'text-[var(--md-sys-color-success)] hover:opacity-80'
+                              : 'text-destructive hover:bg-destructive/10'
+                          }`}
+                        >
+                          {u.isBlocked ? (
+                            <>
+                              <Unlock className="w-3.5 h-3.5 mr-1" />
+                              Unblock
+                            </>
+                          ) : (
+                            <>
+                              <Lock className="w-3.5 h-3.5 mr-1" />
+                              Block
+                            </>
+                          )}
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 ))

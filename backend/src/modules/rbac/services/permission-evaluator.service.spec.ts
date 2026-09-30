@@ -25,7 +25,7 @@ describe('PermissionEvaluatorService', () => {
     id: 10,
     email: 'dev@company.com',
     fullName: 'Developer User',
-    systemRole: SystemRole.DEVELOPER,
+    systemRole: SystemRole.USER,
   } as User;
 
   const mockProject: Project = {
@@ -50,7 +50,7 @@ describe('PermissionEvaluatorService', () => {
   } as Issue;
 
   beforeEach(() => {
-    mockUser.systemRole = SystemRole.DEVELOPER;
+    mockUser.systemRole = SystemRole.USER;
     mockUserRepo = {
       findOne: vi.fn().mockResolvedValue(mockUser),
     };
@@ -111,7 +111,7 @@ describe('PermissionEvaluatorService', () => {
 
     it('should return true if user belongs to administrators group', async () => {
       // Arrange
-      mockUser.systemRole = SystemRole.DEVELOPER;
+      mockUser.systemRole = SystemRole.USER;
       mockUserGroupRepo.createQueryBuilder = vi.fn(() => ({
         innerJoin: vi.fn().mockReturnThis(),
         where: vi.fn().mockReturnThis(),

@@ -13,7 +13,7 @@ export interface BroadcastConfig {
 
 export const DEFAULT_BROADCAST: BroadcastConfig = {
   enabled: true,
-  message: '🚀 BugTracker v3 Operational: Real-Time Sockets & SeaweedFS Active',
+  message: 'BugTracker v3 Operational: Real-Time Sockets & SeaweedFS Active',
   severity: 'info',
   updatedAt: new Date().toISOString(),
   author: 'DevOps Lead',

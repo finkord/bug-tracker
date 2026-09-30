@@ -110,7 +110,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                 required
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                placeholder="Volodymyr Fufalko"
+                placeholder="Jane Doe"
                 className="w-full pl-10 pr-4 py-2.5 text-xs rounded-2xl bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]/40 font-medium focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)]"
               />
             </div>

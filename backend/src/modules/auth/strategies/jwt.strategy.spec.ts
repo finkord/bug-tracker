@@ -15,7 +15,7 @@ describe('JwtStrategy Security Hardening', () => {
     fullName: 'Test User',
     email: 'test@example.com',
     passwordHash: 'hashed_pw',
-    systemRole: SystemRole.DEVELOPER,
+    systemRole: SystemRole.USER,
     jobTitle: 'Software Engineer',
     avatarUrl: null,
     isActivated: true,

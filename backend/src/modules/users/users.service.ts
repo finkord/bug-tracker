@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User, SystemRole, OAuthProvider } from './entities/user.entity.js';
@@ -41,7 +41,7 @@ export class UsersService {
         .innerJoin('ug.group', 'g')
         .where('ug.userId = :userId', { userId })
         .andWhere('LOWER(g.name) IN (:...names)', {
-          names: ['administrators', 'admin', 'admins', 'jira-administrators'],
+          names: ['administrators', 'admin', 'admins'],
         })
         .getExists();
     } catch {
@@ -115,10 +115,7 @@ export class UsersService {
   async syncUserGroupsWithRole(userId: number, role: SystemRole): Promise<void> {
     try {
       // 1. Ensure user belongs to 'all-users' group
-      let allUsersGroup = await this.groupRepository.findOne({ where: { name: 'all-users' } });
-      if (!allUsersGroup) {
-        allUsersGroup = await this.groupRepository.findOne({ where: { name: 'jira-software-users' } });
-      }
+      const allUsersGroup = await this.groupRepository.findOne({ where: { name: 'all-users' } });
       if (allUsersGroup) {
         const hasAllUsers = await this.userGroupRepository.findOne({
           where: { groupId: allUsersGroup.id, userId },
@@ -166,9 +163,45 @@ export class UsersService {
 
   /**
    * Blocks user account (Admin controls).
+   * Root administrator accounts cannot be blocked.
    */
   async blockUser(id: number): Promise<User> {
+    const targetUser = await this.findById(id);
+    if (!targetUser) {
+      throw new NotFoundException(`User with ID #${id} not found`);
+    }
+
+    const isTargetAdmin =
+      targetUser.systemRole === SystemRole.ADMIN ||
+      (await this.isMemberOfAdminGroup(id));
+
+    if (isTargetAdmin) {
+      throw new ForbiddenException('Root administrator accounts cannot be blocked');
+    }
+
     return this.update(id, { isBlocked: true });
+  }
+
+  /**
+   * Deletes a user account (Admin controls).
+   * Root administrator accounts cannot be deleted.
+   */
+  async deleteUser(id: number): Promise<{ message: string }> {
+    const targetUser = await this.findById(id);
+    if (!targetUser) {
+      throw new NotFoundException(`User with ID #${id} not found`);
+    }
+
+    const isTargetAdmin =
+      targetUser.systemRole === SystemRole.ADMIN ||
+      (await this.isMemberOfAdminGroup(id));
+
+    if (isTargetAdmin) {
+      throw new ForbiddenException('Root administrator accounts cannot be deleted');
+    }
+
+    await this.usersRepository.delete(id);
+    return { message: `User #${id} has been deleted` };
   }
 
   /**
@@ -183,12 +216,22 @@ export class UsersService {
   }
 
   /**
-   * Updates user system role with self-demote protection.
+   * Updates user system role with root admin protections.
+   * Root administrator accounts cannot be demoted.
    */
   async updateRole(id: number, role: SystemRole, currentUserId: number, jobTitle?: string): Promise<User> {
     const targetUser = await this.findById(id);
     if (!targetUser) {
       throw new NotFoundException(`User with ID #${id} not found`);
+    }
+
+    // Protect root administrator accounts from demotion
+    const isTargetAdmin =
+      targetUser.systemRole === SystemRole.ADMIN ||
+      (await this.isMemberOfAdminGroup(id));
+
+    if (isTargetAdmin && role !== SystemRole.ADMIN) {
+      throw new ForbiddenException('Root administrator accounts cannot be demoted');
     }
 
     // Protect against self-demotion lockout
@@ -266,13 +309,10 @@ export class UsersService {
     const users = await this.usersRepository.find({ select: { systemRole: true } });
     const roleBreakdown: Record<string, number> = {
       [SystemRole.ADMIN]: 0,
-      [SystemRole.PROJECT_MANAGER]: 0,
-      [SystemRole.DEVELOPER]: 0,
-      [SystemRole.QA_ENGINEER]: 0,
       [SystemRole.USER]: 0,
     };
     for (const u of users) {
-      const r = u.systemRole || SystemRole.USER;
+      const r = u.systemRole === SystemRole.ADMIN ? SystemRole.ADMIN : SystemRole.USER;
       roleBreakdown[r] = (roleBreakdown[r] || 0) + 1;
     }
 

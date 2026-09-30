@@ -1,19 +1,25 @@
 import React from 'react';
 
+interface OAuthLoginButtonsProps {
+  prompt?: string;
+}
+
 /**
  * Material 3 Federated Identity OAuth Buttons (GitHub & Google).
  */
-export const OAuthLoginButtons: React.FC = () => {
+export const OAuthLoginButtons: React.FC<OAuthLoginButtonsProps> = ({
+  prompt = 'Or continue with',
+}) => {
   return (
     <div className="space-y-4">
       {/* Federated Identity Divider */}
       <div className="relative my-4">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-[var(--md-sys-color-outline-variant)]" />
+          <div className="w-full border-t border-[var(--md-sys-color-outline-variant)]/40" />
         </div>
         <div className="relative flex justify-center text-xs">
-          <span className="px-3 bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-outline)] font-medium">
-            Or continue with
+          <span className="px-3 bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-outline)] font-medium select-none">
+            {prompt}
           </span>
         </div>
       </div>
@@ -22,9 +28,9 @@ export const OAuthLoginButtons: React.FC = () => {
       <div className="grid grid-cols-2 gap-2.5">
         <a
           href="/api/v1/auth/github"
-          className="py-2.5 px-3 rounded-full bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] text-xs font-semibold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-xs"
+          className="py-2.5 px-3 rounded-xl bg-[var(--md-sys-color-surface-container-high)]/60 hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)]/40 text-[var(--md-sys-color-on-surface)] text-xs font-semibold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-2xs"
         >
-          <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+          <svg className="w-4 h-4 fill-current shrink-0" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
           </svg>
           <span>GitHub</span>
@@ -32,9 +38,9 @@ export const OAuthLoginButtons: React.FC = () => {
 
         <a
           href="/api/v1/auth/google"
-          className="py-2.5 px-3 rounded-full bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] text-xs font-semibold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-xs"
+          className="py-2.5 px-3 rounded-xl bg-[var(--md-sys-color-surface-container-high)]/60 hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)]/40 text-[var(--md-sys-color-on-surface)] text-xs font-semibold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-2xs"
         >
-          <svg className="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true">
+          <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
             <path
               fill="#4285F4"
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"

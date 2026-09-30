@@ -24,6 +24,8 @@ import {
   ProjectPermission,
   PermissionGrantType,
 } from './entities/permission-grant.entity.js';
+import { ProjectPermissionGuard } from './guards/project-permission.guard.js';
+import { RequireProjectPermission } from './decorators/require-permission.decorator.js';
 
 @ApiTags('RBAC & Project Permissions')
 @ApiBearerAuth('JWT-auth')
@@ -148,12 +150,16 @@ export class RbacController {
 
   // ================= PROJECT RBAC & PEOPLE =================
   @Get('projects/:id/rbac/people')
+  @UseGuards(ProjectPermissionGuard)
+  @RequireProjectPermission(ProjectPermission.BROWSE_PROJECTS)
   @ApiOperation({ summary: 'List project roles with assigned users and groups' })
   async getProjectPeople(@Param('id', ParseIntPipe) projectId: number) {
     return this.rbacService.getProjectActors(projectId);
   }
 
   @Post('projects/:id/rbac/roles/:roleId/actors')
+  @UseGuards(ProjectPermissionGuard)
+  @RequireProjectPermission(ProjectPermission.ADMINISTER_PROJECTS)
   @ApiOperation({ summary: 'Assign user or group to a project role' })
   async addActorToProjectRole(
     @Param('id', ParseIntPipe) projectId: number,
@@ -169,6 +175,8 @@ export class RbacController {
   }
 
   @Delete('projects/:id/rbac/roles/:roleId/actors/:actorId')
+  @UseGuards(ProjectPermissionGuard)
+  @RequireProjectPermission(ProjectPermission.ADMINISTER_PROJECTS)
   @ApiOperation({ summary: 'Remove user or group from a project role' })
   async removeActorFromProjectRole(
     @Param('actorId', ParseIntPipe) actorId: number,

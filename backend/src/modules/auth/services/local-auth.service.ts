@@ -63,7 +63,7 @@ export class LocalAuthService {
       fullName: dto.fullName,
       email: dto.email,
       passwordHash,
-      systemRole: SystemRole.DEVELOPER,
+      systemRole: SystemRole.USER,
       jobTitle: 'Software Engineer',
       isActivated: false,
       activationToken,

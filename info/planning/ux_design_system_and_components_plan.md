@@ -1,4 +1,4 @@
-# 📐 План реалізації завдань UX-02, UX-03, UX-04 (Design System & UI Components)
+# [SPEC] План реалізації завдань UX-02, UX-03, UX-04 (Design System & UI Components)
 
 > **Завдання:** 
 > - **UX-02:** Єдина дизайн-система (M3 Expressive) — математична гармонія HCT, 5 рівнів поверхонь, правила $\Delta\text{Tone} \ge 60$.

@@ -116,9 +116,9 @@ These high-priority epics originate directly from the original architectural blu
   2. **Telegram Bot Service (`TelegramNotificationService`)**:
      * Allow users to pair their Telegram account on [`ProfilePage`](../../frontend/src/pages/ProfilePage.tsx) using a deep link token (`https://t.me/BugTrackerBot?start=<LINK_TOKEN>`).
      * Dispatch instant markdown alerts for:
-       * Direct ticket assignment (`🚨 CRITICAL bug assigned to you: NET-42`).
-       * Mentions in comments (`💬 @volodymyr mentioned you in CORE-101`).
-       * Onboarding ticket status updates (`✅ Access to team CORE approved`).
+       * Direct ticket assignment (`[ALERT] CRITICAL bug assigned to you: NET-42`).
+       * Mentions in comments (`[MENTION] @volodymyr mentioned you in CORE-101`).
+       * Onboarding ticket status updates (`[STATUS] Access to team CORE approved`).
   3. **Notification Preferences**:
      * Expand [`PreferencesPage`](../../frontend/src/pages/PreferencesPage.tsx) with a multi-channel matrix enabling users to toggle In-App vs. Email vs. Telegram notifications per category.
 
@@ -126,12 +126,14 @@ These high-priority epics originate directly from the original architectural blu
 * **Rationale & Blueprint Context**:  
   The blueprint placed an Nginx edge proxy in front of the API gateway to handle TLS 1.3, HTTP/2 multiplexing, rate-limiting, and static caching.
 * **Implemented Architecture**:
-  1. **Nginx Service in `docker-compose.yml`**:
-     * Runs an optimized `nginx:alpine` container as the unified edge ingress (`port 80`).
+  1. **Nginx Ingress Service in `docker-compose.prod.yml`**:
+     * Runs a hardened multi-stage `nginx:alpine` container (`nginx/Dockerfile.prod`) as the production unified edge ingress (`port 80`).
+     * Compiles the React 19 SPA directly into the image for zero-latency static serving with immutable caching (`/assets/`).
   2. **Configuration & Reverse Proxy Topology**:
      * [`nginx/nginx.conf`](../../nginx/nginx.conf): Gzip compression for CSS/JS/SVG/JSON, connection limiter, and Layer 7 IP rate limiting (`limit_req_zone $binary_remote_addr zone=api_limit:10m rate=20r/s;`). 25 MB max body size for attachments.
-     * [`nginx/conf.d/default.conf`](../../nginx/conf.d/default.conf): Routes `/api/` to backend with standard proxy headers, proxies `/events/` to the WebSocket gateway with `Upgrade` headers, and serves `/` to production static Vite files with SPA client routing fallback (`try_files $uri $uri/ @frontend_fallback`).
-     * Host integration: Configured with `extra_hosts: ["host.docker.internal:host-gateway"]` to route seamlessly to both local host development servers and containerized production backends.
+     * [`nginx/prod.conf`](../../nginx/prod.conf): Routes `/api/` to `http://backend:3000` with standard proxy headers, proxies `/events/` to the WebSocket gateway with `Upgrade` headers, and serves `/` to production static Vite files with HTML5 History fallback (`/index.html`).
+  3. **Development Isolation**:
+     * Local development remains unburdened by Nginx: developers use Vite's built-in dev proxy and direct host execution (`http://localhost:5173` and `http://localhost:3000`), avoiding host-networking and Linux gateway timeouts.
 
 ### Epic 9: Attachment Processing & Security Pipeline (`Attachment Service`)
 * **Rationale & Blueprint Context**:  

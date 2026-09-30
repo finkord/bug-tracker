@@ -16,6 +16,7 @@ import { IssueSecurityScheme } from '../rbac/entities/issue-security-scheme.enti
 import { IssueSecurityLevel } from '../rbac/entities/issue-security-level.entity.js';
 import { IssueSecurityGrant } from '../rbac/entities/issue-security-grant.entity.js';
 import { SeedService } from './seed.service.js';
+import { SystemInitService } from './system-init.service.js';
 
 @Module({
   imports: [
@@ -38,7 +39,7 @@ import { SeedService } from './seed.service.js';
     ]),
   ],
   controllers: [],
-  providers: [SeedService],
-  exports: [SeedService],
+  providers: [SeedService, SystemInitService],
+  exports: [SeedService, SystemInitService],
 })
 export class AdminModule {}

@@ -115,59 +115,89 @@ software/
 - **Docker & Docker Compose:** Installed and running
 - **npm:** `v11.x` (or higher)
 
-### 1. Start Infrastructure Services
+### Quick Start (Recommended)
+You can bootstrap and launch the entire stack with Makefile automation:
+```bash
+# First-time setup (generates .env, installs dependencies, starts Docker, initializes system)
+make setup
+
+# Daily development (starts backing containers and runs backend + frontend concurrently)
+make dev
+```
+
+### Stopping and Cleaning Up Development
+- **Stop local dev servers (free ports 3000 & 5173):** `make dev-stop`
+- **Stop backing containers safely:** `make dev-down`
+- **Reset database and reinitialize system:** `make dev-reset`
+- **Full cleanup (stop servers, remove volumes, delete build caches):** `make dev-clean`
+
+---
+
+### Step-by-Step Manual Start
+
+#### 1. Start Infrastructure Services
 Launch PostgreSQL, Redis, Mailpit, and SeaweedFS in the background:
 ```bash
 docker compose up -d
 ```
 
-### 2. Start Backend API
+#### 2. Initialize Baseline System
+Initialize system roles, permissions, groups, and the initial administrator account (zero dummy tickets):
 ```bash
-cd backend
-npm install
-npm run start:dev
+npm --prefix backend run init:system
 ```
-- API Endpoint: [`http://localhost:3000`](http://localhost:3000)
+*(Optional: If you need sample tickets and mock users for UI testing, run `npm --prefix backend run seed:demo`).*
+
+#### 3. Start Development Servers
+```bash
+# Terminal 1: Start Backend API in Watch Mode (port 3000)
+cd backend && npm run start:dev
+
+# Terminal 2: Start Frontend Vite Server (port 5173)
+cd frontend && npm run dev
+```
+- Web Application: [`http://localhost:5173`](http://localhost:5173)
 - Interactive Swagger OpenAPI Docs: [`http://localhost:3000/api/docs`](http://localhost:3000/api/docs)
 
-### 3. Start Frontend Client
-```bash
-cd frontend
-npm install
-npm run dev
-```
-- Web Application: [`http://localhost:5173`](http://localhost:5173) (automatically routes authenticated users to `/dashboard`)
-
-### 4. Developer Portals & Tools
+#### 4. Developer Portals & Tools
 | Service | URL | Credentials / Notes |
 | :--- | :--- | :--- |
-| **Frontend App** | [`http://localhost:5173`](http://localhost:5173) | Main application interface |
+| **Frontend App** | [`http://localhost:5173`](http://localhost:5173) | Initial Administrator: `admin@bugtracker.local` / `AdminPassword123!` |
 | **Backend Swagger** | [`http://localhost:3000/api/docs`](http://localhost:3000/api/docs) | Interactive API exploration |
 | **Mailpit Inbox** | [`http://localhost:8025`](http://localhost:8025) | Local SMTP web client for activation & password emails |
 | **SeaweedFS S3** | [`http://localhost:8333`](http://localhost:8333) | S3-compatible blob storage portal |
 
 ---
 
-## Production Regime (Build & Execution)
+## Production Deployment (Customer Package)
 
-In production, all development shortcuts are disabled, and strict security controls are enforced:
+BugTracker provides a containerized production package designed for deployment on customer infrastructure (`docker-compose.prod.yml`). It packages the NestJS API into a hardened container, serves the compiled React SPA through Nginx reverse proxy on port 80, removes developer-only mock tools (like Mailpit), and connects to customer SMTP mail servers.
 
-### 1. Build & Run Backend
+### 1. Configure Production Environment
 ```bash
-cd backend
-npm install --omit=dev
-npm run build
-NODE_ENV=production PORT=3000 npm run start:prod
+cp .env.prod.example .env.prod
+# Edit .env.prod to provide database credentials, SMTP configuration, and admin password
 ```
 
-### 2. Build & Serve Frontend
+### 2. Launch Production Stack
 ```bash
-cd frontend
-npm install
-npm run build
-npm run preview -- --port 5173
+make prod-up
+# Or via docker compose directly:
+docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
 ```
-*(Or serve the compiled `frontend/dist` directory via Nginx, Caddy, or a reverse proxy).*
+
+### 3. Initialize Production Database
+```bash
+make prod-init
+# Or via docker compose directly:
+docker compose -f docker-compose.prod.yml exec backend npm run init:system:prod
+```
+This sets up system permission taxonomy, standard roles, system groups, and creates the initial administrator specified in `.env.prod`. No dummy tickets or fake engineers are created.
+
+### 4. Stop Production Stack
+```bash
+make prod-down
+```
 
 ---
 
@@ -180,3 +210,4 @@ npm run preview -- --port 5173
 * **Brute-Force Throttling & Account Lockout:** 5 consecutive failed login attempts trigger an immediate 15-minute account lockout, audited in `login_audit_logs`.
 * **RFC 6238 TOTP Two-Factor Authentication:** Cryptographically verified time-based one-time passwords for enhanced account protection.
 * **Forensic Security Audit Trail:** Live forensic audit log capturing IP address, User-Agent, failure reasons, and timestamps.
+* **Pure Dynamic RBAC & Root Administrator Immutability:** Legacy static role enums retired to pure `ADMIN` and `USER` system roles; coworker titles captured in `jobTitle`; root administrator accounts cannot be demoted, blocked, deleted, or evicted from the administrators group.

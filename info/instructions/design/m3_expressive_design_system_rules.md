@@ -12,11 +12,11 @@ This instruction defines mandatory rules for all AI coding agents working on the
 - **ALWAYS** consume CSS custom properties defined in [`src/index.css`](file:///home/finkord/dev/PPofSE/software/frontend/src/index.css) via `var(--md-sys-color-*)` or dedicated UI components.
 
 ```tsx
-// ❌ FORBIDDEN:
+// [FAIL] FORBIDDEN:
 <span className="text-emerald-600 dark:text-emerald-400 bg-emerald-500/10">Resolved</span>
 <button className="bg-blue-600 hover:bg-blue-700 text-white">Submit</button>
 
-// ✅ REQUIRED:
+// [OK] REQUIRED:
 <Badge variant="resolved">Resolved</Badge>
 <Button variant="filled">Submit</Button>
 ```

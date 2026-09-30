@@ -18,7 +18,7 @@ export interface JqlQuery {
 }
 
 /**
- * Parses a subset of Jira JQL (Jira Query Language) into an executable query structure.
+ * Parses a subset of JQL (Issue Query Language) into an executable query structure.
  * Supports:
  * - project = "KEY" | project IN (KEY1, KEY2)
  * - status = "OPEN" | status IN (OPEN, IN_PROGRESS)

@@ -168,10 +168,10 @@ export class UsersController {
   @ApiOperation({
     summary: 'Change user system role (Extended RBAC)',
     description:
-      'Modifies user role across ADMIN, PROJECT_MANAGER, DEVELOPER, QA_ENGINEER, USER. Prevents administrators from demoting themselves.',
+      'Modifies user role between ADMIN and USER. Prevents root administrators from being demoted.',
   })
   @ApiResponse({ status: 200, description: 'Role successfully modified' })
-  @ApiResponse({ status: 400, description: 'Self-demotion attempt rejected' })
+  @ApiResponse({ status: 403, description: 'Root administrator demotion attempt rejected' })
   async updateRole(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateUserRoleDto,
@@ -224,7 +224,10 @@ export class UsersController {
   @Roles(SystemRole.ADMIN)
   @ApiOperation({
     summary: 'Block a user account (Admin controls)',
+    description: 'Blocks a user account. Root administrator accounts cannot be blocked.',
   })
+  @ApiResponse({ status: 200, description: 'User successfully blocked' })
+  @ApiResponse({ status: 403, description: 'Root administrator block attempt rejected' })
   async blockUser(@Param('id', ParseIntPipe) id: number) {
     const updated = await this.usersService.blockUser(id);
     return {
@@ -247,5 +250,19 @@ export class UsersController {
       userId: updated.id,
       isBlocked: updated.isBlocked,
     };
+  }
+
+  @Delete(':id')
+  @UseGuards(RolesGuard)
+  @Roles(SystemRole.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Delete a user account (Admin controls)',
+    description: 'Permanently removes a user account. Root administrator accounts cannot be deleted.',
+  })
+  @ApiResponse({ status: 200, description: 'User successfully deleted' })
+  @ApiResponse({ status: 403, description: 'Root administrator deletion attempt rejected' })
+  async deleteUser(@Param('id', ParseIntPipe) id: number) {
+    return this.usersService.deleteUser(id);
   }
 }

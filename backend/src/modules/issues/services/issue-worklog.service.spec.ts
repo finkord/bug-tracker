@@ -17,7 +17,7 @@ describe('IssueWorklogService', () => {
     email: 'dev@test.com',
     fullName: 'Dev User',
     passwordHash: 'hash',
-    systemRole: SystemRole.DEVELOPER,
+    systemRole: SystemRole.USER,
     isActivated: true,
     isBlocked: false,
     twoFactorEnabled: false,

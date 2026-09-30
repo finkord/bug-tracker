@@ -55,7 +55,7 @@ export class OAuthService {
     user = await this.usersService.create({
       email,
       fullName: profileOrDto.fullName || email.split('@')[0],
-      systemRole: profileOrDto.systemRole || SystemRole.DEVELOPER,
+      systemRole: profileOrDto.systemRole || SystemRole.USER,
       oauthProvider: profileOrDto.provider || OAuthProvider.GITHUB,
       oauthId: profileOrDto.oauthId ? String(profileOrDto.oauthId) : 'oauth-id',
       avatarUrl: profileOrDto.avatarUrl || null,

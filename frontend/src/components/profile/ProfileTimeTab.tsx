@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useMyWorklogsQuery } from '../../api/queries';
 import { TimeCalendar, type DayWorklog } from '../common/TimeCalendar';
-import { Clock, Trophy, Flame, Award, Sparkles } from 'lucide-react';
+import { Clock, Trophy, Flame, Award, Sparkles, Zap, Target } from 'lucide-react';
 
 /**
  * Material 3 Personal Time & Effort tab with streak calculation, milestone badges, and monthly calendar.
@@ -135,7 +135,7 @@ export const ProfileTimeTab: React.FC = () => {
             }`}
           >
             <div className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] flex items-center justify-center font-bold text-sm">
-              🔥
+              <Flame className="w-4 h-4" />
             </div>
             <div>
               <p className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">Consistency Hero</p>
@@ -153,7 +153,7 @@ export const ProfileTimeTab: React.FC = () => {
             }`}
           >
             <div className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] flex items-center justify-center font-bold text-sm">
-              ⚡
+              <Zap className="w-4 h-4" />
             </div>
             <div>
               <p className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">Daily 8h Sprinter</p>
@@ -173,7 +173,7 @@ export const ProfileTimeTab: React.FC = () => {
             }`}
           >
             <div className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center font-bold text-sm">
-              🎯
+              <Target className="w-4 h-4" />
             </div>
             <div>
               <p className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">Active Contributor</p>

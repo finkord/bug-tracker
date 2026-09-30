@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, X } from 'lucide-react';
+import { Check } from 'lucide-react';
 
 interface Props {
   password: string;
@@ -7,13 +7,13 @@ interface Props {
 
 export const PasswordStrengthMeter: React.FC<Props> = ({ password }) => {
   const criteria = [
-    { label: '8+ Characters', met: password.length >= 8 },
+    { label: '8+ Characters', met: password.length >= 8, fullWidth: true },
     { label: 'Uppercase Letter', met: /[A-Z]/.test(password) },
     { label: 'Lowercase Letter', met: /[a-z]/.test(password) },
     { label: 'Number (0-9)', met: /\d/.test(password) },
     {
       label: 'Special Symbol',
-      met: /[@$!%*?&^#()_+={}\[\]:;"'<>,.\/\\|~-]/.test(password),
+      met: /[@$!%*?&^#()_+={}[\]:;"'<>,./\\|~-]/.test(password),
     },
   ];
 
@@ -33,46 +33,71 @@ export const PasswordStrengthMeter: React.FC<Props> = ({ password }) => {
   };
 
   return (
-    <div className="space-y-2 mt-2">
-      {/* Progress bar */}
+    <div className="space-y-2.5 mt-2.5" role="region" aria-label="Password strength and requirements">
+      {/* Progress bar header */}
       <div className="flex items-center justify-between text-xs font-medium">
         <span className="text-[var(--md-sys-color-on-surface-variant)]">Security requirements:</span>
         <span
-          className={`font-semibold ${
+          className={`font-semibold transition-colors ${
             score === 5
               ? 'text-[var(--md-sys-color-success)]'
               : score >= 3
               ? 'text-[var(--md-sys-color-warning)]'
               : 'text-[var(--md-sys-color-error)]'
           }`}
+          aria-live="polite"
         >
           {getLabel()}
         </span>
       </div>
 
-      <div className="h-1.5 w-full bg-[var(--md-sys-color-surface-container-highest)] rounded-full overflow-hidden">
+      {/* Progress Bar (M3 Linear Progress) */}
+      <div
+        className="h-1.5 w-full bg-[var(--md-sys-color-surface-container-highest)] rounded-full overflow-hidden"
+        role="progressbar"
+        aria-valuenow={score}
+        aria-valuemin={0}
+        aria-valuemax={5}
+        aria-label="Password strength score"
+      >
         <div
           className={`h-full transition-all duration-300 rounded-full ${getColor()}`}
           style={{ width: `${(score / 5) * 100}%` }}
         />
       </div>
 
-      {/* Criteria checklist chips */}
-      <div className="flex flex-wrap gap-1.5 pt-1">
+      {/* Material 3 Expressive Requirement Chips */}
+      <div
+        className="grid grid-cols-2 gap-1.5 pt-1"
+        role="list"
+        aria-label="Password requirements checklist"
+      >
         {criteria.map((item, idx) => (
           <div
             key={idx}
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] transition-all duration-200 ${
+            role="listitem"
+            aria-label={`${item.label}, ${item.met ? 'satisfied' : 'not satisfied'}`}
+            className={`${
+              item.fullWidth ? 'col-span-2' : 'col-span-1'
+            } inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-medium transition-all duration-200 border whitespace-nowrap select-none ${
               item.met
-                ? 'bg-[var(--md-sys-color-success-container)] border-transparent text-[var(--md-sys-color-on-success-container)] font-medium shadow-xs scale-[1.02]'
-                : 'bg-[var(--md-sys-color-surface-container-high)] border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-outline)]'
+                ? 'bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] border-[var(--md-sys-color-success)]/30 shadow-2xs'
+                : 'bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)]/80 border-[var(--md-sys-color-outline-variant)]/40'
             }`}
           >
-            {item.met ? (
-              <Check className="w-3.5 h-3.5 text-[var(--md-sys-color-success)] shrink-0 animate-in zoom-in-75" />
-            ) : (
-              <X className="w-3.5 h-3.5 text-[var(--md-sys-color-outline)] shrink-0" />
-            )}
+            <span
+              className={`w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                item.met
+                  ? 'bg-[var(--md-sys-color-success)] text-[var(--md-sys-color-on-success)]'
+                  : 'bg-[var(--md-sys-color-surface-container-highest)] text-transparent'
+              }`}
+            >
+              {item.met ? (
+                <Check className="w-2.5 h-2.5 stroke-[3]" />
+              ) : (
+                <span className="w-1 h-1 rounded-full bg-[var(--md-sys-color-outline)]" />
+              )}
+            </span>
             <span>{item.label}</span>
           </div>
         ))}

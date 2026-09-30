@@ -33,32 +33,36 @@ async function bootstrap() {
   );
 
   // OpenAPI / Swagger interactive documentation setup
-  const config = new DocumentBuilder()
-    .setTitle('Bug / Issue Tracking System API')
-    .setDescription(
-      'Core REST API service for Bug / Issue Tracking and Secure User Account Management',
-    )
-    .setVersion('1.0')
-    .addBearerAuth(
-      {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        name: 'Authorization',
-        description: 'Enter your JWT access token',
-        in: 'header',
-      },
-      'JWT-auth',
-    )
-    .build();
+  if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_SWAGGER === 'true') {
+    const config = new DocumentBuilder()
+      .setTitle('Bug / Issue Tracking System API')
+      .setDescription(
+        'Core REST API service for Bug / Issue Tracking and Secure User Account Management',
+      )
+      .setVersion('1.0')
+      .addBearerAuth(
+        {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          name: 'Authorization',
+          description: 'Enter your JWT access token',
+          in: 'header',
+        },
+        'JWT-auth',
+      )
+      .build();
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api/docs', app, document);
+  }
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
-  console.log(`Application is running on: http://localhost:${port}/api/v1`);
-  console.log(`Swagger documentation: http://localhost:${port}/api/docs`);
+  console.log(`[SERVER] Application is running on: http://localhost:${port}/api/v1`);
+  if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_SWAGGER === 'true') {
+    console.log(`[DOCS] Swagger documentation: http://localhost:${port}/api/docs`);
+  }
 }
 
 await bootstrap();

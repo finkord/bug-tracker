@@ -15,8 +15,8 @@ The design philosophy is built on four core tenets:
 ## 2. Token Architecture & Rules of Engagement
 
 ### Rule 1: No Hardcoded Hex Colors or Raw Tailwind Colors
-- ❌ **Forbidden:** `bg-blue-600`, `text-gray-900`, `border-zinc-700`, `bg-[#1a1a1a]`.
-- ✅ **Required:** `bg-[var(--md-sys-color-primary)]`, `text-[var(--md-sys-color-on-surface)]`, `border-[var(--md-sys-color-outline-variant)]`.
+- [FAIL] **Forbidden:** `bg-blue-600`, `text-gray-900`, `border-zinc-700`, `bg-[#1a1a1a]`.
+- [OK] **Required:** `bg-[var(--md-sys-color-primary)]`, `text-[var(--md-sys-color-on-surface)]`, `border-[var(--md-sys-color-outline-variant)]`.
 
 ### Rule 2: Strict Semantic Color Taxonomy
 

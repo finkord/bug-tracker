@@ -94,3 +94,38 @@ curl -s -X POST http://localhost:3000/api/v1/auth/reset-password \
 curl -s http://localhost:3000/api/v1/admin/security/login-logs \
   -H "Authorization: Bearer <ADMIN_ACCESS_TOKEN>"
 ```
+
+---
+
+## 3. Root Administrator Immutability & User Lifecycle (4 Safeguard Scenarios)
+
+### Scenario 7: Root Administrator Demotion Attempt
+```bash
+curl -s -X PATCH http://localhost:3000/api/v1/users/1/role \
+  -b cookies.txt \
+  -H "Content-Type: application/json" \
+  -d '{"role": "USER"}'
+```
+* **Expected Result**: `403 Forbidden` (`{"statusCode": 403, "message": "Root administrator accounts cannot be demoted"}`).
+
+### Scenario 8: Root Administrator Block Attempt
+```bash
+curl -s -X PATCH http://localhost:3000/api/v1/users/1/block \
+  -b cookies.txt
+```
+* **Expected Result**: `403 Forbidden` (`{"statusCode": 403, "message": "Root administrator accounts cannot be blocked"}`).
+
+### Scenario 9: Root Administrator Deletion Attempt
+```bash
+curl -s -X DELETE http://localhost:3000/api/v1/users/1 \
+  -b cookies.txt
+```
+* **Expected Result**: `403 Forbidden` (`{"statusCode": 403, "message": "Root administrator accounts cannot be deleted"}`).
+
+### Scenario 10: Root Administrator Directory Group Removal Attempt
+```bash
+curl -s -X DELETE http://localhost:3000/api/v1/rbac/groups/administrators/members/1 \
+  -b cookies.txt
+```
+* **Expected Result**: `403 Forbidden` (`{"statusCode": 403, "message": "Root administrator accounts cannot be removed from the administrators group"}`).
+

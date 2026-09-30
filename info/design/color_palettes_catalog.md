@@ -1,4 +1,4 @@
-# 🎨 Каталог уніфікованих кольорових палітр (M3 Expressive Palettes Catalog)
+# [DESIGN] Каталог уніфікованих кольорових палітр (M3 Expressive Palettes Catalog)
 
 > **Стандарт:** Google Material 3 Expressive Design System  
 > **Принцип побудови:** HCT (Hue, Chroma, Tone) колірний простір, де відтінки контейнерів і тексту підпорядковуються закону контрастності $\Delta\text{Tone} \ge 60$ для забезпечення читабельності WCAG 2.1 AAA.
@@ -7,7 +7,7 @@
 
 ## 1. Базова системна палітра (Core System Palette)
 
-### 🔵 Primary (Google Pixel Blue)
+### [INFO] Primary (Google Pixel Blue)
 | Роль | Токен | Light Mode (Hex) | Dark Mode (Hex) | Tone (L/D) | Призначення |
 |---|---|---|---|---|---|
 | **Primary** | `--md-sys-color-primary` | `#0b57d0` | `#a8c7fa` | 40 / 80 | Головні CTA кнопки, активні стани, фокус |
@@ -17,7 +17,7 @@
 
 ---
 
-### 🟣 Secondary & Tertiary (Slate & Iris Purple)
+### [HIGH] Secondary & Tertiary (Slate & Iris Purple)
 | Роль | Токен | Light Mode (Hex) | Dark Mode (Hex) | Tone (L/D) | Призначення |
 |---|---|---|---|---|---|
 | **Secondary** | `--md-sys-color-secondary` | `#535f70` | `#bcc7db` | 40 / 80 | Допоміжні контролери, згорнуті стани |
@@ -29,7 +29,7 @@
 
 ## 2. Семантичні статуси та пріоритети (Semantic Statuses)
 
-### 🟢 Success, Warning, Error
+### [LOW] Success, Warning, Error
 | Роль | Контейнер (Light/Dark) | Текст/Іконка (Light/Dark) | Призначення |
 |---|---|---|---|
 | **Success** | `#c4eed0` / `#072711` | `#072711` / `#6dd58c` | Статуси "Resolved", "Done", збереження |
@@ -38,7 +38,7 @@
 
 ---
 
-### 🏷️ Матриця пріоритетів тікетів (Priority Tonal Tokens)
+### [TAG] Матриця пріоритетів тікетів (Priority Tonal Tokens)
 
 ```mermaid
 graph LR

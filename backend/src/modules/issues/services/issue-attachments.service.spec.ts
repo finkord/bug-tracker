@@ -16,7 +16,7 @@ describe('IssueAttachmentsService', () => {
     id: 1,
     email: 'dev@test.com',
     fullName: 'Dev User',
-    systemRole: SystemRole.DEVELOPER,
+    systemRole: SystemRole.USER,
   } as User;
 
   const mockAdminUser: User = {

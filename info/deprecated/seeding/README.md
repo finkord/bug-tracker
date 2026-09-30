@@ -128,14 +128,14 @@ npm run seed
 
 Output summary example:
 ```
-🚀 Initializing BugTracker Database Seeder Application Context...
-📁 Teams / Projects Created: 5
-👥 Engineers & Leads Created: 30
-🎫 Authentic Tickets Created: 46
-🔗 Cross-Team Links Created: 18
-⏱️ Worklogs Generated:       70
-💬 Issue Comments Created:    11
-✅ DATABASE SEEDING COMPLETED SUCCESSFULLY!
+[LAUNCH] Initializing BugTracker Database Seeder Application Context...
+[DIR] Teams / Projects Created: 5
+[TEAM] Engineers & Leads Created: 30
+[TICKET] Authentic Tickets Created: 46
+[LINK] Cross-Team Links Created: 18
+⏱ Worklogs Generated:       70
+[COMMENT] Issue Comments Created:    11
+[OK] DATABASE SEEDING COMPLETED SUCCESSFULLY!
 ```
 
 ### Option B: REST API Endpoint

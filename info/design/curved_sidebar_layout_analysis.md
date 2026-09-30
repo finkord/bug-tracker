@@ -47,12 +47,12 @@ In GitLab’s implementation:
 
 | Architectural Aspect | GitLab Super-Sidebar (Pajamas) | Current BugTracker Implementation | Verdict / Issue |
 | :--- | :--- | :--- | :--- |
-| **Root Layout Container** | Root flex/grid shell with `h-screen overflow-hidden` | Standard flex column (`min-h-screen flex flex-col`) with page-level scrolling | ❌ BugTracker allows full page vertical scroll instead of locked app viewport |
-| **Top Navbar Placement** | Integrated either into Super-Sidebar or floating as a transparent top bar directly on the outer shell | Full-width `100vw` sticky header (`h-16 w-full sticky top-0 border-b`) covering the entire top | ❌ Cuts off the sidebar from reaching the top of the viewport |
-| **Sidebar Height & Anchor** | Spans full $100vh$ height ($y = 0$ to $y = 100\%$) | Positioned under the Navbar (`h-[calc(100vh-4rem)] sticky top-16`) | ❌ Breaks the unified Super-Sidebar pillar structure |
-| **Canvas Card Geometry** | Inset card with margin/gutter and `border-radius: 16px/24px` on all corners or concentric left radii | Flush against Navbar bottom with `md:rounded-tl-[20px] md:border-t md:border-l` | ❌ Top-left corner creates an awkward wedge against Navbar `border-b` |
-| **Border & Outline Treatment** | Single uniform perimeter border on the canvas card (`border-1 border-default`) | Clash of two borders: Navbar `border-b` running across, plus `<main>` `border-t` and `border-l` | ❌ Double-line visual artifacts at the intersection point |
-| **Margin / Gutter Spacing** | 8px–12px gutter exposes the darker shell behind the card | `margin: 0px` (card is flush against screen right and bottom edges) | ❌ Only the top-left has a radius; right and bottom are square, breaking the card illusion |
+| **Root Layout Container** | Root flex/grid shell with `h-screen overflow-hidden` | Standard flex column (`min-h-screen flex flex-col`) with page-level scrolling | [FAIL] BugTracker allows full page vertical scroll instead of locked app viewport |
+| **Top Navbar Placement** | Integrated either into Super-Sidebar or floating as a transparent top bar directly on the outer shell | Full-width `100vw` sticky header (`h-16 w-full sticky top-0 border-b`) covering the entire top | [FAIL] Cuts off the sidebar from reaching the top of the viewport |
+| **Sidebar Height & Anchor** | Spans full $100vh$ height ($y = 0$ to $y = 100\%$) | Positioned under the Navbar (`h-[calc(100vh-4rem)] sticky top-16`) | [FAIL] Breaks the unified Super-Sidebar pillar structure |
+| **Canvas Card Geometry** | Inset card with margin/gutter and `border-radius: 16px/24px` on all corners or concentric left radii | Flush against Navbar bottom with `md:rounded-tl-[20px] md:border-t md:border-l` | [FAIL] Top-left corner creates an awkward wedge against Navbar `border-b` |
+| **Border & Outline Treatment** | Single uniform perimeter border on the canvas card (`border-1 border-default`) | Clash of two borders: Navbar `border-b` running across, plus `<main>` `border-t` and `border-l` | [FAIL] Double-line visual artifacts at the intersection point |
+| **Margin / Gutter Spacing** | 8px–12px gutter exposes the darker shell behind the card | `margin: 0px` (card is flush against screen right and bottom edges) | [FAIL] Only the top-left has a radius; right and bottom are square, breaking the card illusion |
 
 ---
 
@@ -128,7 +128,7 @@ Currently, core controls are arbitrarily scattered across two separate navigatio
 | :--- | :--- | :--- | :--- |
 | **Global Search** | Navbar input | Far from sidebar navigation items | Integrated in Sidebar header or unified top shell |
 | **Saved Filters / JQL** | Navbar "Filters" dropdown | Disconnected from Backlog & Board pages | In Sidebar under "Work Management" or page toolbar |
-| **Project Switcher** | ❌ Not available (hardcoded `projects[0]`) | User cannot switch active project from navigation | Top of Sidebar (Context Switcher dropdown) |
+| **Project Switcher** | [FAIL] Not available (hardcoded `projects[0]`) | User cannot switch active project from navigation | Top of Sidebar (Context Switcher dropdown) |
 | **Create Ticket (`+`)** | Navbar circular icon button | Isolated from project backlog / board workflows | Prominent action button in Sidebar or page header |
 | **Time Tracking / Search** | Sidebar links | Duplicate with Navbar search | Grouped under workspace tools |
 

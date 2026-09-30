@@ -44,7 +44,7 @@ sequenceDiagram
 
 ```
 Layer 1: Global System Roles (User.systemRole)
-         ├── ADMIN  (Full platform & tenant authority)
+         ├── ADMIN  (Full platform & tenant authority, immutable root)
          └── USER   (Standard authenticated user)
 
 Layer 2: Project-Scoped Roles (ProjectRoleActor)
@@ -53,9 +53,16 @@ Layer 2: Project-Scoped Roles (ProjectRoleActor)
          └── Member / Contributor
 ```
 
+* **Global System Role**: Pure binary flag (`ADMIN` vs `USER`). All professional disciplines and team job functions (such as Frontend Engineer, QA Lead, DevOps Architect) are decoupled from system authorization and maintained in `User.jobTitle`.
+* **Root Administrator Immutability Guarantees**:
+  * Root administrator accounts (holding `SystemRole.ADMIN` or belonging to the `administrators` directory group) cannot be demoted to `USER` (`403 Forbidden`).
+  * Root administrator accounts cannot be blocked via administrative user controls (`403 Forbidden`).
+  * Root administrator accounts cannot be deleted (`403 Forbidden`).
+  * Root administrator accounts cannot be removed from the `administrators` directory group (`403 Forbidden`).
+
 ### Permission Schemes & Grants
 * **PermissionScheme**: Defines reusable permission sets assigned to projects.
-* **PermissionGrant**: Maps a granular action (`CREATE_ISSUES`, `EDIT_ISSUES`, `ASSIGN_ISSUES`, `DELETE_ISSUES`, `CLOSE_ISSUES`) to:
+* **PermissionGrant**: Maps a granular action (`CREATE_ISSUES`, `EDIT_ISSUES`, `ASSIGN_ISSUES`, `DELETE_ISSUES`, `CLOSE_ISSUES`, `ADMINISTER_PROJECTS`, `BROWSE_PROJECTS`) to:
   * A Project Role (e.g. `Developer`),
   * A User Group (e.g. `Engineering-CORE`),
   * The Project Lead, or
@@ -76,12 +83,17 @@ Layer 2: Project-Scoped Roles (ProjectRoleActor)
 | `GET` | `/groups` | List all user groups | JWT (`JwtAuthGuard`) |
 | `POST` | `/groups` | Create an organizational group | Admin (`Roles('ADMIN')`) |
 | `POST` | `/groups/:id/members` | Add a user to a group | Admin (`Roles('ADMIN')`) |
-| `DELETE` | `/groups/:id/members/:userId`| Remove a user from a group | Admin (`Roles('ADMIN')`) |
+| `DELETE` | `/groups/:id/members/:userId`| Remove a user from a group (protects root admins) | Admin (`Roles('ADMIN')`) |
 | `GET` | `/roles` | List all available project roles | JWT (`JwtAuthGuard`) |
+| `GET` | `/projects/:id/rbac/people` | Retrieve project members and their assigned roles | `ProjectPermission.BROWSE_PROJECTS` |
+| `POST` | `/projects/:id/rbac/roles/:roleId/actors` | Assign user or group to project role | `ProjectPermission.ADMINISTER_PROJECTS` |
+| `DELETE` | `/projects/:id/rbac/roles/:roleId/actors` | Remove user or group from project role | `ProjectPermission.ADMINISTER_PROJECTS` |
 
 ---
 
 ## 4. Key Source Files
 * Controller: [`rbac.controller.ts`](../../backend/src/modules/rbac/rbac.controller.ts)
 * Service: [`rbac.service.ts`](../../backend/src/modules/rbac/rbac.service.ts)
+* Permission Evaluator: [`permission-evaluator.service.ts`](../../backend/src/modules/rbac/services/permission-evaluator.service.ts)
+* Project Permission Guard: [`project-permission.guard.ts`](../../backend/src/modules/rbac/guards/project-permission.guard.ts)
 * Entities: [`backend/src/modules/rbac/entities/`](../../backend/src/modules/rbac/entities)

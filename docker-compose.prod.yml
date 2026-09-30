@@ -1,5 +1,5 @@
 # ==============================================================================
-# BugTracker Production Stack — Fully Containerized Single-Command Deployment
+# BugTracker Production Stack — Customer Containerized Deployment
 # Usage: docker compose -f docker-compose.prod.yml up -d --build
 # ==============================================================================
 
@@ -39,24 +39,7 @@ services:
     networks:
       - bugtracker-network
 
-  # 3. Local Transactional Email Testing Server: Mailpit
-  mailpit:
-    image: axllent/mailpit:latest
-    container_name: bugtracker-mailpit-prod
-    restart: always
-    environment:
-      MP_MAX_MESSAGES: 5000
-      MP_DATABASE: /data/mailpit.db
-      MP_SMTP_AUTH_ACCEPT_ANY: 1
-      MP_SMTP_AUTH_ALLOW_INSECURE: 1
-    ports:
-      - "${MAIL_UI_PORT:-8025}:8025"     # Optional Web UI dashboard for inspecting outbound mail
-    volumes:
-      - mailpit_prod_data:/data
-    networks:
-      - bugtracker-network
-
-  # 4. S3-Compatible Distributed Object Storage: SeaweedFS
+  # 3. S3-Compatible Object Storage: SeaweedFS (Local S3 service)
   seaweedfs:
     image: chrislusf/seaweedfs:latest
     container_name: bugtracker-seaweedfs-prod
@@ -67,42 +50,50 @@ services:
     networks:
       - bugtracker-network
 
-  # 5. Core REST & WebSocket Application Tier: NestJS
+  # 4. Core Application Tier: NestJS Modular Monolith
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: bugtracker-backend-prod
     restart: always
-    env_file:
-      - ./backend/.env
-    ports:
-      - "${BACKEND_PORT:-3000}:3000"
     environment:
       NODE_ENV: production
       PORT: 3000
       API_PREFIX: api/v1
+      ENABLE_SWAGGER: ${ENABLE_SWAGGER:-false}
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_SYNCHRONIZE: "true"
+      DB_SYNCHRONIZE: ${DB_SYNCHRONIZE:-true}
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       DB_NAME: ${DB_NAME:-bug_tracker}
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      MAIL_HOST: mailpit
-      MAIL_PORT: 1025
-      MAIL_FROM: ${MAIL_FROM:-"no-reply@bugtracker.local"}
-      S3_ENDPOINT: http://seaweedfs:8333
-      S3_REGION: us-east-1
-      S3_ACCESS_KEY_ID: any
-      S3_SECRET_ACCESS_KEY: any
-      S3_BUCKET_NAME: bugtracker-attachments
-      S3_FORCE_PATH_STYLE: "true"
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      # Production SMTP (Customer Mail Server)
+      MAIL_HOST: ${MAIL_HOST:-localhost}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USER: ${MAIL_USER:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_SECURE: ${MAIL_SECURE:-false}
+      MAIL_FROM: ${MAIL_FROM:-"no-reply@company.com"}
+      # Object Storage
+      S3_ENDPOINT: ${S3_ENDPOINT:-http://seaweedfs:8333}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-any}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-any}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME:-bugtracker-attachments}
+      S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-true}
+      # Security & URLs
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost,http://localhost:5173}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
       JWT_SECRET: ${JWT_SECRET:-super_secret_jwt_access_key_change_in_production_min_32_chars}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-super_secret_jwt_refresh_key_change_in_production_min_32_chars}
+      # Initial Admin Setup
+      INITIAL_ADMIN_EMAIL: ${INITIAL_ADMIN_EMAIL:-admin@bugtracker.local}
+      INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:-AdminPassword123!}
+      INITIAL_ADMIN_NAME: ${INITIAL_ADMIN_NAME:-"System Administrator"}
     depends_on:
       postgres:
         condition: service_healthy
@@ -111,7 +102,7 @@ services:
     networks:
       - bugtracker-network
 
-  # 6. Production Ingress & Static SPA Tier: Nginx
+  # 5. Production Ingress & Static SPA Tier: Nginx
   nginx:
     build:
       context: .
@@ -129,8 +120,6 @@ volumes:
   postgres_prod_data:
     driver: local
   redis_prod_data:
-    driver: local
-  mailpit_prod_data:
     driver: local
   seaweedfs_prod_data:
     driver: local

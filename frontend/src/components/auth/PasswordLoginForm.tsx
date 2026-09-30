@@ -10,7 +10,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { OAuthLoginButtons } from './OAuthLoginButtons';
-import { DemoAccountsPicker } from './DemoAccountsPicker';
+import { DevAdminQuickFill } from './DevAdminQuickFill';
 
 interface PasswordLoginFormProps {
   isLoading: boolean;
@@ -39,13 +39,21 @@ export const PasswordLoginForm: React.FC<PasswordLoginFormProps> = ({
     }
   };
 
-  const handleSelectAccount = (selectedEmail: string, selectedPass: string) => {
+  const handleFillCredentials = (selectedEmail: string, selectedPass: string) => {
     setEmail(selectedEmail);
     setPassword(selectedPass);
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Development Fast-Fill Pill (Single Source of Truth, Dev Only) */}
+      {import.meta.env.DEV && (
+        <DevAdminQuickFill
+          onFill={handleFillCredentials}
+          disabled={isLoading || isLocked}
+        />
+      )}
+
       {/* Email Field */}
       <div>
         <label
@@ -64,7 +72,7 @@ export const PasswordLoginForm: React.FC<PasswordLoginFormProps> = ({
             autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="volodymyr@bugtracker.local"
+            placeholder="you@example.com"
             className="w-full pl-10 pr-4 py-3 m3-input text-sm"
           />
         </div>
@@ -137,7 +145,7 @@ export const PasswordLoginForm: React.FC<PasswordLoginFormProps> = ({
       <button
         type="submit"
         disabled={isLoading || isLocked}
-        className="w-full mt-2 py-3.5 m3-btn-filled text-sm shadow-sm flex items-center justify-center gap-2 active:scale-[0.99] transition-transform disabled:opacity-50"
+        className="w-full mt-2 py-3.5 m3-btn-filled text-sm font-semibold shadow-sm flex items-center justify-center gap-2 active:scale-[0.99] transition-transform disabled:opacity-50"
       >
         {isLoading ? (
           <Loader2 className="w-5 h-5 animate-spin" />
@@ -162,12 +170,6 @@ export const PasswordLoginForm: React.FC<PasswordLoginFormProps> = ({
           Create one now
         </Link>
       </div>
-
-      {/* Quick Account Fill for dev/testing */}
-      <DemoAccountsPicker
-        onSelectAccount={handleSelectAccount}
-        disabled={isLoading || isLocked}
-      />
     </form>
   );
 };

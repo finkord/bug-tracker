@@ -21,7 +21,7 @@ describe('LocalAuthService', () => {
     email: 'engineer@company.com',
     fullName: 'Test Engineer',
     passwordHash: '',
-    systemRole: SystemRole.DEVELOPER,
+    systemRole: SystemRole.USER,
     isActivated: true,
     isBlocked: false,
     failedLoginAttempts: 0,
