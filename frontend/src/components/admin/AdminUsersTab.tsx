@@ -185,7 +185,15 @@ export const AdminUsersTab: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                users.map((u) => (
+                users.map((u) => {
+                  const isRootUser = Boolean(
+                    u.isRoot ||
+                    u.email.toLowerCase() === 'admin@bugtracker.local' ||
+                    (import.meta.env.VITE_INITIAL_ADMIN_EMAIL &&
+                      u.email.toLowerCase() === import.meta.env.VITE_INITIAL_ADMIN_EMAIL.toLowerCase())
+                  );
+
+                  return (
                   <tr key={u.id} className="hover:bg-muted/20 transition-colors">
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
@@ -206,7 +214,7 @@ export const AdminUsersTab: React.FC = () => {
                       </div>
                     </td>
                     <td className="py-3 px-4">
-                      {u.systemRole === 'ADMIN' ? (
+                      {isRootUser ? (
                         <div title="Root Administrator accounts cannot be demoted">
                           <Badge variant="primary" className="text-[11px] font-semibold px-2 py-0.5 flex items-center gap-1 w-fit">
                             <Lock className="w-3 h-3" />
@@ -270,7 +278,7 @@ export const AdminUsersTab: React.FC = () => {
                         <RotateCcw className="w-3.5 h-3.5 mr-1" />
                         Reset Pwd
                       </Button>
-                      {u.systemRole === 'ADMIN' ? (
+                      {isRootUser ? (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -307,7 +315,8 @@ export const AdminUsersTab: React.FC = () => {
                       )}
                     </td>
                   </tr>
-                ))
+                );
+              })
               )}
             </tbody>
           </table>

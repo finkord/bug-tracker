@@ -9,6 +9,7 @@ export interface UserProfile {
   jobTitle?: string | null;
   groups?: string[];
   isAdmin?: boolean;
+  isRoot?: boolean;
   isActivated: boolean;
   isBlocked: boolean;
   twoFactorEnabled: boolean;

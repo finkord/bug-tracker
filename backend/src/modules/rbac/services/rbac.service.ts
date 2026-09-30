@@ -98,7 +98,9 @@ export class RbacService {
 
     if (isAdminGroup) {
       const user = await this.userRepository.findOne({ where: { id: userId } });
-      if (user && user.systemRole === SystemRole.ADMIN) {
+      const rootAdminEmail = (process.env.INITIAL_ADMIN_EMAIL || 'admin@bugtracker.local').toLowerCase();
+      const isRoot = user && (user.isRoot === true || user.email.toLowerCase() === rootAdminEmail);
+      if (isRoot) {
         throw new ForbiddenException(
           'Root administrator accounts cannot be removed from the administrators group',
         );

@@ -155,6 +155,14 @@ export class UsersService {
   }
 
   /**
+   * Determines whether a user is the designated primary root administrator.
+   */
+  isRootUser(user: User): boolean {
+    const rootAdminEmail = (process.env.INITIAL_ADMIN_EMAIL || 'admin@bugtracker.local').toLowerCase();
+    return user.isRoot === true || user.email.toLowerCase() === rootAdminEmail;
+  }
+
+  /**
    * Updates user avatar URL or preset identifier.
    */
   async updateAvatar(id: number, avatarUrl: string): Promise<User> {
@@ -171,11 +179,7 @@ export class UsersService {
       throw new NotFoundException(`User with ID #${id} not found`);
     }
 
-    const isTargetAdmin =
-      targetUser.systemRole === SystemRole.ADMIN ||
-      (await this.isMemberOfAdminGroup(id));
-
-    if (isTargetAdmin) {
+    if (this.isRootUser(targetUser)) {
       throw new ForbiddenException('Root administrator accounts cannot be blocked');
     }
 
@@ -192,11 +196,7 @@ export class UsersService {
       throw new NotFoundException(`User with ID #${id} not found`);
     }
 
-    const isTargetAdmin =
-      targetUser.systemRole === SystemRole.ADMIN ||
-      (await this.isMemberOfAdminGroup(id));
-
-    if (isTargetAdmin) {
+    if (this.isRootUser(targetUser)) {
       throw new ForbiddenException('Root administrator accounts cannot be deleted');
     }
 
@@ -226,11 +226,7 @@ export class UsersService {
     }
 
     // Protect root administrator accounts from demotion
-    const isTargetAdmin =
-      targetUser.systemRole === SystemRole.ADMIN ||
-      (await this.isMemberOfAdminGroup(id));
-
-    if (isTargetAdmin && role !== SystemRole.ADMIN) {
+    if (this.isRootUser(targetUser) && role !== SystemRole.ADMIN) {
       throw new ForbiddenException('Root administrator accounts cannot be demoted');
     }
 
@@ -370,6 +366,8 @@ export class UsersService {
         'user.fullName',
         'user.email',
         'user.systemRole',
+        'user.jobTitle',
+        'user.isRoot',
         'user.avatarUrl',
         'user.isActivated',
         'user.isBlocked',
@@ -382,8 +380,13 @@ export class UsersService {
 
     const [users, total] = await qb.getManyAndCount();
 
+    const items = users.map((u) => {
+      u.isRoot = this.isRootUser(u);
+      return u;
+    });
+
     return {
-      items: users,
+      items,
       total,
       page,
       limit,

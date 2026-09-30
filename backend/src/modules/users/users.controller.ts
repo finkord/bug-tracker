@@ -50,6 +50,7 @@ export class UsersController {
       avatarUrl: user.avatarUrl,
       groups,
       isAdmin,
+      isRoot: this.usersService.isRootUser(user),
       isActivated: user.isActivated,
       isBlocked: user.isBlocked,
       twoFactorEnabled: user.twoFactorEnabled,

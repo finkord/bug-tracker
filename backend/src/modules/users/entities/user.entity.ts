@@ -56,6 +56,10 @@ export class User {
   @Column({ name: 'is_activated', type: 'boolean', default: false })
   isActivated: boolean;
 
+  // Root administrator flag (designated primary root administrator)
+  @Column({ name: 'is_root', type: 'boolean', default: false })
+  isRoot: boolean;
+
   @Column({ name: 'activation_token', type: 'varchar', length: 255, nullable: true })
   activationToken: string | null;
 

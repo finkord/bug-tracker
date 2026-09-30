@@ -367,6 +367,11 @@ export class SystemInitService implements OnApplicationBootstrap {
         }
       }
 
+      if (!admin.isRoot) {
+        admin.isRoot = true;
+        await this.userRepository.save(admin);
+      }
+
       return { adminUser: admin, created: false };
     }
 
@@ -375,6 +380,10 @@ export class SystemInitService implements OnApplicationBootstrap {
       const anyAdmin = await this.userRepository.findOne({ where: { systemRole: SystemRole.ADMIN } });
       if (anyAdmin) {
         this.logger.log(`Existing system administrator active: ${anyAdmin.email}`);
+        if (!anyAdmin.isRoot) {
+          anyAdmin.isRoot = true;
+          await this.userRepository.save(anyAdmin);
+        }
         return { adminUser: anyAdmin, created: false };
       }
     }
@@ -391,6 +400,7 @@ export class SystemInitService implements OnApplicationBootstrap {
       email,
       passwordHash,
       systemRole: SystemRole.ADMIN,
+      isRoot: true,
       isActivated: true,
       jobTitle: 'Principal System Administrator',
       twoFactorEnabled: false,

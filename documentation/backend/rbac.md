@@ -55,10 +55,11 @@ Layer 2: Project-Scoped Roles (ProjectRoleActor)
 
 * **Global System Role**: Pure binary flag (`ADMIN` vs `USER`). All professional disciplines and team job functions (such as Frontend Engineer, QA Lead, DevOps Architect) are decoupled from system authorization and maintained in `User.jobTitle`.
 * **Root Administrator Immutability Guarantees**:
-  * Root administrator accounts (holding `SystemRole.ADMIN` or belonging to the `administrators` directory group) cannot be demoted to `USER` (`403 Forbidden`).
-  * Root administrator accounts cannot be blocked via administrative user controls (`403 Forbidden`).
-  * Root administrator accounts cannot be deleted (`403 Forbidden`).
-  * Root administrator accounts cannot be removed from the `administrators` directory group (`403 Forbidden`).
+  * The designated root administrator account (holding `User.isRoot === true` or matching `INITIAL_ADMIN_EMAIL`) cannot be demoted to `USER` (`403 Forbidden`).
+  * The root administrator account cannot be blocked via administrative user controls (`403 Forbidden`).
+  * The root administrator account cannot be deleted (`403 Forbidden`).
+  * The root administrator account cannot be removed from the `administrators` directory group (`403 Forbidden`).
+  * Non-root administrators (promoted accounts holding `SystemRole.ADMIN`) display the `Admin` role, and may be demoted back to `USER`, blocked, or deleted by authorized administrators.
 
 ### Permission Schemes & Grants
 * **PermissionScheme**: Defines reusable permission sets assigned to projects.
