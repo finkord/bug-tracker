@@ -36,6 +36,10 @@ import { IssueSecurityGrant } from './modules/rbac/entities/issue-security-grant
 import { RbacModule } from './modules/rbac/rbac.module.js';
 import { Sprint } from './modules/sprints/entities/sprint.entity.js';
 import { SprintsModule } from './modules/sprints/sprints.module.js';
+import { StorageModule } from './modules/storage/storage.module.js';
+import { Team } from './modules/teams/entities/team.entity.js';
+import { TeamMember } from './modules/teams/entities/team-member.entity.js';
+import { TeamsModule } from './modules/teams/teams.module.js';
 
 @Module({
   imports: [
@@ -76,6 +80,8 @@ import { SprintsModule } from './modules/sprints/sprints.module.js';
           IssueSecurityLevel,
           IssueSecurityGrant,
           Sprint,
+          Team,
+          TeamMember,
         ],
         synchronize:
           configService.get<string>('DB_SYNCHRONIZE') === 'true' ||
@@ -120,6 +126,8 @@ import { SprintsModule } from './modules/sprints/sprints.module.js';
     AdminModule,
     RbacModule,
     SprintsModule,
+    StorageModule,
+    TeamsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

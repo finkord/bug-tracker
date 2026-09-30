@@ -50,6 +50,23 @@ export class Sprint {
   })
   status: SprintStatus;
 
+  @Index()
+  @Column({ name: 'team_id', type: 'int', nullable: true })
+  teamId: number | null;
+
+  @ManyToOne('Team', (team: any) => team.sprints, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'team_id' })
+  team: any;
+
+  @Column({
+    name: 'capacity_hours',
+    type: 'numeric',
+    precision: 6,
+    scale: 2,
+    nullable: true,
+  })
+  capacityHours: number | null;
+
   @OneToMany('Issue', 'sprint')
   issues: Issue[];
 

@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useSidebar, useTheme } from '../store';
+import { useUserPreferencesQuery, useUpdateUserPreferencesMutation } from '../api/queries';
 import { Button } from '../components/ui';
 import {
   Sliders,
@@ -10,11 +11,44 @@ import {
   Layers,
   Sparkles,
   Check,
+  Cloud,
+  RefreshCw,
 } from 'lucide-react';
 
 export const PreferencesPage: React.FC = () => {
   const { showCollapsedLabels, setShowCollapsedLabels, toggleCollapsedLabels } = useSidebar();
   const { theme, setTheme } = useTheme();
+
+  const { data: serverPrefs } = useUserPreferencesQuery();
+  const updatePrefsMutation = useUpdateUserPreferencesMutation();
+
+  // Sync initial preferences from PostgreSQL when available
+  useEffect(() => {
+    if (serverPrefs) {
+      if (serverPrefs.theme && (serverPrefs.theme === 'light' || serverPrefs.theme === 'dark') && serverPrefs.theme !== theme) {
+        setTheme(serverPrefs.theme);
+      }
+      if (typeof serverPrefs.showCollapsedLabels === 'boolean' && serverPrefs.showCollapsedLabels !== showCollapsedLabels) {
+        setShowCollapsedLabels(serverPrefs.showCollapsedLabels);
+      }
+    }
+  }, [serverPrefs]);
+
+  const handleToggleLabels = () => {
+    const nextVal = !showCollapsedLabels;
+    toggleCollapsedLabels();
+    updatePrefsMutation.mutate({ showCollapsedLabels: nextVal });
+  };
+
+  const handleResetLabels = () => {
+    setShowCollapsedLabels(false);
+    updatePrefsMutation.mutate({ showCollapsedLabels: false });
+  };
+
+  const handleThemeChange = (newTheme: 'light' | 'dark') => {
+    setTheme(newTheme);
+    updatePrefsMutation.mutate({ theme: newTheme });
+  };
 
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6 animate-in fade-in duration-200">
@@ -61,7 +95,7 @@ export const PreferencesPage: React.FC = () => {
                 type="button"
                 role="switch"
                 aria-checked={showCollapsedLabels}
-                onClick={toggleCollapsedLabels}
+                onClick={handleToggleLabels}
                 className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
                   showCollapsedLabels
                     ? 'bg-[var(--md-sys-color-primary)]'
@@ -83,7 +117,7 @@ export const PreferencesPage: React.FC = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setShowCollapsedLabels(false)}
+                onClick={handleResetLabels}
                 disabled={!showCollapsedLabels}
               >
                 Reset to Default
@@ -111,7 +145,7 @@ export const PreferencesPage: React.FC = () => {
               {/* Light Mode Option */}
               <button
                 type="button"
-                onClick={() => setTheme('light')}
+                onClick={() => handleThemeChange('light')}
                 className={`p-4 rounded-2xl border flex flex-col items-center gap-3 transition-all cursor-pointer ${
                   theme === 'light'
                     ? 'border-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/20 shadow-xs'
@@ -137,7 +171,7 @@ export const PreferencesPage: React.FC = () => {
               {/* Dark Mode Option */}
               <button
                 type="button"
-                onClick={() => setTheme('dark')}
+                onClick={() => handleThemeChange('dark')}
                 className={`p-4 rounded-2xl border flex flex-col items-center gap-3 transition-all cursor-pointer ${
                   theme === 'dark'
                     ? 'border-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/20 shadow-xs'
@@ -217,10 +251,20 @@ export const PreferencesPage: React.FC = () => {
             </div>
 
             <div className="p-3.5 rounded-2xl bg-[var(--md-sys-color-surface-container)]/70 dark:bg-[var(--md-sys-color-surface-container-high)] text-[11px] text-[var(--md-sys-color-on-surface-variant)] space-y-1">
-              <span className="font-semibold text-[var(--md-sys-color-on-surface)] block">
-                Instant Persistence
+              <span className="font-semibold text-[var(--md-sys-color-on-surface)] flex items-center gap-1.5">
+                {updatePrefsMutation.isPending ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin text-[var(--md-sys-color-primary)]" />
+                    Syncing with account...
+                  </>
+                ) : (
+                  <>
+                    <Cloud className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
+                    Cloud Synchronized
+                  </>
+                )}
               </span>
-              Settings are saved automatically and synchronized across all active browser windows.
+              Settings are saved automatically to your user profile and synchronized across all devices.
             </div>
           </div>
         </div>

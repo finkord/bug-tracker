@@ -22,6 +22,7 @@ export const DEFAULT_BROADCAST: BroadcastConfig = {
 export interface BroadcastState {
   broadcast: BroadcastConfig;
   isDismissed: boolean;
+  setBroadcast: (config: BroadcastConfig) => void;
   updateBroadcast: (config: Partial<BroadcastConfig>) => void;
   resetBroadcast: () => void;
   dismissBroadcast: () => void;
@@ -32,6 +33,11 @@ export const useBroadcastStore = create<BroadcastState>()(
     (set) => ({
       broadcast: DEFAULT_BROADCAST,
       isDismissed: false,
+      setBroadcast: (config: BroadcastConfig) =>
+        set((state) => ({
+          broadcast: config,
+          isDismissed: state.broadcast.message !== config.message ? false : state.isDismissed,
+        })),
       updateBroadcast: (partial: Partial<BroadcastConfig>) =>
         set((state) => ({
           broadcast: {

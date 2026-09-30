@@ -5,6 +5,8 @@ import { issuesApi } from './modules/issues.api.js';
 import { worklogsApi } from './modules/worklogs.api.js';
 import { rbacApi } from './modules/rbac.api.js';
 import { sprintsApi } from './modules/sprints.api.js';
+import { teamsApi } from './modules/teams.api.js';
+import { systemApi } from './modules/system.api.js';
 
 export * from './types/index.js';
 export * from './http.js';
@@ -21,4 +23,6 @@ export const api = {
   ...worklogsApi,
   ...rbacApi,
   ...sprintsApi,
+  ...teamsApi,
+  ...systemApi,
 };

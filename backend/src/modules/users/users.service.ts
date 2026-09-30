@@ -6,6 +6,7 @@ import { SavedFilter } from './entities/saved-filter.entity.js';
 import { Group } from '../rbac/entities/group.entity.js';
 import { UserGroup } from '../rbac/entities/user-group.entity.js';
 import { RedisService } from '../redis/redis.service.js';
+import { SeaweedFsService, type UploadedFileInput } from '../storage/services/seaweedfs.service.js';
 
 @Injectable()
 export class UsersService {
@@ -20,6 +21,8 @@ export class UsersService {
     private readonly userGroupRepository: Repository<UserGroup>,
     @Optional()
     private readonly redisService?: RedisService,
+    @Optional()
+    private readonly seaweedFsService?: SeaweedFsService,
   ) {}
 
   async findById(id: number): Promise<User | null> {
@@ -104,7 +107,7 @@ export class UsersService {
   }
 
   async update(id: number, updateData: Partial<User>): Promise<User> {
-    await this.usersRepository.update(id, updateData);
+    await this.usersRepository.update(id, updateData as any);
     if (this.redisService) {
       await this.redisService.del(`user:session:${id}`);
     }
@@ -171,8 +174,79 @@ export class UsersService {
   /**
    * Updates user avatar URL or preset identifier.
    */
+  /**
+   * Updates user avatar URL or preset identifier.
+   */
   async updateAvatar(id: number, avatarUrl: string): Promise<User> {
-    return this.update(id, { avatarUrl });
+    const updated = await this.update(id, { avatarUrl });
+    await this.invalidateSystemStatsCache();
+    return updated;
+  }
+
+  /**
+   * Uploads avatar image file directly to SeaweedFS distributed object storage.
+   */
+  async uploadAvatarFile(userId: number, file: UploadedFileInput): Promise<User> {
+    if (!this.seaweedFsService) {
+      throw new BadRequestException('Object storage service unavailable');
+    }
+    const allowedMimeTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/svg+xml'];
+    if (!allowedMimeTypes.includes(file.mimetype.toLowerCase())) {
+      throw new BadRequestException(
+        `Unsupported image format "${file.mimetype}". Allowed formats: PNG, JPEG, WEBP, GIF, SVG.`,
+      );
+    }
+
+    const { fid } = await this.seaweedFsService.uploadFile(file);
+    const avatarUrl = `/api/v1/users/avatar/${fid}`;
+    return this.update(userId, { avatarUrl });
+  }
+
+  /**
+   * Streams avatar file binary buffer from SeaweedFS.
+   */
+  async getAvatarBuffer(fid: string): Promise<{ buffer: Buffer; contentType: string }> {
+    if (!this.seaweedFsService) {
+      throw new BadRequestException('Object storage service unavailable');
+    }
+    return this.seaweedFsService.getFileBuffer(fid);
+  }
+
+  /**
+   * Retrieves cross-device persisted preferences for the user.
+   */
+  async getPreferences(userId: number): Promise<Record<string, unknown>> {
+    const user = await this.findById(userId);
+    if (!user) {
+      throw new NotFoundException(`User with ID #${userId} not found`);
+    }
+    return user.preferences || {};
+  }
+
+  /**
+   * Updates cross-device preferences atomically in PostgreSQL.
+   */
+  async updatePreferences(
+    userId: number,
+    patch: Record<string, unknown>,
+  ): Promise<Record<string, unknown>> {
+    const user = await this.findById(userId);
+    if (!user) {
+      throw new NotFoundException(`User with ID #${userId} not found`);
+    }
+    const current = user.preferences || {};
+    const updated = { ...current, ...patch };
+    await this.usersRepository.update(userId, { preferences: updated as any });
+    return updated;
+  }
+
+  /**
+   * Invalidates cached admin dashboard metrics in Redis.
+   */
+  async invalidateSystemStatsCache(): Promise<void> {
+    if (this.redisService) {
+      await this.redisService.del('admin:system_stats');
+    }
   }
 
   /**
@@ -189,7 +263,9 @@ export class UsersService {
       throw new ForbiddenException('Root administrator accounts cannot be blocked');
     }
 
-    return this.update(id, { isBlocked: true });
+    const updated = await this.update(id, { isBlocked: true });
+    await this.invalidateSystemStatsCache();
+    return updated;
   }
 
   /**
@@ -210,6 +286,7 @@ export class UsersService {
     if (this.redisService) {
       await this.redisService.del(`user:session:${id}`);
     }
+    await this.invalidateSystemStatsCache();
     return { message: `User #${id} has been deleted` };
   }
 
@@ -303,6 +380,7 @@ export class UsersService {
 
   /**
    * Retrieves high-level security and user statistics for the Admin Dashboard.
+   * Utilizes a single PostgreSQL SQL aggregation and caches results in Redis with a 60s TTL.
    */
   async getSystemStats(): Promise<{
     totalUsers: number;
@@ -312,30 +390,41 @@ export class UsersService {
     twoFactorPercentage: number;
     roleBreakdown: Record<string, number>;
   }> {
-    const totalUsers = await this.usersRepository.count();
-    const activeUsers = await this.usersRepository.count({
-      where: { isActivated: true, isBlocked: false },
-    });
-    const blockedUsers = await this.usersRepository.count({
-      where: { isBlocked: true },
-    });
-    const twoFactorAdoptionCount = await this.usersRepository.count({
-      where: { twoFactorEnabled: true },
-    });
-    const twoFactorPercentage = totalUsers > 0 ? Math.round((twoFactorAdoptionCount / totalUsers) * 100) : 0;
-
-    // Calculate user distribution per system role
-    const users = await this.usersRepository.find({ select: { systemRole: true } });
-    const roleBreakdown: Record<string, number> = {
-      [SystemRole.ADMIN]: 0,
-      [SystemRole.USER]: 0,
-    };
-    for (const u of users) {
-      const r = u.systemRole === SystemRole.ADMIN ? SystemRole.ADMIN : SystemRole.USER;
-      roleBreakdown[r] = (roleBreakdown[r] || 0) + 1;
+    const cacheKey = 'admin:system_stats';
+    if (this.redisService) {
+      const cached = await this.redisService.get(cacheKey);
+      if (cached) {
+        try {
+          return JSON.parse(cached);
+        } catch {
+          // ignore cache parse errors
+        }
+      }
     }
 
-    return {
+    const raw = await this.usersRepository.query(`
+      SELECT
+        COUNT(*)::int AS "totalUsers",
+        COUNT(CASE WHEN is_activated AND NOT is_blocked THEN 1 END)::int AS "activeUsers",
+        COUNT(CASE WHEN is_blocked THEN 1 END)::int AS "blockedUsers",
+        COUNT(CASE WHEN two_factor_enabled THEN 1 END)::int AS "twoFactorAdoptionCount",
+        COUNT(CASE WHEN system_role = 'ADMIN' THEN 1 END)::int AS "adminCount",
+        COUNT(CASE WHEN system_role = 'USER' THEN 1 END)::int AS "userCount"
+      FROM users
+    `);
+
+    const row = raw && raw[0] ? raw[0] : {};
+    const totalUsers = Number(row.totalUsers) || 0;
+    const activeUsers = Number(row.activeUsers) || 0;
+    const blockedUsers = Number(row.blockedUsers) || 0;
+    const twoFactorAdoptionCount = Number(row.twoFactorAdoptionCount) || 0;
+    const twoFactorPercentage = totalUsers > 0 ? Math.round((twoFactorAdoptionCount / totalUsers) * 100) : 0;
+    const roleBreakdown: Record<string, number> = {
+      [SystemRole.ADMIN]: Number(row.adminCount) || 0,
+      [SystemRole.USER]: Number(row.userCount) || 0,
+    };
+
+    const stats = {
       totalUsers,
       activeUsers,
       blockedUsers,
@@ -343,6 +432,12 @@ export class UsersService {
       twoFactorPercentage,
       roleBreakdown,
     };
+
+    if (this.redisService) {
+      await this.redisService.set(cacheKey, JSON.stringify(stats), 60);
+    }
+
+    return stats;
   }
 
   /**

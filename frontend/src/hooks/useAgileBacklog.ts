@@ -126,6 +126,9 @@ export function useAgileBacklog(selectedProjectId: number | null) {
       loadedDefs[s.name] = {
         id: s.id,
         projectId: s.projectId,
+        teamId: s.teamId || undefined,
+        team: s.team || undefined,
+        capacityHours: s.capacityHours || undefined,
         name: s.name,
         goal: s.goal || '',
         startDate: s.startDate || '',
@@ -163,6 +166,9 @@ export function useAgileBacklog(selectedProjectId: number | null) {
     return {
       id: found.id,
       projectId: found.projectId,
+      teamId: found.teamId || undefined,
+      team: found.team || undefined,
+      capacityHours: found.capacityHours || undefined,
       name: found.name,
       goal: found.goal || '',
       startDate: found.startDate || '',
@@ -235,6 +241,8 @@ export function useAgileBacklog(selectedProjectId: number | null) {
             startDate: sprintData.startDate,
             endDate: sprintData.endDate,
             status: sprintData.status,
+            teamId: sprintData.teamId,
+            capacityHours: sprintData.capacityHours,
           },
         });
       } else {
@@ -246,6 +254,8 @@ export function useAgileBacklog(selectedProjectId: number | null) {
             startDate: sprintData.startDate,
             endDate: sprintData.endDate,
             status: sprintData.status,
+            teamId: sprintData.teamId,
+            capacityHours: sprintData.capacityHours,
           },
         });
       }

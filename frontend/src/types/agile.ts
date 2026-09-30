@@ -4,6 +4,13 @@ export type AgileViewMode = 'backlog' | 'board';
 export interface SprintDefinition {
   id?: number;
   projectId?: number;
+  teamId?: number;
+  team?: {
+    id: number;
+    name: string;
+    sprintCapacityHours: number;
+  };
+  capacityHours?: number;
   name: string;
   goal: string;
   startDate: string;

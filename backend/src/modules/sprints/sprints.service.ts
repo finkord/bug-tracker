@@ -31,6 +31,7 @@ export class SprintsService {
     }
     const existingSprints = await this.sprintRepository.find({
       where: { projectId },
+      relations: { team: true },
       order: { createdAt: 'ASC' },
     });
     if (existingSprints.length === 0) {
@@ -43,7 +44,10 @@ export class SprintsService {
    * Retrieves a single sprint by its primary ID.
    */
   async getSprintById(id: number): Promise<Sprint> {
-    const sprint = await this.sprintRepository.findOne({ where: { id } });
+    const sprint = await this.sprintRepository.findOne({
+      where: { id },
+      relations: { team: true },
+    });
     if (!sprint) {
       throw new NotFoundException(`Sprint #${id} not found`);
     }
@@ -65,6 +69,8 @@ export class SprintsService {
       startDate: dto.startDate || null,
       endDate: dto.endDate || null,
       status: dto.status || SprintStatus.PLANNED,
+      teamId: dto.teamId || null,
+      capacityHours: dto.capacityHours ?? null,
     });
     return this.sprintRepository.save(sprint);
   }
@@ -79,6 +85,8 @@ export class SprintsService {
     if (dto.startDate !== undefined) sprint.startDate = dto.startDate || null;
     if (dto.endDate !== undefined) sprint.endDate = dto.endDate || null;
     if (dto.status !== undefined) sprint.status = dto.status;
+    if (dto.teamId !== undefined) sprint.teamId = dto.teamId || null;
+    if (dto.capacityHours !== undefined) sprint.capacityHours = dto.capacityHours ?? null;
     return this.sprintRepository.save(sprint);
   }
 

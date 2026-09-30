@@ -8,20 +8,28 @@ import {
   Query,
   Body,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  Res,
+  BadRequestException,
   ParseIntPipe,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import type { Response } from 'express';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { UsersService } from './users.service.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../common/guards/roles.guard.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
+import { Public } from '../../common/decorators/public.decorator.js';
 import { User, SystemRole } from './entities/user.entity.js';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto.js';
 import { ListUsersQueryDto } from './dto/list-users-query.dto.js';
 import { CreateSavedFilterDto, UpdateSavedFilterDto } from './dto/saved-filter.dto.js';
+import type { UploadedFileInput } from '../storage/services/seaweedfs.service.js';
 
 @ApiTags('Users & Profile')
 @ApiBearerAuth('JWT-auth')
@@ -75,6 +83,63 @@ export class UsersController {
       message: 'Avatar updated successfully',
       avatarUrl: updated.avatarUrl,
     };
+  }
+
+  @Post('me/avatar/upload')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(FileInterceptor('avatar', { limits: { fileSize: 5 * 1024 * 1024 } }))
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: 'Upload avatar image file directly to SeaweedFS distributed storage',
+  })
+  async uploadAvatar(
+    @CurrentUser() user: User,
+    @UploadedFile() file: UploadedFileInput | undefined,
+  ) {
+    if (!file) {
+      throw new BadRequestException('Image file is required');
+    }
+    const updated = await this.usersService.uploadAvatarFile(user.id, file);
+    return {
+      message: 'Avatar uploaded successfully',
+      avatarUrl: updated.avatarUrl,
+    };
+  }
+
+  @Public()
+  @Get('avatar/:fid')
+  @ApiOperation({
+    summary: 'Stream avatar image directly from SeaweedFS object storage',
+  })
+  async getAvatarFile(
+    @Param('fid') fid: string,
+    @Res() res: Response,
+  ) {
+    const { buffer, contentType } = await this.usersService.getAvatarBuffer(fid);
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.setHeader('Content-Disposition', 'inline');
+    res.send(buffer);
+  }
+
+  @Get('me/preferences')
+  @ApiOperation({
+    summary: 'Get cross-device persisted preferences for current user',
+  })
+  async getMyPreferences(@CurrentUser() user: User) {
+    return this.usersService.getPreferences(user.id);
+  }
+
+  @Patch('me/preferences')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Update cross-device persisted preferences for current user',
+  })
+  async updateMyPreferences(
+    @CurrentUser() user: User,
+    @Body() preferences: Record<string, unknown>,
+  ) {
+    return this.usersService.updatePreferences(user.id, preferences);
   }
 
   @Patch('me/profile')

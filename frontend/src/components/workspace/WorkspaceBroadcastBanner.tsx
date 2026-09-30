@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   AlertTriangle,
   CheckCircle2,
@@ -7,7 +7,9 @@ import {
   X,
   Maximize2,
 } from 'lucide-react';
-import { useBroadcast, type BroadcastSeverity } from '../../store';
+import { useBroadcast, type BroadcastSeverity, type BroadcastConfig } from '../../store';
+import { useSystemBannerQuery } from '../../api/queries';
+import { realtimeSocket } from '../../api/socket';
 import { Modal, Button } from '../ui';
 
 const severityStripe: Record<
@@ -40,8 +42,27 @@ const severityStripe: Record<
  * DevOps broadcast announcement banner with animated marquee and details modal.
  */
 export const WorkspaceBroadcastBanner: React.FC = () => {
-  const { broadcast, isDismissed, dismissBroadcast } = useBroadcast();
+  const { broadcast, isDismissed, dismissBroadcast, setBroadcast } = useBroadcast();
+  const { data: serverBanner } = useSystemBannerQuery();
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (serverBanner) {
+      setBroadcast(serverBanner);
+    }
+  }, [serverBanner, setBroadcast]);
+
+  useEffect(() => {
+    const socket = realtimeSocket.getSocket() || realtimeSocket.connect();
+    const handleBannerUpdated = (newBanner: BroadcastConfig) => {
+      setBroadcast(newBanner);
+    };
+
+    socket.on('system:banner_updated', handleBannerUpdated);
+    return () => {
+      socket.off('system:banner_updated', handleBannerUpdated);
+    };
+  }, [setBroadcast]);
 
   const showBanner = broadcast.enabled && Boolean(broadcast.message) && !isDismissed;
   if (!showBanner) return null;

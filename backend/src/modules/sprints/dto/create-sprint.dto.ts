@@ -44,4 +44,18 @@ export class CreateSprintDto {
   @IsOptional()
   @IsEnum(SprintStatus)
   status?: SprintStatus;
+
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Associated Scrum team ID',
+  })
+  @IsOptional()
+  teamId?: number | null;
+
+  @ApiPropertyOptional({
+    example: 80,
+    description: 'Sprint capacity in hours',
+  })
+  @IsOptional()
+  capacityHours?: number | null;
 }

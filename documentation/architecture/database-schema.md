@@ -23,10 +23,16 @@ erDiagram
     User ||--o{ Attachment : "uploads"
     User ||--o{ UserGroup : "belongs_to"
     User ||--o{ LoginAuditLog : "generates"
+    User ||--o{ Team : "leads"
+    User ||--o{ TeamMember : "serves_in"
 
     Project ||--o{ Sprint : "contains"
     Project ||--o{ Issue : "owns"
     Project ||--o{ ProjectRoleActor : "configures"
+    Project ||--o{ Team : "deploys"
+
+    Team ||--o{ TeamMember : "contains"
+    Team ||--o{ Sprint : "commits_to"
 
     Sprint ||--o{ Issue : "schedules"
 
@@ -48,12 +54,12 @@ erDiagram
 
 ---
 
-## 2. Entity Catalog (19 Domain Entities)
+## 2. Entity Catalog (21 Domain Entities)
 
 ### A. Identity & Core Users (`modules/users/`)
 1. **[`User`](../../backend/src/modules/users/entities/user.entity.ts)**:
    - Primary table: `users`
-   - Attributes: `id` (UUID), `email` (UK), `fullName`, `passwordHash` (Argon2id), `systemRole` (`ADMIN`, `USER`), `twoFactorSecret`, `isTwoFactorEnabled`, `isActive`, `activationToken`, `lockoutUntil`, `failedLoginAttempts`, `avatarUrl`, `themePreference`.
+   - Attributes: `id` (UUID), `email` (UK), `fullName`, `passwordHash` (Argon2id), `systemRole` (`ADMIN`, `USER`), `twoFactorSecret`, `isTwoFactorEnabled`, `isActive`, `activationToken`, `lockoutUntil`, `failedLoginAttempts`, `avatarUrl`, `preferences` (JSONB, default `'{}'`).
 2. **[`SavedFilter`](../../backend/src/modules/users/entities/saved-filter.entity.ts)**:
    - Primary table: `saved_filters`
    - Attributes: `id` (int), `userId` (FK to `users`), `name`, `criteria` (JQL), `description` (varchar 255, nullable), `isFavorite` (boolean, default: false), `createdAt`.
@@ -65,7 +71,7 @@ erDiagram
    - Attributes: `id` (UUID), `key` (UK, e.g. `CORE`, `UI`), `name`, `description`, `leadId` (FK to `users`), `permissionSchemeId`.
 4. **[`Sprint`](../../backend/src/modules/sprints/entities/sprint.entity.ts)**:
    - Primary table: `sprints`
-   - Attributes: `id`, `projectId`, `name`, `goal`, `status` (`PLANNED`, `ACTIVE`, `COMPLETED`), `startDate`, `endDate`.
+   - Attributes: `id`, `projectId`, `teamId` (FK to `teams.id`, nullable), `name`, `goal`, `status` (`PLANNED`, `ACTIVE`, `COMPLETED`), `capacityHours` (numeric 6,2, nullable), `startDate`, `endDate`.
 
 ### C. Issue Tracking & Forensics (`modules/issues/`)
 5. **[`Issue`](../../backend/src/modules/issues/entities/issue.entity.ts)**:
@@ -104,3 +110,13 @@ erDiagram
 19. **[`LoginAuditLog`](../../backend/src/modules/security-audit/entities/login-audit-log.entity.ts)**:
    - Primary table: `login_audit_logs`
    - Attributes: `id`, `email`, `ipAddress`, `userAgent`, `status` (`SUCCESS`, `FAILURE`, `2FA_CHALLENGE`, `LOCKED_OUT`), `failureReason`, `createdAt`.
+
+### F. Scrum Teams & Delivery Units (`modules/teams/`)
+20. **[`Team`](../../backend/src/modules/teams/entities/team.entity.ts)**:
+   - Primary table: `teams`
+   - Attributes: `id` (int), `name` (varchar 100), `description` (varchar 255, nullable), `projectId` (int, FK to `projects`), `leadId` (int, FK to `users`, nullable), `sprintCapacityHours` (numeric 6,2, default: 80.00), `createdAt`, `updatedAt`.
+   - Indexes: B-Tree `idx_teams_project_id` on `projectId`, B-Tree `idx_teams_lead_id` on `leadId`.
+21. **[`TeamMember`](../../backend/src/modules/teams/entities/team-member.entity.ts)**:
+   - Primary table: `team_members`
+   - Attributes: `id` (int), `teamId` (int, FK to `teams`), `userId` (int, FK to `users`), `role` (`SCRUM_MASTER`, `PRODUCT_OWNER`, `DEVELOPER`, `QA_ENGINEER`, `DESIGNER`), `weeklyCapacityHours` (numeric 5,2, default: 40.00), `createdAt`, `updatedAt`.
+   - Indexes: Unique composite B-Tree `idx_team_members_team_user` on `(teamId, userId)`, B-Tree `idx_team_members_user_id` on `userId`, B-Tree `idx_team_members_team_id` on `teamId`.

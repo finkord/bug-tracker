@@ -80,6 +80,7 @@ describe('SprintsService', () => {
       expect(actualSprints).toEqual([mockSprint]);
       expect(mockSprintRepository.find).toHaveBeenCalledWith({
         where: { projectId: 1 },
+        relations: { team: true },
         order: { createdAt: 'ASC' },
       });
     });

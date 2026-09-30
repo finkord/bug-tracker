@@ -8,12 +8,14 @@ import { UsersController } from './users.controller.js';
 
 import { Group } from '../rbac/entities/group.entity.js';
 import { UserGroup } from '../rbac/entities/user-group.entity.js';
+import { StorageModule } from '../storage/storage.module.js';
 
 @Global()
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, SavedFilter, Group, UserGroup]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
+    StorageModule,
   ],
   controllers: [UsersController],
   providers: [UsersService],

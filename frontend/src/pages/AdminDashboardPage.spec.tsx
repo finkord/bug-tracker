@@ -8,6 +8,8 @@ vi.mock('../components/admin/index.js', () => ({
   AdminRbacTab: () => <div data-testid="mock-rbac-tab">RBAC Tab Content</div>,
   AdminSecurityLogsTab: () => <div data-testid="mock-security-tab">Security Tab Content</div>,
   AdminProjectsTab: () => <div data-testid="mock-projects-tab">Projects Tab Content</div>,
+  AdminTeamsTab: () => <div data-testid="mock-teams-tab">Teams Tab Content</div>,
+  AdminBroadcastBannerCard: () => <div data-testid="mock-banner-card">Banner Control Content</div>,
 }));
 
 describe('AdminDashboardPage', () => {
@@ -24,6 +26,7 @@ describe('AdminDashboardPage', () => {
 
     expect(screen.getByRole('tab', { name: /Users & Identity/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /Access Control & RBAC/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Scrum Teams/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /Security Audit Logs/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /Projects Governance/i })).toBeInTheDocument();
 
@@ -57,9 +60,16 @@ describe('AdminDashboardPage', () => {
     expect(screen.getByTestId('mock-rbac-tab')).toBeInTheDocument();
     expect(screen.queryByTestId('mock-users-tab')).not.toBeInTheDocument();
 
+    const teamsTab = screen.getByRole('tab', { name: /Scrum Teams/i });
+    fireEvent.keyDown(teamsTab, { key: 'Enter', code: 'Enter' });
+
+    expect(screen.getByTestId('mock-teams-tab')).toBeInTheDocument();
+    expect(screen.queryByTestId('mock-users-tab')).not.toBeInTheDocument();
+
     const projectsTab = screen.getByRole('tab', { name: /Projects Governance/i });
     fireEvent.keyDown(projectsTab, { key: 'Enter', code: 'Enter' });
 
     expect(screen.getByTestId('mock-projects-tab')).toBeInTheDocument();
   });
 });
+

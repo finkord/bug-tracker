@@ -1,5 +1,13 @@
 export type SystemRole = 'ADMIN' | 'USER';
 
+export interface UserPreferences {
+  theme?: 'light' | 'dark';
+  showCollapsedLabels?: boolean;
+  emailNotifications?: boolean;
+  compactMode?: boolean;
+  [key: string]: unknown;
+}
+
 export interface UserProfile {
   id: number;
   fullName: string;
@@ -7,6 +15,7 @@ export interface UserProfile {
   systemRole: SystemRole;
   avatarUrl?: string | null;
   jobTitle?: string | null;
+  preferences?: UserPreferences;
   groups?: string[];
   isAdmin?: boolean;
   isRoot?: boolean;

@@ -15,6 +15,17 @@ vi.mock('../store', () => ({
   }),
 }));
 
+vi.mock('../api/queries', () => ({
+  useUserPreferencesQuery: () => ({
+    data: { theme: 'dark', showCollapsedLabels: false },
+    isLoading: false,
+  }),
+  useUpdateUserPreferencesMutation: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+}));
+
 describe('PreferencesPage', () => {
   it('renders with full width container class and no max-w restriction', () => {
     const { container } = render(

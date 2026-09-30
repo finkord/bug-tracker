@@ -363,4 +363,11 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.server.to(`issue_${payload.issueId}`).emit('attachment:uploaded', payload);
     }
   }
+
+  broadcastSystemBanner(banner: unknown): void {
+    if (this.server) {
+      this.server.emit('system:banner_updated', banner);
+    }
+  }
 }
+

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { SprintDefinition } from '../../types/agile';
-import { Modal, Button, Input, Tabs, TabsList, TabsTrigger } from '../ui';
+import { useTeamsQuery } from '../../api/queries/useTeamsQuery.js';
 import { Calendar, Sparkles, Play } from 'lucide-react';
 
 interface SprintFormModalProps {
@@ -20,8 +20,12 @@ export const SprintFormModal: React.FC<SprintFormModalProps> = ({
   mode = 'create',
   defaultSprintNumber = 1,
 }) => {
+  const { data: teams = [] } = useTeamsQuery(editingSprint?.projectId);
+
   const [name, setName] = useState('');
   const [goal, setGoal] = useState('');
+  const [teamId, setTeamId] = useState<number | undefined>(undefined);
+  const [capacityHours, setCapacityHours] = useState<number | ''>('');
   const [startDate, setStartDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [durationWeeks, setDurationWeeks] = useState<number | 'custom'>(2);
   const [endDate, setEndDate] = useState(() => {
@@ -36,6 +40,10 @@ export const SprintFormModal: React.FC<SprintFormModalProps> = ({
       if (editingSprint) {
         setName(editingSprint.name);
         setGoal(editingSprint.goal || '');
+        setTeamId(editingSprint.teamId);
+        setCapacityHours(
+          editingSprint.capacityHours ?? editingSprint.team?.sprintCapacityHours ?? '',
+        );
         setStartDate(editingSprint.startDate || new Date().toISOString().split('T')[0]);
         setEndDate(
           editingSprint.endDate ||
@@ -44,6 +52,8 @@ export const SprintFormModal: React.FC<SprintFormModalProps> = ({
       } else {
         setName(`Sprint ${defaultSprintNumber}`);
         setGoal('');
+        setTeamId(undefined);
+        setCapacityHours('');
         const today = new Date().toISOString().split('T')[0];
         setStartDate(today);
         const end = new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0];
@@ -53,6 +63,17 @@ export const SprintFormModal: React.FC<SprintFormModalProps> = ({
       setError(null);
     }
   }, [isOpen, editingSprint, defaultSprintNumber]);
+
+  const handleTeamChange = (newTeamIdStr: string) => {
+    const newTeamId = newTeamIdStr ? Number(newTeamIdStr) : undefined;
+    setTeamId(newTeamId);
+    if (newTeamId) {
+      const selected = teams.find((t) => t.id === newTeamId);
+      if (selected && selected.sprintCapacityHours && !capacityHours) {
+        setCapacityHours(selected.sprintCapacityHours);
+      }
+    }
+  };
 
   const handleDurationChange = (weeks: number | 'custom') => {
     setDurationWeeks(weeks);
@@ -87,6 +108,8 @@ export const SprintFormModal: React.FC<SprintFormModalProps> = ({
     onSave({
       id: editingSprint?.id,
       projectId: editingSprint?.projectId,
+      teamId: teamId || undefined,
+      capacityHours: capacityHours ? Number(capacityHours) : undefined,
       name: name.trim(),
       goal: goal.trim(),
       startDate,
@@ -120,6 +143,38 @@ export const SprintFormModal: React.FC<SprintFormModalProps> = ({
           onChange={(e) => setName(e.target.value)}
           required
         />
+
+        {/* Team and Capacity Row */}
+        {teams.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)] mb-1.5">
+                Assigned Scrum Team
+              </label>
+              <select
+                value={teamId || ''}
+                onChange={(e) => handleTeamChange(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-2xl bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)] text-xs text-[var(--md-sys-color-on-surface)] focus:outline-none focus:ring-2 focus:ring-[var(--md-sys-color-primary)] font-medium"
+              >
+                <option value="">-- No Scrum Team Assigned --</option>
+                {teams.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name} ({t.sprintCapacityHours}h default)
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <Input
+              label="Sprint Capacity (Hours)"
+              type="number"
+              min={0}
+              placeholder="e.g. 80"
+              value={capacityHours}
+              onChange={(e) => setCapacityHours(e.target.value ? Number(e.target.value) : '')}
+            />
+          </div>
+        )}
 
         {/* Duration Presets */}
         <div>

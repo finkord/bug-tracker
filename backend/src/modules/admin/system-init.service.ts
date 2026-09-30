@@ -125,8 +125,37 @@ export class SystemInitService implements OnApplicationBootstrap {
         CREATE INDEX IF NOT EXISTS idx_worklogs_user_date ON worklogs (user_id, date_logged);
         CREATE INDEX IF NOT EXISTS idx_worklogs_issue_date ON worklogs (issue_id, date_logged);
         CREATE INDEX IF NOT EXISTS idx_worklogs_created_at ON worklogs (created_at);
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS preferences jsonb DEFAULT '{}'::jsonb;
+
+        CREATE TABLE IF NOT EXISTS teams (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(100) NOT NULL,
+          description TEXT,
+          project_id INT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+          lead_id INT REFERENCES users(id) ON DELETE SET NULL,
+          sprint_capacity_hours NUMERIC(6,2) DEFAULT 160.00,
+          created_at TIMESTAMPTZ DEFAULT NOW(),
+          updated_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_teams_project_id ON teams (project_id);
+
+        CREATE TABLE IF NOT EXISTS team_members (
+          id SERIAL PRIMARY KEY,
+          team_id INT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+          user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          role VARCHAR(50) NOT NULL DEFAULT 'DEVELOPER',
+          weekly_capacity_hours NUMERIC(5,2) DEFAULT 40.00,
+          created_at TIMESTAMPTZ DEFAULT NOW(),
+          CONSTRAINT uq_team_member_team_user UNIQUE (team_id, user_id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_team_members_team_id ON team_members (team_id);
+        CREATE INDEX IF NOT EXISTS idx_team_members_user_id ON team_members (user_id);
+
+        ALTER TABLE sprints ADD COLUMN IF NOT EXISTS team_id INT REFERENCES teams(id) ON DELETE SET NULL;
+        ALTER TABLE sprints ADD COLUMN IF NOT EXISTS capacity_hours NUMERIC(6,2);
+        CREATE INDEX IF NOT EXISTS idx_sprints_team_id ON sprints (team_id);
       `);
-      this.logger.log('Verified PostgreSQL GIN search vector and worklog indexes.');
+      this.logger.log('Verified PostgreSQL schema: GIN search vector, worklog indexes, user preferences, and Scrum teams.');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       this.logger.warn(`Could not ensure database indexes: ${msg}`);

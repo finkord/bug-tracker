@@ -16,6 +16,7 @@ import {
   Plus,
   ArrowRight,
   Sparkles,
+  Users,
 } from 'lucide-react';
 
 interface SprintContainerProps {
@@ -74,6 +75,10 @@ export const SprintContainer: React.FC<SprintContainerProps> = ({
   };
 
   const totalEstimate = issues.reduce((acc, i) => acc + (i.estimatedHours || 0), 0);
+  const capacity = sprint.capacityHours || sprint.team?.sprintCapacityHours || 0;
+  const capacityPercentage = capacity > 0 ? Math.round((totalEstimate / capacity) * 100) : 0;
+  const isOverCapacity = capacity > 0 && totalEstimate > capacity;
+
   const todoCount = issues.filter((i) => i.status === 'OPEN').length;
   const inProgressCount = issues.filter((i) => i.status === 'IN_PROGRESS' || i.status === 'REVIEW').length;
   const doneCount = issues.filter((i) => i.status === 'RESOLVED' || i.status === 'CLOSED').length;
@@ -167,6 +172,43 @@ export const SprintContainer: React.FC<SprintContainerProps> = ({
                 </span>
               )}
             </div>
+
+            {/* Team & Capacity Progress Meter */}
+            {(capacity > 0 || sprint.team) && (
+              <div className="flex flex-wrap items-center gap-2.5 mt-1.5 text-[11px]">
+                {sprint.team && (
+                  <Badge variant="secondary" size="sm" className="gap-1 font-mono text-[10px]">
+                    <Users className="w-3 h-3" />
+                    {sprint.team.name}
+                  </Badge>
+                )}
+                {capacity > 0 && (
+                  <div className="flex items-center gap-2 min-w-[200px] max-w-xs flex-1">
+                    <div className="w-full bg-[var(--md-sys-color-surface-container-highest)] rounded-full h-1.5 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-300 ${
+                          isOverCapacity
+                            ? 'bg-[var(--md-sys-color-error)]'
+                            : capacityPercentage > 85
+                              ? 'bg-[var(--md-sys-color-warning)]'
+                              : 'bg-[var(--md-sys-color-primary)]'
+                        }`}
+                        style={{ width: `${Math.min(capacityPercentage, 100)}%` }}
+                      />
+                    </div>
+                    <span
+                      className={`font-mono text-[10px] whitespace-nowrap ${
+                        isOverCapacity
+                          ? 'font-bold text-[var(--md-sys-color-error)]'
+                          : 'text-[var(--md-sys-color-on-surface-variant)]'
+                      }`}
+                    >
+                      {totalEstimate}h / {capacity}h {isOverCapacity ? '(Exceeded)' : `(${capacityPercentage}%)`}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

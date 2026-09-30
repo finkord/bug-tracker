@@ -13,6 +13,8 @@ describe('UsersService - Root Administrator Protections', () => {
   let mockSavedFilterRepo: any;
   let mockGroupRepo: any;
   let mockUserGroupRepo: any;
+  let mockRedisService: any;
+  let mockSeaweedFsService: any;
 
   const mockAdminUser: User = Object.assign(new User(), {
     id: 1,
@@ -85,11 +87,25 @@ describe('UsersService - Root Administrator Protections', () => {
       })) as unknown as Repository<UserGroup>['createQueryBuilder'],
     };
 
+    mockRedisService = {
+      get: vi.fn(),
+      set: vi.fn(),
+      del: vi.fn(),
+    };
+
+    mockSeaweedFsService = {
+      uploadFile: vi.fn(),
+      getFileBuffer: vi.fn(),
+      deleteFile: vi.fn(),
+    };
+
     service = new UsersService(
       mockUserRepo as Repository<User>,
       mockSavedFilterRepo as Repository<SavedFilter>,
       mockGroupRepo as Repository<Group>,
       mockUserGroupRepo as Repository<UserGroup>,
+      mockRedisService,
+      mockSeaweedFsService,
     );
   });
 
@@ -302,6 +318,123 @@ describe('UsersService - Root Administrator Protections', () => {
       await service.deleteSavedFilter(10, 3);
 
       expect(mockSavedFilterRepo.remove).toHaveBeenCalledWith(existing);
+    });
+  });
+
+  describe('Preferences Synchronization', () => {
+    it('should return preferences for a user', async () => {
+      mockUserRepo.findOne.mockResolvedValue({
+        id: 10,
+        preferences: { theme: 'light', showCollapsedLabels: true },
+      });
+
+      const prefs = await service.getPreferences(10);
+      expect(prefs).toEqual({ theme: 'light', showCollapsedLabels: true });
+    });
+
+    it('should update preferences and persist them to database', async () => {
+      mockUserRepo.findOne.mockResolvedValue({
+        id: 10,
+        preferences: { theme: 'dark' },
+      });
+      mockUserRepo.update.mockResolvedValue({ affected: 1 });
+
+      const updated = await service.updatePreferences(10, { showCollapsedLabels: true });
+
+      expect(mockUserRepo.update).toHaveBeenCalledWith(10, {
+        preferences: { theme: 'dark', showCollapsedLabels: true },
+      });
+      expect(updated).toEqual({ theme: 'dark', showCollapsedLabels: true });
+    });
+  });
+
+  describe('Avatar Upload to SeaweedFS', () => {
+    it('should upload image file to SeaweedFS and update avatarUrl', async () => {
+      mockSeaweedFsService.uploadFile.mockResolvedValue({
+        fid: '3,01a2b3c4',
+        url: 'http://localhost:8080/3,01a2b3c4',
+      });
+      mockUserRepo.update.mockResolvedValue({ affected: 1 });
+      mockUserRepo.findOne.mockResolvedValue({
+        id: 10,
+        avatarUrl: '/api/v1/users/avatar/3,01a2b3c4',
+      });
+
+      const file = {
+        originalname: 'profile.png',
+        buffer: Buffer.from('fake-png-data'),
+        mimetype: 'image/png',
+        size: 1024,
+      };
+
+      const result = await service.uploadAvatarFile(10, file);
+
+      expect(mockSeaweedFsService.uploadFile).toHaveBeenCalledWith(file);
+      expect(mockUserRepo.update).toHaveBeenCalledWith(10, {
+        avatarUrl: '/api/v1/users/avatar/3,01a2b3c4',
+      });
+      expect(result.avatarUrl).toBe('/api/v1/users/avatar/3,01a2b3c4');
+    });
+
+    it('should reject unsupported file MIME types', async () => {
+      const file = {
+        originalname: 'malicious.exe',
+        buffer: Buffer.from('MZ...'),
+        mimetype: 'application/x-msdownload',
+        size: 1024,
+      };
+
+      await expect(service.uploadAvatarFile(10, file)).rejects.toThrow();
+    });
+  });
+
+  describe('getSystemStats (SQL Aggregation & Redis Caching)', () => {
+    it('should return cached stats when present in Redis', async () => {
+      const cachedStats = {
+        totalUsers: 100,
+        activeUsers: 85,
+        blockedUsers: 5,
+        twoFactorAdoptionCount: 60,
+        twoFactorPercentage: 60,
+        roleBreakdown: { ADMIN: 10, USER: 90 },
+      };
+      mockRedisService.get.mockResolvedValue(JSON.stringify(cachedStats));
+
+      const stats = await service.getSystemStats();
+
+      expect(mockRedisService.get).toHaveBeenCalledWith('admin:system_stats');
+      expect(stats).toEqual(cachedStats);
+    });
+
+    it('should execute SQL aggregation and cache in Redis when cache misses', async () => {
+      mockRedisService.get.mockResolvedValue(null);
+      mockUserRepo.query = vi.fn().mockResolvedValue([
+        {
+          totalUsers: '50',
+          activeUsers: '45',
+          blockedUsers: '2',
+          twoFactorAdoptionCount: '30',
+          adminCount: '5',
+          userCount: '45',
+        },
+      ]);
+
+      const stats = await service.getSystemStats();
+
+      expect(mockUserRepo.query).toHaveBeenCalledWith(
+        expect.stringContaining('COUNT(*)::int AS "totalUsers"'),
+      );
+      expect(stats.totalUsers).toBe(50);
+      expect(stats.activeUsers).toBe(45);
+      expect(stats.blockedUsers).toBe(2);
+      expect(stats.twoFactorAdoptionCount).toBe(30);
+      expect(stats.twoFactorPercentage).toBe(60);
+      expect(stats.roleBreakdown).toEqual({ ADMIN: 5, USER: 45 });
+      expect(mockRedisService.set).toHaveBeenCalledWith(
+        'admin:system_stats',
+        expect.any(String),
+        60,
+      );
     });
   });
 });

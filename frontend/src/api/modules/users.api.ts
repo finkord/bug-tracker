@@ -1,5 +1,5 @@
-import { request } from '../http.js';
-import type { UserProfile, AssigneeUser, LoginAuditLogItem, SystemRole } from '../types/auth.types.js';
+import { request, API_BASE_URL } from '../http.js';
+import type { UserProfile, AssigneeUser, LoginAuditLogItem, SystemRole, AuthTokens } from '../types/auth.types.js';
 import type { SavedFilterItem } from '../types/worklogs.types.js';
 
 export const usersApi = {
@@ -9,6 +9,66 @@ export const usersApi = {
     request<{ message: string; avatarUrl: string }>('/users/me/avatar', {
       method: 'PATCH',
       body: JSON.stringify({ avatarUrl }),
+    }),
+
+  uploadAvatar: async (file: File): Promise<{ message: string; avatarUrl: string }> => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    let token = localStorage.getItem('accessToken');
+
+    let res = await fetch(`${API_BASE_URL}/users/me/avatar/upload`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+
+    if (res.status === 401) {
+      const refreshToken = localStorage.getItem('refreshToken');
+      if (refreshToken) {
+        try {
+          const refreshRes = await fetch(`${API_BASE_URL}/auth/refresh`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refreshToken }),
+          });
+          if (refreshRes.ok) {
+            const data: AuthTokens = await refreshRes.json();
+            if (data.accessToken) {
+              localStorage.setItem('accessToken', data.accessToken);
+              token = data.accessToken;
+            }
+            if (data.refreshToken) {
+              localStorage.setItem('refreshToken', data.refreshToken);
+            }
+            res = await fetch(`${API_BASE_URL}/users/me/avatar/upload`, {
+              method: 'POST',
+              credentials: 'include',
+              headers: token ? { Authorization: `Bearer ${token}` } : {},
+              body: formData,
+            });
+          }
+        } catch {
+          // ignore refresh failure
+        }
+      }
+    }
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to upload avatar file');
+    }
+
+    return res.json();
+  },
+
+  getPreferences: () => request<Record<string, unknown>>('/users/me/preferences'),
+
+  updatePreferences: (preferences: Record<string, unknown>) =>
+    request<Record<string, unknown>>('/users/me/preferences', {
+      method: 'PATCH',
+      body: JSON.stringify(preferences),
     }),
 
   getSavedFilters: () => request<SavedFilterItem[]>('/users/me/filters'),

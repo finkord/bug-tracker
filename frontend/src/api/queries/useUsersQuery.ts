@@ -12,6 +12,7 @@ export const userKeys = {
   auditLogs: (page?: number, limit?: number) =>
     [...userKeys.all, 'audit-logs', { page, limit }] as const,
   savedFilters: () => [...userKeys.all, 'saved-filters'] as const,
+  preferences: () => [...userKeys.all, 'preferences'] as const,
 };
 
 export function useUsersQuery(params?: {
@@ -201,3 +202,33 @@ export function useDeleteUserMutation() {
     },
   });
 }
+
+export function useUserPreferencesQuery() {
+  return useQuery({
+    queryKey: userKeys.preferences(),
+    queryFn: () => api.getPreferences(),
+  });
+}
+
+export function useUpdateUserPreferencesMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (prefs: Record<string, unknown>) => api.updatePreferences(prefs),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(userKeys.preferences(), updated);
+      queryClient.invalidateQueries({ queryKey: userKeys.profile() });
+    },
+  });
+}
+
+export function useUploadAvatarMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => api.uploadAvatar(file),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: userKeys.profile() });
+      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
+    },
+  });
+}
+

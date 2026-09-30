@@ -52,6 +52,10 @@ export class User {
   @Column({ name: 'avatar_url', type: 'varchar', length: 500, nullable: true })
   avatarUrl: string | null;
 
+  // Cross-device user interface & theme preferences (persisted JSON)
+  @Column({ name: 'preferences', type: 'jsonb', default: () => "'{}'" })
+  preferences: Record<string, any>;
+
   // Account activation status and token
   @Column({ name: 'is_activated', type: 'boolean', default: false })
   isActivated: boolean;

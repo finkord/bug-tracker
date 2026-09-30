@@ -18,9 +18,13 @@ import { IssueSecurityGrant } from '../rbac/entities/issue-security-grant.entity
 import { Sprint } from '../sprints/entities/sprint.entity.js';
 import { SeedService } from './seed.service.js';
 import { SystemInitService } from './system-init.service.js';
+import { SystemBannerService } from './system-banner.service.js';
+import { SystemBannerController } from './system-banner.controller.js';
+import { EventsModule } from '../events/events.module.js';
 
 @Module({
   imports: [
+    EventsModule,
     TypeOrmModule.forFeature([
       User,
       Project,
@@ -40,8 +44,8 @@ import { SystemInitService } from './system-init.service.js';
       IssueSecurityGrant,
     ]),
   ],
-  controllers: [],
-  providers: [SeedService, SystemInitService],
-  exports: [SeedService, SystemInitService],
+  controllers: [SystemBannerController],
+  providers: [SeedService, SystemInitService, SystemBannerService],
+  exports: [SeedService, SystemInitService, SystemBannerService],
 })
 export class AdminModule {}

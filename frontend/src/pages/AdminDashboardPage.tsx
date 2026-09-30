@@ -1,24 +1,29 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   AdminUsersTab,
   AdminRbacTab,
   AdminSecurityLogsTab,
   AdminProjectsTab,
+  AdminTeamsTab,
+  AdminBroadcastBannerCard,
 } from '../components/admin/index.js';
 import {
   Tabs,
   TabsList,
   TabsTrigger,
+  Button,
 } from '../components/ui/index.js';
 import {
   Users,
   ShieldCheck,
   FolderGit2,
   ShieldAlert,
+  UsersRound,
+  Megaphone,
 } from 'lucide-react';
 
-type AdminTab = 'users' | 'rbac' | 'security' | 'projects';
+type AdminTab = 'users' | 'rbac' | 'teams' | 'security' | 'projects';
 
 interface AdminDashboardPageProps {
   defaultTab?: AdminTab;
@@ -28,9 +33,10 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
   defaultTab = 'users',
 }) => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const [showBroadcastControl, setShowBroadcastControl] = useState(false);
   const queryTab = searchParams.get('tab') as AdminTab | null;
   const activeTab: AdminTab =
-    queryTab && ['users', 'rbac', 'security', 'projects'].includes(queryTab)
+    queryTab && ['users', 'rbac', 'teams', 'security', 'projects'].includes(queryTab)
       ? queryTab
       : defaultTab;
 
@@ -52,12 +58,29 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
                 Administration & System Center
               </h1>
               <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-0.5">
-                Global governance, dual-layer RBAC authority, user identity management, and security audit telemetry.
+                Global governance, dual-layer RBAC authority, user identity management, scrum teams, and security telemetry.
               </p>
             </div>
           </div>
         </div>
+
+        <Button
+          variant={showBroadcastControl ? 'filled' : 'outline'}
+          size="sm"
+          onClick={() => setShowBroadcastControl(!showBroadcastControl)}
+          className="gap-2 text-xs shrink-0"
+        >
+          <Megaphone className="w-3.5 h-3.5" />
+          <span>{showBroadcastControl ? 'Hide Broadcast Panel' : 'Broadcast Announcement'}</span>
+        </Button>
       </div>
+
+      {/* Broadcast Announcement Control Panel */}
+      {showBroadcastControl && (
+        <div className="animate-in fade-in duration-200">
+          <AdminBroadcastBannerCard />
+        </div>
+      )}
 
       {/* Primary Navigation Tabs */}
       <Tabs value={activeTab} onValueChange={handleTabChange}>
@@ -84,6 +107,15 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
             <span>Access Control & RBAC</span>
           </TabsTrigger>
           <TabsTrigger
+            value="teams"
+            variant="pills"
+            size="sm"
+            className="text-xs font-bold gap-2 px-3.5 py-2 rounded-xl"
+          >
+            <UsersRound className="w-3.5 h-3.5" />
+            <span>Scrum Teams</span>
+          </TabsTrigger>
+          <TabsTrigger
             value="security"
             variant="pills"
             size="sm"
@@ -108,9 +140,11 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
       <div className="pt-2 w-full">
         {activeTab === 'users' && <AdminUsersTab />}
         {activeTab === 'rbac' && <AdminRbacTab />}
+        {activeTab === 'teams' && <AdminTeamsTab />}
         {activeTab === 'security' && <AdminSecurityLogsTab />}
         {activeTab === 'projects' && <AdminProjectsTab />}
       </div>
     </div>
   );
 };
+
