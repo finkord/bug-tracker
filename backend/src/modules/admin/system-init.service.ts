@@ -2,6 +2,7 @@ import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as argon2 from 'argon2';
+import { ARGON2_OPTIONS } from '../auth/constants/argon2.constants.js';
 import { User, SystemRole } from '../users/entities/user.entity.js';
 import { Group } from '../rbac/entities/group.entity.js';
 import { UserGroup } from '../rbac/entities/user-group.entity.js';
@@ -182,15 +183,19 @@ export class SystemInitService implements OnApplicationBootstrap {
     groups: Record<string, Group>,
   ): Promise<PermissionScheme> {
     const schemeName = 'Default Software Scheme';
-    let scheme = await this.schemeRepository.findOne({ where: { name: schemeName } });
+    let scheme = await this.schemeRepository.findOne({ where: { isDefault: true } });
+    if (!scheme) {
+      scheme = await this.schemeRepository.findOne({ where: { name: schemeName } });
+    }
 
     if (!scheme) {
       scheme = this.schemeRepository.create({
         name: schemeName,
         description: 'Standard agile software development permission matrix for engineering spaces',
+        isDefault: true,
       });
       scheme = await this.schemeRepository.save(scheme);
-      this.logger.log(`Created permission scheme: ${scheme.name}`);
+      this.logger.log(`Created default permission scheme: ${scheme.name}`);
 
       const grantsToCreate: Partial<PermissionGrant>[] = [];
 
@@ -251,6 +256,10 @@ export class SystemInitService implements OnApplicationBootstrap {
       }
 
       this.logger.log(`Created ${grantsToCreate.length} permission grants for ${schemeName}`);
+    } else if (!scheme.isDefault) {
+      scheme.isDefault = true;
+      scheme = await this.schemeRepository.save(scheme);
+      this.logger.log(`Marked permission scheme as default: ${scheme.name}`);
     }
 
     return scheme;
@@ -338,12 +347,7 @@ export class SystemInitService implements OnApplicationBootstrap {
         ? await argon2.verify(admin.passwordHash, rawPassword).catch(() => false)
         : false;
       if (!matches && (options?.adminPassword || process.env.INITIAL_ADMIN_PASSWORD)) {
-        admin.passwordHash = await argon2.hash(rawPassword, {
-          type: argon2.argon2id,
-          memoryCost: 65536,
-          timeCost: 3,
-          parallelism: 4,
-        });
+        admin.passwordHash = await argon2.hash(rawPassword, ARGON2_OPTIONS);
         updated = true;
         this.logger.log(`Synchronized administrator password with configured INITIAL_ADMIN_PASSWORD`);
       }
@@ -391,12 +395,7 @@ export class SystemInitService implements OnApplicationBootstrap {
       }
     }
 
-    const passwordHash = await argon2.hash(rawPassword, {
-      type: argon2.argon2id,
-      memoryCost: 65536,
-      timeCost: 3,
-      parallelism: 4,
-    });
+    const passwordHash = await argon2.hash(rawPassword, ARGON2_OPTIONS);
 
     admin = this.userRepository.create({
       fullName,

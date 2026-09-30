@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Group } from '../entities/group.entity.js';
 import { UserGroup } from '../entities/user-group.entity.js';
 import { ProjectRole } from '../entities/project-role.entity.js';
@@ -16,6 +16,7 @@ import { IssueSecurityLevel } from '../entities/issue-security-level.entity.js';
 import { IssueSecurityGrant } from '../entities/issue-security-grant.entity.js';
 import { Project } from '../../projects/entities/project.entity.js';
 import { User, SystemRole } from '../../users/entities/user.entity.js';
+import { PermissionEvaluatorService } from './permission-evaluator.service.js';
 
 @Injectable()
 export class RbacService {
@@ -42,6 +43,8 @@ export class RbacService {
     private readonly projectRepository: Repository<Project>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @Optional()
+    private readonly permissionEvaluator?: PermissionEvaluatorService,
   ) {}
 
   // ================= GROUPS =================
@@ -85,7 +88,9 @@ export class RbacService {
     if (existing) return existing;
 
     const userGroup = this.userGroupRepository.create({ groupId, userId });
-    return this.userGroupRepository.save(userGroup);
+    const saved = await this.userGroupRepository.save(userGroup);
+    await this.permissionEvaluator?.invalidatePermissions(undefined, userId);
+    return saved;
   }
 
   async removeUserFromGroup(groupId: number, userId: number): Promise<void> {
@@ -113,6 +118,7 @@ export class RbacService {
     }
 
     await this.userGroupRepository.delete({ groupId, userId });
+    await this.permissionEvaluator?.invalidatePermissions(undefined, userId);
   }
 
   // ================= PROJECT ROLES =================
@@ -180,11 +186,17 @@ export class RbacService {
       groupId: payload.actorType === ProjectActorType.GROUP ? payload.groupId : null,
     });
 
-    return this.roleActorRepository.save(actor);
+    const saved = await this.roleActorRepository.save(actor);
+    await this.permissionEvaluator?.invalidatePermissions(projectId, payload.userId);
+    return saved;
   }
 
   async removeActorFromProjectRole(actorId: number): Promise<void> {
+    const actor = await this.roleActorRepository.findOne({ where: { id: actorId } });
     await this.roleActorRepository.delete(actorId);
+    if (actor) {
+      await this.permissionEvaluator?.invalidatePermissions(actor.projectId, actor.userId || undefined);
+    }
   }
 
   // ================= PERMISSION SCHEMES =================
@@ -239,11 +251,14 @@ export class RbacService {
       groupId: payload.grantType === PermissionGrantType.GROUP ? payload.groupId : null,
     });
 
-    return this.grantRepository.save(grant);
+    const saved = await this.grantRepository.save(grant);
+    await this.permissionEvaluator?.invalidatePermissions();
+    return saved;
   }
 
   async removePermissionGrant(grantId: number): Promise<void> {
     await this.grantRepository.delete(grantId);
+    await this.permissionEvaluator?.invalidatePermissions();
   }
 
   async assignPermissionSchemeToProject(projectId: number, schemeId: number): Promise<Project> {
@@ -254,7 +269,9 @@ export class RbacService {
     if (!scheme) throw new NotFoundException('Permission scheme not found');
 
     project.permissionSchemeId = scheme.id;
-    return this.projectRepository.save(project);
+    const saved = await this.projectRepository.save(project);
+    await this.permissionEvaluator?.invalidatePermissions(projectId);
+    return saved;
   }
 
   // ================= ISSUE SECURITY SCHEMES =================

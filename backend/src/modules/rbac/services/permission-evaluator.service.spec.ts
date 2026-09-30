@@ -20,6 +20,7 @@ describe('PermissionEvaluatorService', () => {
   let mockSchemeRepo: any;
   let mockGrantRepo: any;
   let mockSecurityGrantRepo: any;
+  let mockRedisService: any;
 
   const mockUser: User = {
     id: 10,
@@ -65,6 +66,13 @@ describe('PermissionEvaluatorService', () => {
     };
     mockProjectRepo = {
       findOne: vi.fn().mockResolvedValue(mockProject),
+      createQueryBuilder: vi.fn(() => ({
+        distinct: vi.fn().mockReturnThis(),
+        select: vi.fn().mockReturnThis(),
+        leftJoin: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        getRawMany: vi.fn().mockResolvedValue([{ id: '100' }]),
+      })),
     };
     mockIssueRepo = {
       findOne: vi.fn().mockResolvedValue(mockIssue),
@@ -81,6 +89,12 @@ describe('PermissionEvaluatorService', () => {
     mockSecurityGrantRepo = {
       find: vi.fn().mockResolvedValue([]),
     };
+    mockRedisService = {
+      get: vi.fn().mockResolvedValue(null),
+      set: vi.fn().mockResolvedValue('OK'),
+      del: vi.fn().mockResolvedValue(1),
+      delPattern: vi.fn().mockResolvedValue(1),
+    };
     service = new PermissionEvaluatorService(
       mockUserRepo,
       mockProjectRepo,
@@ -90,6 +104,7 @@ describe('PermissionEvaluatorService', () => {
       mockSchemeRepo,
       mockGrantRepo,
       mockSecurityGrantRepo,
+      mockRedisService,
     );
   });
 
@@ -239,4 +254,89 @@ describe('PermissionEvaluatorService', () => {
       expect(actualResult).toBe(false);
     });
   });
+
+  describe('getEffectivePermissions - Optimization and Caching', () => {
+    it('should return cached permissions if available in Redis without database queries', async () => {
+      // Arrange
+      const cached = { [ProjectPermission.BROWSE_PROJECTS]: true, [ProjectPermission.CREATE_ISSUES]: false };
+      mockRedisService.get.mockResolvedValue(JSON.stringify(cached));
+
+      // Act
+      const result = await service.getEffectivePermissions(10, 100);
+
+      // Assert
+      expect(result).toEqual(cached);
+      expect(mockRedisService.get).toHaveBeenCalledWith('rbac:user:10:project:100');
+      expect(mockUserRepo.findOne).not.toHaveBeenCalled();
+      expect(mockGrantRepo.find).not.toHaveBeenCalled();
+    });
+
+    it('should evaluate permissions in a single batch query on cache miss and store in Redis', async () => {
+      // Arrange
+      mockRedisService.get.mockResolvedValue(null);
+      mockGrantRepo.find.mockResolvedValue([
+        {
+          id: 1,
+          schemeId: 5,
+          permission: ProjectPermission.BROWSE_PROJECTS,
+          grantType: PermissionGrantType.ANY_LOGGED_IN,
+        },
+      ]);
+
+      // Act
+      const result = await service.getEffectivePermissions(10, 100);
+
+      // Assert
+      expect(result[ProjectPermission.BROWSE_PROJECTS]).toBe(true);
+      expect(result[ProjectPermission.ADMINISTER_PROJECTS]).toBe(false);
+      // Verify single query for scheme grants rather than 18 individual queries
+      expect(mockGrantRepo.find).toHaveBeenCalledTimes(1);
+      expect(mockGrantRepo.find).toHaveBeenCalledWith({ where: { schemeId: 5 } });
+      expect(mockRedisService.set).toHaveBeenCalledWith(
+        'rbac:user:10:project:100',
+        expect.any(String),
+        300,
+      );
+    });
+
+    it('should return all true for user with SystemRole.ADMIN', async () => {
+      // Arrange
+      mockUser.systemRole = SystemRole.ADMIN;
+      mockRedisService.get.mockResolvedValue(null);
+
+      // Act
+      const result = await service.getEffectivePermissions(10, 100);
+
+      // Assert
+      expect(result[ProjectPermission.BROWSE_PROJECTS]).toBe(true);
+      expect(result[ProjectPermission.ADMINISTER_PROJECTS]).toBe(true);
+      expect(result[ProjectPermission.DELETE_ISSUES]).toBe(true);
+      expect(mockGrantRepo.find).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getAccessibleProjectIds - Multi-Tenant Isolation', () => {
+    it('should return ALL for SystemRole.ADMIN', async () => {
+      // Arrange
+      mockUser.systemRole = SystemRole.ADMIN;
+
+      // Act
+      const result = await service.getAccessibleProjectIds(10, ProjectPermission.BROWSE_PROJECTS);
+
+      // Assert
+      expect(result).toBe('ALL');
+    });
+
+    it('should return project IDs where standard user has permission', async () => {
+      // Arrange
+      mockUser.systemRole = SystemRole.USER;
+
+      // Act
+      const result = await service.getAccessibleProjectIds(10, ProjectPermission.BROWSE_PROJECTS);
+
+      // Assert
+      expect(result).toEqual([100]);
+    });
+  });
 });
+

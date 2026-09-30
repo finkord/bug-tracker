@@ -33,8 +33,8 @@ export class ProjectsController {
     summary: 'List all software projects',
     description: 'Retrieves all registered projects with issue count aggregations.',
   })
-  async findAll() {
-    return this.projectsService.findAll();
+  async findAll(@CurrentUser() user: User) {
+    return this.projectsService.findAll(user);
   }
 
   @Get(':id')

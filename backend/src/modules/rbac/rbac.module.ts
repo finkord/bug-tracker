@@ -17,10 +17,12 @@ import { RbacService } from './services/rbac.service.js';
 import { PermissionEvaluatorService } from './services/permission-evaluator.service.js';
 import { ProjectPermissionGuard } from './guards/project-permission.guard.js';
 import { RbacController } from './rbac.controller.js';
+import { RedisModule } from '../redis/redis.module.js';
 
 @Module({
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),
+    RedisModule,
     TypeOrmModule.forFeature([
       Group,
       UserGroup,

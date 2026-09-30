@@ -3,6 +3,7 @@ import {
   CanActivate,
   ExecutionContext,
   ForbiddenException,
+  NotFoundException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { DataSource } from 'typeorm';
@@ -49,6 +50,14 @@ export class ProjectPermissionGuard implements CanActivate {
     }
     if (request.params?.issueId) {
       issueId = Number(request.params.issueId);
+      const issue = await this.dataSource.getRepository(Issue).findOne({
+        where: { id: issueId },
+        select: { id: true, projectId: true },
+      });
+      if (!issue) {
+        throw new NotFoundException(`Issue #${issueId} not found`);
+      }
+      projectId = issue.projectId;
     }
 
     // 3. Resolve from :id depending on route context
@@ -60,6 +69,14 @@ export class ProjectPermissionGuard implements CanActivate {
       } else if (url.includes('/issues/')) {
         if (/^\d+$/.test(rawId)) {
           issueId = Number(rawId);
+          const issue = await this.dataSource.getRepository(Issue).findOne({
+            where: { id: issueId },
+            select: { id: true, projectId: true },
+          });
+          if (!issue) {
+            throw new NotFoundException(`Issue #${issueId} not found`);
+          }
+          projectId = issue.projectId;
         } else {
           const keyMatch = rawId.match(/^([a-zA-Z0-9_-]+)-(\d+)$/);
           if (keyMatch) {
@@ -72,10 +89,11 @@ export class ProjectPermissionGuard implements CanActivate {
               relations: { project: true },
               select: { id: true, projectId: true },
             });
-            if (issue) {
-              issueId = issue.id;
-              projectId = issue.projectId;
+            if (!issue) {
+              throw new NotFoundException(`Issue "${rawId}" not found`);
             }
+            issueId = issue.id;
+            projectId = issue.projectId;
           }
         }
       }
@@ -87,14 +105,16 @@ export class ProjectPermissionGuard implements CanActivate {
         where: { id: issueId },
         select: { id: true, projectId: true },
       });
-      if (issue) {
-        projectId = issue.projectId;
+      if (!issue) {
+        throw new NotFoundException(`Issue #${issueId} not found`);
       }
+      projectId = issue.projectId;
     }
 
-
-    if (!projectId) {
-      return true;
+    if (!projectId || Number.isNaN(projectId)) {
+      throw new ForbiddenException(
+        'Unable to resolve project context required for project permission check',
+      );
     }
 
     const hasAccess = await this.permissionEvaluator.hasPermission({
