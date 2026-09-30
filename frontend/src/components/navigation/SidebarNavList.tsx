@@ -7,7 +7,6 @@ import {
   Clock,
   SlidersHorizontal,
   ShieldAlert,
-  Shield,
   LogIn,
   UserPlus,
   KeyRound,

@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import type { GroupItem, UserProfile } from '../../../api/client';
 import { Avatar } from '../../common/Avatar';
-import { Badge, Button } from '../../ui';
+import { Badge, Button, Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../../ui';
 
 interface GroupsManagerTabProps {
   readonly groups: GroupItem[];
@@ -177,21 +177,26 @@ export const GroupsManagerTab: React.FC<GroupsManagerTabProps> = ({
               </div>
 
               {/* Add user to group */}
-              <div className="flex items-center gap-2">
-                <select
-                  value={selectedUserIdToAdd}
-                  onChange={(e) => setSelectedUserIdToAdd(e.target.value ? Number(e.target.value) : '')}
-                  className="px-3 py-1.5 text-xs rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)]/40 text-[var(--md-sys-color-on-surface)] focus:outline-hidden"
-                >
-                  <option value="">Select engineer to add...</option>
-                  {allUsers
-                    .filter((u) => !selectedGroup.userGroups?.some((ug) => ug.userId === u.id))
-                    .map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.fullName} ({u.email})
-                      </option>
-                    ))}
-                </select>
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <div className="w-56 sm:w-64">
+                  <Select
+                    value={selectedUserIdToAdd ? String(selectedUserIdToAdd) : ''}
+                    onValueChange={(val) => setSelectedUserIdToAdd(val ? Number(val) : '')}
+                  >
+                    <SelectTrigger size="sm" className="h-9 text-xs rounded-xl bg-[var(--md-sys-color-surface)]">
+                      <SelectValue placeholder="Select engineer to add..." />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      {allUsers
+                        .filter((u) => !selectedGroup.userGroups?.some((ug) => ug.userId === u.id))
+                        .map((u) => (
+                          <SelectItem key={u.id} value={String(u.id)}>
+                            <span className="truncate">{u.fullName} ({u.email})</span>
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <Button
                   variant="filled"
                   size="sm"

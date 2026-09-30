@@ -8,7 +8,7 @@ import {
   useProjectRolesQuery,
   useGroupsQuery,
 } from '../../../api/queries';
-import { Badge, Button, Card, Modal, Input } from '../../ui';
+import { Badge, Button, Card, Modal, Input, Select, SelectGroup, SelectTrigger, SelectValue, SelectContent, SelectLabel, SelectItem } from '../../ui';
 
 interface PermissionSchemesTabProps {
   readonly permissionSchemes: PermissionSchemeItem[];
@@ -442,21 +442,24 @@ export const PermissionSchemesTab: React.FC<PermissionSchemesTabProps> = ({
               <label className="block text-xs font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase mb-1">
                 Permission Action
               </label>
-              <select
-                value={selectedPermission}
-                onChange={(e) => setSelectedPermission(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] font-mono"
-              >
-                {PERMISSION_GROUPS.map((group) => (
-                  <optgroup key={group.category} label={group.category}>
-                    {group.permissions.map((p) => (
-                      <option key={p.key} value={p.key}>
-                        {p.label} ({p.key})
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
+              <Select value={selectedPermission} onValueChange={setSelectedPermission}>
+                <SelectTrigger className="h-10 text-xs rounded-xl bg-[var(--md-sys-color-surface)] font-mono">
+                  <SelectValue placeholder="Select permission action..." />
+                </SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {PERMISSION_GROUPS.map((group) => (
+                    <SelectGroup key={group.category}>
+                      <SelectLabel>{group.category}</SelectLabel>
+                      {group.permissions.map((p) => (
+                        <SelectItem key={p.key} value={p.key} className="text-xs">
+                          <span className="font-sans font-medium">{p.label}</span>{' '}
+                          <span className="font-mono text-[10px] text-[var(--md-sys-color-outline)]">({p.key})</span>
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Grant Type */}
@@ -464,18 +467,22 @@ export const PermissionSchemesTab: React.FC<PermissionSchemesTabProps> = ({
               <label className="block text-xs font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase mb-1">
                 Grant Recipient Type
               </label>
-              <select
+              <Select
                 value={selectedGrantType}
-                onChange={(e) => setSelectedGrantType(e.target.value as any)}
-                className="w-full px-3 py-2 text-xs rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)]"
+                onValueChange={(val) => setSelectedGrantType(val as typeof selectedGrantType)}
               >
-                <option value="ROLE">Project Role</option>
-                <option value="GROUP">Directory Group</option>
-                <option value="LEAD">Project Lead (Dynamic)</option>
-                <option value="REPORTER">Issue Reporter (Dynamic)</option>
-                <option value="ASSIGNEE">Issue Assignee (Dynamic)</option>
-                <option value="ANY_LOGGED_IN">All Authenticated Users</option>
-              </select>
+                <SelectTrigger className="h-10 text-xs rounded-xl bg-[var(--md-sys-color-surface)]">
+                  <SelectValue placeholder="Select recipient type..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ROLE">Project Role</SelectItem>
+                  <SelectItem value="GROUP">Directory Group</SelectItem>
+                  <SelectItem value="LEAD">Project Lead (Dynamic)</SelectItem>
+                  <SelectItem value="REPORTER">Issue Reporter (Dynamic)</SelectItem>
+                  <SelectItem value="ASSIGNEE">Issue Assignee (Dynamic)</SelectItem>
+                  <SelectItem value="ANY_LOGGED_IN">All Authenticated Users</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Conditional Role Select */}
@@ -484,18 +491,21 @@ export const PermissionSchemesTab: React.FC<PermissionSchemesTabProps> = ({
                 <label className="block text-xs font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase mb-1">
                   Target Project Role
                 </label>
-                <select
-                  value={selectedRoleId}
-                  onChange={(e) => setSelectedRoleId(Number(e.target.value))}
-                  className="w-full px-3 py-2 text-xs rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)]"
-                  required
+                <Select
+                  value={selectedRoleId ? String(selectedRoleId) : ''}
+                  onValueChange={(val) => setSelectedRoleId(val ? Number(val) : '')}
                 >
-                  {roles.map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="h-10 text-xs rounded-xl bg-[var(--md-sys-color-surface)]">
+                    <SelectValue placeholder="Select project role..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roles.map((r) => (
+                      <SelectItem key={r.id} value={String(r.id)}>
+                        {r.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             )}
 
@@ -505,18 +515,21 @@ export const PermissionSchemesTab: React.FC<PermissionSchemesTabProps> = ({
                 <label className="block text-xs font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase mb-1">
                   Target Directory Group
                 </label>
-                <select
-                  value={selectedGroupId}
-                  onChange={(e) => setSelectedGroupId(Number(e.target.value))}
-                  className="w-full px-3 py-2 text-xs rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)]"
-                  required
+                <Select
+                  value={selectedGroupId ? String(selectedGroupId) : ''}
+                  onValueChange={(val) => setSelectedGroupId(val ? Number(val) : '')}
                 >
-                  {groups.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="h-10 text-xs rounded-xl bg-[var(--md-sys-color-surface)]">
+                    <SelectValue placeholder="Select directory group..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {groups.map((g) => (
+                      <SelectItem key={g.id} value={String(g.id)}>
+                        {g.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             )}
 

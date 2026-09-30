@@ -22,7 +22,7 @@ import {
   useAssignPermissionSchemeToProjectMutation,
 } from '../api/queries';
 import { Avatar } from '../components/common/Avatar';
-import { Badge, Button } from '../components/ui';
+import { Badge, Button, Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../components/ui';
 
 export const ProjectSettingsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -190,17 +190,23 @@ export const ProjectSettingsPage: React.FC = () => {
           </div>
         </div>
 
-        <select
-          value={project.permissionSchemeId || ''}
-          onChange={(e) => handleSchemeChange(Number(e.target.value))}
-          className="px-3.5 py-2 text-xs rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)]/40 text-[var(--md-sys-color-on-surface)] font-medium focus:outline-hidden cursor-pointer"
-        >
-          {permissionSchemes.map((scheme) => (
-            <option key={scheme.id} value={scheme.id}>
-              {scheme.name} {scheme.isDefault ? '(Default)' : ''}
-            </option>
-          ))}
-        </select>
+        <div className="w-full sm:w-72">
+          <Select
+            value={project.permissionSchemeId ? String(project.permissionSchemeId) : ''}
+            onValueChange={(val) => val && handleSchemeChange(Number(val))}
+          >
+            <SelectTrigger className="h-9 text-xs rounded-xl bg-[var(--md-sys-color-surface)]">
+              <SelectValue placeholder="Select permission scheme..." />
+            </SelectTrigger>
+            <SelectContent>
+              {permissionSchemes.map((scheme) => (
+                <SelectItem key={scheme.id} value={String(scheme.id)}>
+                  {scheme.name} {scheme.isDefault ? '(Default)' : ''}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Project Roles & Members Table */}
@@ -286,31 +292,41 @@ export const ProjectSettingsPage: React.FC = () => {
                     </div>
 
                     {actorType === 'USER' ? (
-                      <select
-                        value={selectedUserId}
-                        onChange={(e) => setSelectedUserId(e.target.value ? Number(e.target.value) : '')}
-                        className="px-3 py-1.5 text-xs rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)]/40 text-[var(--md-sys-color-on-surface)] focus:outline-hidden cursor-pointer"
-                      >
-                        <option value="">Select engineer...</option>
-                        {allUsers.map((u) => (
-                          <option key={u.id} value={u.id}>
-                            {u.fullName} ({u.email})
-                          </option>
-                        ))}
-                      </select>
+                      <div className="w-56 sm:w-64">
+                        <Select
+                          value={selectedUserId ? String(selectedUserId) : ''}
+                          onValueChange={(val) => setSelectedUserId(val ? Number(val) : '')}
+                        >
+                          <SelectTrigger size="sm" className="h-9 text-xs rounded-xl bg-[var(--md-sys-color-surface)]">
+                            <SelectValue placeholder="Select engineer..." />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-60">
+                            {allUsers.map((u) => (
+                              <SelectItem key={u.id} value={String(u.id)}>
+                                <span className="truncate">{u.fullName} ({u.email})</span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     ) : (
-                      <select
-                        value={selectedGroupId}
-                        onChange={(e) => setSelectedGroupId(e.target.value ? Number(e.target.value) : '')}
-                        className="px-3 py-1.5 text-xs rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)]/40 text-[var(--md-sys-color-on-surface)] focus:outline-hidden cursor-pointer"
-                      >
-                        <option value="">Select directory group...</option>
-                        {allGroups.map((g) => (
-                          <option key={g.id} value={g.id}>
-                            {g.name} ({g.description || 'Group'})
-                          </option>
-                        ))}
-                      </select>
+                      <div className="w-56 sm:w-64">
+                        <Select
+                          value={selectedGroupId ? String(selectedGroupId) : ''}
+                          onValueChange={(val) => setSelectedGroupId(val ? Number(val) : '')}
+                        >
+                          <SelectTrigger size="sm" className="h-9 text-xs rounded-xl bg-[var(--md-sys-color-surface)]">
+                            <SelectValue placeholder="Select directory group..." />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-60">
+                            {allGroups.map((g) => (
+                              <SelectItem key={g.id} value={String(g.id)}>
+                                <span className="truncate">{g.name} ({g.description || 'Group'})</span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     )}
 
                     <Button
