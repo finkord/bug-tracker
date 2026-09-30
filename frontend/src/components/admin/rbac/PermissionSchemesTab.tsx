@@ -82,6 +82,12 @@ export const PermissionSchemesTab: React.FC<PermissionSchemesTabProps> = ({
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [selectedSchemeFilter, setSelectedSchemeFilter] = useState<number | 'ALL'>('ALL');
+
+  const displayedSchemes =
+    selectedSchemeFilter === 'ALL'
+      ? permissionSchemes
+      : permissionSchemes.filter((s) => s.id === selectedSchemeFilter);
 
   const { data: roles = [] } = useProjectRolesQuery();
   const { data: groups = [] } = useGroupsQuery();
@@ -218,9 +224,47 @@ export const PermissionSchemesTab: React.FC<PermissionSchemesTabProps> = ({
         </Button>
       </div>
 
+      {/* Scheme Quick Switcher Bar */}
+      {permissionSchemes.length > 1 && (
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+          <button
+            type="button"
+            onClick={() => setSelectedSchemeFilter('ALL')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+              selectedSchemeFilter === 'ALL'
+                ? 'bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] shadow-xs'
+                : 'bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]'
+            }`}
+          >
+            All Schemes ({permissionSchemes.length})
+          </button>
+          {permissionSchemes.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => setSelectedSchemeFilter(s.id)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                selectedSchemeFilter === s.id
+                  ? 'bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] shadow-xs'
+                  : 'bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]'
+              }`}
+            >
+              <span>{s.name}</span>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                selectedSchemeFilter === s.id
+                  ? 'bg-[var(--md-sys-color-on-primary)]/20 text-[var(--md-sys-color-on-primary)]'
+                  : 'bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-on-surface-variant)]'
+              }`}>
+                {s.grants?.length || 0}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Schemes List */}
       <div className="space-y-6">
-        {permissionSchemes.map((scheme) => (
+        {displayedSchemes.map((scheme) => (
           <Card
             key={scheme.id}
             variant="filled"

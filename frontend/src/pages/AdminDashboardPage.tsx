@@ -2,10 +2,10 @@ import React from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   AdminUsersTab,
+  AdminRbacTab,
   AdminSecurityLogsTab,
   AdminProjectsTab,
 } from '../components/admin/index.js';
-import { AdminRbacPage } from './AdminRbacPage.js';
 import {
   Tabs,
   TabsList,
@@ -105,9 +105,9 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
       </Tabs>
 
       {/* Tab Contents */}
-      <div className="pt-2">
+      <div className="pt-2 w-full">
         {activeTab === 'users' && <AdminUsersTab />}
-        {activeTab === 'rbac' && <AdminRbacPage />}
+        {activeTab === 'rbac' && <AdminRbacTab />}
         {activeTab === 'security' && <AdminSecurityLogsTab />}
         {activeTab === 'projects' && <AdminProjectsTab />}
       </div>

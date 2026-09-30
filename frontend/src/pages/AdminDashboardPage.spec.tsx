@@ -5,12 +5,9 @@ import { AdminDashboardPage } from './AdminDashboardPage';
 
 vi.mock('../components/admin/index.js', () => ({
   AdminUsersTab: () => <div data-testid="mock-users-tab">Users Tab Content</div>,
+  AdminRbacTab: () => <div data-testid="mock-rbac-tab">RBAC Tab Content</div>,
   AdminSecurityLogsTab: () => <div data-testid="mock-security-tab">Security Tab Content</div>,
   AdminProjectsTab: () => <div data-testid="mock-projects-tab">Projects Tab Content</div>,
-}));
-
-vi.mock('./AdminRbacPage.js', () => ({
-  AdminRbacPage: () => <div data-testid="mock-rbac-tab">RBAC Tab Content</div>,
 }));
 
 describe('AdminDashboardPage', () => {

@@ -56,9 +56,9 @@ export const GroupsManagerTab: React.FC<GroupsManagerTabProps> = ({
   );
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start w-full">
       {/* Group List Sidebar */}
-      <div className="bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 rounded-3xl p-5 space-y-4 shadow-xs">
+      <div className="lg:col-span-4 xl:col-span-3 bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 rounded-3xl p-5 space-y-4 shadow-xs">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-bold text-[var(--md-sys-color-on-surface)]">
             Directory Groups
@@ -158,7 +158,7 @@ export const GroupsManagerTab: React.FC<GroupsManagerTabProps> = ({
       </div>
 
       {/* Group Details & Members List */}
-      <div className="lg:col-span-2 bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 rounded-3xl p-6 space-y-6 shadow-xs">
+      <div className="lg:col-span-8 xl:col-span-9 bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 rounded-3xl p-6 space-y-6 shadow-xs">
         {selectedGroup ? (
           <>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--md-sys-color-outline-variant)]/20 pb-4">
@@ -211,7 +211,7 @@ export const GroupsManagerTab: React.FC<GroupsManagerTabProps> = ({
               </h3>
 
               {selectedGroup.userGroups && selectedGroup.userGroups.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
                   {selectedGroup.userGroups.map((ug) => (
                     <div
                       key={ug.id}

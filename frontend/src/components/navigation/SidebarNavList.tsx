@@ -146,14 +146,7 @@ export const SidebarNavList: React.FC<SidebarNavListProps> = ({
       shortLabel: 'Admin',
       path: '/admin',
       icon: ShieldAlert,
-      activeMatch: (p) => p === '/admin' || p.startsWith('/admin/dashboard'),
-    });
-    navItems.push({
-      label: 'Access & RBAC',
-      shortLabel: 'RBAC',
-      path: '/admin/rbac',
-      icon: Shield,
-      activeMatch: (p) => p.startsWith('/admin/rbac'),
+      activeMatch: (p) => p.startsWith('/admin'),
     });
   }
 
