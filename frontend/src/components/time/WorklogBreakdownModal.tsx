@@ -7,6 +7,7 @@ import {
   Clock,
   ExternalLink,
   PlusCircle,
+  Trash2,
 } from 'lucide-react';
 
 interface WorklogBreakdownModalProps {
@@ -14,6 +15,7 @@ interface WorklogBreakdownModalProps {
   isOpen: boolean;
   onClose: () => void;
   onLogMoreWork: (issueId?: number) => void;
+  onDeleteWorklog?: (issueId: number, worklogId: number) => void;
 }
 
 export const WorklogBreakdownModal: React.FC<WorklogBreakdownModalProps> = ({
@@ -21,6 +23,7 @@ export const WorklogBreakdownModal: React.FC<WorklogBreakdownModalProps> = ({
   isOpen,
   onClose,
   onLogMoreWork,
+  onDeleteWorklog,
 }) => {
   if (!data) return null;
 
@@ -130,17 +133,36 @@ export const WorklogBreakdownModal: React.FC<WorklogBreakdownModalProps> = ({
                     <div />
                   )}
 
-                  {log.issueKey && (
-                    <Link to={`/issues/${log.issueKey}`}>
+                  <div className="flex items-center gap-1.5">
+                    {onDeleteWorklog && log.issueId && (
                       <Button
                         variant="ghost"
                         size="xs"
-                        rightIcon={<ExternalLink className="w-3.5 h-3.5" />}
+                        onClick={() => {
+                          if (window.confirm(`Delete worklog of ${log.timeSpentHours}h?`)) {
+                            onDeleteWorklog(log.issueId!, log.id);
+                          }
+                        }}
+                        className="text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/30"
+                        title="Delete worklog"
+                        aria-label={`Delete worklog of ${log.timeSpentHours} hours`}
                       >
-                        Open Ticket Page
+                        <Trash2 className="w-3.5 h-3.5" />
                       </Button>
-                    </Link>
-                  )}
+                    )}
+
+                    {log.issueKey && (
+                      <Link to={`/issues/${log.issueKey}`}>
+                        <Button
+                          variant="ghost"
+                          size="xs"
+                          rightIcon={<ExternalLink className="w-3.5 h-3.5" />}
+                        >
+                          Open Ticket Page
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
                 </div>
               </div>
             ))

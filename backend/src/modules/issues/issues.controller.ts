@@ -61,30 +61,36 @@ export class IssuesController {
 
   @Get('worklogs/me')
   @ApiOperation({
-    summary: 'Get worklogs logged by the current authenticated user',
+    summary: 'Get worklogs logged by the current authenticated user with server-side pagination',
   })
-  async getMyWorklogs(@CurrentUser() user: User) {
-    return this.issuesService.getMyWorklogs(user.id);
+  async getMyWorklogs(
+    @CurrentUser() user: User,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.issuesService.getMyWorklogs(user.id, page, limit);
   }
 
-  
   @Get('worklogs/matrix')
   @ApiOperation({
     summary: 'Get team timesheet matrix with daily hours per worker',
   })
   async getTimesheetMatrix(
+    @CurrentUser() user: User,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
+    @Query('projectId') projectId?: number,
+    @Query('userId') userId?: number,
   ) {
-    return this.issuesService.getTeamTimesheetMatrix(startDate, endDate);
+    return this.issuesService.getTeamTimesheetMatrix(user, startDate, endDate, projectId, userId);
   }
 
   @Get('worklogs/stats')
   @ApiOperation({
     summary: 'Get aggregated time tracking statistics across projects and users',
   })
-  async getWorklogStats() {
-    return this.issuesService.getWorklogStats();
+  async getWorklogStats(@CurrentUser() user: User) {
+    return this.issuesService.getWorklogStats(user);
   }
 
   @Get(':id')
@@ -202,6 +208,19 @@ export class IssuesController {
   })
   async getWorklogs(@Param('id', ParseIntPipe) id: number) {
     return this.issuesService.getWorklogs(id);
+  }
+
+  @Delete(':id/worklogs/:worklogId')
+  @RequireProjectPermission(ProjectPermission.LOG_WORK)
+  @ApiOperation({
+    summary: 'Delete a worklog and adjust issue logged hours atomically',
+  })
+  async deleteWorklog(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('worklogId', ParseIntPipe) worklogId: number,
+    @CurrentUser() user: User,
+  ) {
+    return this.issuesService.deleteWorklog(id, worklogId, user);
   }
 
   @Post(':id/attachments')

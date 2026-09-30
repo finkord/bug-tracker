@@ -24,6 +24,14 @@ export interface WorklogItem {
   };
 }
 
+export interface PaginatedWorklogsResponse {
+  items: WorklogItem[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export interface SavedFilterItem {
   id: number;
   userId: number;

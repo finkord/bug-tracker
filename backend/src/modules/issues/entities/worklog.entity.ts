@@ -11,6 +11,10 @@ import { User } from '../../users/entities/user.entity.js';
 import type { Issue } from './issue.entity.js';
 
 @Entity('worklogs')
+@Index(['dateLogged'])
+@Index(['userId', 'dateLogged'])
+@Index(['issueId', 'dateLogged'])
+@Index(['createdAt'])
 export class Worklog {
   @PrimaryGeneratedColumn('increment')
   id: number;

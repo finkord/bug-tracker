@@ -120,10 +120,16 @@ export class SystemInitService implements OnApplicationBootstrap {
         CREATE INDEX IF NOT EXISTS idx_issues_search_vector
         ON issues USING gin (to_tsvector('english', coalesce(title, '') || ' ' || coalesce(description, '')));
       `);
-      this.logger.log('Verified PostgreSQL GIN search vector index.');
+      await this.dataSource.query(`
+        CREATE INDEX IF NOT EXISTS idx_worklogs_date_logged ON worklogs (date_logged);
+        CREATE INDEX IF NOT EXISTS idx_worklogs_user_date ON worklogs (user_id, date_logged);
+        CREATE INDEX IF NOT EXISTS idx_worklogs_issue_date ON worklogs (issue_id, date_logged);
+        CREATE INDEX IF NOT EXISTS idx_worklogs_created_at ON worklogs (created_at);
+      `);
+      this.logger.log('Verified PostgreSQL GIN search vector and worklog indexes.');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      this.logger.warn(`Could not ensure GIN index on issues: ${msg}`);
+      this.logger.warn(`Could not ensure database indexes: ${msg}`);
     }
   }
 

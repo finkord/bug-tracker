@@ -77,6 +77,14 @@ export interface MyWorklogItemDto {
   } | null;
 }
 
+export interface PaginatedWorklogsResponseDto {
+  items: MyWorklogItemDto[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export interface IssueAttachmentDto {
   id: number;
   filename: string;

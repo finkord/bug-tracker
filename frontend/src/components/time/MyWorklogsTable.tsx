@@ -10,26 +10,42 @@ import {
   PlusCircle,
   FileText,
   ExternalLink,
-  Sparkles,
   Inbox,
   Loader2,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 interface MyWorklogsTableProps {
   worklogs: WorklogItem[];
+  total?: number;
+  page?: number;
+  limit?: number;
+  totalPages?: number;
+  onPageChange?: (page: number) => void;
+  onLimitChange?: (limit: number) => void;
   loading?: boolean;
   onOpenLogModal: () => void;
+  onDeleteWorklog?: (issueId: number, worklogId: number) => void;
 }
 
 export const MyWorklogsTable: React.FC<MyWorklogsTableProps> = ({
   worklogs,
+  total = 0,
+  page = 1,
+  limit = 20,
+  totalPages = 1,
+  onPageChange,
+  onLimitChange,
   loading = false,
   onOpenLogModal,
+  onDeleteWorklog,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
 
-  // Filter and sort worklogs
+  // Filter and sort worklogs locally for client-level fast query/sort
   const filteredWorklogs = useMemo(() => {
     let result = [...worklogs];
 
@@ -62,14 +78,17 @@ export const MyWorklogsTable: React.FC<MyWorklogsTableProps> = ({
     return set.size;
   }, [filteredWorklogs]);
 
+  const fromRecord = total > 0 ? (page - 1) * limit + 1 : 0;
+  const toRecord = total > 0 ? Math.min(page * limit, total) : 0;
+
   return (
     <div className="space-y-4">
       {/* Top summary stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="p-3.5 rounded-2xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)] flex items-center justify-between">
+        <div className="p-3.5 rounded-2xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)] flex items-center justify-between shadow-2xs">
           <div>
             <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)]">
-              Total Hours Logged
+              Page Hours Logged
             </div>
             <div className="text-2xl font-black text-[var(--md-sys-color-primary)] mt-0.5">
               {totalFilteredHours.toFixed(1)}h
@@ -80,13 +99,13 @@ export const MyWorklogsTable: React.FC<MyWorklogsTableProps> = ({
           </div>
         </div>
 
-        <div className="p-3.5 rounded-2xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)] flex items-center justify-between">
+        <div className="p-3.5 rounded-2xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)] flex items-center justify-between shadow-2xs">
           <div>
             <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)]">
-              Logged Entries
+              Total Logged Entries
             </div>
             <div className="text-2xl font-black text-[var(--md-sys-color-on-surface)] mt-0.5">
-              {filteredWorklogs.length}
+              {total || filteredWorklogs.length}
             </div>
           </div>
           <div className="w-10 h-10 rounded-xl bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] flex items-center justify-center">
@@ -94,7 +113,7 @@ export const MyWorklogsTable: React.FC<MyWorklogsTableProps> = ({
           </div>
         </div>
 
-        <div className="p-3.5 rounded-2xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)] flex items-center justify-between">
+        <div className="p-3.5 rounded-2xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)] flex items-center justify-between shadow-2xs">
           <div>
             <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)]">
               Active Tickets
@@ -104,30 +123,34 @@ export const MyWorklogsTable: React.FC<MyWorklogsTableProps> = ({
             </div>
           </div>
           <div className="w-10 h-10 rounded-xl bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] flex items-center justify-center">
-            <Sparkles className="w-5 h-5" />
+            <Calendar className="w-5 h-5" />
           </div>
         </div>
       </div>
 
-      {/* Action and Filter Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 p-3 rounded-2xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--md-sys-color-on-surface-variant)] pointer-events-none" />
-          <input
-            type="text"
-            placeholder="Filter worklogs by ticket, note, date..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full text-xs pl-9 pr-3 py-2 rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] placeholder:text-[var(--md-sys-color-on-surface-variant)] focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)]"
-          />
+      {/* Filter and Action Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-2xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]">
+        <div className="flex items-center gap-2 flex-1 min-w-[240px] max-w-md">
+          <div className="relative w-full">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--md-sys-color-on-surface-variant)]" />
+            <input
+              type="text"
+              placeholder="Search worklogs by ticket, note, date..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              aria-label="Search worklogs"
+              className="w-full pl-9 pr-3 py-1.5 rounded-xl text-xs bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] placeholder:text-[var(--md-sys-color-on-surface-variant)]/60 focus:outline-none focus:ring-1 focus:ring-[var(--md-sys-color-primary)]"
+            />
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
           <Button
-            variant="tonal"
+            variant="outline"
             size="sm"
             onClick={() => setSortOrder((prev) => (prev === 'desc' ? 'asc' : 'desc'))}
             leftIcon={<ArrowUpDown className="w-3.5 h-3.5" />}
+            aria-label={`Sort by date ${sortOrder === 'desc' ? 'ascending' : 'descending'}`}
           >
             {sortOrder === 'desc' ? 'Newest First' : 'Oldest First'}
           </Button>
@@ -137,53 +160,48 @@ export const MyWorklogsTable: React.FC<MyWorklogsTableProps> = ({
             size="sm"
             onClick={onOpenLogModal}
             leftIcon={<PlusCircle className="w-3.5 h-3.5" />}
+            aria-label="Log work on ticket"
           >
-            Log Work
+            Log Time
           </Button>
         </div>
       </div>
 
-      {/* Main Table / Card List */}
+      {/* Loading state */}
       {loading ? (
-        <div className="p-12 text-center rounded-2xl bg-[var(--md-sys-color-surface-container-lowest)] border border-[var(--md-sys-color-outline-variant)]">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto text-[var(--md-sys-color-primary)] mb-2" />
-          <p className="text-xs text-[var(--md-sys-color-on-surface-variant)]">Loading worklogs...</p>
+        <div className="p-12 text-center rounded-2xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]">
+          <Loader2 className="w-8 h-8 animate-spin text-[var(--md-sys-color-primary)] mx-auto mb-2" />
+          <p className="text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)]">
+            Loading worklog records...
+          </p>
         </div>
       ) : filteredWorklogs.length === 0 ? (
-        <div className="p-12 text-center rounded-2xl bg-[var(--md-sys-color-surface-container-lowest)] border border-[var(--md-sys-color-outline-variant)]">
-          <Inbox className="w-12 h-12 mx-auto text-[var(--md-sys-color-on-surface-variant)] opacity-40 mb-3" />
-          <h3 className="text-base font-bold text-[var(--md-sys-color-on-surface)]">
+        <div className="p-12 text-center rounded-2xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]">
+          <Inbox className="w-10 h-10 text-[var(--md-sys-color-on-surface-variant)]/40 mx-auto mb-3" />
+          <h3 className="text-sm font-bold text-[var(--md-sys-color-on-surface)]">
             No worklogs found
           </h3>
-          <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] max-w-sm mx-auto mt-1 mb-4">
+          <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-1 max-w-sm mx-auto">
             {searchQuery
-              ? 'No worklog records match your filter criteria. Try clearing the search query.'
-              : 'You have not logged any work hours yet. Start by logging time against any ticket.'}
+              ? `No worklog records matching "${searchQuery}"`
+              : 'You have not logged any time yet. Click "Log Time" to record your first entry.'}
           </p>
-          <Button
-            variant="filled"
-            size="sm"
-            onClick={onOpenLogModal}
-            leftIcon={<PlusCircle className="w-4 h-4" />}
-          >
-            Log Work Now
-          </Button>
         </div>
       ) : (
-        <div className="rounded-2xl border border-[var(--md-sys-color-outline-variant)] bg-[var(--md-sys-color-surface)] overflow-hidden shadow-xs">
+        <div className="rounded-2xl border border-[var(--md-sys-color-outline-variant)] bg-[var(--md-sys-color-surface)] overflow-hidden shadow-2xs">
           {/* Desktop Table View */}
           <div className="hidden sm:block overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider font-bold border-b border-[var(--md-sys-color-outline-variant)]">
-                <tr>
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-[var(--md-sys-color-outline-variant)] bg-[var(--md-sys-color-surface-container-low)] text-[var(--md-sys-color-on-surface-variant)] font-bold">
                   <th className="py-3 px-4">Date</th>
+                  <th className="py-3 px-4">Hours</th>
                   <th className="py-3 px-4">Ticket</th>
-                  <th className="py-3 px-4">Time Spent</th>
-                  <th className="py-3 px-4">Work Description</th>
+                  <th className="py-3 px-4">Description</th>
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)]">
+              <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)]/40">
                 {filteredWorklogs.map((log) => {
                   const dateObj = new Date(log.dateLogged);
                   const formattedDate = dateObj.toLocaleDateString(undefined, {
@@ -196,45 +214,43 @@ export const MyWorklogsTable: React.FC<MyWorklogsTableProps> = ({
                   return (
                     <tr
                       key={log.id}
-                      className="hover:bg-[var(--md-sys-color-surface-container-highest)]/40 transition-colors group"
+                      className="hover:bg-[var(--md-sys-color-surface-container-highest)]/30 transition-colors"
                     >
                       {/* Date */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
+                      <td className="py-3.5 px-4 font-semibold text-[var(--md-sys-color-on-surface)] whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           <Calendar className="w-3.5 h-3.5 text-[var(--md-sys-color-on-surface-variant)]" />
-                          <span className="font-semibold text-[var(--md-sys-color-on-surface)]">
-                            {formattedDate}
-                          </span>
+                          <span>{formattedDate}</span>
                         </div>
                       </td>
 
-                      {/* Issue */}
-                      <td className="py-3.5 px-4">
-                        {log.issue ? (
-                          <Link
-                            to={`/issues/${log.issue.key}`}
-                            className="inline-flex items-center gap-2 group/link hover:underline"
-                          >
-                            <span className="px-1.5 py-0.5 rounded-md text-[11px] font-black bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] group-hover/link:bg-[var(--md-sys-color-primary)] group-hover/link:text-[var(--md-sys-color-on-primary)] transition-colors">
-                              {log.issue.key}
-                            </span>
-                            <span className="font-medium text-[var(--md-sys-color-on-surface)] line-clamp-1 max-w-[240px]">
-                              {log.issue.title}
-                            </span>
-                          </Link>
-                        ) : (
-                          <span className="text-[var(--md-sys-color-on-surface-variant)] italic">
-                            Unspecified Ticket
-                          </span>
-                        )}
+                      {/* Hours */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-black text-xs bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] shadow-2xs">
+                          <Clock className="w-3.5 h-3.5" />
+                          <span>{log.timeSpentHours}h</span>
+                        </span>
                       </td>
 
-                      {/* Time Spent */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-black bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] border border-[var(--md-sys-color-primary)]/20">
-                          <Clock className="w-3 h-3" />
-                          {log.timeSpentHours}h
-                        </span>
+                      {/* Ticket */}
+                      <td className="py-3.5 px-4">
+                        {log.issue ? (
+                          <div className="flex items-center gap-2">
+                            <Link
+                              to={`/issues/${log.issue.key}`}
+                              className="font-mono font-bold text-[var(--md-sys-color-primary)] hover:underline shrink-0"
+                            >
+                              {log.issue.key}
+                            </Link>
+                            <span className="text-[var(--md-sys-color-on-surface)] font-medium truncate max-w-xs">
+                              {log.issue.title}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-[var(--md-sys-color-on-surface-variant)] italic">
+                            Unassigned Issue
+                          </span>
+                        )}
                       </td>
 
                       {/* Description */}
@@ -252,17 +268,37 @@ export const MyWorklogsTable: React.FC<MyWorklogsTableProps> = ({
 
                       {/* Action */}
                       <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                        {log.issue && (
-                          <Link to={`/issues/${log.issue.key}`}>
+                        <div className="flex items-center justify-end gap-1.5">
+                          {onDeleteWorklog && log.issue && (
                             <Button
                               variant="ghost"
                               size="xs"
-                              rightIcon={<ExternalLink className="w-3 h-3" />}
+                              onClick={() => {
+                                if (window.confirm(`Delete worklog of ${log.timeSpentHours}h on ${log.issue?.key}?`)) {
+                                  onDeleteWorklog(log.issue!.id, log.id);
+                                }
+                              }}
+                              className="text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/30"
+                              title="Delete worklog"
+                              aria-label={`Delete worklog of ${log.timeSpentHours} hours`}
                             >
-                              View Ticket
+                              <Trash2 className="w-3 h-3" />
                             </Button>
-                          </Link>
-                        )}
+                          )}
+
+                          {log.issue && (
+                            <Link to={`/issues/${log.issue.key}`}>
+                              <Button
+                                variant="ghost"
+                                size="xs"
+                                rightIcon={<ExternalLink className="w-3 h-3" />}
+                                aria-label={`View ticket ${log.issue.key}`}
+                              >
+                                View Ticket
+                              </Button>
+                            </Link>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -290,10 +326,27 @@ export const MyWorklogsTable: React.FC<MyWorklogsTableProps> = ({
                         {formattedDate}
                       </span>
                     </div>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-black bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)]">
-                      <Clock className="w-3 h-3" />
-                      {log.timeSpentHours}h
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-black bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)]">
+                        <Clock className="w-3 h-3" />
+                        {log.timeSpentHours}h
+                      </span>
+
+                      {onDeleteWorklog && log.issue && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm(`Delete worklog of ${log.timeSpentHours}h?`)) {
+                              onDeleteWorklog(log.issue!.id, log.id);
+                            }
+                          }}
+                          className="p-1 rounded-md text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/30 transition-colors"
+                          aria-label="Delete worklog"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {log.issue && (
@@ -321,6 +374,57 @@ export const MyWorklogsTable: React.FC<MyWorklogsTableProps> = ({
               );
             })}
           </div>
+
+          {/* Server-Side Pagination Footer */}
+          {onPageChange && totalPages > 1 && (
+            <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--md-sys-color-outline-variant)] bg-[var(--md-sys-color-surface-container-low)] text-xs text-[var(--md-sys-color-on-surface-variant)] flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <span>
+                  Showing <strong className="text-[var(--md-sys-color-on-surface)]">{fromRecord}</strong> to{' '}
+                  <strong className="text-[var(--md-sys-color-on-surface)]">{toRecord}</strong> of{' '}
+                  <strong className="text-[var(--md-sys-color-on-surface)]">{total}</strong> worklogs
+                </span>
+                {onLimitChange && (
+                  <select
+                    value={limit}
+                    onChange={(e) => onLimitChange(Number(e.target.value))}
+                    aria-label="Rows per page"
+                    className="ml-2 px-2 py-1 rounded-lg bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] focus:outline-none"
+                  >
+                    <option value={10}>10 / page</option>
+                    <option value={20}>20 / page</option>
+                    <option value={50}>50 / page</option>
+                  </select>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="xs"
+                  disabled={page <= 1}
+                  onClick={() => onPageChange(page - 1)}
+                  leftIcon={<ChevronLeft className="w-3.5 h-3.5" />}
+                  aria-label="Previous page"
+                >
+                  Prev
+                </Button>
+                <span className="px-2 font-semibold text-[var(--md-sys-color-on-surface)]">
+                  Page {page} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="xs"
+                  disabled={page >= totalPages}
+                  onClick={() => onPageChange(page + 1)}
+                  rightIcon={<ChevronRight className="w-3.5 h-3.5" />}
+                  aria-label="Next page"
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -76,7 +76,12 @@ erDiagram
      - Unique B-Tree: `(projectId, issueNum)`.
      - GIN Index: `idx_issues_search_vector` on `to_tsvector('english', coalesce(title, '') || ' ' || coalesce(description, ''))` for sub-5ms full-text search.
 6. **[`Worklog`](../../backend/src/modules/issues/entities/worklog.entity.ts)**:
-   - Tracks logged engineering effort: `id`, `issueId`, `authorId`, `timeSpentSeconds`, `startedAt`, `description`.
+   - Tracks logged engineering effort: `id`, `issueId` (FK to `issues`), `userId` (FK to `users`), `timeSpentHours` (numeric 5,2), `dateLogged` (date string `YYYY-MM-DD`), `description` (varchar 500, nullable), `createdAt`.
+   - Indexes:
+     - B-Tree: `idx_worklogs_date_logged` on `dateLogged`.
+     - Composite B-Tree: `idx_worklogs_user_date` on `(userId, dateLogged)`.
+     - Composite B-Tree: `idx_worklogs_issue_date` on `(issueId, dateLogged)`.
+     - B-Tree: `idx_worklogs_created_at` on `createdAt`.
 7. **[`Comment`](../../backend/src/modules/issues/entities/comment.entity.ts)**:
    - Threaded issue discussions: `id`, `issueId`, `authorId`, `body`, `createdAt`, `updatedAt`.
 8. **[`Attachment`](../../backend/src/modules/issues/entities/attachment.entity.ts)**:

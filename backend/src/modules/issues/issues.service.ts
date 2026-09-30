@@ -23,6 +23,7 @@ import type {
   IssueLinkItemDto,
   CommentItemDto,
   PaginatedIssuesResponseDto,
+  PaginatedWorklogsResponseDto,
 } from './dto/issue-response.dto.js';
 
 /**
@@ -141,24 +142,40 @@ export class IssuesService {
   }
 
   /**
-   * Retrieves recent worklogs logged by the current user.
+   * Deletes a worklog and broadcasts updated issue data.
    */
-  async getMyWorklogs(userId: number, limit = 20): Promise<MyWorklogItemDto[]> {
-    return this.issueWorklogService.getMyWorklogs(userId, limit);
+  async deleteWorklog(issueId: number, worklogId: number, user: User): Promise<{ success: boolean; issue: IssueDetailDto }> {
+    await this.issueWorklogService.deleteWorklog(issueId, worklogId, user);
+    const updated = await this.issueCoreService.findById(issueId);
+    await this.eventsGateway.broadcastIssueUpdated(updated);
+    return { success: true, issue: updated };
   }
 
   /**
-   * Retrieves team timesheet matrix.
+   * Retrieves recent worklogs logged by the current user with server-side pagination.
    */
-  async getTeamTimesheetMatrix(startDate?: string, endDate?: string): Promise<TimesheetMatrixResponseDto> {
-    return this.issueWorklogService.getTeamTimesheetMatrix(startDate, endDate);
+  async getMyWorklogs(userId: number, page?: number, limit?: number): Promise<PaginatedWorklogsResponseDto> {
+    return this.issueWorklogService.getMyWorklogs(userId, page, limit);
   }
 
   /**
-   * Retrieves aggregated worklog statistics.
+   * Retrieves team timesheet matrix with project isolation.
    */
-  async getWorklogStats(): Promise<WorklogStatsResponseDto> {
-    return this.issueWorklogService.getWorklogStats();
+  async getTeamTimesheetMatrix(
+    user: User,
+    startDate?: string,
+    endDate?: string,
+    projectId?: number,
+    userId?: number,
+  ): Promise<TimesheetMatrixResponseDto> {
+    return this.issueWorklogService.getTeamTimesheetMatrix(user, startDate, endDate, projectId, userId);
+  }
+
+  /**
+   * Retrieves aggregated worklog statistics scoped by accessible projects.
+   */
+  async getWorklogStats(user: User): Promise<WorklogStatsResponseDto> {
+    return this.issueWorklogService.getWorklogStats(user);
   }
 
   /**

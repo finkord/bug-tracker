@@ -3,6 +3,7 @@ import {
   useWorklogStatsQuery,
   useTeamTimesheetMatrixQuery,
   useMyWorklogsQuery,
+  useDeleteWorklogMutation,
   useIssuesQuery,
 } from '../api/queries';
 import type {
@@ -112,11 +113,28 @@ export const TimeTrackingPage: React.FC = () => {
     refetch: refetchMatrix,
   } = useTeamTimesheetMatrixQuery(dateRange.startDate, dateRange.endDate);
 
+  const [myLogsPage, setMyLogsPage] = useState<number>(1);
+  const [myLogsLimit, setMyLogsLimit] = useState<number>(20);
+
   const {
-    data: myLogs = [],
+    data: myLogsData,
     isLoading: myLogsLoading,
     refetch: refetchMyLogs,
-  } = useMyWorklogsQuery();
+  } = useMyWorklogsQuery(myLogsPage, myLogsLimit);
+  const myLogs = myLogsData?.items ?? [];
+  const myLogsTotal = myLogsData?.total ?? 0;
+  const myLogsTotalPages = myLogsData?.totalPages ?? 1;
+
+  const deleteWorklogMutation = useDeleteWorklogMutation();
+
+  const handleDeleteWorklog = async (issueId: number, worklogId: number) => {
+    try {
+      await deleteWorklogMutation.mutateAsync({ issueId, worklogId });
+      await handleRefresh();
+    } catch (err) {
+      console.error('Failed to delete worklog:', err);
+    }
+  };
 
   const {
     data: issuesData,
@@ -291,8 +309,18 @@ export const TimeTrackingPage: React.FC = () => {
         {activeTab === 'worklogs' && (
           <MyWorklogsTable
             worklogs={myLogs}
+            total={myLogsTotal}
+            page={myLogsPage}
+            limit={myLogsLimit}
+            totalPages={myLogsTotalPages}
+            onPageChange={setMyLogsPage}
+            onLimitChange={(lim) => {
+              setMyLogsLimit(lim);
+              setMyLogsPage(1);
+            }}
             loading={loading}
             onOpenLogModal={() => handleOpenLogWork(undefined)}
+            onDeleteWorklog={handleDeleteWorklog}
           />
         )}
       </div>
@@ -306,6 +334,7 @@ export const TimeTrackingPage: React.FC = () => {
           setBreakdownModalData(null);
         }}
         onLogMoreWork={(issueId) => handleOpenLogWork(issueId)}
+        onDeleteWorklog={handleDeleteWorklog}
       />
 
       {/* Global Log Work Modal */}

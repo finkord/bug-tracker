@@ -1,14 +1,17 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Worklog } from '../entities/worklog.entity.js';
 import { Issue } from '../entities/issue.entity.js';
-import { User } from '../../users/entities/user.entity.js';
+import { User, SystemRole } from '../../users/entities/user.entity.js';
 import { EventsGateway } from '../../events/events.gateway.js';
+import { PermissionEvaluatorService } from '../../rbac/services/permission-evaluator.service.js';
+import { ProjectPermission } from '../../rbac/entities/permission-grant.entity.js';
 import { LogWorkDto } from '../dto/log-work.dto.js';
 import type {
   WorklogItemDto,
   MyWorklogItemDto,
+  PaginatedWorklogsResponseDto,
   TimesheetMatrixResponseDto,
   WorklogStatsResponseDto,
   TimesheetMemberDto,
@@ -16,7 +19,7 @@ import type {
 } from '../dto/issue-response.dto.js';
 
 /**
- * Service responsible for work logging, time tracking, timesheet matrices, and analytics.
+ * Service responsible for work logging, atomic time tracking, timesheet matrices, and analytics.
  */
 @Injectable()
 export class IssueWorklogService {
@@ -27,34 +30,108 @@ export class IssueWorklogService {
     private readonly worklogRepository: Repository<Worklog>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly dataSource: DataSource,
     private readonly eventsGateway: EventsGateway,
+    private readonly permissionEvaluator: PermissionEvaluatorService,
   ) {}
 
   /**
-   * Logs hours spent on an issue and increments the issue's total logged hours.
+   * Logs hours spent on an issue and increments the issue's total logged hours atomically.
    */
   async logWork(issueId: number, user: User, dto: LogWorkDto): Promise<Worklog> {
-    const issue = await this.issueRepository.findOne({ where: { id: issueId } });
-    if (!issue) {
-      throw new NotFoundException(`Issue #${issueId} not found`);
-    }
-    const worklog = this.worklogRepository.create({
-      issueId,
-      userId: user.id,
-      timeSpentHours: dto.timeSpentHours,
-      dateLogged: dto.dateLogged || new Date().toISOString().split('T')[0],
-      description: dto.description?.trim() || null,
+    return await this.dataSource.transaction(async (manager) => {
+      const issue = await manager.findOne(Issue, { where: { id: issueId } });
+      if (!issue) {
+        throw new NotFoundException(`Issue #${issueId} not found`);
+      }
+
+      const hasPermission = await this.permissionEvaluator.hasPermission({
+        userId: user.id,
+        projectId: issue.projectId,
+        permission: ProjectPermission.LOG_WORK,
+      });
+      if (!hasPermission) {
+        throw new ForbiddenException('You do not have permission to log work on this project');
+      }
+
+      const hours = Number(Number(dto.timeSpentHours).toFixed(2));
+      const dateLogged = dto.dateLogged || new Date().toISOString().split('T')[0];
+
+      const worklog = manager.create(Worklog, {
+        issueId,
+        userId: user.id,
+        timeSpentHours: hours,
+        dateLogged,
+        description: dto.description?.trim() || null,
+      });
+      const savedWorklog = await manager.save(worklog);
+
+      // Atomic database update preventing race conditions
+      await manager
+        .createQueryBuilder()
+        .update(Issue)
+        .set({
+          loggedHours: () => `ROUND((COALESCE(logged_hours, 0) + ${hours})::numeric, 2)`,
+        })
+        .where('id = :issueId', { issueId })
+        .execute();
+
+      this.eventsGateway.broadcastWorklogAdded({
+        issueId,
+        projectId: issue.projectId,
+        worklog: savedWorklog,
+      });
+
+      return savedWorklog;
     });
-    await this.worklogRepository.save(worklog);
-    const currentLogged = issue.loggedHours || 0;
-    issue.loggedHours = Number((currentLogged + dto.timeSpentHours).toFixed(2));
-    await this.issueRepository.save(issue);
-    this.eventsGateway.broadcastWorklogAdded({
-      issueId,
-      projectId: issue.projectId,
-      worklog,
+  }
+
+  /**
+   * Deletes a worklog and decrements the issue's total logged hours atomically.
+   */
+  async deleteWorklog(
+    issueId: number,
+    worklogId: number,
+    user: User,
+  ): Promise<{ success: boolean; issueId: number; projectId: number }> {
+    return await this.dataSource.transaction(async (manager) => {
+      const worklog = await manager.findOne(Worklog, { where: { id: worklogId, issueId } });
+      if (!worklog) {
+        throw new NotFoundException(`Worklog #${worklogId} for Issue #${issueId} not found`);
+      }
+
+      const issue = await manager.findOne(Issue, { where: { id: issueId } });
+      if (!issue) {
+        throw new NotFoundException(`Issue #${issueId} not found`);
+      }
+
+      const isAuthor = worklog.userId === user.id;
+      const isSystemAdmin = user.systemRole === SystemRole.ADMIN;
+      const hasAdminPermission = await this.permissionEvaluator.hasPermission({
+        userId: user.id,
+        projectId: issue.projectId,
+        permission: ProjectPermission.ADMINISTER_PROJECTS,
+      });
+
+      if (!isAuthor && !isSystemAdmin && !hasAdminPermission) {
+        throw new ForbiddenException('You do not have permission to delete this worklog');
+      }
+
+      const hours = Number(Number(worklog.timeSpentHours).toFixed(2));
+      await manager.remove(worklog);
+
+      // Atomic database decrement preventing race conditions and keeping >= 0
+      await manager
+        .createQueryBuilder()
+        .update(Issue)
+        .set({
+          loggedHours: () => `GREATEST(ROUND((COALESCE(logged_hours, 0) - ${hours})::numeric, 2), 0)`,
+        })
+        .where('id = :issueId', { issueId })
+        .execute();
+
+      return { success: true, issueId: issue.id, projectId: issue.projectId };
     });
-    return worklog;
   }
 
   /**
@@ -83,19 +160,25 @@ export class IssueWorklogService {
   }
 
   /**
-   * Retrieves recent worklogs logged by the current user.
+   * Retrieves recent worklogs logged by the current user with server-side pagination.
    */
-  async getMyWorklogs(userId: number, limit = 20): Promise<MyWorklogItemDto[]> {
-    const logs = await this.worklogRepository
+  async getMyWorklogs(userId: number, page = 1, limit = 20): Promise<PaginatedWorklogsResponseDto> {
+    const pageNum = Math.max(1, Number(page) || 1);
+    const limitNum = Math.min(100, Math.max(1, Number(limit) || 20));
+    const offset = (pageNum - 1) * limitNum;
+
+    const [logs, total] = await this.worklogRepository
       .createQueryBuilder('worklog')
       .leftJoinAndSelect('worklog.issue', 'issue')
       .leftJoinAndSelect('issue.project', 'project')
       .where('worklog.userId = :userId', { userId })
-      .orderBy('worklog.createdAt', 'DESC')
-      .take(limit)
-      .getMany();
+      .orderBy('worklog.dateLogged', 'DESC')
+      .addOrderBy('worklog.createdAt', 'DESC')
+      .skip(offset)
+      .take(limitNum)
+      .getManyAndCount();
 
-    return logs.map((w) => ({
+    const items: MyWorklogItemDto[] = logs.map((w) => ({
       id: w.id,
       timeSpentHours: w.timeSpentHours,
       dateLogged: w.dateLogged,
@@ -112,26 +195,90 @@ export class IssueWorklogService {
           }
         : null,
     }));
+
+    return {
+      items,
+      total,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(total / limitNum) || 1,
+    };
   }
 
   /**
-   * Generates team timesheet matrix across dates.
+   * Generates team timesheet matrix across dates with clamped bounds and project scoping.
    */
-  async getTeamTimesheetMatrix(startDate?: string, endDate?: string): Promise<TimesheetMatrixResponseDto> {
+  async getTeamTimesheetMatrix(
+    user: User,
+    startDate?: string,
+    endDate?: string,
+    projectId?: number,
+    userId?: number,
+  ): Promise<TimesheetMatrixResponseDto> {
     const { startStr, endStr, days } = this.calculateDateRange(startDate, endDate);
+    const accessibleProjectIds = await this.permissionEvaluator.getAccessibleProjectIds(user.id);
+
+    if (accessibleProjectIds !== 'ALL' && accessibleProjectIds.length === 0) {
+      return {
+        startDate: startStr,
+        endDate: endStr,
+        days,
+        members: [],
+        dailyTotals: {},
+        grandTotal: 0,
+      };
+    }
+
+    if (projectId) {
+      if (accessibleProjectIds !== 'ALL' && !accessibleProjectIds.includes(projectId)) {
+        return {
+          startDate: startStr,
+          endDate: endStr,
+          days,
+          members: [],
+          dailyTotals: {},
+          grandTotal: 0,
+        };
+      }
+    }
+
     const users = await this.userRepository.find({
-      where: { isActivated: true, isBlocked: false },
+      where: userId ? { id: userId, isActivated: true, isBlocked: false } : { isActivated: true, isBlocked: false },
       order: { fullName: 'ASC' },
     });
-    const logs = await this.worklogRepository
+
+    const qb = this.worklogRepository
       .createQueryBuilder('worklog')
-      .leftJoinAndSelect('worklog.issue', 'issue')
-      .leftJoinAndSelect('issue.project', 'project')
+      .innerJoin('worklog.issue', 'issue')
+      .leftJoin('issue.project', 'project')
+      .select([
+        'worklog.id',
+        'worklog.userId',
+        'worklog.issueId',
+        'worklog.timeSpentHours',
+        'worklog.dateLogged',
+        'worklog.description',
+        'issue.id',
+        'issue.issueNum',
+        'issue.title',
+        'project.key',
+      ])
       .where('worklog.dateLogged >= :startStr AND worklog.dateLogged <= :endStr', {
         startStr,
         endStr,
-      })
-      .getMany();
+      });
+
+    if (projectId) {
+      qb.andWhere('issue.projectId = :projectId', { projectId });
+    } else if (accessibleProjectIds !== 'ALL') {
+      qb.andWhere('issue.projectId IN (:...accessibleProjectIds)', { accessibleProjectIds });
+    }
+
+    if (userId) {
+      qb.andWhere('worklog.userId = :userId', { userId });
+    }
+
+    const logs = await qb.getMany();
 
     const dailyTotals: Record<string, number> = {};
     for (const d of days) dailyTotals[d] = 0;
@@ -207,78 +354,112 @@ export class IssueWorklogService {
   }
 
   /**
-   * Retrieves aggregated time tracking analytics across projects and users.
+   * Retrieves aggregated time tracking analytics across projects and users via native PostgreSQL SQL aggregations.
+   * Completely avoids loading worklogs into Node.js heap memory (OOM prevention).
    */
-  async getWorklogStats(): Promise<WorklogStatsResponseDto> {
-    const allLogs = await this.worklogRepository
-      .createQueryBuilder('worklog')
-      .leftJoinAndSelect('worklog.issue', 'issue')
-      .leftJoinAndSelect('issue.project', 'project')
-      .leftJoinAndSelect('worklog.user', 'user')
-      .getMany();
-
-    const now = new Date();
-    const todayStr = now.toISOString().split('T')[0];
-    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-
-    let totalHoursLogged = 0;
-    let hoursLoggedToday = 0;
-    let hoursLoggedThisWeek = 0;
-
-    const projectMap: Record<number, { projectId: number; projectName: string; projectKey: string; totalHours: number }> = {};
-    const userMap: Record<number, { userId: number; fullName: string; email: string; avatarUrl: string | null; totalHours: number }> = {};
-
-    for (const log of allLogs) {
-      const hours = log.timeSpentHours || 0;
-      totalHoursLogged += hours;
-      if (log.dateLogged === todayStr) {
-        hoursLoggedToday += hours;
-      }
-      if (new Date(log.createdAt) >= sevenDaysAgo) {
-        hoursLoggedThisWeek += hours;
-      }
-      if (log.issue?.project) {
-        const p = log.issue.project;
-        if (!projectMap[p.id]) {
-          projectMap[p.id] = {
-            projectId: p.id,
-            projectName: p.name,
-            projectKey: p.key,
-            totalHours: 0,
-          };
-        }
-        projectMap[p.id].totalHours += hours;
-      }
-      if (log.user) {
-        const u = log.user;
-        if (!userMap[u.id]) {
-          userMap[u.id] = {
-            userId: u.id,
-            fullName: u.fullName,
-            email: u.email,
-            avatarUrl: u.avatarUrl || null,
-            totalHours: 0,
-          };
-        }
-        userMap[u.id].totalHours += hours;
-      }
+  async getWorklogStats(user: User): Promise<WorklogStatsResponseDto> {
+    const accessibleProjectIds = await this.permissionEvaluator.getAccessibleProjectIds(user.id);
+    if (accessibleProjectIds !== 'ALL' && accessibleProjectIds.length === 0) {
+      return {
+        totalHoursLogged: 0,
+        hoursLoggedToday: 0,
+        hoursLoggedThisWeek: 0,
+        byProject: [],
+        byUser: [],
+      };
     }
 
+    // 1. Scalar totals via SQL aggregation
+    const scalarQuery = this.worklogRepository
+      .createQueryBuilder('worklog')
+      .innerJoin('worklog.issue', 'issue')
+      .select([
+        'COALESCE(ROUND(SUM(worklog.timeSpentHours)::numeric, 2), 0)::float AS "totalHoursLogged"',
+        'COALESCE(ROUND(SUM(CASE WHEN worklog.dateLogged = CURRENT_DATE THEN worklog.timeSpentHours ELSE 0 END)::numeric, 2), 0)::float AS "hoursLoggedToday"',
+        'COALESCE(ROUND(SUM(CASE WHEN worklog.createdAt >= NOW() - INTERVAL \'7 days\' THEN worklog.timeSpentHours ELSE 0 END)::numeric, 2), 0)::float AS "hoursLoggedThisWeek"',
+      ]);
+
+    if (accessibleProjectIds !== 'ALL') {
+      scalarQuery.where('issue.projectId IN (:...projectIds)', { projectIds: accessibleProjectIds });
+    }
+
+    const scalarResult = await scalarQuery.getRawOne();
+
+    // 2. Project breakdown via SQL GROUP BY
+    const projectQuery = this.worklogRepository
+      .createQueryBuilder('worklog')
+      .innerJoin('worklog.issue', 'issue')
+      .innerJoin('issue.project', 'project')
+      .select([
+        'project.id AS "projectId"',
+        'project.name AS "projectName"',
+        'project.key AS "projectKey"',
+        'ROUND(SUM(worklog.timeSpentHours)::numeric, 2)::float AS "totalHours"',
+      ]);
+
+    if (accessibleProjectIds !== 'ALL') {
+      projectQuery.where('issue.projectId IN (:...projectIds)', { projectIds: accessibleProjectIds });
+    }
+
+    projectQuery
+      .groupBy('project.id')
+      .addGroupBy('project.name')
+      .addGroupBy('project.key')
+      .orderBy('"totalHours"', 'DESC')
+      .limit(50);
+
+    const projectResult = await projectQuery.getRawMany();
+
+    // 3. User breakdown via SQL GROUP BY
+    const userQuery = this.worklogRepository
+      .createQueryBuilder('worklog')
+      .innerJoin('worklog.issue', 'issue')
+      .innerJoin('worklog.user', 'user')
+      .select([
+        'user.id AS "userId"',
+        'user.fullName AS "fullName"',
+        'user.email AS "email"',
+        'user.avatarUrl AS "avatarUrl"',
+        'ROUND(SUM(worklog.timeSpentHours)::numeric, 2)::float AS "totalHours"',
+      ]);
+
+    if (accessibleProjectIds !== 'ALL') {
+      userQuery.where('issue.projectId IN (:...projectIds)', { projectIds: accessibleProjectIds });
+    }
+
+    userQuery
+      .groupBy('user.id')
+      .addGroupBy('user.fullName')
+      .addGroupBy('user.email')
+      .addGroupBy('user.avatarUrl')
+      .orderBy('"totalHours"', 'DESC')
+      .limit(50);
+
+    const userResult = await userQuery.getRawMany();
+
     return {
-      totalHoursLogged: Number(totalHoursLogged.toFixed(2)),
-      hoursLoggedToday: Number(hoursLoggedToday.toFixed(2)),
-      hoursLoggedThisWeek: Number(hoursLoggedThisWeek.toFixed(2)),
-      byProject: Object.values(projectMap).map((p) => ({
-        ...p,
-        totalHours: Number(p.totalHours.toFixed(2)),
+      totalHoursLogged: Number(scalarResult?.totalHoursLogged || 0),
+      hoursLoggedToday: Number(scalarResult?.hoursLoggedToday || 0),
+      hoursLoggedThisWeek: Number(scalarResult?.hoursLoggedThisWeek || 0),
+      byProject: projectResult.map((p) => ({
+        projectId: Number(p.projectId),
+        projectName: p.projectName,
+        projectKey: p.projectKey,
+        totalHours: Number(p.totalHours || 0),
       })),
-      byUser: Object.values(userMap).map((u) => ({
-        ...u,
-        totalHours: Number(u.totalHours.toFixed(2)),
+      byUser: userResult.map((u) => ({
+        userId: Number(u.userId),
+        fullName: u.fullName,
+        email: u.email,
+        avatarUrl: u.avatarUrl || null,
+        totalHours: Number(u.totalHours || 0),
       })),
     };
   }
 
+  /**
+   * Calculates date range clamped to a maximum of 62 days (2 months) to avoid DoS attacks.
+   */
   private calculateDateRange(startDate?: string, endDate?: string): { startStr: string; endStr: string; days: string[] } {
     const now = new Date();
     const defaultEndStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -290,12 +471,20 @@ export class IssueWorklogService {
       sDate.setDate(sDate.getDate() - 13);
       startStr = `${sDate.getFullYear()}-${String(sDate.getMonth() + 1).padStart(2, '0')}-${String(sDate.getDate()).padStart(2, '0')}`;
     }
-    const days: string[] = [];
+
     const [sY, sM, sD] = startStr.split('-').map(Number);
     const [eY, eM, eD] = endStr.split('-').map(Number);
-    const curr = new Date(sY, sM - 1, sD);
-    const endLimit = new Date(eY, eM - 1, eD);
-    while (curr <= endLimit) {
+    let sDateObj = new Date(sY, sM - 1, sD);
+    const eDateObj = new Date(eY, eM - 1, eD);
+    const maxDiffMs = 62 * 24 * 60 * 60 * 1000;
+    if (eDateObj.getTime() - sDateObj.getTime() > maxDiffMs) {
+      sDateObj = new Date(eDateObj.getTime() - maxDiffMs);
+      startStr = `${sDateObj.getFullYear()}-${String(sDateObj.getMonth() + 1).padStart(2, '0')}-${String(sDateObj.getDate()).padStart(2, '0')}`;
+    }
+
+    const days: string[] = [];
+    const curr = new Date(sDateObj);
+    while (curr <= eDateObj) {
       const y = curr.getFullYear();
       const m = String(curr.getMonth() + 1).padStart(2, '0');
       const d = String(curr.getDate()).padStart(2, '0');

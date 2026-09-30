@@ -23,9 +23,14 @@ Supported Priorities: `LOW`, `MEDIUM`, `HIGH`, `CRITICAL`.
    - Enforces tenant project boundary isolation via `PermissionEvaluatorService.getAccessibleProjectIds` and row-level issue security level filtering.
 2. **Server-Side Pagination**:
    - Enforces pagination envelope `{ items, total, page, limit, totalPages }` across collection queries (`page`, `limit`).
-3. **Worklogs (Time Tracking)**:
-   - Engineers log hours/seconds against an issue.
-   - Automatically aggregates cumulative effort against estimated time.
+3. **Worklogs & Time Management**:
+   - Engineers log hours against an issue with atomic updates inside `dataSource.transaction(...)`.
+   - Uses native PostgreSQL atomic arithmetic: `UPDATE issues SET logged_hours = ROUND((COALESCE(logged_hours, 0) + :hours)::numeric, 2) WHERE id = :issueId`.
+   - Prevents lost updates and race conditions via PostgreSQL row-level locking on the target issue row.
+   - Worklog deletion atomically decrements logged hours: `GREATEST(ROUND((COALESCE(logged_hours, 0) - :hours)::numeric, 2), 0)`.
+   - System-wide statistics (`/worklogs/stats`) computed entirely via database-level SQL aggregations (`SUM`, `CASE WHEN`, `GROUP BY`) with zero JavaScript heap array iterations, preventing Node.js Out-Of-Memory (OOM) crashes.
+   - Team timesheet matrix (`/worklogs/matrix`) bounded to a maximum of 62 days to prevent denial-of-service, strictly isolated by tenant project boundaries.
+   - Personal worklogs (`/worklogs/me`) enforce server-side pagination with `{ items, total, page, limit, totalPages }`.
 4. **Issue Linking**:
    - Directed relations between issues: `BLOCKS`, `IS_BLOCKED_BY`, `RELATES_TO`, `DUPLICATES`.
 5. **Attachments**:
@@ -47,7 +52,11 @@ Supported Priorities: `LOW`, `MEDIUM`, `HIGH`, `CRITICAL`.
 | `PATCH` | `/:id/sprint` | Update relational sprint assignment (`sprintId: number \| null`) | JWT (`JwtAuthGuard`) |
 | `DELETE` | `/:id` | Delete an issue | Admin / Project Lead |
 | `POST` | `/:id/comments` | Add a comment to an issue | JWT (`JwtAuthGuard`) |
-| `POST` | `/:id/worklogs` | Log effort time against an issue | JWT (`JwtAuthGuard`) |
+| `POST` | `/:id/worklogs` | Log effort time against an issue (atomic transaction) | JWT + `LOG_WORK` |
+| `DELETE` | `/:id/worklogs/:worklogId` | Delete a worklog entry (atomic transaction decrement) | JWT + `LOG_WORK` (Author/Admin) |
+| `GET` | `/worklogs/me` | Paginated personal worklogs (`page`, `limit`) | JWT (`JwtAuthGuard`) |
+| `GET` | `/worklogs/stats` | High-performance SQL-aggregated time metrics | JWT (`JwtAuthGuard`) |
+| `GET` | `/worklogs/matrix` | Team timesheet matrix (clamped to 62 days) | JWT (`JwtAuthGuard`) |
 | `POST` | `/:id/links` | Link this issue to another issue | JWT (`JwtAuthGuard`) |
 | `POST` | `/:id/attachments` | Upload an attachment file to S3 | JWT (`JwtAuthGuard`) |
 
