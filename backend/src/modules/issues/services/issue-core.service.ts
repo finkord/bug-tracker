@@ -220,7 +220,7 @@ export class IssueCoreService {
 
     const saved = await this.issueRepository.save(issue);
     const formatted = await this.findById(saved.id);
-    this.eventsGateway.broadcastIssueCreated(formatted);
+    await this.eventsGateway.broadcastIssueCreated(formatted);
     return formatted;
   }
 
@@ -234,7 +234,7 @@ export class IssueCoreService {
     }
     await this.issueRepository.update(id, { status });
     const updated = await this.findById(id);
-    this.eventsGateway.broadcastIssueUpdated(updated);
+    await this.eventsGateway.broadcastIssueUpdated(updated);
     return updated;
   }
 
@@ -249,7 +249,7 @@ export class IssueCoreService {
     issue.assigneeId = user.id;
     await this.issueRepository.save(issue);
     const updated = await this.findById(id);
-    this.eventsGateway.broadcastIssueUpdated(updated);
+    await this.eventsGateway.broadcastIssueUpdated(updated);
     return updated;
   }
 
@@ -274,7 +274,7 @@ export class IssueCoreService {
     }
     await this.issueRepository.save(issue);
     const updated = await this.findById(id);
-    this.eventsGateway.broadcastIssueUpdated(updated);
+    await this.eventsGateway.broadcastIssueUpdated(updated);
     return updated;
   }
 
@@ -309,7 +309,7 @@ export class IssueCoreService {
 
     await this.issueRepository.save(issue);
     const updated = await this.findById(id);
-    this.eventsGateway.broadcastIssueUpdated(updated);
+    await this.eventsGateway.broadcastIssueUpdated(updated);
     return updated;
   }
 

@@ -128,7 +128,7 @@ export class IssuesService {
   async logWork(issueId: number, user: User, dto: LogWorkDto): Promise<IssueDetailDto> {
     await this.issueWorklogService.logWork(issueId, user, dto);
     const updated = await this.issueCoreService.findById(issueId);
-    this.eventsGateway.broadcastIssueUpdated(updated);
+    await this.eventsGateway.broadcastIssueUpdated(updated);
     return updated;
   }
 
