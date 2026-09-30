@@ -126,12 +126,10 @@ export function useAddPermissionGrantMutation() {
 export function useRemovePermissionGrantMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ grantId }: { grantId: number; schemeId?: number }) =>
-      api.removePermissionGrant(grantId),
+    mutationFn: ({ schemeId, grantId }: { schemeId: number; grantId: number }) =>
+      api.removePermissionGrant(schemeId, grantId),
     onSuccess: (_, vars) => {
-      if (vars.schemeId) {
-        queryClient.invalidateQueries({ queryKey: rbacKeys.permissionScheme(vars.schemeId) });
-      }
+      queryClient.invalidateQueries({ queryKey: rbacKeys.permissionScheme(vars.schemeId) });
       queryClient.invalidateQueries({ queryKey: rbacKeys.permissionSchemes() });
     },
   });

@@ -287,7 +287,7 @@ export const App: React.FC = () => {
                 path="/admin/rbac"
                 element={
                   <AdminRoute>
-                    <AdminRbacPage />
+                    <AdminDashboardPage defaultTab="rbac" />
                   </AdminRoute>
                 }
               />
@@ -295,7 +295,7 @@ export const App: React.FC = () => {
                 path="/admin/security-logs"
                 element={
                   <AdminRoute>
-                    <AdminDashboardPage defaultTab="system" />
+                    <AdminDashboardPage defaultTab="security" />
                   </AdminRoute>
                 }
               />

@@ -109,6 +109,11 @@ export const usersApi = {
       method: 'PATCH',
     }),
 
+  deleteUser: (id: number) =>
+    request<{ message: string }>(`/users/${id}`, {
+      method: 'DELETE',
+    }),
+
   getLoginAuditLogs: (page = 1, limit = 50) =>
     request<{ items: LoginAuditLogItem[]; total: number }>(
       `/admin/security/login-logs?page=${page}&limit=${limit}`,

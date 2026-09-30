@@ -63,8 +63,8 @@ export const rbacApi = {
       body: JSON.stringify(payload),
     }),
 
-  removePermissionGrant: (grantId: number) =>
-    request<{ success: boolean; message: string }>(`/rbac/permission-schemes/1/grants/${grantId}`, {
+  removePermissionGrant: (schemeId: number, grantId: number) =>
+    request<{ success: boolean; message: string }>(`/rbac/permission-schemes/${schemeId}/grants/${grantId}`, {
       method: 'DELETE',
     }),
 

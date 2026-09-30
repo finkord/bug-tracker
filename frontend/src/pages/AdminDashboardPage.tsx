@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   AdminUsersTab,
-  AdminRolesTab,
-  AdminSystemTab,
+  AdminSecurityLogsTab,
   AdminProjectsTab,
-  AdminAnalyticsTab,
 } from '../components/admin/index.js';
+import { AdminRbacPage } from './AdminRbacPage.js';
 import {
   Tabs,
   TabsList,
@@ -15,70 +15,102 @@ import {
   Users,
   ShieldCheck,
   FolderGit2,
-  TrendingUp,
-  Activity,
   ShieldAlert,
 } from 'lucide-react';
 
+type AdminTab = 'users' | 'rbac' | 'security' | 'projects';
+
 interface AdminDashboardPageProps {
-  defaultTab?: 'users' | 'roles' | 'system' | 'projects' | 'analytics';
+  defaultTab?: AdminTab;
 }
 
 export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
   defaultTab = 'users',
 }) => {
-  const [activeTab, setActiveTab] = useState<'users' | 'roles' | 'system' | 'projects' | 'analytics'>(defaultTab);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const queryTab = searchParams.get('tab') as AdminTab | null;
+  const activeTab: AdminTab =
+    queryTab && ['users', 'rbac', 'security', 'projects'].includes(queryTab)
+      ? queryTab
+      : defaultTab;
+
+  const handleTabChange = (val: string) => {
+    setSearchParams({ tab: val });
+  };
 
   return (
-    <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-5">
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6 animate-in fade-in duration-200">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--md-sys-color-outline-variant)]/20 pb-5">
         <div>
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded bg-primary/10 text-primary">
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-2xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-primary)] flex items-center justify-center shadow-xs">
               <ShieldAlert className="w-5 h-5" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Administration & System Center
-            </h1>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-[var(--md-sys-color-on-surface)]">
+                Administration & System Center
+              </h1>
+              <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-0.5">
+                Global governance, dual-layer RBAC authority, user identity management, and security audit telemetry.
+              </p>
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            Global governance, RBAC authority, user identity management, and system operations.
-          </p>
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as 'users' | 'roles' | 'system' | 'projects' | 'analytics')}>
-        <TabsList className="bg-muted/50 p-1 rounded-lg border border-border/60 w-full sm:w-auto flex flex-wrap">
-          <TabsTrigger value="users" className="text-xs font-semibold gap-1.5 px-3 py-1.5">
+      {/* Primary Navigation Tabs */}
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
+        <TabsList
+          variant="pills"
+          className="bg-[var(--md-sys-color-surface-container-low)] p-1.5 rounded-2xl border border-[var(--md-sys-color-outline-variant)]/30 w-full sm:w-auto flex flex-wrap gap-1"
+        >
+          <TabsTrigger
+            value="users"
+            variant="pills"
+            size="sm"
+            className="text-xs font-bold gap-2 px-3.5 py-2 rounded-xl"
+          >
             <Users className="w-3.5 h-3.5" />
-            Users & Identity
+            <span>Users & Identity</span>
           </TabsTrigger>
-          <TabsTrigger value="roles" className="text-xs font-semibold gap-1.5 px-3 py-1.5">
+          <TabsTrigger
+            value="rbac"
+            variant="pills"
+            size="sm"
+            className="text-xs font-bold gap-2 px-3.5 py-2 rounded-xl"
+          >
             <ShieldCheck className="w-3.5 h-3.5" />
-            Roles & RBAC
+            <span>Access Control & RBAC</span>
           </TabsTrigger>
-          <TabsTrigger value="projects" className="text-xs font-semibold gap-1.5 px-3 py-1.5">
+          <TabsTrigger
+            value="security"
+            variant="pills"
+            size="sm"
+            className="text-xs font-bold gap-2 px-3.5 py-2 rounded-xl"
+          >
+            <ShieldAlert className="w-3.5 h-3.5" />
+            <span>Security Audit Logs</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="projects"
+            variant="pills"
+            size="sm"
+            className="text-xs font-bold gap-2 px-3.5 py-2 rounded-xl"
+          >
             <FolderGit2 className="w-3.5 h-3.5" />
-            Projects
-          </TabsTrigger>
-          <TabsTrigger value="system" className="text-xs font-semibold gap-1.5 px-3 py-1.5">
-            <Activity className="w-3.5 h-3.5" />
-            System & Broadcast
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="text-xs font-semibold gap-1.5 px-3 py-1.5">
-            <TrendingUp className="w-3.5 h-3.5" />
-            Worklog Analytics
+            <span>Projects Governance</span>
           </TabsTrigger>
         </TabsList>
       </Tabs>
 
       {/* Tab Contents */}
-      {activeTab === 'users' && <AdminUsersTab />}
-      {activeTab === 'roles' && <AdminRolesTab />}
-      {activeTab === 'projects' && <AdminProjectsTab />}
-      {activeTab === 'system' && <AdminSystemTab />}
-      {activeTab === 'analytics' && <AdminAnalyticsTab />}
+      <div className="pt-2">
+        {activeTab === 'users' && <AdminUsersTab />}
+        {activeTab === 'rbac' && <AdminRbacPage />}
+        {activeTab === 'security' && <AdminSecurityLogsTab />}
+        {activeTab === 'projects' && <AdminProjectsTab />}
+      </div>
     </div>
   );
 };
