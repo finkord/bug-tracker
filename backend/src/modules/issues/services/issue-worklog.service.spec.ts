@@ -38,12 +38,13 @@ describe('IssueWorklogService', () => {
     severity: IssueSeverity.MAJOR,
     estimatedHours: 10,
     loggedHours: 2,
-    sprint: 'Sprint 1',
+    sprintId: 1,
+    sprint: null,
     reporterId: 1,
     assigneeId: 1,
     createdAt: new Date(),
     updatedAt: new Date(),
-  } as Issue;
+  } as unknown as Issue;
 
   beforeEach(() => {
     mockIssueRepo = {

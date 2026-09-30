@@ -13,6 +13,7 @@ export interface AuthState {
 }
 
 import { queryClient } from '../api/queryClient.js';
+import { realtimeSocket } from '../api/socket.js';
 
 let isLoggingOut = false;
 
@@ -69,6 +70,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
+      realtimeSocket.disconnect();
       set({ user: null, loading: false, sessionExpiredOpen: false });
       setTimeout(() => {
         isLoggingOut = false;
@@ -82,6 +84,7 @@ if (typeof window !== 'undefined') {
   window.addEventListener('bt:unauthorized', () => {
     // Only open sessionExpired modal if the user was actively authenticated and is not intentionally logging out
     if (!isLoggingOut && useAuthStore.getState().user !== null) {
+      realtimeSocket.disconnect();
       useAuthStore.setState({ user: null, sessionExpiredOpen: true, loading: false });
       queryClient.clear();
     } else {

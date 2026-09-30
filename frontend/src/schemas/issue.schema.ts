@@ -47,7 +47,15 @@ export const IssueSchema = z.object({
   severity: IssueSeverityEnum,
   estimatedHours: z.number().default(0),
   loggedHours: z.number().default(0),
-  sprint: z.string().nullable(),
+  sprintId: z.number().nullable().optional(),
+  sprint: z
+    .object({
+      id: z.number(),
+      name: z.string(),
+      status: z.string(),
+    })
+    .nullable()
+    .optional(),
   reporter: UserSnippetSchema,
   assignee: UserSnippetSchema.nullable(),
   commentsCount: z.number().optional(),
@@ -67,7 +75,7 @@ export const CreateIssueSchema = z.object({
   priority: IssuePriorityEnum.default('MEDIUM'),
   severity: IssueSeverityEnum.default('MINOR'),
   estimatedHours: z.number().min(0).max(1000).optional(),
-  sprint: z.string().optional(),
+  sprintId: z.number().nullable().optional(),
   assigneeId: z.number().optional(),
 });
 

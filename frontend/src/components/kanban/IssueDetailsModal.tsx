@@ -160,10 +160,10 @@ export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
                     </Select>
                   </div>
 
-                  {issue.sprint && (
+                  {issue.sprint?.name && (
                     <Badge variant="primary" size="sm" className="shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 font-bold">
                       <Layers className="w-3.5 h-3.5 shrink-0 text-[var(--md-sys-color-primary)]" />
-                      <span>{issue.sprint}</span>
+                      <span>{issue.sprint.name}</span>
                     </Badge>
                   )}
                 </div>
@@ -283,7 +283,7 @@ export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
                 <div>
                   <span className="text-[var(--md-sys-color-on-surface-variant)] block mb-1">Sprint</span>
                   <span className="font-semibold text-[var(--md-sys-color-on-surface)] truncate block">
-                    {issue.sprint || 'Backlog'}
+                    {issue.sprint?.name || 'Backlog'}
                   </span>
                 </div>
               </div>

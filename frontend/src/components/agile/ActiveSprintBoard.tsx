@@ -18,7 +18,7 @@ interface ActiveSprintBoardProps {
   onSelectIssue: (issue: IssueItem) => void;
   onStatusChange: (issueId: number, nextStatus: IssueStatus) => void;
   onAssignToMe: (issueId: number) => void;
-  onCompleteSprint: (sprintName: string) => void;
+  onCompleteSprint: (sprint: SprintDefinition) => void;
   onGoToBacklog: () => void;
   currentUserId?: number;
 }
@@ -152,7 +152,7 @@ export const ActiveSprintBoard: React.FC<ActiveSprintBoardProps> = ({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => onCompleteSprint(sprint.name)}
+            onClick={() => onCompleteSprint(sprint)}
             leftIcon={<CheckCircle2 className="w-3.5 h-3.5 text-[var(--md-sys-color-success)]" />}
             className="border-[var(--md-sys-color-success)] text-[var(--md-sys-color-success)] hover:bg-[var(--md-sys-color-success-container)]/20"
           >

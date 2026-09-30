@@ -10,6 +10,7 @@ describe('IssueCoreService', () => {
   let mockIssueRepo: any;
   let mockProjectRepo: any;
   let mockAttachmentRepo: any;
+  let mockSprintRepo: any;
   let mockIssueLinksService: any;
   let mockEventsGateway: any;
 
@@ -38,6 +39,7 @@ describe('IssueCoreService', () => {
     severity: IssueSeverity.MAJOR,
     estimatedHours: 5,
     loggedHours: 0,
+    sprintId: null,
     sprint: null,
     reporterId: 1,
     reporter: mockUser,
@@ -68,6 +70,9 @@ describe('IssueCoreService', () => {
     mockAttachmentRepo = {
       find: vi.fn().mockResolvedValue([]),
     };
+    mockSprintRepo = {
+      findOne: vi.fn(),
+    };
     mockIssueLinksService = {
       getIssueLinks: vi.fn().mockResolvedValue([]),
     };
@@ -81,6 +86,7 @@ describe('IssueCoreService', () => {
       mockIssueRepo,
       mockProjectRepo,
       mockAttachmentRepo,
+      mockSprintRepo,
       mockIssueLinksService,
       mockEventsGateway,
     );
@@ -186,6 +192,41 @@ describe('IssueCoreService', () => {
       expect(result.success).toBe(true);
       expect(mockIssueRepo.remove).toHaveBeenCalled();
       expect(mockEventsGateway.broadcastIssueDeleted).toHaveBeenCalledWith(10, 1);
+    });
+  });
+
+  describe('updateSprint', () => {
+    it('should assign issue to sprint and broadcast event', async () => {
+      mockIssueRepo.findOne.mockResolvedValue(Object.assign(new Issue(), mockIssue));
+      mockSprintRepo.findOne.mockResolvedValue({ id: 5, projectId: 1, name: 'Sprint 1', status: 'ACTIVE' });
+
+      const result = await service.updateSprint(10, 5);
+
+      expect(mockSprintRepo.findOne).toHaveBeenCalledWith({ where: { id: 5, projectId: 1 } });
+      expect(mockIssueRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ sprintId: 5 }),
+      );
+      expect(mockEventsGateway.broadcastIssueUpdated).toHaveBeenCalled();
+      expect(result).toBeDefined();
+    });
+
+    it('should detach issue to backlog when sprintId is null', async () => {
+      mockIssueRepo.findOne.mockResolvedValue(Object.assign(new Issue(), mockIssue, { sprintId: 5 }));
+
+      const result = await service.updateSprint(10, null);
+
+      expect(mockIssueRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ sprintId: null }),
+      );
+      expect(mockEventsGateway.broadcastIssueUpdated).toHaveBeenCalled();
+      expect(result).toBeDefined();
+    });
+
+    it('should throw NotFoundException if sprint is not in the project', async () => {
+      mockIssueRepo.findOne.mockResolvedValue(Object.assign(new Issue(), mockIssue));
+      mockSprintRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.updateSprint(10, 999)).rejects.toThrow(NotFoundException);
     });
   });
 });

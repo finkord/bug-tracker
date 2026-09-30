@@ -21,17 +21,17 @@ import {
 interface SprintContainerProps {
   sprint: SprintDefinition;
   issues: IssueItem[];
-  availableSprints: string[];
+  availableSprints: SprintDefinition[];
   isCollapsed: boolean;
   onToggleCollapse: () => void;
   onSelectIssue: (issue: IssueItem) => void;
-  onMoveToSprint: (issueId: number, sprintName: string | null) => void;
-  onStartSprint: (sprintName: string) => void;
-  onCompleteSprint: (sprintName: string) => void;
+  onMoveToSprint: (issueId: number, sprintId: number | null) => void;
+  onStartSprint: (sprintId: number) => void;
+  onCompleteSprint: (sprint: SprintDefinition) => void;
   onEditSprint: (sprint: SprintDefinition) => void;
-  onDeleteSprint: (sprintName: string) => void;
+  onDeleteSprint: (sprintId: number, sprintName: string) => void;
   onGoToActiveBoard?: () => void;
-  onQuickCreateInSprint: (sprintName: string) => void;
+  onQuickCreateInSprint: (sprintId: number) => void;
 }
 
 export const SprintContainer: React.FC<SprintContainerProps> = ({
@@ -68,7 +68,9 @@ export const SprintContainer: React.FC<SprintContainerProps> = ({
     if (!issueIdStr) return;
 
     const issueId = Number(issueIdStr);
-    onMoveToSprint(issueId, sprint.name);
+    if (sprint.id) {
+      onMoveToSprint(issueId, sprint.id);
+    }
   };
 
   const totalEstimate = issues.reduce((acc, i) => acc + (i.estimatedHours || 0), 0);
@@ -93,7 +95,11 @@ export const SprintContainer: React.FC<SprintContainerProps> = ({
           <span>Delete Sprint</span>
         </span>
       ),
-      onClick: () => onDeleteSprint(sprint.name),
+      onClick: () => {
+        if (sprint.id) {
+          onDeleteSprint(sprint.id, sprint.name);
+        }
+      },
       danger: true,
     },
   ];
@@ -110,43 +116,39 @@ export const SprintContainer: React.FC<SprintContainerProps> = ({
       }`}
     >
       {/* Sprint Header Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-[var(--md-sys-color-surface-container)] border-b border-[var(--md-sys-color-outline-variant)]/30">
-        {/* Left: Chevron toggle + Title + Status + Dates + Goal */}
-        <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-[var(--md-sys-color-surface-container)] border-b border-[var(--md-sys-color-outline-variant)]/40">
+        <div className="flex items-center gap-3 min-w-0">
           <button
             type="button"
             onClick={onToggleCollapse}
             aria-label={isCollapsed ? 'Expand sprint' : 'Collapse sprint'}
-            className="p-1 rounded-lg text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] cursor-pointer shrink-0 mt-0.5 sm:mt-0"
+            className="p-1 rounded-lg text-[var(--md-sys-color-outline)] hover:text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container-highest)] transition-colors cursor-pointer shrink-0"
           >
             {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
 
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h2
-                onClick={onToggleCollapse}
-                className="text-sm sm:text-base font-bold text-[var(--md-sys-color-on-surface)] cursor-pointer hover:text-[var(--md-sys-color-primary)] transition-colors truncate"
-              >
+          <div className="min-w-0">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <span className="font-bold text-sm text-[var(--md-sys-color-on-surface)] truncate">
                 {sprint.name}
-              </h2>
+              </span>
 
+              {/* Status Badge */}
               <Badge
                 variant={
                   sprint.status === 'ACTIVE'
-                    ? 'success'
-                    : sprint.status === 'PLANNED'
-                    ? 'primary'
-                    : 'neutral'
+                    ? 'in-progress'
+                    : sprint.status === 'COMPLETED'
+                      ? 'resolved'
+                      : 'neutral'
                 }
                 size="sm"
-                className="uppercase tracking-wider font-bold"
               >
                 {sprint.status}
               </Badge>
 
-              <span className="text-xs text-[var(--md-sys-color-on-surface-variant)] font-semibold shrink-0">
-                ({issues.length} {issues.length === 1 ? 'issue' : 'issues'})
+              <span className="text-xs text-[var(--md-sys-color-on-surface-variant)] font-medium">
+                {issues.length} {issues.length === 1 ? 'issue' : 'issues'}
               </span>
             </div>
 
@@ -191,11 +193,11 @@ export const SprintContainer: React.FC<SprintContainerProps> = ({
           )}
 
           {/* Lifecycle Action: Start Sprint */}
-          {sprint.status === 'PLANNED' && (
+          {sprint.status === 'PLANNED' && sprint.id && (
             <Button
               variant="filled"
               size="sm"
-              onClick={() => onStartSprint(sprint.name)}
+              onClick={() => onStartSprint(sprint.id!)}
               leftIcon={<Play className="w-3 h-3 fill-current" />}
             >
               Start Sprint
@@ -220,7 +222,7 @@ export const SprintContainer: React.FC<SprintContainerProps> = ({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => onCompleteSprint(sprint.name)}
+                onClick={() => onCompleteSprint(sprint)}
                 leftIcon={<CheckCircle2 className="w-3.5 h-3.5 text-[var(--md-sys-color-success)]" />}
                 className="border-[var(--md-sys-color-success)] text-[var(--md-sys-color-success)] hover:bg-[var(--md-sys-color-success-container)]/20"
               >
@@ -272,14 +274,16 @@ export const SprintContainer: React.FC<SprintContainerProps> = ({
           )}
 
           {/* Inline Quick Add Issue Trigger */}
-          <button
-            type="button"
-            onClick={() => onQuickCreateInSprint(sprint.name)}
-            className="w-full py-2 px-3 rounded-xl border border-dashed border-[var(--md-sys-color-outline-variant)]/50 hover:border-[var(--md-sys-color-primary)] hover:bg-[var(--md-sys-color-primary-container)]/10 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Create Issue in {sprint.name}</span>
-          </button>
+          {sprint.id && (
+            <button
+              type="button"
+              onClick={() => onQuickCreateInSprint(sprint.id!)}
+              className="w-full py-2 px-3 rounded-xl border border-dashed border-[var(--md-sys-color-outline-variant)]/50 hover:border-[var(--md-sys-color-primary)] hover:bg-[var(--md-sys-color-primary-container)]/10 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Create Issue in {sprint.name}</span>
+            </button>
+          )}
         </div>
       )}
     </div>

@@ -15,6 +15,7 @@ import { PermissionGrant } from '../rbac/entities/permission-grant.entity.js';
 import { IssueSecurityScheme } from '../rbac/entities/issue-security-scheme.entity.js';
 import { IssueSecurityLevel } from '../rbac/entities/issue-security-level.entity.js';
 import { IssueSecurityGrant } from '../rbac/entities/issue-security-grant.entity.js';
+import { Sprint } from '../sprints/entities/sprint.entity.js';
 import { SeedService } from './seed.service.js';
 import { SystemInitService } from './system-init.service.js';
 
@@ -23,6 +24,7 @@ import { SystemInitService } from './system-init.service.js';
     TypeOrmModule.forFeature([
       User,
       Project,
+      Sprint,
       Issue,
       IssueLink,
       Worklog,

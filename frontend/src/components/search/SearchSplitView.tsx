@@ -304,10 +304,10 @@ export const SearchSplitView: React.FC<SearchSplitViewProps> = ({
                   </Select>
                 </div>
                 {renderPriorityBadge(currentIssue.priority)}
-                {currentIssue.sprint ? (
+                {currentIssue.sprint?.name ? (
                   <Badge variant="primary" className="gap-1 text-xs rounded-full px-2.5 py-0.5">
                     <Layers className="w-3 h-3" />
-                    <span>{currentIssue.sprint}</span>
+                    <span>{currentIssue.sprint.name}</span>
                   </Badge>
                 ) : (
                   <Badge variant="neutral" className="text-xs rounded-full px-2.5 py-0.5">

@@ -104,6 +104,20 @@ cd frontend && npx tsc --noEmit
 
 ---
 
+## Scalability & Production-Readiness Protocol (10,000+ Users)
+
+Every feature and refactoring must be engineered to sustain tens of thousands of active concurrent users:
+
+1. **Mandatory Pagination & Bounded Queries**: Every query returning lists MUST enforce pagination (`limit` & `offset` or keyset/cursor pagination). Never fetch unbounded rows or use `.getMany()` without explicit limits.
+2. **Zero Full-Table Scans**: All columns used in `WHERE`, `ORDER BY`, or `JOIN` conditions must have proper database indexes (B-Tree for foreign keys and filters, GIN for PostgreSQL full-text search).
+3. **Database-Level Aggregation**: Never pull raw datasets into Node.js heap memory to iterate, sum, count, or filter in JavaScript. Compute all metrics using SQL aggregates (`SUM`, `COUNT`, `AVG`, `GROUP BY`).
+4. **Backend-First Business Logic**: The frontend is solely a display and interaction layer. Business rules, data transformations, search AST parsing, permission resolutions, and calculations must reside on the backend.
+5. **Distributed State (Redis)**: Any transient or shared state (rate limits, session revocations, OAuth exchange codes, WebSocket rooms) must use Redis, never single-instance Node.js memory (`Map`, global variables).
+6. **Concurrency & Atomicity**: Concurrent writes (e.g. logging work hours, status changes) must use database transactions with atomic SQL increments or row locks (`Pessimistic / Optimistic Locking`) to prevent race conditions.
+7. **Absolute Zero-Stubs Policy**: Developing mocks, stubs, faux engines, or "TODO" dummy handlers in production code is strictly forbidden in any form. Every implementation must be real, functional, and wired end-to-end.
+
+---
+
 ## Anti-Patterns Quick Reference
 
 | Anti-Pattern                                       | Correct Alternative                                             |
@@ -115,3 +129,9 @@ cd frontend && npx tsc --noEmit
 | Run `npm run build` after every small edit         | Use `oxlint` / targeted `vitest run <file>.spec.ts` during work |
 | Hard-code Tailwind color utilities                 | Use `var(--md-sys-color-*)` tokens from `src/index.css`         |
 | Import from another module's private `entities/`  | Use the module's public service or DTO exports only             |
+| Stubs, mocks, or fake returns in production code   | 100% functional, real implementation wired end-to-end           |
+| Client-side dataset filtering / search AST parsing | Server-side TypeORM query with indexed `WHERE` & pagination     |
+| Pulling entire DB table into memory to sum in JS   | SQL aggregation: `SUM(...)`, `COUNT(...)`, `GROUP BY` in DB     |
+| In-memory `Map` for tokens, sessions, or locks     | Distributed Redis cache (`SETEX`, `GETDEL`, hashes)             |
+| Loose string foreign keys (e.g. `sprint: string`)  | Relational foreign keys (`@ManyToOne(() => Sprint)`)            |
+

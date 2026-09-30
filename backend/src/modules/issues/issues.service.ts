@@ -81,10 +81,10 @@ export class IssuesService {
   }
 
   /**
-   * Updates sprint designation.
+   * Updates relational sprint assignment.
    */
-  async updateSprint(id: number, sprint: string | null): Promise<IssueDetailDto> {
-    return this.issueCoreService.updateSprint(id, sprint);
+  async updateSprint(id: number, sprintId: number | null): Promise<IssueDetailDto> {
+    return this.issueCoreService.updateSprint(id, sprintId);
   }
 
   /**

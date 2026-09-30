@@ -19,7 +19,7 @@ export const issuesApi = {
     priority?: IssuePriority;
     issueType?: IssueType;
     assigneeId?: number;
-    sprint?: string;
+    sprintId?: string | number;
     search?: string;
   } = {}) => {
     const query = new URLSearchParams();
@@ -28,7 +28,7 @@ export const issuesApi = {
     if (params.priority) query.set('priority', params.priority);
     if (params.issueType) query.set('issueType', params.issueType);
     if (params.assigneeId) query.set('assigneeId', String(params.assigneeId));
-    if (params.sprint) query.set('sprint', params.sprint);
+    if (params.sprintId !== undefined && params.sprintId !== null) query.set('sprintId', String(params.sprintId));
     if (params.search) query.set('search', params.search);
     const qs = query.toString();
     return request<IssueItem[]>(`/issues${qs ? `?${qs}` : ''}`);
@@ -53,10 +53,10 @@ export const issuesApi = {
       method: 'PATCH',
     }),
 
-  updateIssueSprint: (id: number, sprint: string | null) =>
+  updateIssueSprint: (id: number, sprintId: number | null) =>
     request<IssueItem>(`/issues/${id}/sprint`, {
       method: 'PATCH',
-      body: JSON.stringify({ sprint }),
+      body: JSON.stringify({ sprintId }),
     }),
 
   updateIssue: (id: number, payload: Partial<CreateIssuePayload>) =>

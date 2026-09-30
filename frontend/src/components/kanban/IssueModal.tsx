@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import {
-  api,
-  type IssueItem,
-  type IssueType,
-  type IssuePriority,
-} from '../../api/client';
+import { api, type IssueItem, type IssueType, type IssuePriority } from '../../api/client';
+import { useProjectsQuery, useAssigneesQuery, useProjectSprintsQuery } from '../../api/queries';
 import { useAuth } from '../../store';
-import { useProjectsQuery, useAssigneesQuery } from '../../api/queries';
 import {
-  PlusCircle,
-  Edit3,
   AlertCircle,
+  Bug,
+  CheckSquare,
+  Sparkles,
+  Zap,
+  Flame,
+  ArrowUpCircle,
+  ArrowRightCircle,
   Clock,
   Layers,
   UserPlus,
@@ -24,6 +24,7 @@ interface IssueModalProps {
   editingIssue?: IssueItem | null;
   defaultProjectId?: number;
   defaultAssigneeId?: number | null;
+  defaultSprintId?: number | null;
 }
 
 export const IssueModal: React.FC<IssueModalProps> = ({
@@ -33,6 +34,7 @@ export const IssueModal: React.FC<IssueModalProps> = ({
   editingIssue,
   defaultProjectId,
   defaultAssigneeId,
+  defaultSprintId,
 }) => {
   const { user } = useAuth();
   const { data: projects = [] } = useProjectsQuery();
@@ -45,8 +47,10 @@ export const IssueModal: React.FC<IssueModalProps> = ({
   const [issueType, setIssueType] = useState<IssueType>('BUG');
   const [priority, setPriority] = useState<IssuePriority>('MEDIUM');
   const [estimatedHours, setEstimatedHours] = useState<string>('0');
-  const [sprint, setSprint] = useState<string>('Sprint 1');
+  const [sprintId, setSprintId] = useState<string>(defaultSprintId ? String(defaultSprintId) : '');
   const [assigneeId, setAssigneeId] = useState<number | ''>('');
+
+  const { data: projectSprints = [] } = useProjectSprintsQuery(projectId);
 
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -71,7 +75,7 @@ export const IssueModal: React.FC<IssueModalProps> = ({
       setIssueType(editingIssue.issueType);
       setPriority(editingIssue.priority);
       setEstimatedHours(String(editingIssue.estimatedHours || 0));
-      setSprint(editingIssue.sprint || '');
+      setSprintId(editingIssue.sprintId ? String(editingIssue.sprintId) : '');
       setAssigneeId(editingIssue.assignee?.id ?? '');
     } else {
       setTitle('');
@@ -79,29 +83,18 @@ export const IssueModal: React.FC<IssueModalProps> = ({
       setIssueType('BUG');
       setPriority('MEDIUM');
       setEstimatedHours('0');
-      setSprint('Sprint 1');
+      setSprintId(defaultSprintId ? String(defaultSprintId) : '');
       setAssigneeId(defaultAssigneeId ?? '');
     }
     setValidationError(null);
-  }, [editingIssue, defaultAssigneeId, isOpen]);
+  }, [editingIssue, isOpen, defaultAssigneeId, defaultSprintId]);
 
   if (!isOpen) return null;
 
-  const handleAssignToMe = () => {
-    if (user) {
-      setAssigneeId(user.id);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!title.trim()) {
       setValidationError('Issue title is required.');
-      return;
-    }
-    if (title.trim().length < 3) {
-      setValidationError('Title must be at least 3 characters long.');
       return;
     }
 
@@ -111,6 +104,7 @@ export const IssueModal: React.FC<IssueModalProps> = ({
     try {
       const parsedHours = parseFloat(estimatedHours) || 0;
       let saved: IssueItem;
+      const parsedSprintId = sprintId !== '' ? Number(sprintId) : null;
 
       if (editingIssue) {
         saved = await api.updateIssue(editingIssue.id, {
@@ -119,7 +113,7 @@ export const IssueModal: React.FC<IssueModalProps> = ({
           issueType,
           priority,
           estimatedHours: parsedHours,
-          sprint: sprint.trim() || undefined,
+          sprintId: parsedSprintId,
           assigneeId: assigneeId === '' ? undefined : Number(assigneeId),
         });
       } else {
@@ -130,7 +124,7 @@ export const IssueModal: React.FC<IssueModalProps> = ({
           issueType,
           priority,
           estimatedHours: parsedHours,
-          sprint: sprint.trim() || undefined,
+          sprintId: parsedSprintId,
           assigneeId: assigneeId === '' ? undefined : Number(assigneeId),
         });
       }
@@ -149,95 +143,50 @@ export const IssueModal: React.FC<IssueModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
+      title={editingIssue ? `Edit Issue: ${editingIssue.key}` : 'Create New Issue'}
       size="lg"
-      title={
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center shrink-0">
-            {editingIssue ? <Edit3 className="w-4 h-4" /> : <PlusCircle className="w-4 h-4" />}
-          </div>
-          <span>{editingIssue ? `Edit ${editingIssue.key}` : 'Create New Issue'}</span>
-        </div>
-      }
-      description={
-        editingIssue
-          ? 'Update issue parameters and assignment'
-          : 'File a new bug report, technical task, or feature request'
-      }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {validationError && (
-          <div className="flex items-start gap-3 p-3.5 rounded-xl bg-[var(--md-sys-color-error-container)] border border-[var(--md-sys-color-error)]/30 text-[var(--md-sys-color-on-error-container)] text-xs">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-[var(--md-sys-color-error)]" />
+          <div className="p-3 rounded-xl bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] text-xs flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{validationError}</span>
           </div>
         )}
 
-        {/* Project & Assignee row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Project Selector (disabled during edit) */}
+        {!editingIssue && (
           <SelectField
-            label="Project *"
-            placeholder="Select project..."
-            disabled={Boolean(editingIssue)}
-            value={projects.some((p) => p.id === projectId) ? String(projectId) : projects.length > 0 ? String(projects[0].id) : ''}
+            label="Project"
+            value={String(projectId)}
             onValueChange={(val) => setProjectId(Number(val))}
             options={projects.map((p) => ({
               value: String(p.id),
-              label: `[${p.key}] ${p.name}`,
+              label: `${p.name} (${p.key})`,
             }))}
           />
+        )}
 
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider select-none">
-                Assignee
-              </label>
-              {user && assigneeId !== user.id && (
-                <button
-                  type="button"
-                  onClick={handleAssignToMe}
-                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--md-sys-color-primary)] hover:underline cursor-pointer"
-                >
-                  <UserPlus className="w-3 h-3" />
-                  <span>Assign to me</span>
-                </button>
-              )}
-            </div>
-            <SelectField
-              placeholder="Unassigned"
-              value={assigneeId ? String(assigneeId) : ''}
-              onValueChange={(val) => setAssigneeId(val ? Number(val) : '')}
-              options={[
-                { value: '', label: 'Unassigned' },
-                ...assignees.map((u) => ({
-                  value: String(u.id),
-                  label: `${u.fullName || u.email}`,
-                })),
-              ]}
-            />
-          </div>
-        </div>
-
-        {/* Issue Title */}
+        {/* Title */}
         <Input
-          label="Issue Title *"
-          required
-          maxLength={255}
-          placeholder="e.g. Memory leak during large payload ingestion"
+          label="Title / Summary *"
+          placeholder="e.g. Critical memory leak on WebSocket connection pool"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          required
         />
 
-        {/* Issue Attributes: Type, Priority, Severity */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Grid row: Type & Priority */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <SelectField
             label="Issue Type"
             value={issueType}
             onValueChange={(val) => setIssueType(val as IssueType)}
             options={[
-              { value: 'BUG', label: 'Bug Report' },
-              { value: 'TASK', label: 'Task' },
-              { value: 'FEATURE', label: 'Feature Request' },
-              { value: 'IMPROVEMENT', label: 'Improvement' },
+              { value: 'BUG', label: 'Bug / Defect', icon: <Bug className="w-4 h-4 text-[var(--md-sys-color-error)]" /> },
+              { value: 'TASK', label: 'Standard Task', icon: <CheckSquare className="w-4 h-4 text-[var(--md-sys-color-primary)]" /> },
+              { value: 'FEATURE', label: 'New Feature', icon: <Sparkles className="w-4 h-4 text-[var(--md-sys-color-success)]" /> },
+              { value: 'IMPROVEMENT', label: 'Improvement', icon: <Zap className="w-4 h-4 text-[var(--md-sys-color-tertiary)]" /> },
             ]}
           />
 
@@ -246,16 +195,34 @@ export const IssueModal: React.FC<IssueModalProps> = ({
             value={priority}
             onValueChange={(val) => setPriority(val as IssuePriority)}
             options={[
-              { value: 'LOW', label: 'Low' },
-              { value: 'MEDIUM', label: 'Medium' },
-              { value: 'HIGH', label: 'High' },
-              { value: 'CRITICAL', label: 'Critical' },
+              { value: 'CRITICAL', label: 'Critical / P0', icon: <Flame className="w-4 h-4 text-[var(--md-sys-color-priority-critical)]" /> },
+              { value: 'HIGH', label: 'High / P1', icon: <ArrowUpCircle className="w-4 h-4 text-[var(--md-sys-color-priority-high)]" /> },
+              { value: 'MEDIUM', label: 'Medium / P2', icon: <ArrowRightCircle className="w-4 h-4 text-[var(--md-sys-color-priority-medium)]" /> },
+              { value: 'LOW', label: 'Low / P3', icon: <span className="w-2.5 h-2.5 rounded-full bg-[var(--md-sys-color-priority-low)]" /> },
             ]}
           />
         </div>
 
-        {/* Time Tracking Estimate & Sprint */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Assignee */}
+        <SelectField
+          label="Assignee"
+          value={String(assigneeId)}
+          onValueChange={(val) => setAssigneeId(val === '' ? '' : Number(val))}
+          options={[
+            { value: '', label: 'Unassigned' },
+            ...(user ? [{ value: String(user.id), label: `${user.fullName} (Assign to Me)` }] : []),
+            ...assignees
+              .filter((a) => a.id !== user?.id)
+              .map((a) => ({
+                value: String(a.id),
+                label: `${a.fullName} (${a.email})`,
+              })),
+          ]}
+          leftIcon={<UserPlus className="w-4 h-4 text-[var(--md-sys-color-primary)]" />}
+        />
+
+        {/* Grid row: Estimates & Relational Sprint */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Input
             label="Estimated Hours"
             type="number"
@@ -267,12 +234,17 @@ export const IssueModal: React.FC<IssueModalProps> = ({
             leftIcon={<Clock className="w-4 h-4 text-[var(--md-sys-color-primary)]" />}
           />
 
-          <Input
-            label="Sprint / Backlog"
-            type="text"
-            placeholder="e.g. Sprint 1, or leave empty for Backlog"
-            value={sprint}
-            onChange={(e) => setSprint(e.target.value)}
+          <SelectField
+            label="Sprint"
+            value={sprintId}
+            onValueChange={(val) => setSprintId(val)}
+            options={[
+              { value: '', label: 'Product Backlog (No Sprint)' },
+              ...projectSprints.map((s) => ({
+                value: String(s.id),
+                label: `${s.name} (${s.status})`,
+              })),
+            ]}
             leftIcon={<Layers className="w-4 h-4 text-[var(--md-sys-color-primary)]" />}
           />
         </div>
@@ -296,18 +268,17 @@ export const IssueModal: React.FC<IssueModalProps> = ({
           <Button
             type="button"
             variant="ghost"
-            size="sm"
             onClick={onClose}
+            disabled={submitting}
           >
             Cancel
           </Button>
           <Button
             type="submit"
             variant="filled"
-            size="sm"
             isLoading={submitting}
           >
-            {editingIssue ? 'Update Issue' : 'Create Issue'}
+            {editingIssue ? 'Save Changes' : 'Create Issue'}
           </Button>
         </div>
       </form>

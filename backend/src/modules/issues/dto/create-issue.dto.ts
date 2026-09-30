@@ -39,10 +39,10 @@ export class CreateIssueDto {
   @Min(0)
   estimatedHours?: number;
 
-  @ApiPropertyOptional({ example: 'Sprint 1', description: 'Sprint designation or null for Backlog' })
+  @ApiPropertyOptional({ example: 1, description: 'Sprint ID or null for Backlog' })
   @IsOptional()
-  @IsString()
-  sprint?: string;
+  @IsInt()
+  sprintId?: number | null;
 
   @ApiPropertyOptional({ example: 2, description: 'Assigned user ID' })
   @IsOptional()

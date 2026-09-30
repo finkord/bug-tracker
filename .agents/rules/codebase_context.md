@@ -26,7 +26,14 @@ on the BugTracker codebase.
 ## Hard Constraints (Non-Negotiable)
 
 - All source code, comments, identifiers, and documentation → **English only**.
-- No `any` types. No placeholders or mock implementations in production paths.
+- **Absolute Prohibition of Stubs & Mocks**: Zero placeholders, mocks, dummy responses, fake engines, or "TODO" stubs in production paths. Production code must be 100% functional and wired end-to-end. Mocks are restricted solely to automated test files (`*.spec.ts`).
+- **Backend-First Business Logic & Computation**: The frontend is strictly a presentation and interaction layer. FORBIDDEN: client-side dataset filtering (e.g. client-side JQL/search evaluation), client-side metrics aggregation, or permission inference. MANDATORY: All filtering, search parsing, permission evaluations, and mathematical/business aggregations must execute on the backend (NestJS / PostgreSQL).
+- **Enterprise Scalability (10,000+ Users)**:
+  - All collection endpoints must enforce server-side pagination (`limit` & `offset`/`cursor`). Never return unbounded arrays.
+  - Zero full-table scans. All filtered/searched columns must be backed by appropriate PostgreSQL indexes (B-Tree, GIN for full-text search).
+  - Never load entire database tables into Node.js heap memory to aggregate or iterate in JavaScript. Use database-level SQL aggregations (`SUM`, `COUNT`, `GROUP BY`).
+  - No single-instance in-memory state (`Map`, local variables) for distributed features (tokens, rate limiting, WebSockets). Use Redis for horizontal multi-instance scaling.
+  - Atomic database updates and transactions for concurrent writes (prevent lost updates and race conditions).
 - UI colours → **only** `var(--md-sys-color-*)` tokens from `src/index.css`. Never raw Tailwind palette classes.
 - Authorization → enforced at the **backend HTTP boundary** (guards on every mutating endpoint).
 - Never browse `node_modules/`, `dist/`, `.git/`, or `*.lock` files — they are quota sinks.

@@ -24,7 +24,12 @@ export interface IssueSummaryDto {
   severity: IssueSeverity;
   estimatedHours: number;
   loggedHours: number;
-  sprint: string | null;
+  sprintId: number | null;
+  sprint?: {
+    id: number;
+    name: string;
+    status: string;
+  } | null;
   reporter: UserSummaryDto;
   assignee: UserSummaryDto | null;
   commentsCount?: number;

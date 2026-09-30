@@ -13,10 +13,19 @@ class RealtimeSocketService {
   isConnected(): boolean { return this.connected; }
 
   connect() {
-    if (this.socket) return this.socket;
+    if (this.socket && this.socket.connected) return this.socket;
+    if (this.socket) {
+      this.socket.disconnect();
+    }
+
+    const token = localStorage.getItem('accessToken');
 
     this.socket = io(SOCKET_URL, {
       transports: ['websocket', 'polling'],
+      withCredentials: true,
+      auth: {
+        token: token ? (token.startsWith('Bearer ') ? token : `Bearer ${token}`) : undefined,
+      },
       reconnectionAttempts: 10,
       reconnectionDelay: 1000,
     });
@@ -26,12 +35,24 @@ class RealtimeSocketService {
       console.log('[Socket] Connected to real-time events gateway:', this.socket?.id);
     });
 
-    this.socket.on('disconnect', () => {
+    this.socket.on('disconnect', (reason) => {
       this.connected = false;
-      console.log('[Socket] Disconnected from real-time events gateway');
+      console.log('[Socket] Disconnected from real-time events gateway:', reason);
+    });
+
+    this.socket.on('connect_error', (err) => {
+      console.warn('[Socket] Connection error:', err.message);
     });
 
     return this.socket;
+  }
+
+  disconnect() {
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
+      this.connected = false;
+    }
   }
 
   getSocket() {

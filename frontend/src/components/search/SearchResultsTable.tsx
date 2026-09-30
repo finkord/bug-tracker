@@ -279,9 +279,9 @@ export const SearchResultsTable: React.FC<SearchResultsTableProps> = ({
 
                   {/* Sprint */}
                   <td className="py-2.5 px-4 whitespace-nowrap">
-                    {issue.sprint ? (
+                    {issue.sprint?.name ? (
                       <Badge variant="primary" className="text-[11px] font-medium rounded-full truncate max-w-[120px]">
-                        {issue.sprint}
+                        {issue.sprint.name}
                       </Badge>
                     ) : (
                       <span className="text-xs text-[var(--md-sys-color-on-surface-variant)]/60 italic">

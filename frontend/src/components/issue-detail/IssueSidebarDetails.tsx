@@ -14,7 +14,7 @@ interface IssueSidebarDetailsProps {
   issue: IssueItem;
   currentUser: UserProfile | null;
   onAssignToMe: () => Promise<void>;
-  onSprintChange: (sprint: string | null) => Promise<void>;
+  onSprintChange?: (sprintId: number | null) => Promise<void>;
 }
 
 export const IssueSidebarDetails: React.FC<IssueSidebarDetailsProps> = ({
@@ -135,7 +135,7 @@ export const IssueSidebarDetails: React.FC<IssueSidebarDetailsProps> = ({
             Sprint
           </span>
           <span className="font-medium text-foreground">
-            {issue.sprint || <span className="text-muted-foreground italic">Backlog</span>}
+            {issue.sprint?.name || <span className="text-muted-foreground italic">Backlog</span>}
           </span>
         </div>
 

@@ -4,9 +4,15 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module.js';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
+import { RedisIoAdapter } from './modules/events/adapters/redis-io.adapter.js';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Initialize and attach distributed Redis WebSocket adapter for multi-instance clusters
+  const redisIoAdapter = new RedisIoAdapter(app);
+  await redisIoAdapter.connectToRedis();
+  app.useWebSocketAdapter(redisIoAdapter);
 
   // Enable cookie parsing for secure httpOnly authentication cookies
   app.use(cookieParser());

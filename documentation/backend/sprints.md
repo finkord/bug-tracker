@@ -24,8 +24,9 @@ Sprints follow strict state transitions:
 | `POST` | `/` | Create a new sprint in planned status | JWT (`JwtAuthGuard`) |
 | `GET` | `/:id` | Retrieve sprint details and associated issues | JWT (`JwtAuthGuard`) |
 | `PATCH` | `/:id` | Update sprint name, goal, dates, or status | JWT (`JwtAuthGuard`) |
+| `DELETE` | `/:id` | Delete sprint (relational issues cleanly revert to backlog) | Project Lead / Admin |
 | `POST` | `/:id/start` | Transition sprint from `PLANNED` to `ACTIVE` | Project Lead / Admin |
-| `POST` | `/:id/complete` | Complete active sprint and handle roll-over | Project Lead / Admin |
+| `POST` | `/:id/complete` | Complete active sprint and rollover incomplete issues (`transferSprintId`) | Project Lead / Admin |
 
 ---
 

@@ -24,7 +24,7 @@ export function useIssuesQuery(filters?: {
   priority?: IssuePriority;
   issueType?: IssueType;
   assigneeId?: number;
-  sprint?: string;
+  sprintId?: string | number;
   search?: string;
 }) {
   return useQuery({
@@ -105,8 +105,8 @@ export function useAssignIssueToMeMutation() {
 export function useUpdateIssueSprintMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, sprint }: { id: number; sprint: string | null }) =>
-      api.updateIssueSprint(id, sprint),
+    mutationFn: ({ id, sprintId }: { id: number; sprintId: number | null }) =>
+      api.updateIssueSprint(id, sprintId),
     onSuccess: (updatedIssue) => {
       queryClient.invalidateQueries({ queryKey: issueKeys.lists() });
       queryClient.invalidateQueries({ queryKey: issueKeys.detail(updatedIssue.key) });

@@ -5,6 +5,7 @@ import { Issue, IssueStatus } from '../entities/issue.entity.js';
 import { Project } from '../../projects/entities/project.entity.js';
 import { User } from '../../users/entities/user.entity.js';
 import { Attachment } from '../entities/attachment.entity.js';
+import { Sprint } from '../../sprints/entities/sprint.entity.js';
 import { EventsGateway } from '../../events/events.gateway.js';
 import { CreateIssueDto } from '../dto/create-issue.dto.js';
 import { ListIssuesQueryDto } from '../dto/list-issues-query.dto.js';
@@ -28,6 +29,8 @@ export class IssueCoreService {
     private readonly projectRepository: Repository<Project>,
     @InjectRepository(Attachment)
     private readonly attachmentRepository: Repository<Attachment>,
+    @InjectRepository(Sprint)
+    private readonly sprintRepository: Repository<Sprint>,
     private readonly issueLinksService: IssueLinksService,
     private readonly eventsGateway: EventsGateway,
   ) {}
@@ -41,6 +44,7 @@ export class IssueCoreService {
       .leftJoinAndSelect('issue.project', 'project')
       .leftJoinAndSelect('issue.reporter', 'reporter')
       .leftJoinAndSelect('issue.assignee', 'assignee')
+      .leftJoinAndSelect('issue.sprint', 'sprint')
       .loadRelationIdAndMap('issue.commentIds', 'issue.comments');
 
     if (query.projectId) {
@@ -58,11 +62,11 @@ export class IssueCoreService {
     if (query.assigneeId) {
       qb.andWhere('issue.assigneeId = :assigneeId', { assigneeId: query.assigneeId });
     }
-    if (query.sprint) {
-      if (query.sprint.toUpperCase() === 'BACKLOG') {
-        qb.andWhere('(issue.sprint IS NULL OR issue.sprint = \'\')');
+    if (query.sprintId) {
+      if (query.sprintId.toUpperCase() === 'BACKLOG' || query.sprintId === '0') {
+        qb.andWhere('issue.sprintId IS NULL');
       } else {
-        qb.andWhere('issue.sprint = :sprint', { sprint: query.sprint });
+        qb.andWhere('issue.sprintId = :sprintId', { sprintId: Number(query.sprintId) });
       }
     }
     if (query.search && query.search.trim()) {
@@ -100,6 +104,7 @@ export class IssueCoreService {
           project: true,
           reporter: true,
           assignee: true,
+          sprint: true,
           comments: { author: true },
           worklogs: { user: true },
         },
@@ -115,6 +120,7 @@ export class IssueCoreService {
           .leftJoinAndSelect('issue.project', 'project')
           .leftJoinAndSelect('issue.reporter', 'reporter')
           .leftJoinAndSelect('issue.assignee', 'assignee')
+          .leftJoinAndSelect('issue.sprint', 'sprint')
           .leftJoinAndSelect('issue.comments', 'comments')
           .leftJoinAndSelect('comments.author', 'commentAuthor')
           .leftJoinAndSelect('issue.worklogs', 'worklogs')
@@ -135,6 +141,7 @@ export class IssueCoreService {
           project: true,
           reporter: true,
           assignee: true,
+          sprint: true,
           comments: { author: true },
           worklogs: { user: true },
         },
@@ -184,6 +191,17 @@ export class IssueCoreService {
       .getRawOne();
     const nextIssueNum = (maxResult?.maxNum ? Number(maxResult.maxNum) : 0) + 1;
 
+    let sprintId: number | null = null;
+    if (dto.sprintId) {
+      const sprint = await this.sprintRepository.findOne({
+        where: { id: dto.sprintId, projectId: dto.projectId },
+      });
+      if (!sprint) {
+        throw new NotFoundException(`Sprint #${dto.sprintId} not found in project #${dto.projectId}`);
+      }
+      sprintId = sprint.id;
+    }
+
     const issue = this.issueRepository.create({
       projectId: dto.projectId,
       project,
@@ -194,7 +212,7 @@ export class IssueCoreService {
       priority: dto.priority,
       severity: dto.severity,
       estimatedHours: dto.estimatedHours || 0,
-      sprint: dto.sprint?.trim() || null,
+      sprintId,
       reporterId: reporter.id,
       reporter,
       assigneeId: dto.assigneeId || null,
@@ -236,14 +254,24 @@ export class IssueCoreService {
   }
 
   /**
-   * Updates sprint assignment.
+   * Updates relational sprint assignment.
    */
-  async updateSprint(id: number, sprint: string | null): Promise<IssueDetailDto> {
+  async updateSprint(id: number, sprintId: number | null): Promise<IssueDetailDto> {
     const issue = await this.issueRepository.findOne({ where: { id } });
     if (!issue) {
       throw new NotFoundException(`Issue with ID #${id} not found`);
     }
-    issue.sprint = sprint ? sprint.trim() : null;
+    if (sprintId) {
+      const sprint = await this.sprintRepository.findOne({
+        where: { id: sprintId, projectId: issue.projectId },
+      });
+      if (!sprint) {
+        throw new NotFoundException(`Sprint #${sprintId} not found in project #${issue.projectId}`);
+      }
+      issue.sprintId = sprint.id;
+    } else {
+      issue.sprintId = null;
+    }
     await this.issueRepository.save(issue);
     const updated = await this.findById(id);
     this.eventsGateway.broadcastIssueUpdated(updated);
@@ -264,7 +292,19 @@ export class IssueCoreService {
     if (dto.priority) issue.priority = dto.priority;
     if (dto.severity) issue.severity = dto.severity;
     if (dto.estimatedHours !== undefined) issue.estimatedHours = dto.estimatedHours;
-    if (dto.sprint !== undefined) issue.sprint = dto.sprint?.trim() || null;
+    if (dto.sprintId !== undefined) {
+      if (dto.sprintId) {
+        const sprint = await this.sprintRepository.findOne({
+          where: { id: dto.sprintId, projectId: issue.projectId },
+        });
+        if (!sprint) {
+          throw new NotFoundException(`Sprint #${dto.sprintId} not found in project #${issue.projectId}`);
+        }
+        issue.sprintId = sprint.id;
+      } else {
+        issue.sprintId = null;
+      }
+    }
     if (dto.assigneeId !== undefined) issue.assigneeId = dto.assigneeId || null;
 
     await this.issueRepository.save(issue);
@@ -321,7 +361,14 @@ export class IssueCoreService {
       severity: i.severity,
       estimatedHours: i.estimatedHours || 0,
       loggedHours: i.loggedHours || 0,
-      sprint: i.sprint || null,
+      sprintId: i.sprintId ?? null,
+      sprint: i.sprint
+        ? {
+            id: i.sprint.id,
+            name: i.sprint.name,
+            status: i.sprint.status,
+          }
+        : null,
       reporter: this.mapUserSummary(i.reporter)!,
       assignee: this.mapUserSummary(i.assignee),
       commentsCount: Array.isArray(commentIds) ? commentIds.length : 0,

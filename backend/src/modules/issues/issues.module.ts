@@ -8,6 +8,7 @@ import { Attachment } from './entities/attachment.entity.js';
 import { IssueLink } from './entities/issue-link.entity.js';
 import { Project } from '../projects/entities/project.entity.js';
 import { User } from '../users/entities/user.entity.js';
+import { Sprint } from '../sprints/entities/sprint.entity.js';
 import { IssuesController } from './issues.controller.js';
 import { IssuesService } from './issues.service.js';
 import { IssueCoreService } from './services/issue-core.service.js';
@@ -20,7 +21,7 @@ import { RbacModule } from '../rbac/rbac.module.js';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Issue, Comment, Project, Worklog, User, Attachment, IssueLink]),
+    TypeOrmModule.forFeature([Issue, Comment, Project, Worklog, User, Attachment, IssueLink, Sprint]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     RbacModule,
   ],

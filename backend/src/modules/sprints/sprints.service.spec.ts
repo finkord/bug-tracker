@@ -11,6 +11,7 @@ describe('SprintsService', () => {
   let mockSprintRepository: Partial<Repository<Sprint>>;
   let mockProjectRepository: Partial<Repository<Project>>;
   let mockIssueRepository: Partial<Repository<Issue>>;
+  let mockQueryBuilder: any;
   const mockProject: Project = {
     id: 1,
     name: 'Bug Tracker',
@@ -51,7 +52,7 @@ describe('SprintsService', () => {
     mockProjectRepository = {
       findOne: vi.fn().mockResolvedValue(mockProject),
     };
-    const mockQueryBuilder = {
+    mockQueryBuilder = {
       update: vi.fn().mockReturnThis(),
       set: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
@@ -101,6 +102,15 @@ describe('SprintsService', () => {
     });
   });
 
+  describe('updateSprint', () => {
+    it('should update sprint details without modifying issues', async () => {
+      vi.mocked(mockSprintRepository.findOne!).mockResolvedValueOnce(mockSprint);
+      const actualSprint = await service.updateSprint(10, { name: 'Sprint 1 - Release' });
+      expect(actualSprint.name).toBe('Sprint 1 - Release');
+      expect(mockSprintRepository.save).toHaveBeenCalled();
+    });
+  });
+
   describe('startSprint', () => {
     it('should throw BadRequestException if sprint is already completed', async () => {
       const mockCompletedSprint = { ...mockSprint, status: SprintStatus.COMPLETED };
@@ -117,21 +127,25 @@ describe('SprintsService', () => {
   });
 
   describe('completeSprint', () => {
-    it('should mark sprint completed and reassign unfinished issues', async () => {
+    it('should mark sprint completed and reassign unfinished issues using relational sprintId', async () => {
       vi.mocked(mockSprintRepository.findOne!)
         .mockResolvedValueOnce(mockSprint)
         .mockResolvedValueOnce({ ...mockSprint, id: 11, name: 'Sprint 2' });
       const actualSprint = await service.completeSprint(10, { transferSprintId: 11 });
       expect(actualSprint.status).toBe(SprintStatus.COMPLETED);
       expect(mockIssueRepository.createQueryBuilder).toHaveBeenCalled();
+      expect(mockQueryBuilder.set).toHaveBeenCalledWith({ sprintId: 11 });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('sprintId = :sprintId', { sprintId: 10 });
     });
   });
 
   describe('deleteSprint', () => {
-    it('should delete sprint and detach unresolved issues', async () => {
+    it('should delete sprint and detach unresolved issues using relational sprintId', async () => {
       vi.mocked(mockSprintRepository.findOne!).mockResolvedValueOnce(mockSprint);
       const actualResult = await service.deleteSprint(10);
       expect(actualResult.success).toBe(true);
+      expect(mockQueryBuilder.set).toHaveBeenCalledWith({ sprintId: null });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('sprintId = :sprintId', { sprintId: 10 });
       expect(mockSprintRepository.delete).toHaveBeenCalledWith(10);
     });
   });

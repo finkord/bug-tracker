@@ -258,7 +258,7 @@ export const AdvancedSearchPage: React.FC = () => {
       issue.issueType,
       issue.status,
       issue.priority,
-      issue.sprint || '',
+      issue.sprint?.name || '',
       issue.assignee?.fullName || 'Unassigned',
       issue.createdAt,
       issue.updatedAt,

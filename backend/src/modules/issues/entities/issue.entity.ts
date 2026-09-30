@@ -103,9 +103,14 @@ export class Issue {
   @Column({ name: 'logged_hours', type: 'float', default: 0 })
   loggedHours: number;
 
-  // Sprint designation (e.g. 'Sprint 1', or null if in Backlog)
-  @Column({ type: 'varchar', length: 100, nullable: true })
-  sprint: string | null;
+  // Relational sprint foreign key and association
+  @Index()
+  @Column({ name: 'sprint_id', type: 'int', nullable: true })
+  sprintId: number | null;
+
+  @ManyToOne('Sprint', 'issues', { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'sprint_id' })
+  sprint: import('../../sprints/entities/sprint.entity.js').Sprint | null;
 
   @Column({ name: 'reporter_id', type: 'int' })
   reporterId: number;

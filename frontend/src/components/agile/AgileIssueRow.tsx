@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { IssueItem, IssueType, IssuePriority } from '../../api/client';
+import type { SprintDefinition } from '../../types/agile';
 import { Avatar } from '../common/Avatar';
 import { Badge, Dropdown, Tooltip } from '../ui';
 import {
@@ -19,9 +20,9 @@ import {
 
 interface AgileIssueRowProps {
   issue: IssueItem;
-  availableSprints: string[];
+  availableSprints: SprintDefinition[];
   onClick: (issue: IssueItem) => void;
-  onMoveToSprint: (issueId: number, sprintName: string | null) => void;
+  onMoveToSprint: (issueId: number, sprintId: number | null) => void;
 }
 
 export const AgileIssueRow: React.FC<AgileIssueRowProps> = ({
@@ -39,7 +40,7 @@ export const AgileIssueRow: React.FC<AgileIssueRowProps> = ({
       'application/json',
       JSON.stringify({
         issueId: issue.id,
-        currentSprint: issue.sprint || null,
+        currentSprintId: issue.sprintId || null,
       }),
     );
     e.dataTransfer.effectAllowed = 'move';
@@ -129,7 +130,7 @@ export const AgileIssueRow: React.FC<AgileIssueRowProps> = ({
     onClick: () => onClick(issue),
   });
 
-  if (issue.sprint) {
+  if (issue.sprintId) {
     dropdownItems.push({
       label: (
         <span className="flex items-center gap-2 text-[var(--md-sys-color-on-surface)]">
@@ -141,17 +142,17 @@ export const AgileIssueRow: React.FC<AgileIssueRowProps> = ({
     });
   }
 
-  const otherSprints = availableSprints.filter((s) => s !== issue.sprint);
+  const otherSprints = availableSprints.filter((s) => s.id && s.id !== issue.sprintId);
   if (otherSprints.length > 0) {
-    otherSprints.forEach((sName) => {
+    otherSprints.forEach((s) => {
       dropdownItems.push({
         label: (
           <span className="flex items-center gap-2 text-[var(--md-sys-color-on-surface)]">
             <Layers className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
-            <span>Move to {sName}</span>
+            <span>Move to {s.name}</span>
           </span>
         ),
-        onClick: () => onMoveToSprint(issue.id, sName),
+        onClick: () => onMoveToSprint(issue.id, s.id!),
       });
     });
   }

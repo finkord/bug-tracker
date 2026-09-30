@@ -1,7 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository } from 'typeorm';
 import * as argon2 from 'argon2';
+import { ARGON2_OPTIONS } from '../auth/constants/argon2.constants.js';
 import { User, SystemRole, OAuthProvider } from '../users/entities/user.entity.js';
 import { Project } from '../projects/entities/project.entity.js';
 import { Issue, IssueType, IssueStatus, IssuePriority, IssueSeverity } from '../issues/entities/issue.entity.js';
@@ -21,6 +22,7 @@ import {
 import { IssueSecurityScheme } from '../rbac/entities/issue-security-scheme.entity.js';
 import { IssueSecurityLevel } from '../rbac/entities/issue-security-level.entity.js';
 import { IssueSecurityGrant } from '../rbac/entities/issue-security-grant.entity.js';
+import { Sprint, SprintStatus } from '../sprints/entities/sprint.entity.js';
 
 @Injectable()
 export class SeedService {
@@ -31,6 +33,8 @@ export class SeedService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Project)
     private readonly projectRepository: Repository<Project>,
+    @InjectRepository(Sprint)
+    private readonly sprintRepository: Repository<Sprint>,
     @InjectRepository(Issue)
     private readonly issueRepository: Repository<Issue>,
     @InjectRepository(IssueLink)
@@ -81,12 +85,7 @@ export class SeedService {
     }
 
     // 1. Password hashing for all seed accounts
-    const defaultPasswordHash = await argon2.hash('Password123!', {
-      type: argon2.argon2id,
-      memoryCost: 65536,
-      timeCost: 3,
-      parallelism: 4,
-    });
+    const defaultPasswordHash = await argon2.hash('Password123!', ARGON2_OPTIONS);
 
     // 2. Create Users across 5 engineering domains
     const usersMap = await this.seedUsers(defaultPasswordHash);
@@ -144,6 +143,7 @@ export class SeedService {
     await this.worklogRepository.createQueryBuilder().delete().from(Worklog).execute();
     await this.commentRepository.createQueryBuilder().delete().from(Comment).execute();
     await this.issueRepository.createQueryBuilder().delete().from(Issue).execute();
+    await this.sprintRepository.createQueryBuilder().delete().from(Sprint).execute();
     await this.projectRepository.createQueryBuilder().delete().from(Project).execute();
     await this.userRepository.createQueryBuilder().delete().from(User).execute();
   }
@@ -1201,11 +1201,50 @@ export class SeedService {
     ];
 
     const result: Record<string, Issue> = {};
+    const sprintMap: Record<string, Record<string, number>> = {};
+
+    for (const [key, proj] of Object.entries(projects)) {
+      sprintMap[key] = {};
+
+      const s1 = this.sprintRepository.create({
+        projectId: proj.id,
+        name: 'Sprint 1 (Completed)',
+        goal: `${proj.name} initial architecture and foundational MVP components`,
+        status: SprintStatus.COMPLETED,
+        startDate: '2026-08-01',
+        endDate: '2026-08-14',
+      });
+      const savedS1 = await this.sprintRepository.save(s1);
+      sprintMap[key]['Sprint 1 (Completed)'] = savedS1.id;
+
+      const s2 = this.sprintRepository.create({
+        projectId: proj.id,
+        name: 'Sprint 2 (Active)',
+        goal: `${proj.name} feature implementation, testing, and production stabilization`,
+        status: SprintStatus.ACTIVE,
+        startDate: '2026-08-15',
+        endDate: '2026-08-29',
+      });
+      const savedS2 = await this.sprintRepository.save(s2);
+      sprintMap[key]['Sprint 2 (Active)'] = savedS2.id;
+
+      const s3 = this.sprintRepository.create({
+        projectId: proj.id,
+        name: 'Sprint 3 (Upcoming)',
+        goal: `${proj.name} enterprise enhancements and third-party integrations`,
+        status: SprintStatus.PLANNED,
+        startDate: '2026-08-30',
+        endDate: '2026-09-13',
+      });
+      const savedS3 = await this.sprintRepository.save(s3);
+      sprintMap[key]['Sprint 3 (Upcoming)'] = savedS3.id;
+    }
 
     for (const item of rawIssues) {
       const project = projects[item.projectKey];
       const reporter = users[item.reporterKey] || Object.values(users)[0];
       const assignee = item.assigneeKey ? users[item.assigneeKey] : null;
+      const targetSprintId = item.sprint ? sprintMap[item.projectKey]?.[item.sprint] || null : null;
 
       const issue = this.issueRepository.create({
         projectId: project.id,
@@ -1219,7 +1258,7 @@ export class SeedService {
         severity: item.severity,
         estimatedHours: item.estimatedHours,
         loggedHours: 0,
-        sprint: item.sprint,
+        sprintId: targetSprintId,
         reporterId: reporter.id,
         reporter,
         assigneeId: assignee ? assignee.id : null,

@@ -68,7 +68,12 @@ export interface IssueItem {
   severity: IssueSeverity;
   estimatedHours: number;
   loggedHours: number;
-  sprint: string | null;
+  sprintId: number | null;
+  sprint?: {
+    id: number;
+    name: string;
+    status: string;
+  } | null;
   reporter: {
     id: number;
     fullName: string;
@@ -100,6 +105,6 @@ export interface CreateIssuePayload {
   priority?: IssuePriority;
   severity?: IssueSeverity;
   estimatedHours?: number;
-  sprint?: string;
+  sprintId?: number | null;
   assigneeId?: number;
 }

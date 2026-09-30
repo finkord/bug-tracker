@@ -17,8 +17,8 @@ interface CompleteSprintModalProps {
   onClose: () => void;
   sprint: SprintDefinition | null;
   issues: IssueItem[];
-  availableSprints: string[];
-  onConfirmComplete: (sprintName: string, rolloverTarget: string) => Promise<void>;
+  availableSprints: SprintDefinition[];
+  onConfirmComplete: (sprintId: number, rolloverTargetSprintId: number | null) => Promise<void>;
 }
 
 export const CompleteSprintModal: React.FC<CompleteSprintModalProps> = ({
@@ -41,12 +41,16 @@ export const CompleteSprintModal: React.FC<CompleteSprintModalProps> = ({
     (i) => i.status !== 'RESOLVED' && i.status !== 'CLOSED',
   );
 
-  const plannedSprints = availableSprints.filter((s) => s !== sprint.name);
+  const plannedSprints = availableSprints.filter(
+    (s) => s.id && s.id !== sprint.id && s.status !== 'COMPLETED',
+  );
 
   const handleComplete = async () => {
+    if (!sprint.id) return;
     setIsSubmitting(true);
     try {
-      await onConfirmComplete(sprint.name, rolloverTarget);
+      const rolloverTargetSprintId = rolloverTarget === 'BACKLOG' ? null : Number(rolloverTarget);
+      await onConfirmComplete(sprint.id, rolloverTargetSprintId);
       onClose();
     } finally {
       setIsSubmitting(false);
@@ -97,11 +101,11 @@ export const CompleteSprintModal: React.FC<CompleteSprintModalProps> = ({
                     <span>Product Backlog</span>
                   </span>
                 </SelectItem>
-                {plannedSprints.map((sName) => (
-                  <SelectItem key={sName} value={sName}>
+                {plannedSprints.map((s) => (
+                  <SelectItem key={s.id} value={String(s.id)}>
                     <span className="flex items-center gap-2">
                       <ArrowRight className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
-                      <span>{sName}</span>
+                      <span>{s.name}</span>
                     </span>
                   </SelectItem>
                 ))}

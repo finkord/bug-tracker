@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import type { IssueItem } from '../../api/client';
+import type { SprintDefinition } from '../../types/agile';
 import { AgileIssueRow } from './AgileIssueRow';
 import { Badge } from '../ui';
 import { ChevronDown, ChevronRight, Inbox, Plus } from 'lucide-react';
 
 interface BacklogSectionProps {
   issues: IssueItem[];
-  availableSprints: string[];
+  availableSprints: SprintDefinition[];
   isCollapsed: boolean;
   onToggleCollapse: () => void;
   onSelectIssue: (issue: IssueItem) => void;
-  onMoveToSprint: (issueId: number, sprintName: string | null) => void;
+  onMoveToSprint: (issueId: number, sprintId: number | null) => void;
   onQuickCreateInBacklog: () => void;
 }
 

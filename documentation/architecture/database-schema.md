@@ -68,7 +68,7 @@ erDiagram
 ### C. Issue Tracking & Forensics (`modules/issues/`)
 5. **[`Issue`](../../backend/src/modules/issues/entities/issue.entity.ts)**:
    - Primary table: `issues`
-   - Attributes: `id`, `key` (UK, e.g. `CORE-101`), `title`, `description`, `type` (`BUG`, `TASK`, `STORY`, `EPIC`), `status` (`OPEN`, `IN_PROGRESS`, `RESOLVED`, `CLOSED`), `priority` (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`), `projectId`, `sprintId`, `reporterId`, `assigneeId`, `estimateHours`, `timeSpentHours`.
+   - Attributes: `id`, `key` (UK, e.g. `CORE-101`), `title`, `description`, `type` (`BUG`, `TASK`, `STORY`, `EPIC`), `status` (`OPEN`, `IN_PROGRESS`, `RESOLVED`, `CLOSED`), `priority` (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`), `projectId`, `sprintId` (indexed FK to `sprints.id`, `onDelete: SET NULL`), `reporterId`, `assigneeId`, `estimateHours`, `timeSpentHours`.
 6. **[`Worklog`](../../backend/src/modules/issues/entities/worklog.entity.ts)**:
    - Tracks logged engineering effort: `id`, `issueId`, `authorId`, `timeSpentSeconds`, `startedAt`, `description`.
 7. **[`Comment`](../../backend/src/modules/issues/entities/comment.entity.ts)**:

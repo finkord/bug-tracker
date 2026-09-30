@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { api } from '../api/client';
 import { AgileToolbar } from '../components/agile/AgileToolbar';
 import { SprintContainer } from '../components/agile/SprintContainer';
 import { BacklogSection } from '../components/agile/BacklogSection';
@@ -17,7 +16,6 @@ import type {
   AgileViewMode,
 } from '../types/agile';
 import { Loader2 } from 'lucide-react';
-
 import { useProjectsQuery } from '../api/queries';
 
 export const BacklogPage: React.FC = () => {
@@ -65,14 +63,14 @@ export const BacklogPage: React.FC = () => {
   const [editingSprint, setEditingSprint] = useState<SprintDefinition | null>(null);
 
   const [isCompleteSprintOpen, setIsCompleteSprintOpen] = useState<boolean>(false);
-  const [completingSprintName, setCompletingSprintName] = useState<string | null>(null);
+  const [completingSprint, setCompletingSprint] = useState<SprintDefinition | null>(null);
 
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState<boolean>(false);
   const [selectedIssueId, setSelectedIssueId] = useState<number | null>(null);
 
   // Issue creation modal
   const [isCreateIssueOpen, setIsCreateIssueOpen] = useState<boolean>(false);
-  const [createIssueSprint, setCreateIssueSprint] = useState<string | null>(null);
+  const [createIssueSprintId, setCreateIssueSprintId] = useState<number | null>(null);
 
   const handleSaveSprint = (sprintData: SprintDefinition) => {
     saveSprint(sprintData, editingSprint);
@@ -144,12 +142,12 @@ export const BacklogPage: React.FC = () => {
           /* Active Sprint Execution Board */
           <ActiveSprintBoard
             sprint={activeSprint}
-            issues={activeSprint ? filteredIssues.filter((i) => i.sprint === activeSprint.name) : []}
+            issues={activeSprint ? filteredIssues.filter((i) => i.sprintId === activeSprint.id) : []}
             onSelectIssue={(issue) => setSelectedIssueId(issue.id)}
             onStatusChange={handleStatusChange}
             onAssignToMe={handleAssignToMe}
-            onCompleteSprint={(name) => {
-              setCompletingSprintName(name);
+            onCompleteSprint={(sprint) => {
+              setCompletingSprint(sprint);
               setIsCompleteSprintOpen(true);
             }}
             onGoToBacklog={() => setViewMode('backlog')}
@@ -160,20 +158,20 @@ export const BacklogPage: React.FC = () => {
           <div className="w-full pb-8 space-y-4">
             {/* Stacked Sprint Containers */}
             {sprintList.map((sprint) => {
-              const sprintIssues = filteredIssues.filter((i) => i.sprint === sprint.name);
+              const sprintIssues = filteredIssues.filter((i) => i.sprintId === sprint.id);
               return (
                 <SprintContainer
-                  key={sprint.name}
+                  key={sprint.id || sprint.name}
                   sprint={sprint}
                   issues={sprintIssues}
-                  availableSprints={allSprintNames}
+                  availableSprints={sprintList}
                   isCollapsed={!!collapsedSprints[sprint.name]}
                   onToggleCollapse={() => handleToggleSprintCollapse(sprint.name)}
                   onSelectIssue={(issue) => setSelectedIssueId(issue.id)}
                   onMoveToSprint={handleMoveToSprint}
                   onStartSprint={handleStartSprint}
-                  onCompleteSprint={(name) => {
-                    setCompletingSprintName(name);
+                  onCompleteSprint={(target) => {
+                    setCompletingSprint(target);
                     setIsCompleteSprintOpen(true);
                   }}
                   onEditSprint={(s) => {
@@ -181,10 +179,10 @@ export const BacklogPage: React.FC = () => {
                     setSprintFormMode('edit');
                     setIsSprintFormOpen(true);
                   }}
-                  onDeleteSprint={handleDeleteSprint}
+                  onDeleteSprint={(sprintId, sprintName) => handleDeleteSprint(sprintId, sprintName)}
                   onGoToActiveBoard={() => setViewMode('board')}
-                  onQuickCreateInSprint={(sName) => {
-                    setCreateIssueSprint(sName);
+                  onQuickCreateInSprint={(sId) => {
+                    setCreateIssueSprintId(sId);
                     setIsCreateIssueOpen(true);
                   }}
                 />
@@ -193,16 +191,14 @@ export const BacklogPage: React.FC = () => {
 
             {/* Product Backlog Section */}
             <BacklogSection
-              issues={filteredIssues.filter(
-                (i) => !i.sprint || i.sprint.toUpperCase() === 'BACKLOG',
-              )}
-              availableSprints={allSprintNames}
+              issues={filteredIssues.filter((i) => !i.sprintId)}
+              availableSprints={sprintList}
               isCollapsed={isBacklogCollapsed}
               onToggleCollapse={() => setIsBacklogCollapsed((prev) => !prev)}
               onSelectIssue={(issue) => setSelectedIssueId(issue.id)}
               onMoveToSprint={handleMoveToSprint}
               onQuickCreateInBacklog={() => {
-                setCreateIssueSprint(null);
+                setCreateIssueSprintId(null);
                 setIsCreateIssueOpen(true);
               }}
             />
@@ -224,16 +220,16 @@ export const BacklogPage: React.FC = () => {
       />
 
       {/* Complete Sprint Modal */}
-      {completingSprintName && (
+      {completingSprint && (
         <CompleteSprintModal
           isOpen={isCompleteSprintOpen}
           onClose={() => {
             setIsCompleteSprintOpen(false);
-            setCompletingSprintName(null);
+            setCompletingSprint(null);
           }}
-          sprint={sprintDefinitions[completingSprintName] || null}
-          issues={issues.filter((i) => i.sprint === completingSprintName)}
-          availableSprints={allSprintNames}
+          sprint={completingSprint}
+          issues={issues.filter((i) => i.sprintId === completingSprint.id)}
+          availableSprints={sprintList}
           onConfirmComplete={handleConfirmCompleteSprint}
         />
       )}
@@ -245,7 +241,7 @@ export const BacklogPage: React.FC = () => {
           onClose={() => setIsAnalyticsOpen(false)}
           sprint={
             activeSprint ||
-            Object.values(sprintDefinitions)[0] || {
+            sprintList[0] || {
               name: 'Sprint 1',
               goal: '',
               startDate: new Date().toISOString().split('T')[0],
@@ -254,8 +250,7 @@ export const BacklogPage: React.FC = () => {
             }
           }
           sprintIssues={issues.filter(
-            (i) =>
-              i.sprint === (activeSprint?.name || Object.keys(sprintDefinitions)[0] || 'Sprint 1'),
+            (i) => i.sprintId === (activeSprint?.id || sprintList[0]?.id),
           )}
           allSprints={sprintDefinitions}
           allIssues={issues}
@@ -280,21 +275,14 @@ export const BacklogPage: React.FC = () => {
         isOpen={isCreateIssueOpen}
         onClose={() => {
           setIsCreateIssueOpen(false);
-          setCreateIssueSprint(null);
+          setCreateIssueSprintId(null);
         }}
-        onIssueSaved={async (savedIssue) => {
-          if (createIssueSprint && savedIssue.sprint !== createIssueSprint) {
-            try {
-              await api.updateIssueSprint(savedIssue.id, createIssueSprint);
-              savedIssue = { ...savedIssue, sprint: createIssueSprint };
-            } catch (err) {
-              console.error('Failed to set sprint on new issue', err);
-            }
-          }
+        onIssueSaved={(savedIssue) => {
           setIssues((prev) => [savedIssue, ...prev]);
-          setCreateIssueSprint(null);
+          setCreateIssueSprintId(null);
         }}
         defaultProjectId={selectedProjectId}
+        defaultSprintId={createIssueSprintId}
       />
     </div>
   );

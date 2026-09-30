@@ -258,14 +258,15 @@ export function evaluateJql(
           }
         }
       } else if (field === 'sprint') {
+        const issueSprintName = issue.sprint?.name;
         if (operator === 'is') {
-          if (value === 'EMPTY' && issue.sprint) return false;
+          if (value === 'EMPTY' && issue.sprintId) return false;
         } else if (operator === 'is not') {
-          if (value === 'EMPTY' && !issue.sprint) return false;
+          if (value === 'EMPTY' && !issue.sprintId) return false;
         } else if (operator === '=') {
-          if (issue.sprint !== value) return false;
+          if (issueSprintName !== value && String(issue.sprintId) !== value) return false;
         } else if (operator === '!=') {
-          if (issue.sprint === value) return false;
+          if (issueSprintName === value || String(issue.sprintId) === value) return false;
         }
       } else if (field === 'text') {
         const q = String(value).toLowerCase();

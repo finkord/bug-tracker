@@ -34,10 +34,11 @@ Supported Priorities: `LOW`, `MEDIUM`, `HIGH`, `CRITICAL`.
 
 | Method | Endpoint | Description | Auth Required |
 |---|---|---|---|
-| `GET` | `/` | Query issues by project, sprint, status, or assignee | JWT (`JwtAuthGuard`) |
-| `POST` | `/` | Create a new issue in a project | JWT (`JwtAuthGuard`) |
-| `GET` | `/:id` | Get full issue details (with worklogs & comments) | JWT (`JwtAuthGuard`) |
+| `GET` | `/` | Query issues by project, sprintId, status, or assignee | JWT (`JwtAuthGuard`) |
+| `POST` | `/` | Create a new issue in a project (with relational `sprintId`) | JWT (`JwtAuthGuard`) |
+| `GET` | `/:id` | Get full issue details (with worklogs, comments & sprint) | JWT (`JwtAuthGuard`) |
 | `PATCH` | `/:id` | Update issue attributes or transition status | JWT (`JwtAuthGuard`) |
+| `PATCH` | `/:id/sprint` | Update relational sprint assignment (`sprintId: number \| null`) | JWT (`JwtAuthGuard`) |
 | `DELETE` | `/:id` | Delete an issue | Admin / Project Lead |
 | `POST` | `/:id/comments` | Add a comment to an issue | JWT (`JwtAuthGuard`) |
 | `POST` | `/:id/worklogs` | Log effort time against an issue | JWT (`JwtAuthGuard`) |

@@ -104,19 +104,13 @@ export class SprintsService {
     const sprint = await this.getSprintById(id);
     sprint.status = SprintStatus.COMPLETED;
     const savedSprint = await this.sprintRepository.save(sprint);
-    let targetSprintName: string | null = null;
-    if (dto.transferSprintId) {
-      const targetSprint = await this.sprintRepository.findOne({ where: { id: dto.transferSprintId } });
-      if (targetSprint) {
-        targetSprintName = targetSprint.name;
-      }
-    }
+    const targetSprintId: number | null = dto.transferSprintId || null;
     await this.issueRepository
       .createQueryBuilder()
       .update(Issue)
-      .set({ sprint: targetSprintName })
+      .set({ sprintId: targetSprintId })
       .where('projectId = :projectId', { projectId: sprint.projectId })
-      .andWhere('sprint = :sprintName', { sprintName: sprint.name })
+      .andWhere('sprintId = :sprintId', { sprintId: id })
       .andWhere('status NOT IN (:...completedStatuses)', {
         completedStatuses: [IssueStatus.RESOLVED, IssueStatus.CLOSED],
       })
@@ -132,9 +126,9 @@ export class SprintsService {
     await this.issueRepository
       .createQueryBuilder()
       .update(Issue)
-      .set({ sprint: null })
+      .set({ sprintId: null })
       .where('projectId = :projectId', { projectId: sprint.projectId })
-      .andWhere('sprint = :sprintName', { sprintName: sprint.name })
+      .andWhere('sprintId = :sprintId', { sprintId: id })
       .execute();
     await this.sprintRepository.delete(id);
     return { success: true, message: `Sprint "${sprint.name}" deleted successfully` };

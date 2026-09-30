@@ -347,9 +347,9 @@ export const IssueCard: React.FC<IssueCardProps> = ({
           <span className="font-mono text-[11px] font-bold text-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/50 px-2 py-0.5 rounded-full whitespace-nowrap shrink-0">
             {issue.key}
           </span>
-          {issue.sprint && (
+          {issue.sprint?.name && (
             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--md-sys-color-tertiary-container)] text-[var(--md-sys-color-on-tertiary-container)] whitespace-nowrap shrink-0 truncate max-w-[90px]">
-              {issue.sprint}
+              {issue.sprint.name}
             </span>
           )}
         </div>

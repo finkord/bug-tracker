@@ -19,7 +19,7 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { IssuesService } from './issues.service.js';
 import { SeaweedFsService, type UploadedFileInput } from './services/seaweedfs.service.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
@@ -28,6 +28,7 @@ import { User } from '../users/entities/user.entity.js';
 import { IssueStatus } from './entities/issue.entity.js';
 import { CreateIssueDto } from './dto/create-issue.dto.js';
 import { ListIssuesQueryDto } from './dto/list-issues-query.dto.js';
+import { UpdateIssueSprintDto } from './dto/update-issue-sprint.dto.js';
 import { LogWorkDto } from './dto/log-work.dto.js';
 import { CreateIssueLinkDto } from './dto/create-issue-link.dto.js';
 import { ProjectPermissionGuard } from '../rbac/guards/project-permission.guard.js';
@@ -135,9 +136,9 @@ export class IssuesController {
   })
   async updateSprint(
     @Param('id', ParseIntPipe) id: number,
-    @Body('sprint') sprint: string | null,
+    @Body() dto: UpdateIssueSprintDto,
   ) {
-    return this.issuesService.updateSprint(id, sprint);
+    return this.issuesService.updateSprint(id, dto.sprintId ?? null);
   }
 
   @Patch(':id')

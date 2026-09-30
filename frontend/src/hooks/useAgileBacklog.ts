@@ -99,7 +99,7 @@ export function useAgileBacklog(selectedProjectId: number | null) {
     };
   }, [selectedProjectId, issueFilter, queryClient]);
 
-  // Sprint definitions mapped from backend sprints and any legacy strings
+  // Sprint definitions mapped cleanly from relational backend sprints
   const sprintDefinitions = useMemo(() => {
     const loadedDefs: Record<string, SprintDefinition> = {};
     sprintsData.forEach((s) => {
@@ -113,22 +113,8 @@ export function useAgileBacklog(selectedProjectId: number | null) {
         status: s.status,
       };
     });
-
-    // Check issues for any unmapped sprint name
-    issues.forEach((issue) => {
-      if (issue.sprint && issue.sprint.toUpperCase() !== 'BACKLOG' && !loadedDefs[issue.sprint]) {
-        loadedDefs[issue.sprint] = {
-          name: issue.sprint,
-          goal: 'Imported from issue',
-          startDate: '',
-          endDate: '',
-          status: 'PLANNED',
-        };
-      }
-    });
-
     return loadedDefs;
-  }, [sprintsData, issues]);
+  }, [sprintsData]);
 
   // Filtered issues computation
   const filteredIssues = useMemo(() => {
@@ -152,11 +138,18 @@ export function useAgileBacklog(selectedProjectId: number | null) {
   const allSprintNames = useMemo(() => Object.keys(sprintDefinitions), [sprintDefinitions]);
 
   const activeSprint = useMemo(() => {
-    const foundName = Object.keys(sprintDefinitions).find(
-      (name) => sprintDefinitions[name].status === 'ACTIVE',
-    );
-    return foundName ? sprintDefinitions[foundName] : null;
-  }, [sprintDefinitions]);
+    const found = sprintsData.find((s) => s.status === 'ACTIVE');
+    if (!found) return null;
+    return {
+      id: found.id,
+      projectId: found.projectId,
+      name: found.name,
+      goal: found.goal || '',
+      startDate: found.startDate || '',
+      endDate: found.endDate || '',
+      status: found.status,
+    } as SprintDefinition;
+  }, [sprintsData]);
 
   const sprintList = useMemo(() => {
     return Object.values(sprintDefinitions).sort((a, b) => {
@@ -175,10 +168,10 @@ export function useAgileBacklog(selectedProjectId: number | null) {
     });
   };
 
-  // Issue manipulation
-  const handleMoveToSprint = async (issueId: number, sprintName: string | null) => {
+  // Issue manipulation via relational sprintId
+  const handleMoveToSprint = async (issueId: number, sprintId: number | null) => {
     try {
-      await updateSprintOnIssueMutation.mutateAsync({ id: issueId, sprint: sprintName || null });
+      await updateSprintOnIssueMutation.mutateAsync({ id: issueId, sprintId });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to move issue');
     }
@@ -233,63 +226,37 @@ export function useAgileBacklog(selectedProjectId: number | null) {
     }
   };
 
-  const handleStartSprint = async (sprintName: string) => {
+  const handleStartSprint = async (sprintId: number) => {
     if (!selectedProjectId) return;
-    const target = sprintDefinitions[sprintName];
-    if (!target) return;
     try {
-      if (target.id) {
-        await startSprintMutation.mutateAsync({ projectId: selectedProjectId, sprintId: target.id });
-      }
+      await startSprintMutation.mutateAsync({ projectId: selectedProjectId, sprintId });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to start sprint');
     }
   };
 
-  const handleConfirmCompleteSprint = async (sprintName: string, rolloverTarget: string) => {
+  const handleConfirmCompleteSprint = async (sprintId: number, rolloverTargetSprintId: number | null) => {
     if (!selectedProjectId) return;
-    const targetSprint = sprintDefinitions[sprintName];
-    if (!targetSprint) return;
     try {
-      const rolloverSprint = rolloverTarget !== 'BACKLOG' ? sprintDefinitions[rolloverTarget] : null;
-      if (targetSprint.id) {
-        await completeSprintMutation.mutateAsync({
-          projectId: selectedProjectId,
-          sprintId: targetSprint.id,
-          data: {
-            transferSprintId: rolloverSprint?.id || null,
-          },
-        });
-      } else {
-        const sprintIssues = issues.filter((i) => i.sprint === sprintName);
-        const incomplete = sprintIssues.filter(
-          (i) => i.status !== 'RESOLVED' && i.status !== 'CLOSED',
-        );
-        const newSprintVal = rolloverTarget === 'BACKLOG' ? null : rolloverTarget;
-        for (const issue of incomplete) {
-          await updateSprintOnIssueMutation.mutateAsync({ id: issue.id, sprint: newSprintVal });
-        }
-      }
+      await completeSprintMutation.mutateAsync({
+        projectId: selectedProjectId,
+        sprintId,
+        data: {
+          transferSprintId: rolloverTargetSprintId,
+        },
+      });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to complete sprint');
     }
   };
 
-  const handleDeleteSprint = async (sprintName: string) => {
+  const handleDeleteSprint = async (sprintId: number, sprintName: string) => {
     if (!selectedProjectId) return;
     if (!window.confirm(`Are you sure you want to delete ${sprintName}? Tickets will be moved to the backlog.`)) {
       return;
     }
-    const target = sprintDefinitions[sprintName];
     try {
-      if (target?.id) {
-        await deleteSprintMutation.mutateAsync({ projectId: selectedProjectId, sprintId: target.id });
-      } else {
-        const inSprint = issues.filter((i) => i.sprint === sprintName);
-        for (const issue of inSprint) {
-          await updateSprintOnIssueMutation.mutateAsync({ id: issue.id, sprint: null });
-        }
-      }
+      await deleteSprintMutation.mutateAsync({ projectId: selectedProjectId, sprintId });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to delete sprint');
     }

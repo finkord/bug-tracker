@@ -31,10 +31,10 @@ export class ListIssuesQueryDto {
   @IsInt()
   assigneeId?: number;
 
-  @ApiPropertyOptional({ example: 'Sprint 1', description: 'Filter by sprint name or BACKLOG' })
+  @ApiPropertyOptional({ example: '1', description: 'Filter by sprint ID or BACKLOG' })
   @IsOptional()
   @IsString()
-  sprint?: string;
+  sprintId?: string;
 
   @ApiPropertyOptional({ example: 'memory', description: 'Search term across title and description' })
   @IsOptional()
