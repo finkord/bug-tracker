@@ -513,21 +513,57 @@ export class UsersService {
   }
 
   /**
-   * Returns active, unblocked users for assignment selectors with avatars.
+   * Returns active, unblocked users for assignment selectors with pagination and search.
    */
-  async findAssignees(): Promise<Array<{ id: number; fullName: string; email: string; avatarUrl: string | null; systemRole: SystemRole; jobTitle?: string | null }>> {
-    return this.usersRepository.find({
-      where: { isBlocked: false },
-      select: {
-        id: true,
-        fullName: true,
-        email: true,
-        avatarUrl: true,
-        systemRole: true,
-        jobTitle: true,
-      },
-      order: { fullName: 'ASC' },
-    });
+  async findAssignees(
+    search?: string,
+    page = 1,
+    limit = 50,
+  ): Promise<{
+    items: Array<{ id: number; fullName: string; email: string; avatarUrl: string | null; systemRole: SystemRole; jobTitle?: string | null }>;
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const safePage = Math.max(1, page);
+    const safeLimit = Math.min(200, Math.max(1, limit));
+
+    const qb = this.usersRepository
+      .createQueryBuilder('user')
+      .where('user.isBlocked = false')
+      .select([
+        'user.id',
+        'user.fullName',
+        'user.email',
+        'user.avatarUrl',
+        'user.systemRole',
+        'user.jobTitle',
+      ])
+      .orderBy('user.fullName', 'ASC')
+      .skip((safePage - 1) * safeLimit)
+      .take(safeLimit);
+
+    if (search && search.trim()) {
+      const term = `%${search.trim().toLowerCase()}%`;
+      qb.andWhere('(LOWER(user.fullName) LIKE :term OR LOWER(user.email) LIKE :term)', { term });
+    }
+
+    const [items, total] = await qb.getManyAndCount();
+    return {
+      items: items.map((u) => ({
+        id: u.id,
+        fullName: u.fullName,
+        email: u.email,
+        avatarUrl: u.avatarUrl,
+        systemRole: u.systemRole,
+        jobTitle: u.jobTitle,
+      })),
+      total,
+      page: safePage,
+      limit: safeLimit,
+      totalPages: Math.ceil(total / safeLimit) || 1,
+    };
   }
 
   /**

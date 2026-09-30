@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Issue, IssueStatus } from '../entities/issue.entity.js';
@@ -25,6 +26,8 @@ import type {
  */
 @Injectable()
 export class IssueCoreService {
+  private readonly backendBaseUrl: string;
+
   constructor(
     @InjectRepository(Issue)
     private readonly issueRepository: Repository<Issue>,
@@ -38,7 +41,12 @@ export class IssueCoreService {
     private readonly eventsGateway: EventsGateway,
     private readonly jqlParserService: JqlParserService,
     private readonly permissionEvaluator: PermissionEvaluatorService,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    const port = this.configService.get<number>('PORT', 3000);
+    const host = this.configService.get<string>('BACKEND_URL', `http://localhost:${port}`);
+    this.backendBaseUrl = host.replace(/\/$/, '');
+  }
 
   /**
    * Retrieves paginated list of issues with multi-criteria filtering, JQL search, and RBAC isolation.
@@ -474,7 +482,7 @@ export class IssueCoreService {
         fileSize: a.fileSize,
         mimeType: a.mimeType,
         fid: a.fid,
-        url: `http://localhost:3000/api/v1/issues/attachments/${a.id}/file`,
+        url: `${this.backendBaseUrl}/api/v1/issues/attachments/${a.id}/file`,
         createdAt: a.createdAt,
         uploader: this.mapUserSummary(a.uploader),
       })),

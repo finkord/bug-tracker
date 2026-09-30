@@ -194,11 +194,8 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return { event: 'error', error: 'Invalid project ID' };
     }
 
-    const hasAccess = await this.permissionEvaluator.hasPermission({
-      userId: user.id,
-      projectId,
-      permission: ProjectPermission.BROWSE_PROJECTS,
-    });
+    const perms = await this.permissionEvaluator.getEffectivePermissions(user.id, projectId);
+    const hasAccess = perms[ProjectPermission.BROWSE_PROJECTS] ?? false;
 
     if (!hasAccess) {
       this.logger.warn(`User ${user.id} denied access to join project room ${projectId}`);
@@ -248,12 +245,8 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return { event: 'error', error: 'Issue not found' };
     }
 
-    const hasAccess = await this.permissionEvaluator.hasPermission({
-      userId: user.id,
-      projectId: issue.projectId,
-      permission: ProjectPermission.BROWSE_PROJECTS,
-      issueId: issue.id,
-    });
+    const perms = await this.permissionEvaluator.getEffectivePermissions(user.id, issue.projectId);
+    const hasAccess = perms[ProjectPermission.BROWSE_PROJECTS] ?? false;
 
     if (!hasAccess) {
       this.logger.warn(`User ${user.id} denied access to join issue room ${issueId}`);
@@ -288,20 +281,19 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     if (issue.securityLevelId) {
       const sockets = await this.server.in(room).fetchSockets();
-      for (const socket of sockets) {
-        const user = (socket.data as { user?: User })?.user;
-        if (user) {
-          const allowed = await this.permissionEvaluator.hasPermission({
-            userId: user.id,
-            projectId: issue.projectId,
-            permission: ProjectPermission.BROWSE_PROJECTS,
-            issueId: issue.id,
-          });
-          if (allowed) {
+      await Promise.all(
+        sockets.map(async (socket) => {
+          const socketUser = (socket.data as { user?: User })?.user;
+          if (!socketUser) return;
+          const perms = await this.permissionEvaluator.getEffectivePermissions(
+            socketUser.id,
+            issue.projectId,
+          );
+          if (perms[ProjectPermission.BROWSE_PROJECTS]) {
             socket.emit('issue:created', issue);
           }
-        }
-      }
+        }),
+      );
     } else {
       this.server.to(room).emit('issue:created', issue);
     }
@@ -314,20 +306,19 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     if (issue.securityLevelId) {
       const sockets = await this.server.in(projectRoom).fetchSockets();
-      for (const socket of sockets) {
-        const user = (socket.data as { user?: User })?.user;
-        if (user) {
-          const allowed = await this.permissionEvaluator.hasPermission({
-            userId: user.id,
-            projectId: issue.projectId,
-            permission: ProjectPermission.BROWSE_PROJECTS,
-            issueId: issue.id,
-          });
-          if (allowed) {
+      await Promise.all(
+        sockets.map(async (socket) => {
+          const socketUser = (socket.data as { user?: User })?.user;
+          if (!socketUser) return;
+          const perms = await this.permissionEvaluator.getEffectivePermissions(
+            socketUser.id,
+            issue.projectId,
+          );
+          if (perms[ProjectPermission.BROWSE_PROJECTS]) {
             socket.emit('issue:updated', issue);
           }
-        }
-      }
+        }),
+      );
     } else {
       this.server.to(projectRoom).emit('issue:updated', issue);
     }

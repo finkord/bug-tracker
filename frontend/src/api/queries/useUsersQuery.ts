@@ -6,7 +6,7 @@ export const userKeys = {
   all: ['users'] as const,
   lists: () => [...userKeys.all, 'list'] as const,
   list: (params?: Record<string, unknown>) => [...userKeys.lists(), params ?? {}] as const,
-  assignees: () => [...userKeys.all, 'assignees'] as const,
+  assignees: (params?: Record<string, unknown>) => [...userKeys.all, 'assignees', params ?? {}] as const,
   profile: () => [...userKeys.all, 'profile'] as const,
   stats: () => [...userKeys.all, 'admin-stats'] as const,
   auditLogs: (page?: number, limit?: number) =>
@@ -29,10 +29,10 @@ export function useUsersQuery(params?: {
   });
 }
 
-export function useAssigneesQuery() {
+export function useAssigneesQuery(params?: { search?: string; page?: number; limit?: number }) {
   return useQuery({
-    queryKey: userKeys.assignees(),
-    queryFn: () => api.getAssignees(),
+    queryKey: userKeys.assignees(params),
+    queryFn: () => api.getAssignees(params),
   });
 }
 

@@ -22,6 +22,7 @@ export enum LoginAttemptStatus {
 }
 
 @Entity('login_audit_logs')
+@Index(['attemptedEmail', 'status', 'createdAt'])
 export class LoginAuditLog {
   @PrimaryGeneratedColumn('increment')
   id: number;

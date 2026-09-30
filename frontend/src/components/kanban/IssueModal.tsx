@@ -38,7 +38,8 @@ export const IssueModal: React.FC<IssueModalProps> = ({
 }) => {
   const { user } = useAuth();
   const { data: projects = [] } = useProjectsQuery();
-  const { data: assignees = [] } = useAssigneesQuery();
+  const { data: assigneesData } = useAssigneesQuery({ limit: 200 });
+  const assignees = assigneesData?.items ?? [];
 
   // Form states
   const [projectId, setProjectId] = useState<number>(defaultProjectId || 1);

@@ -28,8 +28,6 @@ export class IssueWorklogService {
     private readonly issueRepository: Repository<Issue>,
     @InjectRepository(Worklog)
     private readonly worklogRepository: Repository<Worklog>,
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
     private readonly dataSource: DataSource,
     private readonly eventsGateway: EventsGateway,
     private readonly permissionEvaluator: PermissionEvaluatorService,
@@ -142,6 +140,7 @@ export class IssueWorklogService {
       where: { issueId },
       relations: { user: true },
       order: { createdAt: 'DESC' },
+      take: 200,
     });
     return logs.map((w) => ({
       id: w.id,
@@ -242,15 +241,11 @@ export class IssueWorklogService {
       }
     }
 
-    const users = await this.userRepository.find({
-      where: userId ? { id: userId, isActivated: true, isBlocked: false } : { isActivated: true, isBlocked: false },
-      order: { fullName: 'ASC' },
-    });
-
     const qb = this.worklogRepository
       .createQueryBuilder('worklog')
       .innerJoin('worklog.issue', 'issue')
       .leftJoin('issue.project', 'project')
+      .leftJoinAndSelect('worklog.user', 'user')
       .select([
         'worklog.id',
         'worklog.userId',
@@ -262,6 +257,11 @@ export class IssueWorklogService {
         'issue.issueNum',
         'issue.title',
         'project.key',
+        'user.id',
+        'user.fullName',
+        'user.email',
+        'user.systemRole',
+        'user.avatarUrl',
       ])
       .where('worklog.dateLogged >= :startStr AND worklog.dateLogged <= :endStr', {
         startStr,
@@ -279,6 +279,15 @@ export class IssueWorklogService {
     }
 
     const logs = await qb.getMany();
+
+    // Derive unique users from the period's worklogs (zero unbounded SELECT from users table)
+    const userMap = new Map<number, User>();
+    for (const log of logs) {
+      if (log.user && !userMap.has(log.userId)) {
+        userMap.set(log.userId, log.user);
+      }
+    }
+    const users = [...userMap.values()].sort((a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
 
     const dailyTotals: Record<string, number> = {};
     for (const d of days) dailyTotals[d] = 0;

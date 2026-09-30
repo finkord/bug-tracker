@@ -82,6 +82,7 @@ describe('SprintsService', () => {
         where: { projectId: 1 },
         relations: { team: true },
         order: { createdAt: 'ASC' },
+        take: 100,
       });
     });
     it('should initialize default sprint if project has none', async () => {

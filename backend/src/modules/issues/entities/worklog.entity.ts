@@ -38,6 +38,7 @@ export class Worklog {
   @Column({ name: 'time_spent_hours', type: 'float' })
   timeSpentHours: number;
 
+  @Index()
   @Column({ name: 'date_logged', type: 'date', default: () => 'CURRENT_DATE' })
   dateLogged: string;
 

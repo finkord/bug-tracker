@@ -33,6 +33,7 @@ export class SprintsService {
       where: { projectId },
       relations: { team: true },
       order: { createdAt: 'ASC' },
+      take: 100,
     });
     if (existingSprints.length === 0) {
       return this.initializeDefaultSprints(projectId);

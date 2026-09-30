@@ -100,7 +100,6 @@ describe('IssueWorklogService', () => {
     service = new IssueWorklogService(
       mockIssueRepo,
       mockWorklogRepo,
-      mockUserRepo,
       mockDataSource,
       mockEventsGateway,
       mockPermissionEvaluator,
@@ -203,6 +202,38 @@ describe('IssueWorklogService', () => {
       mockPermissionEvaluator.hasPermission.mockResolvedValue(false);
 
       await expect(service.deleteWorklog(10, 55, mockUser)).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('getWorklogs', () => {
+    it('should return worklogs for an issue bounded to a maximum of 200 items', async () => {
+      // Arrange
+      const mockLog: Worklog = {
+        id: 1,
+        issueId: 10,
+        userId: mockUser.id,
+        timeSpentHours: 3.5,
+        dateLogged: '2026-09-28',
+        description: 'Fixing memory leak',
+        createdAt: new Date(),
+        issue: mockIssue,
+        user: mockUser,
+      };
+      mockWorklogRepo.find.mockResolvedValue([mockLog]);
+
+      // Act
+      const result = await service.getWorklogs(10);
+
+      // Assert
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe(1);
+      expect(result[0].timeSpentHours).toBe(3.5);
+      expect(mockWorklogRepo.find).toHaveBeenCalledWith({
+        where: { issueId: 10 },
+        relations: { user: true },
+        order: { createdAt: 'DESC' },
+        take: 200,
+      });
     });
   });
 
@@ -327,10 +358,10 @@ describe('IssueWorklogService', () => {
     it('should compute daily hours per user and clamp date ranges to max 62 days', async () => {
       // Arrange
       mockPermissionEvaluator.getAccessibleProjectIds.mockResolvedValue([1]);
-      mockUserRepo.find.mockResolvedValue([mockUser]);
       const mockQb = {
         innerJoin: vi.fn().mockReturnThis(),
         leftJoin: vi.fn().mockReturnThis(),
+        leftJoinAndSelect: vi.fn().mockReturnThis(),
         select: vi.fn().mockReturnThis(),
         where: vi.fn().mockReturnThis(),
         andWhere: vi.fn().mockReturnThis(),
@@ -338,6 +369,7 @@ describe('IssueWorklogService', () => {
           {
             id: 1,
             userId: 1,
+            user: mockUser,
             issueId: 10,
             timeSpentHours: 6,
             dateLogged: '2026-09-28',

@@ -53,6 +53,29 @@ export class PermissionEvaluatorService {
   async hasPermission(context: EvaluationContext): Promise<boolean> {
     const { userId, projectId, permission, issueId } = context;
 
+    // Cache project-level checks (no issueId) in Redis to avoid repeated query sequences
+    const cacheKey = issueId
+      ? null
+      : `rbac:has:${userId}:${projectId}:${permission}`;
+
+    if (cacheKey && this.redisService) {
+      const cached = await this.redisService.get(cacheKey);
+      if (cached !== null) return cached === '1';
+    }
+
+    const result = await this.evaluatePermission(context);
+
+    // Write result to Redis (60-second TTL) for project-level checks only
+    if (cacheKey && this.redisService) {
+      await this.redisService.set(cacheKey, result ? '1' : '0', 60);
+    }
+
+    return result;
+  }
+
+  private async evaluatePermission(context: EvaluationContext): Promise<boolean> {
+    const { userId, projectId, permission, issueId } = context;
+
     // 1. Fetch user & check global ADMIN override (via systemRole or directory group)
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) return false;
@@ -258,13 +281,24 @@ export class PermissionEvaluatorService {
       }, {});
     }
 
+    if (user.systemRole === SystemRole.ADMIN) {
+      const adminResult = allPermissions.reduce<Record<string, boolean>>((acc, p) => {
+        acc[p] = true;
+        return acc;
+      }, {});
+      if (this.redisService) {
+        await this.redisService.set(cacheKey, JSON.stringify(adminResult), 300);
+      }
+      return adminResult;
+    }
+
     const userAdminGroup = await this.userGroupRepository.createQueryBuilder('ug')
       .innerJoin('ug.group', 'g')
       .where('ug.userId = :userId', { userId })
       .andWhere('LOWER(g.name) IN (:...names)', { names: ['administrators', 'admin', 'admins'] })
       .getOne();
 
-    if (user.systemRole === SystemRole.ADMIN || userAdminGroup) {
+    if (userAdminGroup) {
       const adminResult = allPermissions.reduce<Record<string, boolean>>((acc, p) => {
         acc[p] = true;
         return acc;
@@ -492,12 +526,16 @@ export class PermissionEvaluatorService {
     if (!this.redisService) return;
     if (projectId && userId) {
       await this.redisService.del(`rbac:user:${userId}:project:${projectId}`);
+      await this.redisService.delPattern(`rbac:has:${userId}:${projectId}:*`);
     } else if (projectId) {
       await this.redisService.delPattern(`rbac:user:*:project:${projectId}`);
+      await this.redisService.delPattern(`rbac:has:*:${projectId}:*`);
     } else if (userId) {
       await this.redisService.delPattern(`rbac:user:${userId}:project:*`);
+      await this.redisService.delPattern(`rbac:has:${userId}:*`);
     } else {
       await this.redisService.delPattern('rbac:user:*');
+      await this.redisService.delPattern('rbac:has:*');
     }
   }
 }

@@ -88,6 +88,13 @@ describe('IssueCoreService', () => {
     const mockPermissionEvaluator = {
       getAccessibleProjectIds: vi.fn().mockResolvedValue('ALL'),
     };
+    const mockConfigService = {
+      get: vi.fn((key: string, defaultValue?: any) => {
+        if (key === 'PORT') return 3000;
+        if (key === 'BACKEND_URL') return 'http://localhost:3000';
+        return defaultValue;
+      }),
+    };
 
     service = new IssueCoreService(
       mockIssueRepo,
@@ -98,6 +105,7 @@ describe('IssueCoreService', () => {
       mockEventsGateway,
       mockJqlParser as any,
       mockPermissionEvaluator as any,
+      mockConfigService as any,
     );
   });
 

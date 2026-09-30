@@ -18,7 +18,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse, ApiConsumes, ApiQuery } from '@nestjs/swagger';
 import { UsersService } from './users.service.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../common/guards/roles.guard.js';
@@ -207,10 +207,17 @@ export class UsersController {
   @Get('assignees')
   @ApiOperation({
     summary: 'Get active users eligible for issue assignment',
-    description: 'Returns active user info (id, fullName, email, avatarUrl, systemRole) for dropdown selects.',
+    description: 'Returns active user info (id, fullName, email, avatarUrl, systemRole) for dropdown selects with pagination and search.',
   })
-  async getAssignees() {
-    return this.usersService.findAssignees();
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  async getAssignees(
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.usersService.findAssignees(search, Number(page) || 1, Number(limit) || 50);
   }
 
   @Get('stats')

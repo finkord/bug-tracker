@@ -58,6 +58,7 @@ describe('UsersService - Root Administrator Protections', () => {
       save: vi.fn(async (u) => u as User) as any,
       update: vi.fn(),
       delete: vi.fn(),
+      createQueryBuilder: vi.fn(),
     };
 
     mockSavedFilterRepo = {
@@ -435,6 +436,57 @@ describe('UsersService - Root Administrator Protections', () => {
         expect.any(String),
         60,
       );
+    });
+  });
+
+  describe('findAssignees', () => {
+    it('should return paginated assignees with default limits', async () => {
+      const mockQb = {
+        where: vi.fn().mockReturnThis(),
+        select: vi.fn().mockReturnThis(),
+        orderBy: vi.fn().mockReturnThis(),
+        skip: vi.fn().mockReturnThis(),
+        take: vi.fn().mockReturnThis(),
+        andWhere: vi.fn().mockReturnThis(),
+        getManyAndCount: vi.fn().mockResolvedValue([[mockStandardUser], 1]),
+      };
+      mockUserRepo.createQueryBuilder.mockReturnValue(mockQb);
+
+      const result = await service.findAssignees();
+
+      expect(mockQb.where).toHaveBeenCalledWith('user.isBlocked = false');
+      expect(mockQb.skip).toHaveBeenCalledWith(0);
+      expect(mockQb.take).toHaveBeenCalledWith(50);
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0].fullName).toBe('Regular Developer');
+      expect(result.total).toBe(1);
+      expect(result.page).toBe(1);
+      expect(result.limit).toBe(50);
+      expect(result.totalPages).toBe(1);
+    });
+
+    it('should apply search filter and custom pagination', async () => {
+      const mockQb = {
+        where: vi.fn().mockReturnThis(),
+        select: vi.fn().mockReturnThis(),
+        orderBy: vi.fn().mockReturnThis(),
+        skip: vi.fn().mockReturnThis(),
+        take: vi.fn().mockReturnThis(),
+        andWhere: vi.fn().mockReturnThis(),
+        getManyAndCount: vi.fn().mockResolvedValue([[mockAdminUser], 1]),
+      };
+      mockUserRepo.createQueryBuilder.mockReturnValue(mockQb);
+
+      const result = await service.findAssignees('Admin', 2, 10);
+
+      expect(mockQb.andWhere).toHaveBeenCalledWith(
+        '(LOWER(user.fullName) LIKE :term OR LOWER(user.email) LIKE :term)',
+        { term: '%admin%' },
+      );
+      expect(mockQb.skip).toHaveBeenCalledWith(10);
+      expect(mockQb.take).toHaveBeenCalledWith(10);
+      expect(result.page).toBe(2);
+      expect(result.limit).toBe(10);
     });
   });
 });

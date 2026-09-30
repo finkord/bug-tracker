@@ -56,6 +56,9 @@ describe('EventsGateway', () => {
 
     mockPermissionEvaluator = {
       hasPermission: vi.fn().mockResolvedValue(true),
+      getEffectivePermissions: vi.fn().mockResolvedValue({
+        [ProjectPermission.BROWSE_PROJECTS]: true,
+      }),
     };
 
     mockIssueRepository = {
@@ -202,22 +205,22 @@ describe('EventsGateway', () => {
 
     it('should deny join:project if user lacks BROWSE_PROJECTS permission', async () => {
       const client: any = { id: 'sock-8', data: { user: mockUser }, join: vi.fn() };
-      mockPermissionEvaluator.hasPermission.mockResolvedValue(false);
+      mockPermissionEvaluator.getEffectivePermissions.mockResolvedValue({
+        [ProjectPermission.BROWSE_PROJECTS]: false,
+      });
 
       const res = await gateway.handleJoinProject({ projectId: 10 }, client);
 
-      expect(mockPermissionEvaluator.hasPermission).toHaveBeenCalledWith({
-        userId: 42,
-        projectId: 10,
-        permission: ProjectPermission.BROWSE_PROJECTS,
-      });
+      expect(mockPermissionEvaluator.getEffectivePermissions).toHaveBeenCalledWith(42, 10);
       expect(res.event).toBe('error');
       expect(client.join).not.toHaveBeenCalled();
     });
 
     it('should allow join:project if user has BROWSE_PROJECTS permission', async () => {
       const client: any = { id: 'sock-9', data: { user: mockUser }, join: vi.fn() };
-      mockPermissionEvaluator.hasPermission.mockResolvedValue(true);
+      mockPermissionEvaluator.getEffectivePermissions.mockResolvedValue({
+        [ProjectPermission.BROWSE_PROJECTS]: true,
+      });
 
       const res = await gateway.handleJoinProject({ projectId: 10 }, client);
 
@@ -244,7 +247,9 @@ describe('EventsGateway', () => {
         to: vi.fn().mockReturnValue({ emit: vi.fn() }),
       };
       mockIssueRepository.findOne.mockResolvedValue({ id: 101, projectId: 5 });
-      mockPermissionEvaluator.hasPermission.mockResolvedValue(true);
+      mockPermissionEvaluator.getEffectivePermissions.mockResolvedValue({
+        [ProjectPermission.BROWSE_PROJECTS]: true,
+      });
 
       const res = await gateway.handleJoinIssue({ issueId: 101 }, client);
 
@@ -313,8 +318,10 @@ describe('EventsGateway', () => {
       };
 
       mockRoomOperator.fetchSockets.mockResolvedValue([socketAllowed, socketForbidden]);
-      mockPermissionEvaluator.hasPermission.mockImplementation(
-        async ({ userId }: { userId: number }) => userId === 1,
+      mockPermissionEvaluator.getEffectivePermissions.mockImplementation(
+        async (userId: number) => ({
+          [ProjectPermission.BROWSE_PROJECTS]: userId === 1,
+        }),
       );
 
       await gateway.broadcastIssueCreated(confidentialIssue);

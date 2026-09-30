@@ -338,5 +338,70 @@ describe('PermissionEvaluatorService', () => {
       expect(result).toEqual([100]);
     });
   });
+
+  describe('hasPermission - Redis Caching', () => {
+    it('should return cached result without hitting database if present in Redis', async () => {
+      mockRedisService.get.mockResolvedValueOnce('1');
+
+      const result = await service.hasPermission({
+        userId: 10,
+        projectId: 100,
+        permission: ProjectPermission.BROWSE_PROJECTS,
+      });
+
+      expect(result).toBe(true);
+      expect(mockRedisService.get).toHaveBeenCalledWith('rbac:has:10:100:BROWSE_PROJECTS');
+      expect(mockUserRepo.findOne).not.toHaveBeenCalled();
+    });
+
+    it('should evaluate and store result in Redis if cache misses', async () => {
+      mockUser.systemRole = SystemRole.ADMIN;
+      mockRedisService.get.mockResolvedValueOnce(null);
+
+      const result = await service.hasPermission({
+        userId: 10,
+        projectId: 100,
+        permission: ProjectPermission.ADMINISTER_PROJECTS,
+      });
+
+      expect(result).toBe(true);
+      expect(mockRedisService.set).toHaveBeenCalledWith(
+        'rbac:has:10:100:ADMINISTER_PROJECTS',
+        '1',
+        60,
+      );
+    });
+
+    it('should NOT cache in Redis if issueId is present (row-level check)', async () => {
+      mockUser.systemRole = SystemRole.ADMIN;
+
+      const result = await service.hasPermission({
+        userId: 10,
+        projectId: 100,
+        permission: ProjectPermission.EDIT_ISSUES,
+        issueId: 500,
+      });
+
+      expect(result).toBe(true);
+      expect(mockRedisService.get).not.toHaveBeenCalled();
+      expect(mockRedisService.set).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('invalidatePermissions', () => {
+    it('should invalidate specific user and project rbac:has patterns', async () => {
+      await service.invalidatePermissions(100, 10);
+
+      expect(mockRedisService.del).toHaveBeenCalledWith('rbac:user:10:project:100');
+      expect(mockRedisService.delPattern).toHaveBeenCalledWith('rbac:has:10:100:*');
+    });
+
+    it('should invalidate all rbac:has keys when called without args', async () => {
+      await service.invalidatePermissions();
+
+      expect(mockRedisService.delPattern).toHaveBeenCalledWith('rbac:user:*');
+      expect(mockRedisService.delPattern).toHaveBeenCalledWith('rbac:has:*');
+    });
+  });
 });
 
