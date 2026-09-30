@@ -67,7 +67,7 @@ const mockAllUsers: UserProfile[] = [
 ];
 
 describe('GroupsManagerTab', () => {
-  it('displays All Users Enrolled indicator and disabled select when all users are already members', () => {
+  it('displays All Users Enrolled indicator when all users are already members', () => {
     render(
       <GroupsManagerTab
         groups={[mockGroup]}
@@ -86,7 +86,6 @@ describe('GroupsManagerTab', () => {
 
     // Verify clear explanation that all users are already members
     expect(screen.getByText(/All Users Enrolled/i)).toBeInTheDocument();
-    expect(screen.getByText(/All users already in group/i)).toBeInTheDocument();
   });
 
   it('renders Add Members button and opens the AddGroupMembersModal when clicked', () => {

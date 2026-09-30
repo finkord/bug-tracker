@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import type { GroupItem, UserProfile } from '../../../api/client';
 import { Avatar } from '../../common/Avatar';
-import { Badge, Button, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectEmpty } from '../../ui';
+import { Badge, Button } from '../../ui';
 import { AddGroupMembersModal } from './AddGroupMembersModal';
 
 interface GroupsManagerTabProps {
@@ -36,7 +36,6 @@ export const GroupsManagerTab: React.FC<GroupsManagerTabProps> = ({
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupDesc, setNewGroupDesc] = useState('');
   const [showCreateGroup, setShowCreateGroup] = useState(false);
-  const [selectedUserIdToAdd, setSelectedUserIdToAdd] = useState<number | ''>('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
@@ -46,12 +45,6 @@ export const GroupsManagerTab: React.FC<GroupsManagerTabProps> = ({
     setNewGroupName('');
     setNewGroupDesc('');
     setShowCreateGroup(false);
-  };
-
-  const handleAddUser = async () => {
-    if (!selectedGroup || !selectedUserIdToAdd) return;
-    await onAddUserToGroup(selectedGroup.id, Number(selectedUserIdToAdd));
-    setSelectedUserIdToAdd('');
   };
 
   const handleBatchAdd = async (groupId: number, userIds: number[]) => {
@@ -191,54 +184,20 @@ export const GroupsManagerTab: React.FC<GroupsManagerTabProps> = ({
                 </p>
               </div>
 
-              {/* Add user to group */}
+              {/* Add members action */}
               {(() => {
                 const existingMemberUserIds = new Set(selectedGroup.userGroups?.map((ug) => ug.userId) || []);
                 const availableUsers = allUsers.filter((u) => !existingMemberUserIds.has(u.id));
                 const allEnrolled = allUsers.length > 0 && availableUsers.length === 0;
 
                 return (
-                  <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                  <div className="flex items-center gap-2.5 shrink-0">
                     {allEnrolled && (
-                      <Badge variant="neutral" size="sm" className="hidden sm:inline-flex">
+                      <Badge variant="neutral" size="sm">
                         <CheckCircle2 className="w-3.5 h-3.5 mr-1 text-[var(--md-sys-color-primary)]" />
                         All Users Enrolled
                       </Badge>
                     )}
-
-                    <div className="w-56 sm:w-60">
-                      <Select
-                        value={selectedUserIdToAdd ? String(selectedUserIdToAdd) : ''}
-                        onValueChange={(val) => setSelectedUserIdToAdd(val ? Number(val) : '')}
-                        disabled={allEnrolled}
-                      >
-                        <SelectTrigger size="sm" className="h-9 text-xs rounded-xl bg-[var(--md-sys-color-surface)]">
-                          <SelectValue
-                            placeholder={allEnrolled ? 'All users already in group' : 'Select engineer to add...'}
-                          />
-                        </SelectTrigger>
-                        <SelectContent className="max-h-60">
-                          {availableUsers.length === 0 ? (
-                            <SelectEmpty>All workspace users are already in this group</SelectEmpty>
-                          ) : (
-                            availableUsers.map((u) => (
-                              <SelectItem key={u.id} value={String(u.id)}>
-                                <span className="truncate">{u.fullName} ({u.email})</span>
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <Button
-                      variant="tonal"
-                      size="sm"
-                      onClick={handleAddUser}
-                      disabled={!selectedUserIdToAdd || allEnrolled}
-                    >
-                      Add
-                    </Button>
 
                     <Button
                       variant="filled"
@@ -295,7 +254,7 @@ export const GroupsManagerTab: React.FC<GroupsManagerTabProps> = ({
                 </div>
               ) : (
                 <div className="py-12 text-center text-xs text-[var(--md-sys-color-on-surface-variant)]">
-                  No members in this group yet. Select an engineer above to add them.
+                  No members in this group yet. Click &quot;Add Members&quot; above to enroll engineers.
                 </div>
               )}
             </div>

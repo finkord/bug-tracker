@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, UserPlus, X, Check, CheckCircle2, Loader2, Users } from 'lucide-react';
+import { Search, UserPlus, X, Check, CheckCircle2, Loader2 } from 'lucide-react';
 import type { GroupItem } from '../../../api/client';
 import { useUsersQuery } from '../../../api/queries';
 import { Modal, Button, Badge } from '../../ui';
