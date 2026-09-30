@@ -1,6 +1,7 @@
 import React from 'react';
-import { ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ExternalLink, ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react';
 import { Tooltip } from '../ui/Tooltip';
+import { useTheme } from '../../store';
 
 interface SidebarBottomActionsProps {
   collapsed?: boolean;
@@ -9,13 +10,42 @@ interface SidebarBottomActionsProps {
 }
 
 /**
- * Bottom action utilities for the Super-Sidebar (Docs link & Collapse trigger).
+ * Bottom action utilities for the Super-Sidebar (Theme switcher, Docs link & Collapse trigger).
  */
 export const SidebarBottomActions: React.FC<SidebarBottomActionsProps> = ({
   collapsed = false,
   onToggleSidebar,
   onNavigate,
 }) => {
+  const { theme, toggleTheme } = useTheme();
+
+  const themeToggle = (
+    <button
+      type="button"
+      onClick={toggleTheme}
+      title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
+      aria-label={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
+      className="w-full h-11 flex items-center rounded-xl text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)] text-xs font-medium transition-colors cursor-pointer overflow-hidden group select-none active:scale-98"
+    >
+      <div className="w-[72px] shrink-0 flex items-center justify-center">
+        <div className="w-14 h-8 rounded-full flex items-center justify-center transition-colors group-hover:bg-[var(--md-sys-color-surface-container-high)]">
+          {theme === 'dark' ? (
+            <Sun className="w-5 h-5 text-[var(--md-sys-color-warning)]" />
+          ) : (
+            <Moon className="w-5 h-5 text-[var(--md-sys-color-primary)]" />
+          )}
+        </div>
+      </div>
+      <span
+        className={`truncate whitespace-nowrap transition-opacity duration-200 ${
+          collapsed ? 'opacity-0 w-0 pointer-events-none' : 'opacity-100 flex-1 text-left pr-3'
+        }`}
+      >
+        {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+      </span>
+    </button>
+  );
+
   const swaggerLink = (
     <a
       href="http://localhost:3000/api/docs"
@@ -66,6 +96,14 @@ export const SidebarBottomActions: React.FC<SidebarBottomActionsProps> = ({
   return (
     <div className="shrink-0 pb-3 pt-2 border-t border-[var(--md-sys-color-outline-variant)]/15 flex flex-col gap-1 overflow-hidden">
       {collapsed ? (
+        <Tooltip content={theme === 'dark' ? 'Switch to Light mode' : 'Switch to Dark mode'} side="right">
+          {themeToggle}
+        </Tooltip>
+      ) : (
+        themeToggle
+      )}
+
+      {collapsed ? (
         <Tooltip content="Swagger Docs" side="right">
           {swaggerLink}
         </Tooltip>
@@ -90,3 +128,4 @@ export const SidebarBottomActions: React.FC<SidebarBottomActionsProps> = ({
     </div>
   );
 };
+

@@ -2,14 +2,14 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './api/queryClient';
-import { useAuth } from './store';
+import { useAuth, useSidebar } from './store';
 import { SessionExpiredModal } from './components/common/SessionExpiredModal';
-import { PublicNavbar } from './components/public/PublicNavbar';
 import { WorkspaceHeader } from './components/workspace/WorkspaceHeader';
 import { Sidebar } from './components/common/Sidebar';
 import { Footer } from './components/common/Footer';
 import { ProtectedRoute, AdminRoute, PublicOnlyRoute } from './components/common/ProtectedRoute';
 import { PageSkeletonLoader } from './components/common/PageSkeletonLoader';
+import { Menu, Shield } from 'lucide-react';
 
 const HomePage = React.lazy(() =>
   import('./pages/HomePage').then((m) => ({ default: m.HomePage })),
@@ -68,19 +68,10 @@ const OAuthCallbackPage = React.lazy(() =>
 
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
+  const { toggleMobile } = useSidebar();
 
   if (loading) {
     return <PageSkeletonLoader />;
-  }
-
-  if (!user) {
-    return (
-      <div className="min-h-screen flex flex-col bg-[var(--md-sys-color-background)] text-[var(--md-sys-color-on-background)] transition-colors duration-200">
-        <PublicNavbar />
-        <main className="flex-1 min-w-0">{children}</main>
-        <Footer />
-      </div>
-    );
   }
 
   return (
@@ -88,13 +79,43 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       {/* ─── Full-Height Super-Sidebar (y=0 to y=100vh) ────────────────────── */}
       <Sidebar />
 
-      {/* ─── Right Workspace Column: Top Control Strip + Floating Canvas Card ── */}
+      {/* ─── Right Workspace Column: Control Strip (Authed) + Floating Canvas Card ── */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        <WorkspaceHeader />
+        {user && <WorkspaceHeader />}
 
         {/* ─── Elevated Main Canvas Card (Optical Curve Metaphor) ──────────── */}
-        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden mx-1 mb-1 sm:mx-2 sm:mb-2 md:mr-3 md:mb-3 md:mx-0 bg-[var(--md-sys-color-background)] rounded-xl sm:rounded-2xl md:rounded-3xl border border-[var(--md-sys-color-outline-variant)]/25 shadow-xs transition-all duration-200 flex flex-col">
-          {children}
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className={`flex-1 min-w-0 overflow-y-auto overflow-x-hidden mx-1 mb-1 sm:mx-2 sm:mb-2 md:mr-3 md:mb-3 md:mx-0 bg-[var(--md-sys-color-background)] rounded-xl sm:rounded-2xl md:rounded-3xl border border-[var(--md-sys-color-outline-variant)]/25 shadow-xs transition-all duration-200 flex flex-col ${
+            !user ? 'mt-1 sm:mt-2 md:mt-3' : ''
+          }`}
+        >
+          {/* Mobile Top Strip for Guest Navigation (md:hidden) */}
+          {!user && (
+            <div className="md:hidden sticky top-0 z-30 px-4 h-14 shrink-0 flex items-center justify-between border-b border-[var(--md-sys-color-outline-variant)]/15 bg-[var(--md-sys-color-surface-container-low)]/90 backdrop-blur-md">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] flex items-center justify-center shadow-xs">
+                  <Shield className="w-4 h-4" />
+                </div>
+                <span className="font-bold text-sm tracking-tight text-[var(--md-sys-color-on-surface)]">
+                  BugTracker
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={toggleMobile}
+                className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] flex items-center justify-center transition-colors cursor-pointer border border-[var(--md-sys-color-outline-variant)]/20 shadow-2xs"
+                aria-label="Open navigation menu"
+              >
+                <Menu className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          <div className="flex-1 min-w-0 flex flex-col">{children}</div>
+
+          {!user && <Footer />}
         </main>
       </div>
     </div>

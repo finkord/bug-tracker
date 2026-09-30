@@ -9,7 +9,7 @@ import type { ProjectItem, UserProfile } from '../../api/client';
 interface SidebarMobileDrawerProps {
   open: boolean;
   onClose: () => void;
-  user: UserProfile;
+  user?: UserProfile | null;
   projects: ProjectItem[];
   activeProject?: ProjectItem;
 }
@@ -72,15 +72,18 @@ export const SidebarMobileDrawer: React.FC<SidebarMobileDrawerProps> = ({
           </button>
         </div>
 
-        {/* Project Switcher */}
-        <div className="px-2">
-          <SidebarContextSwitcher
-            projects={projects}
-            activeProject={activeProject}
-            collapsed={false}
-            onNavigate={onClose}
-          />
-        </div>
+        {/* Project Switcher (Authenticated Only) */}
+        {user && (
+          <div className="px-2">
+            <SidebarContextSwitcher
+              projects={projects}
+              activeProject={activeProject}
+              collapsed={false}
+              onNavigate={onClose}
+            />
+          </div>
+        )}
+
 
         {/* Navigation List */}
         <div className="flex-1 px-2 overflow-y-auto">

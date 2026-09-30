@@ -21,7 +21,7 @@ export const SuperSidebar: React.FC<SuperSidebarProps> = ({ currentProjectId }) 
   const { collapsed, toggleSidebar, mobileOpen, closeMobile, showCollapsedLabels } = useSidebar();
   const location = useLocation();
 
-  const { data: projects = [] } = useProjectsQuery();
+  const { data: projects = [] } = useProjectsQuery({ enabled: !!user });
 
   // Global keyboard shortcut to toggle sidebar collapse ('[' key)
   useEffect(() => {
@@ -54,8 +54,6 @@ export const SuperSidebar: React.FC<SuperSidebarProps> = ({ currentProjectId }) 
   const activeProjectId = currentProjectId || urlProjectId || projects[0]?.id;
   const activeProject = projects.find((p) => p.id === activeProjectId) || projects[0];
 
-  if (!user) return null;
-
   return (
     <>
       {/* ─── Desktop Super-Sidebar (Full-Height 100vh) ────────────────────── */}
@@ -67,11 +65,13 @@ export const SuperSidebar: React.FC<SuperSidebarProps> = ({ currentProjectId }) 
       >
         <SidebarBrandHeader collapsed={collapsed} />
 
-        <SidebarContextSwitcher
-          projects={projects}
-          activeProject={activeProject}
-          collapsed={collapsed}
-        />
+        {user && (
+          <SidebarContextSwitcher
+            projects={projects}
+            activeProject={activeProject}
+            collapsed={collapsed}
+          />
+        )}
 
         <SidebarNavList
           user={user}

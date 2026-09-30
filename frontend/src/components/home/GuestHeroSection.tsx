@@ -4,7 +4,6 @@ import { Card, Button } from '../ui';
 import {
   Shield,
   ArrowRight,
-  ExternalLink,
   Kanban,
   Clock,
   Lock,
@@ -12,9 +11,9 @@ import {
 
 export const GuestHeroSection: React.FC = () => {
   return (
-    <div className="min-h-[75vh] flex flex-col items-center justify-center max-w-4xl mx-auto px-4 py-12 space-y-10 animate-in fade-in duration-300 text-center">
+    <div className="min-h-[70vh] flex flex-col items-center justify-center max-w-4xl mx-auto px-4 py-12 space-y-10 animate-in fade-in duration-300 text-center">
       {/* Badge */}
-      <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[var(--md-sys-color-primary-container)] text-xs font-bold text-[var(--md-sys-color-on-primary-container)] border border-[var(--md-sys-color-outline-variant)] shadow-2xs">
+      <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[var(--md-sys-color-primary-container)] text-xs font-bold text-[var(--md-sys-color-on-primary-container)] border border-[var(--md-sys-color-outline-variant)]/40 shadow-2xs">
         <Shield className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
         <span>Unified Bug Tracking & Enterprise Security Platform</span>
       </div>
@@ -56,14 +55,14 @@ export const GuestHeroSection: React.FC = () => {
       </div>
 
       {/* Value Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full pt-6 text-left">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full pt-4 text-left">
         <Card variant="outlined" padding="md" rounded="xl" className="space-y-2">
           <div className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center">
             <Kanban className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
           </div>
-          <h3 className="font-bold text-sm text-[var(--md-sys-color-on-surface)]">
+          <h2 className="font-bold text-sm text-[var(--md-sys-color-on-surface)]">
             Agile Kanban Boards
-          </h3>
+          </h2>
           <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] leading-relaxed">
             5-column FSM workflow, drag-and-drop cards, and live triage.
           </p>
@@ -73,9 +72,9 @@ export const GuestHeroSection: React.FC = () => {
           <div className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] flex items-center justify-center">
             <Lock className="w-4 h-4 text-[var(--md-sys-color-secondary)]" />
           </div>
-          <h3 className="font-bold text-sm text-[var(--md-sys-color-on-surface)]">
+          <h2 className="font-bold text-sm text-[var(--md-sys-color-on-surface)]">
             Zero-Trust Security
-          </h3>
+          </h2>
           <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] leading-relaxed">
             Argon2id hashing, RFC 6238 2FA TOTP, Turnstile bot defense.
           </p>
@@ -85,27 +84,15 @@ export const GuestHeroSection: React.FC = () => {
           <div className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-tertiary-container)] text-[var(--md-sys-color-on-tertiary-container)] flex items-center justify-center">
             <Clock className="w-4 h-4 text-[var(--md-sys-color-tertiary)]" />
           </div>
-          <h3 className="font-bold text-sm text-[var(--md-sys-color-on-surface)]">
+          <h2 className="font-bold text-sm text-[var(--md-sys-color-on-surface)]">
             Effort & Time Tracking
-          </h3>
+          </h2>
           <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] leading-relaxed">
             Log developer hours, track sprint progress, and inspect team velocity.
           </p>
         </Card>
       </div>
-
-      {/* REST API link */}
-      <div className="pt-2">
-        <a
-          href="http://localhost:3000/api/docs"
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] transition-colors"
-        >
-          <span>Explore Swagger OpenAPI Documentation</span>
-          <ExternalLink className="w-3 h-3" />
-        </a>
-      </div>
     </div>
   );
 };
+

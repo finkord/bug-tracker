@@ -10,12 +10,14 @@ export const projectKeys = {
   permissions: (id: number) => [...projectKeys.detail(id), 'permissions'] as const,
 };
 
-export function useProjectsQuery() {
+export function useProjectsQuery(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: projectKeys.lists(),
     queryFn: () => api.getProjects(),
+    enabled: options?.enabled,
   });
 }
+
 
 export function useProjectDetailQuery(projectId?: number) {
   return useQuery({
