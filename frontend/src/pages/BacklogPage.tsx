@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AgileToolbar } from '../components/agile/AgileToolbar';
 import { SprintContainer } from '../components/agile/SprintContainer';
@@ -7,9 +7,9 @@ import { ActiveSprintBoard } from '../components/agile/ActiveSprintBoard';
 import { SprintFormModal } from '../components/agile/SprintFormModal';
 import { CompleteSprintModal } from '../components/agile/CompleteSprintModal';
 import { SprintAnalyticsModal } from '../components/kanban/SprintAnalyticsModal';
-import { IssueDetailsModal } from '../components/kanban/IssueDetailsModal';
 import { IssueModal } from '../components/kanban/IssueModal';
 import { useAgileBacklog } from '../hooks/useAgileBacklog';
+import { useListKeyboardNavigation } from '../hooks';
 import { useAuth } from '../store';
 import type {
   SprintDefinition,
@@ -17,6 +17,7 @@ import type {
 } from '../types/agile';
 import { Loader2 } from 'lucide-react';
 import { useProjectsQuery } from '../api/queries';
+import { FloatingBulkActionBar } from '../components/common/FloatingBulkActionBar';
 
 export const BacklogPage: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -24,7 +25,21 @@ export const BacklogPage: React.FC = () => {
   const { user } = useAuth();
 
   const { data: projects = [] } = useProjectsQuery();
-  const selectedProjectId = projectId ? Number(projectId) : (projects[0]?.id ?? 1);
+
+  const selectedProject = useMemo(() => {
+    if (!projectId || !projects.length) return undefined;
+    const numId = Number(projectId);
+    if (!Number.isNaN(numId)) {
+      return projects.find((p) => p.id === numId);
+    }
+    return projects.find(
+      (p) => p.key?.toUpperCase() === projectId.toUpperCase(),
+    );
+  }, [projects, projectId]);
+
+  const selectedProjectId =
+    selectedProject?.id ??
+    (projectId && !Number.isNaN(Number(projectId)) ? Number(projectId) : 0);
 
   // Hook managing persistent sprint data, issues, websocket events and filtering
   const {
@@ -66,11 +81,25 @@ export const BacklogPage: React.FC = () => {
   const [completingSprint, setCompletingSprint] = useState<SprintDefinition | null>(null);
 
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState<boolean>(false);
-  const [selectedIssueId, setSelectedIssueId] = useState<number | null>(null);
+
+  const handleOpenIssue = (issue: { key: string }) => {
+    navigate(`/issues/${issue.key}`, { state: { from: 'backlog', label: 'Back to Backlog' } });
+  };
 
   // Issue creation modal
   const [isCreateIssueOpen, setIsCreateIssueOpen] = useState<boolean>(false);
   const [createIssueSprintId, setCreateIssueSprintId] = useState<number | null>(null);
+
+  // J/K/Enter/O high-velocity list keyboard navigation
+  useListKeyboardNavigation({
+    items: filteredIssues,
+    onOpenItem: handleOpenIssue,
+    enabled:
+      !isSprintFormOpen &&
+      !isCreateIssueOpen &&
+      !isCompleteSprintOpen &&
+      !isAnalyticsOpen,
+  });
 
   const handleSaveSprint = (sprintData: SprintDefinition) => {
     saveSprint(sprintData, editingSprint);
@@ -84,20 +113,16 @@ export const BacklogPage: React.FC = () => {
     }));
   };
 
-  const handleSelectProject = (id: number) => {
-    navigate(`/projects/${id}/backlog`);
-  };
-
   const activeProject =
-    projects.find((p) => p.id === selectedProjectId) || projects[0] || null;
+    selectedProject ||
+    projects.find((p) => p.id === selectedProjectId) ||
+    projects[0] ||
+    null;
 
   return (
-    <div className="w-full min-h-full flex flex-col px-3 sm:px-5 py-4 animate-in fade-in duration-200">
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-5 flex-1 flex flex-col min-w-0 animate-in fade-in duration-200">
       {/* Agile Toolbar */}
       <AgileToolbar
-        projects={projects}
-        selectedProjectId={selectedProjectId}
-        onSelectProject={handleSelectProject}
         activeProject={activeProject}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
@@ -143,7 +168,7 @@ export const BacklogPage: React.FC = () => {
           <ActiveSprintBoard
             sprint={activeSprint}
             issues={activeSprint ? filteredIssues.filter((i) => i.sprintId === activeSprint.id) : []}
-            onSelectIssue={(issue) => setSelectedIssueId(issue.id)}
+            onSelectIssue={handleOpenIssue}
             onStatusChange={handleStatusChange}
             onAssignToMe={handleAssignToMe}
             onCompleteSprint={(sprint) => {
@@ -167,7 +192,7 @@ export const BacklogPage: React.FC = () => {
                   availableSprints={sprintList}
                   isCollapsed={!!collapsedSprints[sprint.name]}
                   onToggleCollapse={() => handleToggleSprintCollapse(sprint.name)}
-                  onSelectIssue={(issue) => setSelectedIssueId(issue.id)}
+                  onSelectIssue={handleOpenIssue}
                   onMoveToSprint={handleMoveToSprint}
                   onStartSprint={handleStartSprint}
                   onCompleteSprint={(target) => {
@@ -195,7 +220,7 @@ export const BacklogPage: React.FC = () => {
               availableSprints={sprintList}
               isCollapsed={isBacklogCollapsed}
               onToggleCollapse={() => setIsBacklogCollapsed((prev) => !prev)}
-              onSelectIssue={(issue) => setSelectedIssueId(issue.id)}
+              onSelectIssue={handleOpenIssue}
               onMoveToSprint={handleMoveToSprint}
               onQuickCreateInBacklog={() => {
                 setCreateIssueSprintId(null);
@@ -257,19 +282,6 @@ export const BacklogPage: React.FC = () => {
         />
       )}
 
-      {/* Issue Details Modal */}
-      <IssueDetailsModal
-        isOpen={!!selectedIssueId}
-        issueId={selectedIssueId}
-        onClose={() => setSelectedIssueId(null)}
-        onIssueUpdated={(updated) => {
-          setIssues((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
-        }}
-        onIssueDeleted={(deletedId) => {
-          setIssues((prev) => prev.filter((i) => i.id !== deletedId));
-        }}
-      />
-
       {/* Quick Create Issue Modal */}
       <IssueModal
         isOpen={isCreateIssueOpen}
@@ -283,6 +295,12 @@ export const BacklogPage: React.FC = () => {
         }}
         defaultProjectId={selectedProjectId}
         defaultSprintId={createIssueSprintId}
+      />
+
+      {/* Floating Bulk Action Bar */}
+      <FloatingBulkActionBar
+        projectId={selectedProjectId}
+        onActionComplete={() => loadData()}
       />
     </div>
   );

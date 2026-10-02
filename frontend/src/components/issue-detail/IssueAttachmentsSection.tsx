@@ -68,8 +68,8 @@ export const IssueAttachmentsSection: React.FC<IssueAttachmentsSectionProps> = (
   return (
     <div className="space-y-4 pt-2">
       <div className="flex items-center justify-between">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-          <Paperclip className="w-3.5 h-3.5" />
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)] flex items-center gap-1.5">
+          <Paperclip className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
           Attachments ({attachments.length})
         </h3>
       </div>
@@ -83,10 +83,10 @@ export const IssueAttachmentsSection: React.FC<IssueAttachmentsSectionProps> = (
         onDragLeave={() => setIsDragOver(false)}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
-        className={`border-2 border-dashed rounded-lg p-5 text-center cursor-pointer transition-colors ${
+        className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-colors ${
           isDragOver
-            ? 'border-primary bg-primary/5'
-            : 'border-border/70 hover:border-primary/50 bg-card/30'
+            ? 'border-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/20'
+            : 'border-[var(--md-sys-color-outline-variant)]/70 hover:border-[var(--md-sys-color-primary)]/50 bg-[var(--md-sys-color-surface-container-low)]'
         }`}
       >
         <input
@@ -98,14 +98,14 @@ export const IssueAttachmentsSection: React.FC<IssueAttachmentsSectionProps> = (
         />
         <div className="flex flex-col items-center justify-center gap-2">
           {uploading ? (
-            <Loader2 className="w-6 h-6 text-primary animate-spin" />
+            <Loader2 className="w-6 h-6 text-[var(--md-sys-color-primary)] animate-spin" />
           ) : (
-            <UploadCloud className="w-6 h-6 text-muted-foreground" />
+            <UploadCloud className="w-6 h-6 text-[var(--md-sys-color-on-surface-variant)]" />
           )}
-          <p className="text-sm font-medium text-foreground">
+          <p className="text-sm font-medium text-[var(--md-sys-color-on-surface)]">
             {uploading ? 'Uploading to SeaweedFS...' : 'Drop files here or click to browse'}
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-[var(--md-sys-color-on-surface-variant)]">
             Support for images, PDFs, logs and screenshots
           </p>
         </div>
@@ -124,20 +124,20 @@ export const IssueAttachmentsSection: React.FC<IssueAttachmentsSectionProps> = (
             return (
               <Card
                 key={att.id}
-                className="p-3 bg-card/80 border-border/80 flex items-center justify-between gap-3 group"
+                className="p-3 bg-[var(--md-sys-color-surface-container-low)] border-[var(--md-sys-color-outline-variant)]/60 flex items-center justify-between gap-3 group"
               >
                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <div className="p-2 rounded bg-muted/40 text-muted-foreground shrink-0">
+                  <div className="p-2 rounded-lg bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface-variant)] shrink-0">
                     {isImg ? (
                       <ImageIcon className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
                     ) : (
-                      <FileText className="w-4 h-4 text-[var(--md-sys-color-tertiary)]" />
+                      <FileText className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
                     )}
                   </div>
 
                   <div className="min-w-0 flex-1">
                     <p
-                      className="text-xs font-semibold text-foreground truncate cursor-pointer hover:underline"
+                      className="text-xs font-semibold text-[var(--md-sys-color-on-surface)] truncate cursor-pointer hover:underline"
                       title={att.filename}
                       onClick={() => {
                         const secureUrl = getSecureUrl(att.url);
@@ -151,7 +151,7 @@ export const IssueAttachmentsSection: React.FC<IssueAttachmentsSectionProps> = (
                     >
                       {att.filename}
                     </p>
-                    <p className="text-[11px] text-muted-foreground">
+                    <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
                       {formatFileSize(att.fileSize)} • {att.uploader?.fullName || 'Anonymous'}
                     </p>
                   </div>
@@ -162,7 +162,7 @@ export const IssueAttachmentsSection: React.FC<IssueAttachmentsSectionProps> = (
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                      className="h-7 w-7 p-0 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]"
                       onClick={() => {
                         setPreviewImageUrl(getSecureUrl(att.url));
                         setPreviewImageTitle(att.filename);
@@ -177,7 +177,7 @@ export const IssueAttachmentsSection: React.FC<IssueAttachmentsSectionProps> = (
                     download={att.filename}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                    className="p-1.5 rounded-md hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] transition-colors"
                   >
                     <Download className="w-3.5 h-3.5" />
                   </a>
@@ -186,7 +186,7 @@ export const IssueAttachmentsSection: React.FC<IssueAttachmentsSectionProps> = (
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                      className="h-7 w-7 p-0 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/20"
                       onClick={() => onDelete(att.id)}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -211,7 +211,7 @@ export const IssueAttachmentsSection: React.FC<IssueAttachmentsSectionProps> = (
             <img
               src={previewImageUrl}
               alt={previewImageTitle || 'Preview'}
-              className="max-w-full max-h-full rounded object-contain"
+              className="max-w-full max-h-full rounded-xl object-contain"
             />
           </div>
         </Modal>

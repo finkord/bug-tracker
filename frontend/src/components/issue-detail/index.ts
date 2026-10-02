@@ -4,3 +4,4 @@ export * from './IssueCommentsSection.js';
 export * from './IssueAttachmentsSection.js';
 export * from './IssueSidebarDetails.js';
 export * from './IssueTimeTrackingCard.js';
+export * from './IssueSubtasksSection.js';

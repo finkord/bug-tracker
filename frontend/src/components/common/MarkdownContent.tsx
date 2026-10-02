@@ -5,12 +5,14 @@ interface MarkdownContentProps {
   content?: string | null;
   className?: string;
   onImageClick?: (url: string, title?: string) => void;
+  onToggleChecklist?: (lineIndex: number, newChecked: boolean) => void;
 }
 
 export const MarkdownContent: React.FC<MarkdownContentProps> = ({
   content,
   className = '',
   onImageClick,
+  onToggleChecklist,
 }) => {
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
 
@@ -106,7 +108,39 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({
         return;
       }
 
-      // 4. Bullet lists
+      // 4. Task lists / Checklists (- [ ] or - [x])
+      const trimmedLine = line.trim();
+      if (
+        trimmedLine.startsWith('- [ ] ') ||
+        trimmedLine.startsWith('- [x] ') ||
+        trimmedLine.startsWith('- [X] ')
+      ) {
+        const isChecked = trimmedLine.startsWith('- [x] ') || trimmedLine.startsWith('- [X] ');
+        const itemText = trimmedLine.replace(/^-\s*\[[ xX]\]\s*/, '');
+        elements.push(
+          <div key={`task-${index}`} className="flex items-center gap-2.5 my-1 text-xs sm:text-sm">
+            <input
+              type="checkbox"
+              checked={isChecked}
+              disabled={!onToggleChecklist}
+              onChange={() => onToggleChecklist?.(index, !isChecked)}
+              className="w-3.5 h-3.5 rounded cursor-pointer accent-[var(--md-sys-color-primary)] shrink-0"
+            />
+            <span
+              className={`flex-1 ${
+                isChecked
+                  ? 'line-through opacity-60 text-[var(--md-sys-color-on-surface-variant)]'
+                  : 'text-[var(--md-sys-color-on-surface)]'
+              }`}
+            >
+              {renderInline(itemText)}
+            </span>
+          </div>,
+        );
+        return;
+      }
+
+      // 5. Bullet lists
       if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
         elements.push(
           <div key={`li-${index}`} className="flex items-start gap-2 my-1 text-xs">

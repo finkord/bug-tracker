@@ -3,14 +3,17 @@ import type {
   IssueItem,
   CreateIssuePayload,
   IssueStatus,
-  IssuePriority,
-  IssueType,
   AttachmentItem,
   IssueComment,
   IssueLinkItem,
   IssueLinkType,
   PaginatedIssuesResponse,
   GetIssuesParams,
+  BulkUpdateIssuesDto,
+  BulkDeleteIssuesDto,
+  BulkOperationResultDto,
+  IssueHistoryItem,
+  VcsPullRequestItem,
 } from '../types/issues.types.js';
 import type { AuthTokens } from '../types/auth.types.js';
 
@@ -67,6 +70,18 @@ export const issuesApi = {
   deleteIssue: (id: number) =>
     request<{ success: boolean; message: string }>(`/issues/${id}`, {
       method: 'DELETE',
+    }),
+
+  bulkUpdateIssues: (payload: BulkUpdateIssuesDto) =>
+    request<BulkOperationResultDto>('/issues/bulk', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  bulkDeleteIssues: (payload: BulkDeleteIssuesDto) =>
+    request<BulkOperationResultDto>('/issues/bulk-delete', {
+      method: 'POST',
+      body: JSON.stringify(payload),
     }),
 
   addIssueComment: (issueId: number, text: string) =>
@@ -144,4 +159,10 @@ export const issuesApi = {
     request<{ success: boolean; message: string }>(`/issues/links/${linkId}`, {
       method: 'DELETE',
     }),
+
+  getIssueHistory: (issueId: number) =>
+    request<IssueHistoryItem[]>(`/issues/${issueId}/history`),
+
+  getPullRequests: (issueId: number) =>
+    request<VcsPullRequestItem[]>(`/issues/${issueId}/vcs/pull-requests`),
 };

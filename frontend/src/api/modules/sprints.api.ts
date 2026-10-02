@@ -4,6 +4,7 @@ import type {
   CreateSprintPayload,
   UpdateSprintPayload,
   CompleteSprintPayload,
+  SprintBurndownResponse,
 } from '../types/sprints.types.js';
 
 export const sprintsApi = {
@@ -44,4 +45,13 @@ export const sprintsApi = {
         method: 'DELETE',
       },
     ),
+
+  getSprintBurndown: (projectId: number, sprintId: number) =>
+    request<SprintBurndownResponse>(`/projects/${projectId}/sprints/${sprintId}/burndown`),
+
+  getSprintFlowMetrics: (projectId: number, sprintId: number) =>
+    request<import('../types/sprints.types.js').SprintFlowMetricsResponse>(
+      `/projects/${projectId}/sprints/${sprintId}/flow-metrics`,
+    ),
 };
+

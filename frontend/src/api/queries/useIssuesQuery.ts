@@ -2,11 +2,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   api,
   type IssueStatus,
-  type IssuePriority,
-  type IssueType,
   type CreateIssuePayload,
   type IssueLinkType,
   type GetIssuesParams,
+  type BulkUpdateIssuesDto,
+  type BulkDeleteIssuesDto,
 } from '../client';
 
 export const issueKeys = {
@@ -17,6 +17,7 @@ export const issueKeys = {
   detail: (keyOrId: string | number) => [...issueKeys.details(), String(keyOrId)] as const,
   attachments: (issueId: number) => [...issueKeys.detail(issueId), 'attachments'] as const,
   links: (issueId: number) => [...issueKeys.detail(issueId), 'links'] as const,
+  history: (issueId: number) => [...issueKeys.detail(issueId), 'history'] as const,
 };
 
 export function useIssuesQuery(filters?: GetIssuesParams) {
@@ -50,11 +51,13 @@ export function useUpdateIssueStatusMutation() {
     mutationFn: ({ issueId, status }: { issueId: number; status: IssueStatus }) =>
       api.updateIssueStatus(issueId, status),
     onSuccess: (updatedIssue) => {
-      queryClient.invalidateQueries({ queryKey: issueKeys.lists() });
       if (updatedIssue.key) {
-        queryClient.invalidateQueries({ queryKey: issueKeys.detail(updatedIssue.key) });
+        queryClient.setQueryData(issueKeys.detail(updatedIssue.key), updatedIssue);
       }
-      queryClient.invalidateQueries({ queryKey: issueKeys.detail(updatedIssue.id) });
+      queryClient.setQueryData(issueKeys.detail(String(updatedIssue.id)), updatedIssue);
+      queryClient.setQueryData(issueKeys.detail(updatedIssue.id), updatedIssue);
+      queryClient.invalidateQueries({ queryKey: issueKeys.details() });
+      queryClient.invalidateQueries({ queryKey: issueKeys.lists() });
     },
   });
 }
@@ -65,11 +68,13 @@ export function useUpdateIssueMutation() {
     mutationFn: ({ id, data }: { id: number; data: Partial<CreateIssuePayload> }) =>
       api.updateIssue(id, data),
     onSuccess: (updatedIssue) => {
-      queryClient.invalidateQueries({ queryKey: issueKeys.lists() });
       if (updatedIssue.key) {
-        queryClient.invalidateQueries({ queryKey: issueKeys.detail(updatedIssue.key) });
+        queryClient.setQueryData(issueKeys.detail(updatedIssue.key), updatedIssue);
       }
-      queryClient.invalidateQueries({ queryKey: issueKeys.detail(updatedIssue.id) });
+      queryClient.setQueryData(issueKeys.detail(String(updatedIssue.id)), updatedIssue);
+      queryClient.setQueryData(issueKeys.detail(updatedIssue.id), updatedIssue);
+      queryClient.invalidateQueries({ queryKey: issueKeys.details() });
+      queryClient.invalidateQueries({ queryKey: issueKeys.lists() });
     },
   });
 }
@@ -89,8 +94,13 @@ export function useAssignIssueToMeMutation() {
   return useMutation({
     mutationFn: (id: number) => api.assignIssueToMe(id),
     onSuccess: (updatedIssue) => {
+      if (updatedIssue.key) {
+        queryClient.setQueryData(issueKeys.detail(updatedIssue.key), updatedIssue);
+      }
+      queryClient.setQueryData(issueKeys.detail(String(updatedIssue.id)), updatedIssue);
+      queryClient.setQueryData(issueKeys.detail(updatedIssue.id), updatedIssue);
+      queryClient.invalidateQueries({ queryKey: issueKeys.details() });
       queryClient.invalidateQueries({ queryKey: issueKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: issueKeys.detail(updatedIssue.key) });
     },
   });
 }
@@ -101,8 +111,13 @@ export function useUpdateIssueSprintMutation() {
     mutationFn: ({ id, sprintId }: { id: number; sprintId: number | null }) =>
       api.updateIssueSprint(id, sprintId),
     onSuccess: (updatedIssue) => {
+      if (updatedIssue.key) {
+        queryClient.setQueryData(issueKeys.detail(updatedIssue.key), updatedIssue);
+      }
+      queryClient.setQueryData(issueKeys.detail(String(updatedIssue.id)), updatedIssue);
+      queryClient.setQueryData(issueKeys.detail(updatedIssue.id), updatedIssue);
+      queryClient.invalidateQueries({ queryKey: issueKeys.details() });
       queryClient.invalidateQueries({ queryKey: issueKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: issueKeys.detail(updatedIssue.key) });
     },
   });
 }
@@ -189,3 +204,32 @@ export function useDeleteIssueLinkMutation() {
     },
   });
 }
+
+export function useBulkUpdateIssuesMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: BulkUpdateIssuesDto) => api.bulkUpdateIssues(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: issueKeys.all });
+    },
+  });
+}
+
+export function useBulkDeleteIssuesMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: BulkDeleteIssuesDto) => api.bulkDeleteIssues(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: issueKeys.all });
+    },
+  });
+}
+
+export function useIssueHistoryQuery(issueId?: number) {
+  return useQuery({
+    queryKey: issueKeys.history(issueId!),
+    queryFn: () => api.getIssueHistory(issueId!),
+    enabled: typeof issueId === 'number' && !isNaN(issueId),
+  });
+}
+

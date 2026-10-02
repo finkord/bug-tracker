@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   useProjectsQuery,
+  useProjectQuickFiltersQuery,
+  useProjectComponentsQuery,
   useIssuesQuery,
   useUpdateIssueStatusMutation,
   useUpdateIssueMutation,
@@ -10,20 +12,25 @@ import {
   useCreateSavedFilterMutation,
   issueKeys,
 } from '../api/queries';
-import { type IssueItem, type IssueStatus, type PaginatedIssuesResponse } from '../api/client';
+import {
+  type IssueItem,
+  type IssueStatus,
+  type IssuePriority,
+  type PaginatedIssuesResponse,
+} from '../api/client';
 import { realtimeSocket } from '../api/socket';
 import { useAuth } from '../store';
 import { IssueModal } from '../components/kanban/IssueModal';
-import { IssueDetailsModal } from '../components/kanban/IssueDetailsModal';
 import { KanbanToolbar } from '../components/kanban/KanbanToolbar';
 import { KanbanFlatBoard } from '../components/kanban/KanbanFlatBoard';
 import { KanbanSwimlaneBoard } from '../components/kanban/KanbanSwimlaneBoard';
 import { KanbanMobileView } from '../components/kanban/KanbanMobileView';
 import { KanbanBoardSettingsModal } from '../components/kanban/KanbanBoardSettingsModal';
 import { SaveFilterModal } from '../components/kanban/SaveFilterModal';
+import { FloatingBulkActionBar } from '../components/common/FloatingBulkActionBar';
+import { useListKeyboardNavigation } from '../hooks';
 import type {
   KanbanSettings,
-  QuickFilterState,
   BoardViewMode,
 } from '../types/kanban';
 import { DEFAULT_KANBAN_SETTINGS } from '../types/kanban';
@@ -38,14 +45,31 @@ export const KanbanBoardPage: React.FC = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const selectedProjectId: number | 'ALL' = projectId ? Number(projectId) : 'ALL';
+  const handleOpenIssue = (issue: { key: string }) => {
+    navigate(`/issues/${issue.key}`, { state: { from: 'board', label: 'Back to Board' } });
+  };
 
   // TanStack Query for projects
   const { data: projects = [] } = useProjectsQuery();
 
+  const selectedProject = useMemo(() => {
+    if (!projectId || !projects.length) return undefined;
+    const numId = Number(projectId);
+    if (!Number.isNaN(numId)) {
+      return projects.find((p) => p.id === numId);
+    }
+    return projects.find(
+      (p) => p.key?.toUpperCase() === projectId.toUpperCase(),
+    );
+  }, [projects, projectId]);
+
+  const selectedProjectId: number =
+    selectedProject?.id ??
+    (projectId && !Number.isNaN(Number(projectId)) ? Number(projectId) : 0);
+
   // TanStack Query for issues
   const issueFilter = useMemo(
-    () => (selectedProjectId === 'ALL' ? undefined : { projectId: selectedProjectId }),
+    () => ({ projectId: selectedProjectId }),
     [selectedProjectId],
   );
 
@@ -54,7 +78,7 @@ export const KanbanBoardPage: React.FC = () => {
     isLoading: loading,
     refetch: loadIssues,
   } = useIssuesQuery(issueFilter);
-  const issues = issuesData?.items ?? [];
+  const issues = useMemo(() => issuesData?.items ?? [], [issuesData?.items]);
 
   const updateStatusMutation = useUpdateIssueStatusMutation();
   const updateIssueMutation = useUpdateIssueMutation();
@@ -100,6 +124,19 @@ export const KanbanBoardPage: React.FC = () => {
     }
   }, [searchParams, settings.viewMode]);
 
+  // Synchronize backend project WIP limits if configured
+  useEffect(() => {
+    if (selectedProject?.wipLimits && Object.keys(selectedProject.wipLimits).length > 0) {
+      setSettings((prev) => ({
+        ...prev,
+        wipLimits: {
+          ...prev.wipLimits,
+          ...selectedProject.wipLimits,
+        },
+      }));
+    }
+  }, [selectedProject?.wipLimits]);
+
   // Persist settings whenever they change
   const handleUpdateSettings = (newSettings: KanbanSettings) => {
     setSettings(newSettings);
@@ -114,17 +151,17 @@ export const KanbanBoardPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>(searchParams.get('search') || '');
   const [filterType, setFilterType] = useState<string>(searchParams.get('issueType') || 'ALL');
   const [filterPriority, setFilterPriority] = useState<string>(searchParams.get('priority') || 'ALL');
-  const [quickFilters, setQuickFilters] = useState<QuickFilterState>({
-    onlyMine: false,
-    unassignedOnly: false,
-    highPriorityOnly: false,
-  });
+  const [selectedComponentId, setSelectedComponentId] = useState<number | null>(null);
+  // Quick Filters & Components State
+  const { data: projectQuickFilters = [] } = useProjectQuickFiltersQuery(selectedProjectId);
+  const { data: projectComponents = [] } = useProjectComponentsQuery(selectedProjectId);
+  const [activeQuickFilterIds, setActiveQuickFilterIds] = useState<number[]>([]);
+  const [settingsInitialTab, setSettingsInitialTab] = useState<'layout' | 'quickFilters'>('layout');
 
-  const handleToggleQuickFilter = (key: keyof QuickFilterState) => {
-    setQuickFilters((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
+  const handleToggleQuickFilter = (id: number) => {
+    setActiveQuickFilterIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
   };
 
   // Modals state
@@ -132,7 +169,6 @@ export const KanbanBoardPage: React.FC = () => {
   const [defaultCreateAssigneeId, setDefaultCreateAssigneeId] = useState<number | null>(null);
   const [defaultCreateStatus, setDefaultCreateStatus] = useState<IssueStatus | null>(null);
   const [editingIssue, setEditingIssue] = useState<IssueItem | null>(null);
-  const [selectedIssueId, setSelectedIssueId] = useState<number | null>(null);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState<boolean>(false);
   const [isSaveFilterModalOpen, setIsSaveFilterModalOpen] = useState<boolean>(false);
   const [filterSavedMsg, setFilterSavedMsg] = useState<string | null>(null);
@@ -140,15 +176,13 @@ export const KanbanBoardPage: React.FC = () => {
   // Real-time WebSocket synchronization across users and browser tabs
   useEffect(() => {
     realtimeSocket.connect();
-    if (selectedProjectId !== 'ALL') {
-      realtimeSocket.joinProject(selectedProjectId);
-    }
+    realtimeSocket.joinProject(selectedProjectId);
 
     const unsubCreated = realtimeSocket.onIssueCreated((newIssue) => {
       queryClient.setQueryData<PaginatedIssuesResponse>(issueKeys.list(issueFilter), (old) => {
         const items = old?.items ?? [];
         if (items.some((i) => i.id === newIssue.id)) return old;
-        if (selectedProjectId !== 'ALL' && newIssue.projectId !== selectedProjectId) return old;
+        if (newIssue.projectId !== selectedProjectId) return old;
         const nextItems = [newIssue, ...items];
         return {
           items: nextItems,
@@ -167,7 +201,7 @@ export const KanbanBoardPage: React.FC = () => {
         let nextItems: IssueItem[];
         if (exists) {
           nextItems = old.items.map((i) => (i.id === updatedIssue.id ? updatedIssue : i));
-        } else if (selectedProjectId === 'ALL' || updatedIssue.projectId === selectedProjectId) {
+        } else if (updatedIssue.projectId === selectedProjectId) {
           nextItems = [updatedIssue, ...old.items];
         } else {
           return old;
@@ -193,23 +227,37 @@ export const KanbanBoardPage: React.FC = () => {
     });
 
     return () => {
-      if (selectedProjectId !== 'ALL') {
-        realtimeSocket.leaveProject(selectedProjectId);
-      }
+      realtimeSocket.leaveProject(selectedProjectId);
       unsubCreated();
       unsubUpdated();
       unsubDeleted();
     };
   }, [selectedProjectId, issueFilter, queryClient]);
 
-  // Client-side filtering logic
+  // Filtering logic respecting dynamic quick filters and component
   const filteredIssues = useMemo(() => {
     return issues.filter((issue) => {
       if (filterType !== 'ALL' && issue.issueType !== filterType) return false;
       if (filterPriority !== 'ALL' && issue.priority !== filterPriority) return false;
-      if (quickFilters.onlyMine && user && issue.assignee?.id !== user.id) return false;
-      if (quickFilters.unassignedOnly && issue.assignee !== null && issue.assignee !== undefined) return false;
-      if (quickFilters.highPriorityOnly && issue.priority !== 'CRITICAL' && issue.priority !== 'HIGH') return false;
+      if (selectedComponentId !== null && issue.componentId !== selectedComponentId) return false;
+
+      // Evaluate active quick filter JQL conditions
+      for (const filterId of activeQuickFilterIds) {
+        const qf = projectQuickFilters.find((f) => f.id === filterId);
+        if (!qf) continue;
+        const qLower = qf.jqlQuery.toLowerCase();
+        if (qLower.includes('currentuser()') || qLower.includes('assignee = me')) {
+          if (!user || issue.assignee?.id !== user.id) return false;
+        } else if (qLower.includes('unassigned') || qLower.includes('is empty') || qLower.includes('is null')) {
+          if (issue.assignee !== null && issue.assignee !== undefined) return false;
+        } else if (qLower.includes('critical') && qLower.includes('high')) {
+          if (issue.priority !== 'CRITICAL' && issue.priority !== 'HIGH') return false;
+        } else if (qLower.includes('critical')) {
+          if (issue.priority !== 'CRITICAL') return false;
+        } else if (qLower.includes('type = "bug"') || qLower.includes('type = bug')) {
+          if (issue.issueType !== 'BUG') return false;
+        }
+      }
 
       if (searchTerm.trim()) {
         const term = searchTerm.toLowerCase();
@@ -221,7 +269,14 @@ export const KanbanBoardPage: React.FC = () => {
 
       return true;
     });
-  }, [issues, filterType, filterPriority, quickFilters, searchTerm, user]);
+  }, [issues, filterType, filterPriority, selectedComponentId, activeQuickFilterIds, projectQuickFilters, searchTerm, user]);
+
+  // J/K/Enter/O high-velocity list keyboard navigation
+  const { focusedId } = useListKeyboardNavigation({
+    items: filteredIssues,
+    onOpenItem: handleOpenIssue,
+    enabled: !isCreateModalOpen && !isSettingsModalOpen,
+  });
 
   // Status transition handler
   const handleStatusChange = async (issueId: number, nextStatus: IssueStatus) => {
@@ -258,6 +313,35 @@ export const KanbanBoardPage: React.FC = () => {
       }
 
       if (!isSameStatus) {
+        await updateStatusMutation.mutateAsync({ issueId, status: nextStatus });
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to update issue');
+    }
+  };
+
+  // Cross-swimlane drop handler supporting Assignee, Epic, and Priority/Expedite
+  const handleSwimlaneDrop = async (
+    issueId: number,
+    nextStatus: IssueStatus,
+    patch?: { assigneeId?: number | null; parentId?: number | null; priority?: IssuePriority },
+  ) => {
+    const original = issues.find((i) => i.id === issueId);
+    if (!original) return;
+
+    try {
+      if (patch && Object.keys(patch).length > 0) {
+        await updateIssueMutation.mutateAsync({
+          id: issueId,
+          data: {
+            assigneeId: patch.assigneeId === null ? undefined : patch.assigneeId,
+            parentId: patch.parentId === null ? undefined : patch.parentId,
+            priority: patch.priority,
+          },
+        });
+      }
+
+      if (original.status !== nextStatus) {
         await updateStatusMutation.mutateAsync({ issueId, status: nextStatus });
       }
     } catch (err: unknown) {
@@ -305,23 +389,12 @@ export const KanbanBoardPage: React.FC = () => {
     }
   };
 
-  const handleSelectProject = (val: number | 'ALL') => {
-    if (typeof val === 'number') navigate(`/projects/${val}/board`);
-    else navigate('/board');
-  };
-
-  const activeProject =
-    typeof selectedProjectId === 'number'
-      ? projects.find((p) => p.id === selectedProjectId) || null
-      : null;
+  const activeProject = selectedProject || projects.find((p) => p.id === selectedProjectId) || null;
 
   return (
-    <div className="w-full min-h-full flex flex-col px-3 sm:px-5 py-4 animate-in fade-in duration-200">
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-5 flex-1 flex flex-col min-w-0 animate-in fade-in duration-200">
       {/* Kanban Action Toolbar */}
       <KanbanToolbar
-        projects={projects}
-        selectedProjectId={selectedProjectId}
-        onSelectProject={handleSelectProject}
         activeProject={activeProject}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
@@ -329,11 +402,18 @@ export const KanbanBoardPage: React.FC = () => {
         onFilterTypeChange={setFilterType}
         filterPriority={filterPriority}
         onFilterPriorityChange={setFilterPriority}
-        quickFilters={quickFilters}
+        projectComponents={projectComponents}
+        selectedComponentId={selectedComponentId}
+        onSelectComponent={setSelectedComponentId}
+        projectQuickFilters={projectQuickFilters}
+        activeQuickFilterIds={activeQuickFilterIds}
         onToggleQuickFilter={handleToggleQuickFilter}
         settings={settings}
         onUpdateSettings={handleUpdateSettings}
-        onOpenSettingsModal={() => setIsSettingsModalOpen(true)}
+        onOpenSettingsModal={(tab) => {
+          setSettingsInitialTab(tab || 'layout');
+          setIsSettingsModalOpen(true);
+        }}
         onRefresh={() => loadIssues()}
         onSaveCurrentFilter={handleSaveCurrentFilter}
         loading={loading}
@@ -369,7 +449,7 @@ export const KanbanBoardPage: React.FC = () => {
             issues={filteredIssues}
             loading={loading}
             settings={settings}
-            onSelectIssue={(issue) => setSelectedIssueId(issue.id)}
+            onSelectIssue={handleOpenIssue}
             onStatusChange={handleStatusChange}
             onAssignToMe={handleAssignToMe}
             onQuickAddInStatus={handleQuickAddInStatus}
@@ -380,37 +460,29 @@ export const KanbanBoardPage: React.FC = () => {
             issues={filteredIssues}
             loading={loading}
             settings={settings}
-            onSelectIssue={(issue) => setSelectedIssueId(issue.id)}
+            onSelectIssue={handleOpenIssue}
             onStatusChange={handleStatusChange}
             onAssigneeAndStatusChange={handleAssigneeAndStatusChange}
+            onSwimlaneDrop={handleSwimlaneDrop}
             onAssignToMe={handleAssignToMe}
             onQuickAddInStatus={handleQuickAddInStatus}
             currentUserId={user?.id}
+            focusedIssueId={focusedId}
           />
         ) : (
           <KanbanFlatBoard
             issues={filteredIssues}
             loading={loading}
             settings={settings}
-            onSelectIssue={(issue) => setSelectedIssueId(issue.id)}
+            onSelectIssue={handleOpenIssue}
             onStatusChange={handleStatusChange}
             onAssignToMe={handleAssignToMe}
             onQuickAddInStatus={handleQuickAddInStatus}
             currentUserId={user?.id}
+            focusedIssueId={focusedId}
           />
         )}
       </div>
-
-      {/* Issue Details Modal */}
-      <IssueDetailsModal
-        isOpen={!!selectedIssueId}
-        issueId={selectedIssueId}
-        onClose={() => setSelectedIssueId(null)}
-        onEditClick={(issueToEdit) => {
-          setEditingIssue(issueToEdit);
-          setIsCreateModalOpen(true);
-        }}
-      />
 
       {/* Create / Edit Issue Modal */}
       <IssueModal
@@ -428,7 +500,7 @@ export const KanbanBoardPage: React.FC = () => {
             queryClient.invalidateQueries({ queryKey: issueKeys.lists() });
           }
         }}
-        defaultProjectId={selectedProjectId === 'ALL' ? projects[0]?.id : selectedProjectId}
+        defaultProjectId={selectedProjectId}
         defaultAssigneeId={defaultCreateAssigneeId}
         editingIssue={editingIssue}
       />
@@ -439,6 +511,8 @@ export const KanbanBoardPage: React.FC = () => {
         onClose={() => setIsSettingsModalOpen(false)}
         settings={settings}
         onUpdateSettings={handleUpdateSettings}
+        projectId={selectedProjectId}
+        initialTab={settingsInitialTab}
       />
 
       {/* Save Filter Modal Dialog */}
@@ -448,6 +522,9 @@ export const KanbanBoardPage: React.FC = () => {
         onSave={handleConfirmSaveFilter}
         defaultFilterName={`Filter: ${filterType !== 'ALL' ? filterType : ''} ${filterPriority !== 'ALL' ? filterPriority : ''}`.trim() || 'Custom Filter'}
       />
+
+      {/* Floating Bulk Action Bar */}
+      <FloatingBulkActionBar projectId={selectedProjectId} />
     </div>
   );
 };

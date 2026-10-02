@@ -15,9 +15,11 @@ import {
 import { api, type IssueStatus } from '../api/client';
 import { realtimeSocket } from '../api/socket';
 import { useAuth } from '../store';
+import { useRecentIssuesStore } from '../store/useRecentIssuesStore';
 import { LogWorkModal } from '../components/kanban/LogWorkModal';
 import { IssueModal } from '../components/kanban/IssueModal';
 import { IssueLinksSection } from '../components/kanban/IssueLinksSection';
+import { VcsDevelopmentPanel } from '../components/kanban/VcsDevelopmentPanel';
 import {
   IssueDetailHeader,
   IssueDetailDescription,
@@ -25,6 +27,7 @@ import {
   IssueAttachmentsSection,
   IssueSidebarDetails,
   IssueTimeTrackingCard,
+  IssueSubtasksSection,
 } from '../components/issue-detail';
 import { Card, Button, Modal } from '../components/ui';
 import { Loader2, AlertCircle } from 'lucide-react';
@@ -64,6 +67,13 @@ export const IssueDetailPage: React.FC = () => {
       navigate(`/issues/${issue.key}`, { replace: true });
     }
   }, [issue?.key, issueKeyOrId, navigate]);
+
+  // Track recently visited issues for Command Palette
+  useEffect(() => {
+    if (issue) {
+      useRecentIssuesStore.getState().addRecentIssue(issue);
+    }
+  }, [issue]);
 
   // Real-time WebSocket subscriptions
   useEffect(() => {
@@ -128,17 +138,22 @@ export const IssueDetailPage: React.FC = () => {
     await statusMutation.mutateAsync({ issueId: issue.id, status: newStatus });
   };
 
-  const handleSprintChange = async (newSprint: string | null) => {
+  const handleSprintChange = async (newSprintId: number | null) => {
     if (!issue) return;
-    await sprintMutation.mutateAsync({ id: issue.id, sprint: newSprint });
+    await sprintMutation.mutateAsync({ id: issue.id, sprintId: newSprintId });
   };
 
   const handleAssignToMe = async () => {
     if (!issue || !user) return;
-    await assignMutation.mutateAsync(issue.id);
+    try {
+      await assignMutation.mutateAsync(issue.id);
+    } catch {
+      // Fallback via general update mutation if specialized self-assign permission fails
+      await updateMutation.mutateAsync({ id: issue.id, data: { assigneeId: user.id } });
+    }
   };
 
-  const handleUpdateIssue = async (payload: { title?: string; description?: string }) => {
+  const handleUpdateIssue = async (payload: Partial<import('../api/client').CreateIssuePayload>) => {
     if (!issue) return;
     await updateMutation.mutateAsync({ id: issue.id, data: payload });
   };
@@ -166,11 +181,43 @@ export const IssueDetailPage: React.FC = () => {
     await deleteAttachmentMutation.mutateAsync({ issueId: issue.id, attachmentId });
   };
 
+  const handleBack = () => {
+    if (window.history.state && typeof window.history.state.idx === 'number' && window.history.state.idx > 0) {
+      navigate(-1);
+    } else if (issue?.projectKey || issue?.projectId) {
+      navigate(`/projects/${issue.projectKey || issue.projectId}/board`);
+    } else {
+      navigate('/projects');
+    }
+  };
+
+  // Keyboard shortcut Esc to return back when not editing
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        const activeEl = document.activeElement;
+        const activeTag = activeEl?.tagName?.toLowerCase();
+        const isInput =
+          activeTag === 'input' ||
+          activeTag === 'textarea' ||
+          activeTag === 'select' ||
+          (activeEl as HTMLElement)?.isContentEditable;
+
+        if (!isInput && !logWorkOpen && !editModalOpen && !deleteModalOpen) {
+          handleBack();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [issue?.projectKey, issue?.projectId, logWorkOpen, editModalOpen, deleteModalOpen]);
+
   const handleDeleteIssue = async () => {
     if (!issue) return;
     try {
       await deleteIssueMutation.mutateAsync(issue.id);
-      navigate(issue.projectId ? `/projects/${issue.projectId}/board` : '/issues');
+      const targetBoard = issue.projectKey ? `/projects/${issue.projectKey}/board` : (issue.projectId ? `/projects/${issue.projectId}/board` : '/projects');
+      navigate(targetBoard);
     } catch {
       setDeleteModalOpen(false);
     }
@@ -187,10 +234,10 @@ export const IssueDetailPage: React.FC = () => {
   if (error || !issue) {
     return (
       <div className="w-full px-4 sm:px-6 lg:px-8 py-8 flex justify-center">
-        <Card className="max-w-md w-full p-8 text-center border-destructive/30 bg-destructive/5 space-y-4">
-          <AlertCircle className="w-10 h-10 text-destructive mx-auto" />
-          <h2 className="text-lg font-bold text-foreground">Error Loading Issue</h2>
-          <p className="text-sm text-muted-foreground">{error || 'Issue not found'}</p>
+        <Card className="max-w-md w-full p-8 text-center border-[var(--md-sys-color-error)]/30 bg-[var(--md-sys-color-error-container)]/10 space-y-4">
+          <AlertCircle className="w-10 h-10 text-[var(--md-sys-color-error)] mx-auto" />
+          <h2 className="text-lg font-bold text-[var(--md-sys-color-on-surface)]">Error Loading Issue</h2>
+          <p className="text-sm text-[var(--md-sys-color-on-surface-variant)]">{error || 'Issue not found'}</p>
           <Button variant="outline" onClick={() => navigate(-1)}>
             Go Back
           </Button>
@@ -200,7 +247,7 @@ export const IssueDetailPage: React.FC = () => {
   }
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6 animate-in fade-in duration-200">
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-5 flex-1 flex flex-col min-w-0 space-y-6 animate-in fade-in duration-200">
       {/* Top Header Bar */}
       <IssueDetailHeader
         issue={issue}
@@ -209,6 +256,7 @@ export const IssueDetailPage: React.FC = () => {
         onStatusChange={handleStatusChange}
         onEditClick={() => setEditModalOpen(true)}
         onDeleteClick={() => setDeleteModalOpen(true)}
+        onBack={handleBack}
       />
 
       {/* Main Responsive Grid Layout */}
@@ -220,6 +268,11 @@ export const IssueDetailPage: React.FC = () => {
             onUpdateIssue={handleUpdateIssue}
           />
 
+          <IssueSubtasksSection
+            issue={issue}
+            onSubtasksChanged={() => fetchIssue()}
+          />
+
           <IssueLinksSection
             issueId={issue.id}
             currentIssueKey={issue.key}
@@ -229,6 +282,7 @@ export const IssueDetailPage: React.FC = () => {
           />
 
           <IssueCommentsSection
+            issueId={issue.id}
             comments={issue.comments || []}
             onAddComment={handleAddComment}
             onUploadCommentScreenshot={handleUploadScreenshot}
@@ -249,11 +303,19 @@ export const IssueDetailPage: React.FC = () => {
             currentUser={user}
             onAssignToMe={handleAssignToMe}
             onSprintChange={handleSprintChange}
+            onStatusChange={handleStatusChange}
+            onUpdateFields={handleUpdateIssue}
           />
 
           <IssueTimeTrackingCard
             issue={issue}
             onOpenLogWorkModal={() => setLogWorkOpen(true)}
+          />
+
+          <VcsDevelopmentPanel
+            issueId={issue.id}
+            issueKey={issue.key}
+            issueTitle={issue.title}
           />
         </div>
       </div>
@@ -289,8 +351,8 @@ export const IssueDetailPage: React.FC = () => {
           size="sm"
         >
           <div className="p-4 space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Are you sure you want to delete <strong className="text-foreground">{issue.key}</strong>?
+            <p className="text-sm text-[var(--md-sys-color-on-surface-variant)]">
+              Are you sure you want to delete <strong className="text-[var(--md-sys-color-on-surface)]">{issue.key}</strong>?
               This action cannot be undone and will delete all associated comments and worklogs.
             </p>
             <div className="flex items-center justify-end gap-2 pt-2">

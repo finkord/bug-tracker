@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { SprintDefinition } from '../../types/agile';
 import { useTeamsQuery } from '../../api/queries/useTeamsQuery.js';
 import { Calendar, Sparkles, Play } from 'lucide-react';
+import { Button, Input, Modal, Tabs, TabsList, TabsTrigger } from '../ui';
 
 interface SprintFormModalProps {
   isOpen: boolean;

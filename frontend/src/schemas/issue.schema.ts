@@ -1,9 +1,8 @@
 import { z } from 'zod';
 
-export const IssueTypeEnum = z.enum(['BUG', 'TASK', 'FEATURE', 'IMPROVEMENT']);
+export const IssueTypeEnum = z.enum(['BUG', 'TASK', 'FEATURE', 'IMPROVEMENT', 'SUBTASK']);
 export const IssueStatusEnum = z.enum(['OPEN', 'IN_PROGRESS', 'REVIEW', 'RESOLVED', 'CLOSED']);
 export const IssuePriorityEnum = z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']);
-export const IssueSeverityEnum = z.enum(['MINOR', 'MAJOR', 'BLOCKER', 'TRIVIAL']);
 export const IssueLinkTypeEnum = z.enum(['BLOCKS', 'IS_BLOCKED_BY', 'DUPLICATES', 'RELATES_TO']);
 
 export const UserSnippetSchema = z.object({
@@ -44,7 +43,6 @@ export const IssueSchema = z.object({
   issueType: IssueTypeEnum,
   status: IssueStatusEnum,
   priority: IssuePriorityEnum,
-  severity: IssueSeverityEnum,
   estimatedHours: z.number().default(0),
   loggedHours: z.number().default(0),
   sprintId: z.number().nullable().optional(),
@@ -73,7 +71,6 @@ export const CreateIssueSchema = z.object({
   description: z.string().optional(),
   issueType: IssueTypeEnum.default('TASK'),
   priority: IssuePriorityEnum.default('MEDIUM'),
-  severity: IssueSeverityEnum.default('MINOR'),
   estimatedHours: z.number().min(0).max(1000).optional(),
   sprintId: z.number().nullable().optional(),
   assigneeId: z.number().optional(),

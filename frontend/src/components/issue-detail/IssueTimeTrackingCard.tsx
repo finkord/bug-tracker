@@ -19,19 +19,19 @@ export const IssueTimeTrackingCard: React.FC<IssueTimeTrackingCardProps> = ({
   const worklogs = issue.worklogs || [];
 
   return (
-    <Card className="p-4 space-y-4 bg-card/80 border-border/80">
+    <Card className="p-4 space-y-4 bg-[var(--md-sys-color-surface-container-low)] border-[var(--md-sys-color-outline-variant)]/60">
       <div className="flex items-center justify-between">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-          <Clock className="w-3.5 h-3.5" />
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)] flex items-center gap-1.5">
+          <Clock className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
           Time Tracking
         </h3>
         <Button
           variant="outline"
           size="sm"
           onClick={onOpenLogWorkModal}
-          className="h-7 text-xs px-2 gap-1"
+          className="h-7 text-xs px-2 gap-1 text-[var(--md-sys-color-on-surface)]"
         >
-          <PlusCircle className="w-3.5 h-3.5 text-primary" />
+          <PlusCircle className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
           Log Work
         </Button>
       </div>
@@ -39,17 +39,17 @@ export const IssueTimeTrackingCard: React.FC<IssueTimeTrackingCardProps> = ({
       {/* Progress Bar */}
       <div className="space-y-1.5">
         <div className="flex justify-between text-xs font-medium">
-          <span className="text-foreground">{logged}h logged</span>
-          <span className="text-muted-foreground">
+          <span className="text-[var(--md-sys-color-on-surface)]">{logged}h logged</span>
+          <span className="text-[var(--md-sys-color-on-surface-variant)]">
             {estimated > 0 ? `${estimated}h estimated` : 'No estimate'}
           </span>
         </div>
-        <div className="h-2 w-full bg-muted/60 rounded-full overflow-hidden">
+        <div className="h-2 w-full bg-[var(--md-sys-color-surface-container-highest)] rounded-full overflow-hidden">
           <div
             className={`h-full transition-all duration-300 ${
               logged > estimated && estimated > 0
-                ? 'bg-[var(--md-sys-color-warning)]'
-                : 'bg-primary'
+                ? 'bg-[var(--md-sys-color-error)]'
+                : 'bg-[var(--md-sys-color-primary)]'
             }`}
             style={{ width: `${progressPercent}%` }}
           />
@@ -58,15 +58,15 @@ export const IssueTimeTrackingCard: React.FC<IssueTimeTrackingCardProps> = ({
 
       {/* Worklogs List */}
       {worklogs.length > 0 && (
-        <div className="space-y-2 pt-2 border-t border-border/60">
-          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+        <div className="space-y-2 pt-2 border-t border-[var(--md-sys-color-outline-variant)]/40">
+          <p className="text-[11px] font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
             Recent Worklogs
           </p>
           <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
             {worklogs.slice(0, 5).map((w) => (
               <div
                 key={w.id}
-                className="text-xs p-2 rounded bg-muted/30 border border-border/40 space-y-1"
+                className="text-xs p-2 rounded-lg bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/30 space-y-1"
               >
                 <div className="flex items-center justify-between text-[11px]">
                   <div className="flex items-center gap-1.5">
@@ -76,14 +76,14 @@ export const IssueTimeTrackingCard: React.FC<IssueTimeTrackingCardProps> = ({
                       size="sm"
                       className="w-4 h-4 text-[9px]"
                     />
-                    <span className="font-semibold text-foreground">{w.user?.fullName}</span>
+                    <span className="font-semibold text-[var(--md-sys-color-on-surface)]">{w.user?.fullName}</span>
                   </div>
-                  <span className="font-mono text-primary font-bold">{w.timeSpentHours}h</span>
+                  <span className="font-mono text-[var(--md-sys-color-primary)] font-bold">{w.timeSpentHours}h</span>
                 </div>
                 {w.description && (
-                  <p className="text-[11px] text-muted-foreground truncate">{w.description}</p>
+                  <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] truncate">{w.description}</p>
                 )}
-                <div className="text-[10px] text-muted-foreground/80 font-mono">
+                <div className="text-[10px] text-[var(--md-sys-color-on-surface-variant)]/80 font-mono">
                   {w.dateLogged}
                 </div>
               </div>

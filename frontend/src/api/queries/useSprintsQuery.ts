@@ -10,7 +10,12 @@ import { issueKeys } from './useIssuesQuery';
 export const sprintKeys = {
   all: ['sprints'] as const,
   project: (projectId?: number) => [...sprintKeys.all, 'project', projectId] as const,
+  burndown: (projectId?: number, sprintId?: number) =>
+    [...sprintKeys.all, 'burndown', projectId, sprintId] as const,
+  flowMetrics: (projectId?: number, sprintId?: number) =>
+    [...sprintKeys.all, 'flow-metrics', projectId, sprintId] as const,
 };
+
 
 export function useProjectSprintsQuery(projectId?: number) {
   return useQuery({
@@ -91,3 +96,29 @@ export function useDeleteSprintMutation() {
     },
   });
 }
+
+export function useSprintBurndownQuery(projectId?: number, sprintId?: number) {
+  return useQuery({
+    queryKey: sprintKeys.burndown(projectId, sprintId),
+    queryFn: () => api.getSprintBurndown(projectId!, sprintId!),
+    enabled:
+      typeof projectId === 'number' &&
+      !isNaN(projectId) &&
+      typeof sprintId === 'number' &&
+      !isNaN(sprintId),
+  });
+}
+
+export function useSprintFlowMetricsQuery(projectId?: number, sprintId?: number) {
+  return useQuery({
+    queryKey: sprintKeys.flowMetrics(projectId, sprintId),
+    queryFn: () => api.getSprintFlowMetrics(projectId!, sprintId!),
+    enabled:
+      typeof projectId === 'number' &&
+      !isNaN(projectId) &&
+      typeof sprintId === 'number' &&
+      !isNaN(sprintId),
+  });
+}
+
+

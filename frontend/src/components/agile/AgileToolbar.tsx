@@ -1,5 +1,4 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import type { ProjectItem } from '../../api/client';
 import type { AgileViewMode, AgileFilterState } from '../../types/agile';
 import {
@@ -34,9 +33,6 @@ import {
 } from 'lucide-react';
 
 interface AgileToolbarProps {
-  projects: ProjectItem[];
-  selectedProjectId: number;
-  onSelectProject: (id: number) => void;
   activeProject: ProjectItem | null;
   viewMode: AgileViewMode;
   onViewModeChange: (mode: AgileViewMode) => void;
@@ -51,10 +47,7 @@ interface AgileToolbarProps {
 }
 
 export const AgileToolbar: React.FC<AgileToolbarProps> = ({
-  projects,
-  selectedProjectId,
-  onSelectProject,
-  activeProject,
+  activeProject: _activeProject,
   viewMode,
   onViewModeChange,
   filters,
@@ -74,55 +67,16 @@ export const AgileToolbar: React.FC<AgileToolbarProps> = ({
   };
 
   return (
-    <div className="flex flex-col gap-3 pb-3 border-b border-[var(--md-sys-color-outline-variant)]">
-      {/* Top Row: Workspace Selector, View Mode Switcher, Actions */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        {/* Left: Title & Workspace Selector */}
-        <div className="flex items-center gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-extrabold text-[var(--md-sys-color-on-surface)] leading-tight">
-                Backlog & Sprints
-              </h1>
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)]">
-                {totalIssuesCount} {totalIssuesCount === 1 ? 'ticket' : 'tickets'}
-              </span>
-            </div>
+    <div className="flex flex-col gap-2.5 pb-2.5 border-b border-[var(--md-sys-color-outline-variant)]/20">
+      {/* Top Row: Ticket Count, View Mode Switcher, Actions */}
+      <div className="flex flex-wrap items-center justify-between gap-2.5">
+        {/* Left: Ticket Count Badge & View Mode Toggle */}
+        <div className="flex items-center gap-2.5 flex-wrap">
+          {/* Ticket Count Badge */}
+          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] border border-[var(--md-sys-color-outline-variant)]/20 shadow-2xs shrink-0">
+            {totalIssuesCount} {totalIssuesCount === 1 ? 'ticket' : 'tickets'}
+          </span>
 
-            <div className="flex flex-wrap items-center gap-2 mt-1">
-              <div className="w-48 sm:w-56">
-                <Select
-                  value={String(selectedProjectId)}
-                  onValueChange={(val) => onSelectProject(Number(val))}
-                >
-                  <SelectTrigger size="sm" className="rounded-full bg-[var(--md-sys-color-surface-container)] text-xs font-semibold border-0">
-                    <SelectValue placeholder="Select Workspace" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {projects.map((p) => (
-                      <SelectItem key={p.id} value={String(p.id)}>
-                        [{p.key}] {p.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {activeProject && (
-                <Link
-                  to={`/projects/${activeProject.id}/board`}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--md-sys-color-primary-container)]/40 text-[11px] font-semibold text-[var(--md-sys-color-primary)] hover:bg-[var(--md-sys-color-primary-container)]/80 transition-colors"
-                >
-                  <Kanban className="w-3.5 h-3.5" />
-                  <span>Kanban Board</span>
-                </Link>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Right Controls: View Switcher (Backlog Planning vs Active Sprint), Actions */}
-        <div className="flex items-center gap-2 flex-wrap">
           {/* View Mode Toggle */}
           <Tabs
             value={viewMode}
@@ -157,7 +111,10 @@ export const AgileToolbar: React.FC<AgileToolbarProps> = ({
               </TabsTrigger>
             </TabsList>
           </Tabs>
+        </div>
 
+        {/* Right Controls: View Switcher (Backlog Planning vs Active Sprint), Actions */}
+        <div className="flex items-center gap-2 flex-wrap">
           {/* Velocity & Analytics Button */}
           <Button
             variant="outline"

@@ -1,11 +1,13 @@
 import type { IssueStatus } from '../api/client';
 
 export type BoardViewMode = 'flat' | 'swimlanes';
+export type SwimlaneType = 'none' | 'assignee' | 'epic' | 'expedite';
 export type CardDensity = 'comfortable' | 'compact' | 'minimal';
 export type UnassignedPosition = 'top' | 'bottom';
 
 export interface KanbanSettings {
   viewMode: BoardViewMode;
+  swimlaneType: SwimlaneType;
   cardDensity: CardDensity;
   unassignedPosition: UnassignedPosition;
   showClosedColumn: boolean;
@@ -35,6 +37,7 @@ export const KANBAN_COLUMNS: KanbanColumnDef[] = [
 
 export const DEFAULT_KANBAN_SETTINGS: KanbanSettings = {
   viewMode: 'flat',
+  swimlaneType: 'none',
   cardDensity: 'comfortable',
   unassignedPosition: 'bottom',
   showClosedColumn: true,

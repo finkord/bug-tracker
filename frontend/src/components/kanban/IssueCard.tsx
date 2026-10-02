@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import type {
   IssueItem,
   IssueStatus,
   IssuePriority,
   IssueType,
 } from '../../api/client';
+import { useTicketDragStore } from '../../store/useTicketDragStore';
 import { Avatar } from '../common/Avatar';
+import { UserProfilePopover } from '../common/UserProfilePopover';
+import { IssueContextMenu } from '../common/IssueContextMenu';
 import type { CardDensity } from '../../types/kanban';
 import {
   Bug,
@@ -20,8 +23,11 @@ import {
   MoreVertical,
   ArrowRight,
   GripVertical,
+  Check,
+  GitCommitHorizontal,
 } from 'lucide-react';
-import { Dropdown, Tooltip } from '../ui';
+import { Dropdown } from '../ui';
+import { useIssueSelectionStore } from '../../store/useIssueSelectionStore';
 
 interface IssueCardProps {
   issue: IssueItem;
@@ -31,6 +37,8 @@ interface IssueCardProps {
   currentUserId?: number;
   density?: CardDensity;
   isDragging?: boolean;
+  isFocused?: boolean;
+  orderedIds?: number[];
 }
 
 const STATUS_TRANSITIONS: { status: IssueStatus; label: string }[] = [
@@ -41,34 +49,129 @@ const STATUS_TRANSITIONS: { status: IssueStatus; label: string }[] = [
   { status: 'CLOSED', label: 'Closed' },
 ];
 
-export const IssueCard: React.FC<IssueCardProps> = ({
+const IssueCardComponent: React.FC<IssueCardProps> = ({
   issue,
   onClick,
   onStatusChange,
   onAssignToMe,
   currentUserId,
   density = 'comfortable',
+  isFocused = false,
+  orderedIds,
 }) => {
-  const [isDragActive, setIsDragActive] = useState(false);
+  const isBeingDragged = useTicketDragStore(
+    (s) => s.isDragging && s.activeDrag?.issue.id === issue.id,
+  );
+  const startDrag = useTicketDragStore((s) => s.startDrag);
 
-  // Drag start handler for native HTML5 drag-and-drop
-  const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
-    setIsDragActive(true);
-    e.dataTransfer.setData('text/plain', String(issue.id));
-    e.dataTransfer.setData(
-      'application/json',
-      JSON.stringify({
-        issueId: issue.id,
-        currentAssigneeId: issue.assignee?.id ?? null,
-        currentStatus: issue.status,
-      }),
-    );
-    e.dataTransfer.effectAllowed = 'move';
+  const { selectedIds, toggleSelection, rangeSelect } = useIssueSelectionStore();
+  const isSelected = selectedIds.has(issue.id);
+  const hasAnySelection = selectedIds.size > 0;
+
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
+  const hasDraggedRef = useRef(false);
+  const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('a')) {
+      return;
+    }
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenuPos({ x: e.clientX, y: e.clientY });
   };
 
-  const handleDragEnd = () => {
-    setIsDragActive(false);
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('[role="menu"]') || target.closest('a')) {
+      return;
+    }
+
+    pointerStartRef.current = { x: e.clientX, y: e.clientY };
+    hasDraggedRef.current = false;
+
+    const handleWindowPointerMove = (moveEvt: PointerEvent) => {
+      if (!pointerStartRef.current) return;
+      const dx = moveEvt.clientX - pointerStartRef.current.x;
+      const dy = moveEvt.clientY - pointerStartRef.current.y;
+      if (Math.hypot(dx, dy) > 4) {
+        hasDraggedRef.current = true;
+        window.removeEventListener('pointermove', handleWindowPointerMove);
+        window.removeEventListener('pointerup', handleWindowPointerUp);
+
+        if (cardRef.current) {
+          const rect = cardRef.current.getBoundingClientRect();
+          startDrag({
+            issue,
+            variant: 'card',
+            initialPointer: { x: moveEvt.clientX, y: moveEvt.clientY },
+            offset: { x: moveEvt.clientX - rect.left, y: moveEvt.clientY - rect.top },
+            dimensions: { width: rect.width, height: rect.height },
+            onDrop: (dropTarget) => {
+              if (dropTarget.type === 'column') {
+                if (issue.status !== dropTarget.status) {
+                  onStatusChange?.(issue.id, dropTarget.status);
+                }
+              } else if (dropTarget.type === 'cell') {
+                if (issue.status !== dropTarget.status) {
+                  onStatusChange?.(issue.id, dropTarget.status);
+                }
+              }
+            },
+          });
+        }
+      }
+    };
+
+    const handleWindowPointerUp = () => {
+      pointerStartRef.current = null;
+      window.removeEventListener('pointermove', handleWindowPointerMove);
+      window.removeEventListener('pointerup', handleWindowPointerUp);
+    };
+
+    window.addEventListener('pointermove', handleWindowPointerMove);
+    window.addEventListener('pointerup', handleWindowPointerUp);
   };
+
+  const handleCheckboxClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (e.shiftKey) {
+      rangeSelect(issue.id, orderedIds || []);
+    } else {
+      toggleSelection(issue.id);
+    }
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (hasDraggedRef.current) return;
+    if (e.shiftKey && orderedIds) {
+      rangeSelect(issue.id, orderedIds);
+      return;
+    }
+    onClick(issue);
+  };
+
+  const renderSelectionCheckbox = (sizeClass = 'w-3.5 h-3.5') => (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={isSelected}
+      aria-label={`Select issue ${issue.key}`}
+      onClick={handleCheckboxClick}
+      className={`rounded border flex items-center justify-center transition-all ${sizeClass} cursor-pointer pointer-events-auto shrink-0 ${
+        isSelected
+          ? 'bg-[var(--md-sys-color-primary)] border-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] shadow-2xs'
+          : hasAnySelection
+            ? 'opacity-80 hover:opacity-100 border-[var(--md-sys-color-outline)] bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container)] hover:border-[var(--md-sys-color-primary)]'
+            : 'opacity-0 group-hover:opacity-80 hover:!opacity-100 border-[var(--md-sys-color-outline)] bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container)] hover:border-[var(--md-sys-color-primary)]'
+      }`}
+    >
+      {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+    </button>
+  );
 
   // Type icon renderer
   const renderTypeBadge = (type: IssueType, isCompact = false) => {
@@ -119,6 +222,18 @@ export const IssueCard: React.FC<IssueCardProps> = ({
           >
             <Zap className="w-3 h-3 text-[var(--md-sys-color-tertiary)]" />
             {!isCompact && 'Improvement'}
+          </span>
+        );
+      case 'SUBTASK':
+        return (
+          <span
+            title="Subtask"
+            className={`inline-flex items-center gap-1 font-semibold rounded-full bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] shrink-0 ${
+              isCompact ? 'p-1 text-[10px]' : 'px-2 py-0.5 text-[10px]'
+            }`}
+          >
+            <GitCommitHorizontal className="w-3 h-3 text-[var(--md-sys-color-secondary)]" />
+            {!isCompact && 'Subtask'}
           </span>
         );
       default:
@@ -200,19 +315,32 @@ export const IssueCard: React.FC<IssueCardProps> = ({
   if (density === 'minimal') {
     return (
       <div
-        draggable
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-        onClick={() => onClick(issue)}
-        className={`group relative bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container)] dark:hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-outline-variant)]/80 rounded-xl p-2 shadow-2xs hover:shadow-sm transition-all duration-150 cursor-pointer select-none flex items-center justify-between gap-2 ${
-          isDragActive ? 'opacity-40 scale-95 border-dashed border-[var(--md-sys-color-primary)]' : ''
-        }`}
+        ref={cardRef}
+        onPointerDown={handlePointerDown}
+        onClick={handleClick}
+        onContextMenu={handleContextMenu}
+        className={`group relative bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container)] dark:hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-outline-variant)]/80 rounded-xl p-2 shadow-2xs hover:shadow-xs transition-colors duration-150 cursor-grab active:cursor-grabbing select-none flex items-center justify-between gap-2 ${
+          isSelected
+            ? '!border-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-primary)]/50 bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-highest)]'
+            : ''
+        } ${
+          isBeingDragged ? 'opacity-30 scale-95 border-dashed border-[var(--md-sys-color-primary)]' : ''
+        } ${isFocused ? 'ring-2 ring-[var(--md-sys-color-primary)] ring-offset-1 ring-offset-[var(--md-sys-color-surface)] shadow-md !border-[var(--md-sys-color-primary)]' : ''}`}
       >
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          <GripVertical className="w-3.5 h-3.5 text-[var(--md-sys-color-outline)] opacity-0 group-hover:opacity-100 transition-opacity shrink-0 cursor-grab" />
-          <span className="font-mono text-[10px] font-bold text-[var(--md-sys-color-primary)] shrink-0">
+        <div className="flex items-center gap-1.5 min-w-0 flex-1 pointer-events-none">
+          <GripVertical className="w-3.5 h-3.5 text-[var(--md-sys-color-outline)] opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+          {renderSelectionCheckbox()}
+          <a
+            href={`/issues/${issue.key}`}
+            onClick={(e) => {
+              if (e.button === 1 || e.ctrlKey || e.metaKey) return;
+              e.preventDefault();
+              onClick(issue);
+            }}
+            className="font-mono text-[10px] font-bold text-[var(--md-sys-color-primary)] hover:underline shrink-0 pointer-events-auto"
+          >
             {issue.key}
-          </span>
+          </a>
           <span className="text-xs font-medium text-[var(--md-sys-color-on-surface)] truncate">
             {issue.title}
           </span>
@@ -233,6 +361,17 @@ export const IssueCard: React.FC<IssueCardProps> = ({
             </div>
           )}
         </div>
+
+        {contextMenuPos && (
+          <IssueContextMenu
+            issue={issue}
+            position={contextMenuPos}
+            onClose={() => setContextMenuPos(null)}
+            onStatusChange={onStatusChange}
+            onAssignToMe={onAssignToMe}
+            currentUserId={currentUserId}
+          />
+        )}
       </div>
     );
   }
@@ -241,26 +380,39 @@ export const IssueCard: React.FC<IssueCardProps> = ({
   if (density === 'compact') {
     return (
       <div
-        draggable
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-        onClick={() => onClick(issue)}
-        className={`group relative bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container)] dark:hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-outline-variant)]/80 rounded-2xl p-2.5 shadow-2xs hover:shadow-sm transition-all duration-150 cursor-pointer select-none ${
-          isDragActive ? 'opacity-40 scale-95 border-dashed border-[var(--md-sys-color-primary)]' : ''
-        }`}
+        ref={cardRef}
+        onPointerDown={handlePointerDown}
+        onClick={handleClick}
+        onContextMenu={handleContextMenu}
+        className={`group relative bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container)] dark:hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-outline-variant)]/80 rounded-2xl p-2.5 shadow-2xs hover:shadow-xs transition-colors duration-150 cursor-grab active:cursor-grabbing select-none ${
+          isSelected
+            ? '!border-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-primary)]/50 bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-highest)]'
+            : ''
+        } ${
+          isBeingDragged ? 'opacity-30 scale-95 border-dashed border-[var(--md-sys-color-primary)]' : ''
+        } ${isFocused ? 'ring-2 ring-[var(--md-sys-color-primary)] ring-offset-1 ring-offset-[var(--md-sys-color-surface)] shadow-md !border-[var(--md-sys-color-primary)]' : ''}`}
       >
-        <div className="flex items-center justify-between gap-1.5 mb-1.5">
+        <div className="flex items-center justify-between gap-1.5 mb-1.5 pointer-events-none">
           <div className="flex items-center gap-1.5 min-w-0">
-            <span className="font-mono text-[10px] font-bold text-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/40 px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">
+            {renderSelectionCheckbox()}
+            <a
+              href={`/issues/${issue.key}`}
+              onClick={(e) => {
+                if (e.button === 1 || e.ctrlKey || e.metaKey) return;
+                e.preventDefault();
+                onClick(issue);
+              }}
+              className="font-mono text-[10px] font-bold text-[var(--md-sys-color-primary)] hover:underline bg-[var(--md-sys-color-primary-container)]/40 px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0 pointer-events-auto"
+            >
               {issue.key}
-            </span>
+            </a>
             {renderTypeBadge(issue.issueType, true)}
           </div>
 
           <div className="flex items-center gap-1">
             {renderPriorityBadge(issue.priority, true)}
             {onStatusChange && (
-              <div onClick={(e) => e.stopPropagation()}>
+              <div className="pointer-events-auto" onClick={(e) => e.stopPropagation()}>
                 <Dropdown
                   trigger={
                     <button
@@ -297,16 +449,24 @@ export const IssueCard: React.FC<IssueCardProps> = ({
                 {issue.commentsCount}
               </span>
             )}
+            {(issue.subtasksCount ?? 0) > 0 && (
+              <span className="flex items-center gap-0.5 ml-1 text-[var(--md-sys-color-secondary)] font-mono" title={`${issue.subtasksCount} subtask(s)`}>
+                <GitCommitHorizontal className="w-2.5 h-2.5" />
+                <span>{issue.subtasksCount}</span>
+              </span>
+            )}
           </div>
 
           <div>
             {issue.assignee ? (
-              <Avatar
-                name={issue.assignee.fullName}
-                avatarUrl={issue.assignee.avatarUrl}
-                role={issue.assignee.systemRole}
-                size="xs"
-              />
+              <UserProfilePopover user={issue.assignee}>
+                <Avatar
+                  name={issue.assignee.fullName}
+                  avatarUrl={issue.assignee.avatarUrl}
+                  role={issue.assignee.systemRole}
+                  size="xs"
+                />
+              </UserProfilePopover>
             ) : onAssignToMe && !isAssignedToMe ? (
               <button
                 type="button"
@@ -326,6 +486,17 @@ export const IssueCard: React.FC<IssueCardProps> = ({
             )}
           </div>
         </div>
+
+        {contextMenuPos && (
+          <IssueContextMenu
+            issue={issue}
+            position={contextMenuPos}
+            onClose={() => setContextMenuPos(null)}
+            onStatusChange={onStatusChange}
+            onAssignToMe={onAssignToMe}
+            currentUserId={currentUserId}
+          />
+        )}
       </div>
     );
   }
@@ -333,20 +504,33 @@ export const IssueCard: React.FC<IssueCardProps> = ({
   // Render Comfortable Density Card (Default Rich Mode)
   return (
     <div
-      draggable
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-      onClick={() => onClick(issue)}
-      className={`group relative bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container)] dark:hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-outline-variant)]/80 rounded-2xl p-3.5 shadow-2xs hover:shadow-md transition-all duration-200 cursor-pointer select-none ${
-        isDragActive ? 'opacity-40 scale-95 border-dashed border-[var(--md-sys-color-primary)]' : ''
-      }`}
+      ref={cardRef}
+      onPointerDown={handlePointerDown}
+      onClick={handleClick}
+      onContextMenu={handleContextMenu}
+      className={`group relative bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container)] dark:hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-outline-variant)]/80 rounded-2xl p-3.5 shadow-2xs hover:shadow-xs transition-colors duration-150 cursor-grab active:cursor-grabbing select-none ${
+        isSelected
+          ? '!border-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-primary)]/50 bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-highest)]'
+          : ''
+      } ${
+        isBeingDragged ? 'opacity-30 scale-95 border-dashed border-[var(--md-sys-color-primary)]' : ''
+      } ${isFocused ? 'ring-2 ring-[var(--md-sys-color-primary)] ring-offset-1 ring-offset-[var(--md-sys-color-surface)] shadow-md !border-[var(--md-sys-color-primary)]' : ''}`}
     >
       {/* Top Header: Key, Sprint, Type, Quick Actions */}
       <div className="flex items-center justify-between gap-1.5 mb-2">
         <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-          <span className="font-mono text-[11px] font-bold text-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/50 px-2 py-0.5 rounded-full whitespace-nowrap shrink-0">
+          {renderSelectionCheckbox('w-4 h-4')}
+          <a
+            href={`/issues/${issue.key}`}
+            onClick={(e) => {
+              if (e.button === 1 || e.ctrlKey || e.metaKey) return;
+              e.preventDefault();
+              onClick(issue);
+            }}
+            className="font-mono text-[11px] font-bold text-[var(--md-sys-color-primary)] hover:underline bg-[var(--md-sys-color-primary-container)]/50 px-2 py-0.5 rounded-full whitespace-nowrap shrink-0 pointer-events-auto"
+          >
             {issue.key}
-          </span>
+          </a>
           {issue.sprint?.name && (
             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--md-sys-color-tertiary-container)] text-[var(--md-sys-color-on-tertiary-container)] whitespace-nowrap shrink-0 truncate max-w-[90px]">
               {issue.sprint.name}
@@ -431,19 +615,26 @@ export const IssueCard: React.FC<IssueCardProps> = ({
               {issue.commentsCount}
             </span>
           )}
+
+          {(issue.subtasksCount ?? 0) > 0 && (
+            <span className="flex items-center gap-1 text-[11px] text-[var(--md-sys-color-secondary)] font-mono" title={`${issue.subtasksCount} subtask(s)`}>
+              <GitCommitHorizontal className="w-3.5 h-3.5" />
+              <span>{issue.subtasksCount}</span>
+            </span>
+          )}
         </div>
 
         {/* Assignee Avatar */}
         <div className="flex items-center gap-1.5">
           {issue.assignee ? (
-            <Tooltip content={issue.assignee.fullName}>
+            <UserProfilePopover user={issue.assignee}>
               <Avatar
                 name={issue.assignee.fullName}
                 avatarUrl={issue.assignee.avatarUrl}
                 role={issue.assignee.systemRole}
                 size="xs"
               />
-            </Tooltip>
+            </UserProfilePopover>
           ) : onAssignToMe && !isAssignedToMe ? (
             <button
               type="button"
@@ -467,6 +658,19 @@ export const IssueCard: React.FC<IssueCardProps> = ({
           )}
         </div>
       </div>
+
+      {contextMenuPos && (
+        <IssueContextMenu
+          issue={issue}
+          position={contextMenuPos}
+          onClose={() => setContextMenuPos(null)}
+          onStatusChange={onStatusChange}
+          onAssignToMe={onAssignToMe}
+          currentUserId={currentUserId}
+        />
+      )}
     </div>
   );
 };
+
+export const IssueCard = React.memo(IssueCardComponent);

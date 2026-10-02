@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import type { IssueItem, IssueStatus } from '../../api/client';
 import type { SprintDefinition } from '../../types/agile';
+import { useTicketDragStore } from '../../store/useTicketDragStore';
 import { IssueCard } from '../kanban/IssueCard';
 import { Badge, Button } from '../ui';
 import {
@@ -49,19 +50,36 @@ export const ActiveSprintBoard: React.FC<ActiveSprintBoardProps> = ({
   currentUserId,
 }) => {
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
+  const colCounters = useRef<Record<string, number>>({});
+  const isStoreDragging = useTicketDragStore((s) => s.isDragging);
+  const hoverTarget = useTicketDragStore((s) => s.hoverTarget);
 
-  const handleDragOver = (e: React.DragEvent, colId: string) => {
+  const isColTargeted = (colId: string, dropStatus: IssueStatus) =>
+    dragOverCol === colId ||
+    (isStoreDragging && hoverTarget?.type === 'column' && hoverTarget.status === dropStatus);
+
+  const handleDragEnter = (e: React.DragEvent, colId: string) => {
     e.preventDefault();
+    colCounters.current[colId] = (colCounters.current[colId] || 0) + 1;
     if (dragOverCol !== colId) setDragOverCol(colId);
   };
 
-  const handleDragLeave = (e: React.DragEvent) => {
+  const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    setDragOverCol(null);
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDragLeave = (e: React.DragEvent, colId: string) => {
+    e.preventDefault();
+    colCounters.current[colId] = Math.max(0, (colCounters.current[colId] || 0) - 1);
+    if (colCounters.current[colId] === 0 && dragOverCol === colId) {
+      setDragOverCol(null);
+    }
   };
 
   const handleDrop = (e: React.DragEvent, dropStatus: IssueStatus) => {
     e.preventDefault();
+    colCounters.current = {};
     setDragOverCol(null);
     const issueIdStr = e.dataTransfer.getData('text/plain');
     if (!issueIdStr) return;
@@ -162,19 +180,22 @@ export const ActiveSprintBoard: React.FC<ActiveSprintBoardProps> = ({
       </div>
 
       {/* Scrum Board 4-Column Layout */}
-      <div className="overflow-x-auto pb-4 scrollbar-thin">
+      <div data-drag-scroll-x="true" className="overflow-x-auto pb-4 scrollbar-thin">
         <div className="flex gap-3 xl:gap-4 items-stretch min-w-[1000px]">
           {SCRUM_COLUMNS.map((col) => {
             const colIssues = issues.filter((i) => col.statuses.includes(i.status));
-            const isOver = dragOverCol === col.id;
+            const isOver = isColTargeted(col.id, col.dropStatus);
 
             return (
               <div
                 key={col.id}
-                onDragOver={(e) => handleDragOver(e, col.id)}
-                onDragLeave={handleDragLeave}
+                data-drop-zone="column"
+                data-column-status={col.dropStatus}
+                onDragEnter={(e) => handleDragEnter(e, col.id)}
+                onDragOver={handleDragOver}
+                onDragLeave={(e) => handleDragLeave(e, col.id)}
                 onDrop={(e) => handleDrop(e, col.dropStatus)}
-                className={`flex flex-col flex-1 min-w-[230px] rounded-3xl bg-[var(--md-sys-color-surface-container-low)] border transition-all duration-200 shadow-2xs ${
+                className={`flex flex-col flex-1 min-w-[230px] rounded-3xl bg-[var(--md-sys-color-surface-container-low)] border transition-colors duration-150 shadow-2xs ${
                   isOver
                     ? 'border-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-primary)]/40 bg-[var(--md-sys-color-surface-container)] shadow-md'
                     : 'border-[var(--md-sys-color-outline-variant)]/40 hover:border-[var(--md-sys-color-outline-variant)]/70'

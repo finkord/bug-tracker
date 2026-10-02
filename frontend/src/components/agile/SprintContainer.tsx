@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import type { IssueItem } from '../../api/client';
 import type { SprintDefinition } from '../../types/agile';
+import { useTicketDragStore } from '../../store/useTicketDragStore';
 import { AgileIssueRow } from './AgileIssueRow';
 import { Badge, Button, Dropdown } from '../ui';
 import {
@@ -51,19 +52,33 @@ export const SprintContainer: React.FC<SprintContainerProps> = ({
   onQuickCreateInSprint,
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
+  const dragCounter = useRef(0);
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounter.current += 1;
+    if (dragCounter.current === 1) {
+      setIsDragOver(true);
+    }
+  };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    if (!isDragOver) setIsDragOver(true);
+    e.dataTransfer.dropEffect = 'move';
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
-    if (isDragOver) setIsDragOver(false);
+    dragCounter.current -= 1;
+    if (dragCounter.current <= 0) {
+      dragCounter.current = 0;
+      setIsDragOver(false);
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    dragCounter.current = 0;
     setIsDragOver(false);
     const issueIdStr = e.dataTransfer.getData('text/plain');
     if (!issueIdStr) return;
@@ -109,13 +124,21 @@ export const SprintContainer: React.FC<SprintContainerProps> = ({
     },
   ];
 
+  const isPointerTargeted = useTicketDragStore(
+    (s) => s.isDragging && s.hoverTarget?.type === 'sprint' && s.hoverTarget.sprintId === sprint.id,
+  );
+  const isHighlighted = isDragOver || isPointerTargeted;
+
   return (
     <div
+      data-drop-zone="sprint"
+      data-sprint-id={sprint.id}
+      onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`rounded-3xl border bg-[var(--md-sys-color-surface-container-low)] shadow-2xs overflow-hidden transition-all duration-200 ${
-        isDragOver
+      className={`rounded-3xl border bg-[var(--md-sys-color-surface-container-low)] shadow-2xs overflow-hidden transition-colors duration-150 ${
+        isHighlighted
           ? 'border-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-primary)]/40 bg-[var(--md-sys-color-primary-container)]/10'
           : 'border-[var(--md-sys-color-outline-variant)]/40 hover:border-[var(--md-sys-color-outline-variant)]/70'
       }`}
@@ -311,6 +334,7 @@ export const SprintContainer: React.FC<SprintContainerProps> = ({
                 availableSprints={availableSprints}
                 onClick={onSelectIssue}
                 onMoveToSprint={onMoveToSprint}
+                orderedIds={issues.map((i) => i.id)}
               />
             ))
           )}
@@ -320,10 +344,10 @@ export const SprintContainer: React.FC<SprintContainerProps> = ({
             <button
               type="button"
               onClick={() => onQuickCreateInSprint(sprint.id!)}
-              className="w-full py-2 px-3 rounded-xl border border-dashed border-[var(--md-sys-color-outline-variant)]/50 hover:border-[var(--md-sys-color-primary)] hover:bg-[var(--md-sys-color-primary-container)]/10 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+              className="w-full py-2 px-3 rounded-xl border border-dashed border-[var(--md-sys-color-outline-variant)]/50 hover:border-[var(--md-sys-color-primary)] hover:bg-[var(--md-sys-color-primary-container)]/10 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Create Issue in {sprint.name}</span>
+              <Plus className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">Create Issue in {sprint.name}</span>
             </button>
           )}
         </div>

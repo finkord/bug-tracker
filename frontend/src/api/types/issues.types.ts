@@ -1,9 +1,8 @@
 import type { SystemRole } from './auth.types.js';
 
-export type IssueType = 'BUG' | 'TASK' | 'FEATURE' | 'IMPROVEMENT';
+export type IssueType = 'BUG' | 'TASK' | 'FEATURE' | 'IMPROVEMENT' | 'SUBTASK';
 export type IssueStatus = 'OPEN' | 'IN_PROGRESS' | 'REVIEW' | 'RESOLVED' | 'CLOSED';
 export type IssuePriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
-export type IssueSeverity = 'MINOR' | 'MAJOR' | 'BLOCKER' | 'TRIVIAL';
 export type IssueLinkType = 'BLOCKS' | 'IS_BLOCKED_BY' | 'DUPLICATES' | 'RELATES_TO';
 
 export interface IssueComment {
@@ -53,6 +52,21 @@ export interface IssueLinkItem {
   createdAt: string;
 }
 
+export interface IssueHistoryItem {
+  id: number;
+  issueId: number;
+  field: string;
+  oldValue: string | null;
+  newValue: string | null;
+  user: {
+    id: number;
+    fullName: string;
+    email: string;
+    avatarUrl?: string | null;
+  } | null;
+  createdAt: string;
+}
+
 export interface IssueItem {
   id: number;
   key: string;
@@ -65,7 +79,6 @@ export interface IssueItem {
   issueType: IssueType;
   status: IssueStatus;
   priority: IssuePriority;
-  severity: IssueSeverity;
   estimatedHours: number;
   loggedHours: number;
   sprintId: number | null;
@@ -74,6 +87,11 @@ export interface IssueItem {
     name: string;
     status: string;
   } | null;
+  componentId?: number | null;
+  component?: import('./projects.types.js').ProjectComponentItem | null;
+  fixVersionId?: number | null;
+  fixVersion?: import('./projects.types.js').ProjectVersionItem | null;
+  labels?: string[];
   reporter: {
     id: number;
     fullName: string;
@@ -93,6 +111,10 @@ export interface IssueItem {
   worklogs?: import('./worklogs.types.js').WorklogItem[];
   attachments?: AttachmentItem[];
   links?: IssueLinkItem[];
+  parentId?: number | null;
+  subtasksCount?: number;
+  parent?: IssueItem | null;
+  subtasks?: IssueItem[];
   createdAt: string;
   updatedAt: string;
 }
@@ -103,10 +125,32 @@ export interface CreateIssuePayload {
   description?: string;
   issueType?: IssueType;
   priority?: IssuePriority;
-  severity?: IssueSeverity;
   estimatedHours?: number;
   sprintId?: number | null;
-  assigneeId?: number;
+  assigneeId?: number | null;
+  componentId?: number | null;
+  fixVersionId?: number | null;
+  affectsVersionId?: number | null;
+  labels?: string[];
+  parentId?: number | null;
+}
+
+export interface BulkUpdateIssuesDto {
+  issueIds: number[];
+  status?: IssueStatus;
+  priority?: IssuePriority;
+  assigneeId?: number | null;
+  sprintId?: number | null;
+}
+
+export interface BulkDeleteIssuesDto {
+  issueIds: number[];
+}
+
+export interface BulkOperationResultDto {
+  success: boolean;
+  affectedCount: number;
+  message: string;
 }
 
 export interface PaginatedIssuesResponse {
@@ -130,4 +174,20 @@ export interface GetIssuesParams {
   limit?: number;
   sortBy?: string;
   sortOrder?: 'ASC' | 'DESC';
+}
+
+export interface VcsPullRequestItem {
+  id: number;
+  issueId: number;
+  provider: 'github' | 'gitlab' | 'bitbucket';
+  repository: string;
+  prNumber: number;
+  title: string;
+  sourceBranch: string;
+  targetBranch: string;
+  status: 'OPEN' | 'MERGED' | 'CLOSED';
+  url: string;
+  authorUsername: string | null;
+  createdAt: string;
+  updatedAt: string;
 }

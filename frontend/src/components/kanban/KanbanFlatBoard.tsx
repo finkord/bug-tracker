@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import type { IssueItem, IssueStatus } from '../../api/client';
 import type { KanbanSettings } from '../../types/kanban';
 import { KANBAN_COLUMNS } from '../../types/kanban';
+import { useTicketDragStore } from '../../store/useTicketDragStore';
 import { IssueCard } from './IssueCard';
 import { Badge } from '../ui';
 import { Loader2, Plus, AlertCircle } from 'lucide-react';
@@ -15,6 +16,7 @@ interface KanbanFlatBoardProps {
   onAssignToMe: (issueId: number) => void;
   onQuickAddInStatus?: (status: IssueStatus) => void;
   currentUserId?: number;
+  focusedIssueId?: number | null;
 }
 
 export const KanbanFlatBoard: React.FC<KanbanFlatBoardProps> = ({
@@ -26,21 +28,41 @@ export const KanbanFlatBoard: React.FC<KanbanFlatBoardProps> = ({
   onAssignToMe,
   onQuickAddInStatus,
   currentUserId,
+  focusedIssueId,
 }) => {
   const [dragOverColumn, setDragOverColumn] = useState<IssueStatus | null>(null);
+  const columnCounters = useRef<Record<string, number>>({});
+  const isStoreDragging = useTicketDragStore((s) => s.isDragging);
+  const hoverTarget = useTicketDragStore((s) => s.hoverTarget);
 
-  const handleDragOver = (e: React.DragEvent, status: IssueStatus) => {
+  const isColTargeted = (status: IssueStatus) =>
+    dragOverColumn === status ||
+    (isStoreDragging && hoverTarget?.type === 'column' && hoverTarget.status === status);
+
+  const handleDragEnter = (e: React.DragEvent, status: IssueStatus) => {
     e.preventDefault();
-    if (dragOverColumn !== status) setDragOverColumn(status);
+    columnCounters.current[status] = (columnCounters.current[status] || 0) + 1;
+    if (dragOverColumn !== status) {
+      setDragOverColumn(status);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
   };
 
   const handleDragLeave = (e: React.DragEvent, status: IssueStatus) => {
     e.preventDefault();
-    if (dragOverColumn === status) setDragOverColumn(null);
+    columnCounters.current[status] = Math.max(0, (columnCounters.current[status] || 0) - 1);
+    if (columnCounters.current[status] === 0 && dragOverColumn === status) {
+      setDragOverColumn(null);
+    }
   };
 
   const handleDrop = (e: React.DragEvent, status: IssueStatus) => {
     e.preventDefault();
+    columnCounters.current = {};
     setDragOverColumn(null);
     const issueIdStr = e.dataTransfer.getData('text/plain');
     if (!issueIdStr) return;
@@ -55,21 +77,24 @@ export const KanbanFlatBoard: React.FC<KanbanFlatBoardProps> = ({
   return (
     <div className="w-full pb-6 pt-1">
       {/* 5-Column Horizontal Container */}
-      <div className="overflow-x-auto pb-4 scrollbar-thin">
+      <div data-drag-scroll-x="true" className="overflow-x-auto pb-4 scrollbar-thin">
         <div className="flex gap-3 xl:gap-4 items-stretch min-w-[1200px]">
           {KANBAN_COLUMNS.map((col) => {
             const colIssues = issues.filter((i) => i.status === col.status);
-            const isOver = dragOverColumn === col.status;
+            const isOver = isColTargeted(col.status);
             const limit = settings.wipLimits[col.status];
             const isLimitExceeded = limit !== undefined && limit > 0 && colIssues.length > limit;
 
             return (
               <div
                 key={col.status}
-                onDragOver={(e) => handleDragOver(e, col.status)}
+                data-drop-zone="column"
+                data-column-status={col.status}
+                onDragEnter={(e) => handleDragEnter(e, col.status)}
+                onDragOver={handleDragOver}
                 onDragLeave={(e) => handleDragLeave(e, col.status)}
                 onDrop={(e) => handleDrop(e, col.status)}
-                className={`flex flex-col flex-1 min-w-[230px] rounded-3xl bg-[var(--md-sys-color-surface-container-low)] border transition-all duration-200 shadow-2xs ${
+                className={`flex flex-col flex-1 min-w-[230px] rounded-3xl bg-[var(--md-sys-color-surface-container-low)] border transition-colors duration-150 shadow-2xs ${
                   isOver
                     ? 'border-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-primary)]/40 bg-[var(--md-sys-color-surface-container)] shadow-md'
                     : isLimitExceeded
@@ -146,6 +171,8 @@ export const KanbanFlatBoard: React.FC<KanbanFlatBoardProps> = ({
                         onAssignToMe={onAssignToMe}
                         currentUserId={currentUserId}
                         density={settings.cardDensity}
+                        isFocused={focusedIssueId === issue.id}
+                        orderedIds={issues.map((i) => i.id)}
                       />
                     ))
                   )}
