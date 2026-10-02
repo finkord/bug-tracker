@@ -27,21 +27,23 @@ describe('SprintsService', () => {
     securitySchemeId: null,
     securityScheme: null,
   } as unknown as Project;
-  const mockSprint: Sprint = {
-    id: 10,
-    projectId: 1,
-    name: 'Sprint 1',
-    goal: 'Initial sprint goal',
-    startDate: '2026-09-01',
-    endDate: '2026-09-14',
-    status: SprintStatus.ACTIVE,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    project: mockProject,
-    issues: [],
-  } as unknown as Sprint;
+  let mockSprint: Sprint;
 
   beforeEach(() => {
+    mockSprint = {
+      id: 10,
+      projectId: 1,
+      name: 'Sprint 1',
+      goal: 'Initial sprint goal',
+      startDate: '2026-09-01',
+      endDate: '2026-09-14',
+      status: SprintStatus.ACTIVE,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      project: mockProject,
+      issues: [],
+    } as unknown as Sprint;
+
     mockSprintRepository = {
       find: vi.fn(),
       findOne: vi.fn(),
@@ -59,11 +61,19 @@ describe('SprintsService', () => {
       andWhere: vi.fn().mockReturnThis(),
       execute: vi.fn().mockResolvedValue({ affected: 2 }),
     };
+    const mockSnapshotRepository = {
+      find: vi.fn().mockResolvedValue([]),
+      findOne: vi.fn().mockResolvedValue(null),
+      create: vi.fn((data) => ({ id: 1, ...data })),
+      save: vi.fn((data) => Promise.resolve(data)),
+    };
     mockIssueRepository = {
       createQueryBuilder: vi.fn().mockReturnValue(mockQueryBuilder),
+      find: vi.fn().mockResolvedValue([]),
     };
     service = new SprintsService(
       mockSprintRepository as Repository<Sprint>,
+      mockSnapshotRepository as any,
       mockProjectRepository as Repository<Project>,
       mockIssueRepository as Repository<Issue>,
     );
@@ -149,6 +159,36 @@ describe('SprintsService', () => {
       expect(mockQueryBuilder.set).toHaveBeenCalledWith({ sprintId: null });
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('sprintId = :sprintId', { sprintId: 10 });
       expect(mockSprintRepository.delete).toHaveBeenCalledWith(10);
+    });
+  });
+
+  describe('getFlowMetrics', () => {
+    it('should compute CFD, Cycle Time percentiles, and Velocity history', async () => {
+      vi.mocked(mockSprintRepository.findOne!).mockResolvedValueOnce(mockSprint);
+      vi.mocked(mockSprintRepository.find!).mockResolvedValueOnce([mockSprint]);
+      const mockIssues = [
+        {
+          id: 101,
+          issueNum: 1,
+          project: { key: 'BT' },
+          title: 'Implement flow metrics',
+          status: 'RESOLVED',
+          priority: 'HIGH',
+          issueType: 'TASK',
+          estimatedHours: 5,
+          createdAt: new Date('2026-09-01T10:00:00Z'),
+          updatedAt: new Date('2026-09-03T10:00:00Z'),
+        },
+      ];
+      vi.mocked(mockIssueRepository.find!).mockResolvedValue(mockIssues as any);
+
+      const metrics = await service.getFlowMetrics(10);
+      expect(metrics.sprintId).toBe(10);
+      expect(metrics.sprintName).toBe('Sprint 1');
+      expect(metrics.cfd.length).toBeGreaterThan(0);
+      expect(metrics.cycleTime.items).toHaveLength(1);
+      expect(metrics.cycleTime.items[0].key).toBe('BT-1');
+      expect(metrics.velocity).toHaveLength(1);
     });
   });
 });

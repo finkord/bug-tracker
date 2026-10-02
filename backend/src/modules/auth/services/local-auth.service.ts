@@ -43,11 +43,13 @@ export class LocalAuthService {
    * Utilizes RFC 9106 / OWASP recommended Argon2id parameters to avoid thread pool starvation.
    */
   async register(dto: RegisterDto, ipAddress: string) {
-    if (dto.captchaToken) {
-      const isCaptchaValid = await this.captchaService.validateToken(dto.captchaToken, ipAddress);
-      if (!isCaptchaValid) {
-        throw new BadRequestException('Security verification failed: Invalid or expired CAPTCHA code.');
-      }
+    const isCaptchaValid = await this.captchaService.validateToken(
+      dto.captchaToken,
+      ipAddress,
+      'signup',
+    );
+    if (!isCaptchaValid) {
+      throw new BadRequestException('Security verification failed: Invalid or expired CAPTCHA code.');
     }
 
     const existingUser = await this.usersService.findByEmail(dto.email);

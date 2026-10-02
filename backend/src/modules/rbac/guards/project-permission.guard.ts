@@ -11,6 +11,7 @@ import { REQUIRE_PROJECT_PERMISSION_KEY } from '../decorators/require-permission
 import { ProjectPermission } from '../entities/permission-grant.entity.js';
 import { PermissionEvaluatorService } from '../services/permission-evaluator.service.js';
 import { Issue } from '../../issues/entities/issue.entity.js';
+import { Project } from '../../projects/entities/project.entity.js';
 
 @Injectable()
 export class ProjectPermissionGuard implements CanActivate {
@@ -46,7 +47,28 @@ export class ProjectPermissionGuard implements CanActivate {
 
     // 2. Explicit route params
     if (request.params?.projectId) {
-      projectId = Number(request.params.projectId);
+      const rawPid = String(request.params.projectId).trim();
+      if (/^\d+$/.test(rawPid)) {
+        projectId = Number(rawPid);
+      } else {
+        const project = await this.dataSource.getRepository(Project).findOne({
+          where: { key: rawPid.toUpperCase() },
+          select: { id: true },
+        });
+        if (project) {
+          projectId = project.id;
+        }
+      }
+    }
+    if (request.params?.key && (request.originalUrl || request.url || '').includes('/projects/')) {
+      const rawKey = String(request.params.key).trim().toUpperCase();
+      const project = await this.dataSource.getRepository(Project).findOne({
+        where: { key: rawKey },
+        select: { id: true },
+      });
+      if (project) {
+        projectId = project.id;
+      }
     }
     if (request.params?.issueId) {
       issueId = Number(request.params.issueId);
@@ -65,7 +87,17 @@ export class ProjectPermissionGuard implements CanActivate {
       const rawId = String(request.params.id).trim();
       const url = request.originalUrl || request.url || '';
       if (url.includes('/projects/')) {
-        projectId = Number(rawId);
+        if (/^\d+$/.test(rawId)) {
+          projectId = Number(rawId);
+        } else {
+          const project = await this.dataSource.getRepository(Project).findOne({
+            where: { key: rawId.toUpperCase() },
+            select: { id: true },
+          });
+          if (project) {
+            projectId = project.id;
+          }
+        }
       } else if (url.includes('/issues/')) {
         if (/^\d+$/.test(rawId)) {
           issueId = Number(rawId);

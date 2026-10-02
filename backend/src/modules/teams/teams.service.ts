@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  Optional,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -16,6 +17,7 @@ import {
   AddTeamMemberDto,
   UpdateTeamMemberDto,
 } from './dto/team.dto.js';
+import { SeaweedFsService, type UploadedFileInput } from '../storage/services/seaweedfs.service.js';
 
 @Injectable()
 export class TeamsService {
@@ -28,6 +30,8 @@ export class TeamsService {
     private readonly projectRepository: Repository<Project>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @Optional()
+    private readonly seaweedFsService?: SeaweedFsService,
   ) {}
 
   async findAll(projectId?: number): Promise<Team[]> {
@@ -81,6 +85,7 @@ export class TeamsService {
       description: dto.description?.trim() || null,
       projectId: dto.projectId,
       leadId: dto.leadId || null,
+      avatarUrl: dto.avatarUrl?.trim() || null,
       sprintCapacityHours: dto.sprintCapacityHours ?? 160.0,
     });
 
@@ -111,10 +116,37 @@ export class TeamsService {
 
     if (dto.name !== undefined) team.name = dto.name.trim();
     if (dto.description !== undefined) team.description = dto.description?.trim() || null;
+    if (dto.avatarUrl !== undefined) team.avatarUrl = dto.avatarUrl ? dto.avatarUrl.trim() : null;
     if (dto.sprintCapacityHours !== undefined) team.sprintCapacityHours = dto.sprintCapacityHours;
 
     await this.teamRepository.save(team);
     return this.findById(id);
+  }
+
+  async uploadAvatar(teamId: number, file: UploadedFileInput): Promise<Team> {
+    const team = await this.findById(teamId);
+    if (!this.seaweedFsService) {
+      throw new BadRequestException('Object storage service unavailable');
+    }
+    const allowedMimeTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/svg+xml'];
+    if (!allowedMimeTypes.includes(file.mimetype.toLowerCase())) {
+      throw new BadRequestException(
+        `Unsupported image format "${file.mimetype}". Allowed formats: PNG, JPEG, WEBP, GIF, SVG.`,
+      );
+    }
+
+    const { fid } = await this.seaweedFsService.uploadFile(file);
+    const avatarUrl = `/api/v1/teams/avatar/${fid}`;
+    team.avatarUrl = avatarUrl;
+    await this.teamRepository.save(team);
+    return this.findById(teamId);
+  }
+
+  async getAvatarBuffer(fid: string): Promise<{ buffer: Buffer; contentType: string }> {
+    if (!this.seaweedFsService) {
+      throw new BadRequestException('Object storage service unavailable');
+    }
+    return this.seaweedFsService.getFileBuffer(fid);
   }
 
   async delete(id: number): Promise<{ message: string }> {

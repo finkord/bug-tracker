@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
 import { IssueWorklogService } from './issue-worklog.service.js';
-import { Issue, IssueStatus, IssuePriority, IssueSeverity, IssueType } from '../entities/issue.entity.js';
+import { Issue, IssueStatus, IssuePriority, IssueType } from '../entities/issue.entity.js';
 import { Worklog } from '../entities/worklog.entity.js';
 import { User, SystemRole } from '../../users/entities/user.entity.js';
 import { ProjectPermission } from '../../rbac/entities/permission-grant.entity.js';
@@ -40,7 +40,6 @@ describe('IssueWorklogService', () => {
     issueType: IssueType.BUG,
     status: IssueStatus.OPEN,
     priority: IssuePriority.HIGH,
-    severity: IssueSeverity.MAJOR,
     estimatedHours: 10,
     loggedHours: 2,
     sprintId: 1,

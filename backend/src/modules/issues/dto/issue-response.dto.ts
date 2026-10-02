@@ -1,4 +1,4 @@
-import { IssuePriority, IssueSeverity, IssueStatus, IssueType } from '../entities/issue.entity.js';
+import { IssuePriority, IssueStatus, IssueType } from '../entities/issue.entity.js';
 import { IssueLinkType } from '../entities/issue-link.entity.js';
 
 export interface UserSummaryDto {
@@ -21,7 +21,6 @@ export interface IssueSummaryDto {
   issueType: IssueType;
   status: IssueStatus;
   priority: IssuePriority;
-  severity: IssueSeverity;
   estimatedHours: number;
   loggedHours: number;
   sprintId: number | null;
@@ -33,6 +32,21 @@ export interface IssueSummaryDto {
   reporter: UserSummaryDto;
   assignee: UserSummaryDto | null;
   commentsCount?: number;
+  parentId?: number | null;
+  subtasksCount?: number;
+  componentId?: number | null;
+  component?: {
+    id: number;
+    name: string;
+    description: string | null;
+  } | null;
+  fixVersionId?: number | null;
+  fixVersion?: {
+    id: number;
+    name: string;
+    status: string;
+  } | null;
+  labels?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -121,6 +135,8 @@ export interface IssueDetailDto extends IssueSummaryDto {
   worklogs: WorklogItemDto[];
   attachments: IssueAttachmentDto[];
   links: IssueLinkItemDto[];
+  parent?: IssueSummaryDto | null;
+  subtasks?: IssueSummaryDto[];
 }
 
 export interface TimesheetMemberWorklogDto {

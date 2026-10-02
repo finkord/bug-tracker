@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsString, IsEnum, IsOptional, IsInt, MaxLength, IsNumber, Min } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IssueType, IssuePriority, IssueSeverity } from '../entities/issue.entity.js';
+import { IssueType, IssuePriority } from '../entities/issue.entity.js';
 
 export class CreateIssueDto {
   @ApiProperty({ example: 1, description: 'Target project ID' })
@@ -28,11 +28,6 @@ export class CreateIssueDto {
   @IsEnum(IssuePriority)
   priority?: IssuePriority;
 
-  @ApiPropertyOptional({ enum: IssueSeverity, default: IssueSeverity.MAJOR })
-  @IsOptional()
-  @IsEnum(IssueSeverity)
-  severity?: IssueSeverity;
-
   @ApiPropertyOptional({ example: 4.5, description: 'Estimated hours for task completion' })
   @IsOptional()
   @IsNumber()
@@ -48,4 +43,29 @@ export class CreateIssueDto {
   @IsOptional()
   @IsInt()
   assigneeId?: number;
+
+  @ApiPropertyOptional({ example: 42, description: 'Parent issue ID for subtasks' })
+  @IsOptional()
+  @IsInt()
+  parentId?: number | null;
+
+  @ApiPropertyOptional({ example: 1, description: 'Component ID or null' })
+  @IsOptional()
+  @IsInt()
+  componentId?: number | null;
+
+  @ApiPropertyOptional({ example: 10, description: 'Fix Version ID or null' })
+  @IsOptional()
+  @IsInt()
+  fixVersionId?: number | null;
+
+  @ApiPropertyOptional({ example: 9, description: 'Affects Version ID or null' })
+  @IsOptional()
+  @IsInt()
+  affectsVersionId?: number | null;
+
+  @ApiPropertyOptional({ example: ['frontend', 'auth'], description: 'List of label tags' })
+  @IsOptional()
+  @IsString({ each: true })
+  labels?: string[];
 }

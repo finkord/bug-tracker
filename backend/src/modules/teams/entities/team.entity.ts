@@ -40,6 +40,9 @@ export class Team {
   @JoinColumn({ name: 'lead_id' })
   lead: User | null;
 
+  @Column({ name: 'avatar_url', type: 'varchar', length: 500, nullable: true })
+  avatarUrl: string | null;
+
   @Column({
     name: 'sprint_capacity_hours',
     type: 'numeric',

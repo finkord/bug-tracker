@@ -10,11 +10,21 @@ import { User } from './modules/users/entities/user.entity.js';
 import { SavedFilter } from './modules/users/entities/saved-filter.entity.js';
 import { LoginAuditLog } from './modules/security-audit/entities/login-audit-log.entity.js';
 import { Project } from './modules/projects/entities/project.entity.js';
+import { ProjectQuickFilter } from './modules/projects/entities/quick-filter.entity.js';
+import { ProjectComponent } from './modules/projects/entities/project-component.entity.js';
+import { ProjectVersion } from './modules/projects/entities/project-version.entity.js';
 import { Issue } from './modules/issues/entities/issue.entity.js';
+import { IssueHistory } from './modules/issues/entities/issue-history.entity.js';
 import { Comment } from './modules/issues/entities/comment.entity.js';
 import { Worklog } from './modules/issues/entities/worklog.entity.js';
 import { Attachment } from './modules/issues/entities/attachment.entity.js';
 import { IssueLink } from './modules/issues/entities/issue-link.entity.js';
+import { VcsPullRequest } from './modules/vcs/entities/vcs-pull-request.entity.js';
+import { VcsModule } from './modules/vcs/vcs.module.js';
+import { Notification } from './modules/notifications/entities/notification.entity.js';
+import { NotificationsModule } from './modules/notifications/notifications.module.js';
+import { ProjectWebhook } from './modules/webhooks/entities/project-webhook.entity.js';
+import { WebhooksModule } from './modules/webhooks/webhooks.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 import { SecurityAuditModule } from './modules/security-audit/security-audit.module.js';
@@ -35,6 +45,7 @@ import { IssueSecurityLevel } from './modules/rbac/entities/issue-security-level
 import { IssueSecurityGrant } from './modules/rbac/entities/issue-security-grant.entity.js';
 import { RbacModule } from './modules/rbac/rbac.module.js';
 import { Sprint } from './modules/sprints/entities/sprint.entity.js';
+import { SprintSnapshot } from './modules/sprints/entities/sprint-snapshot.entity.js';
 import { SprintsModule } from './modules/sprints/sprints.module.js';
 import { StorageModule } from './modules/storage/storage.module.js';
 import { Team } from './modules/teams/entities/team.entity.js';
@@ -65,7 +76,11 @@ import { TeamsModule } from './modules/teams/teams.module.js';
           SavedFilter,
           LoginAuditLog,
           Project,
+          ProjectQuickFilter,
+          ProjectComponent,
+          ProjectVersion,
           Issue,
+          IssueHistory,
           Comment,
           Worklog,
           Attachment,
@@ -80,8 +95,12 @@ import { TeamsModule } from './modules/teams/teams.module.js';
           IssueSecurityLevel,
           IssueSecurityGrant,
           Sprint,
+          SprintSnapshot,
           Team,
           TeamMember,
+          VcsPullRequest,
+          Notification,
+          ProjectWebhook,
         ],
         synchronize:
           configService.get<string>('DB_SYNCHRONIZE') === 'true' ||
@@ -128,6 +147,9 @@ import { TeamsModule } from './modules/teams/teams.module.js';
     SprintsModule,
     StorageModule,
     TeamsModule,
+    VcsModule,
+    NotificationsModule,
+    WebhooksModule,
   ],
   controllers: [AppController],
   providers: [AppService],

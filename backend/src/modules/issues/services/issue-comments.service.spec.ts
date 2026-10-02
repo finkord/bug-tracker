@@ -10,6 +10,7 @@ describe('IssueCommentsService', () => {
   let mockIssueRepo: any;
   let mockCommentRepo: any;
   let mockEventsGateway: any;
+  let mockNotificationsService: any;
 
   const mockUser: User = {
     id: 1,
@@ -21,6 +22,7 @@ describe('IssueCommentsService', () => {
   const mockIssue: Issue = {
     id: 10,
     title: 'Test Issue',
+    assigneeId: 2,
   } as Issue;
 
   beforeEach(() => {
@@ -35,12 +37,20 @@ describe('IssueCommentsService', () => {
     mockEventsGateway = {
       broadcastCommentAdded: vi.fn(),
     };
+    mockNotificationsService = {
+      createNotification: vi.fn().mockResolvedValue({ id: 1 }),
+    };
 
-    service = new IssueCommentsService(mockIssueRepo, mockCommentRepo, mockEventsGateway);
+    service = new IssueCommentsService(
+      mockIssueRepo,
+      mockCommentRepo,
+      mockEventsGateway,
+      mockNotificationsService,
+    );
   });
 
   describe('addComment', () => {
-    it('should add comment and broadcast realtime event', async () => {
+    it('should add comment and broadcast realtime event and notify assignee', async () => {
       // Arrange
       mockIssueRepo.findOne.mockResolvedValue(mockIssue);
 
@@ -54,6 +64,13 @@ describe('IssueCommentsService', () => {
         issueId: 10,
         comment: expect.objectContaining({ text: 'Looks good to me!' }),
       });
+      expect(mockNotificationsService.createNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 2,
+          actorId: 1,
+          issueId: 10,
+        }),
+      );
     });
 
     it('should throw NotFoundException if issue does not exist', async () => {

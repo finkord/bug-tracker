@@ -8,13 +8,21 @@ import {
   Query,
   Body,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  Res,
+  BadRequestException,
   ParseIntPipe,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import type { Response } from 'express';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse, ApiConsumes } from '@nestjs/swagger';
 import { TeamsService } from './teams.service.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
+import { Public } from '../../common/decorators/public.decorator.js';
+import { type UploadedFileInput } from '../storage/services/seaweedfs.service.js';
 import {
   CreateTeamDto,
   UpdateTeamDto,
@@ -129,5 +137,58 @@ export class TeamsController {
   ) {
     const weeks = sprintWeeks ? parseInt(sprintWeeks, 10) : 2;
     return this.teamsService.calculateCapacity(id, weeks);
+  }
+
+  @Post(':id/avatar/upload')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(FileInterceptor('avatar', { limits: { fileSize: 5 * 1024 * 1024 } }))
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: 'Upload team avatar image file directly to SeaweedFS distributed storage',
+  })
+  async uploadAvatar(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() file: UploadedFileInput | undefined,
+  ) {
+    if (!file) {
+      throw new BadRequestException('Image file is required');
+    }
+    const updated = await this.teamsService.uploadAvatar(id, file);
+    return {
+      message: 'Team avatar uploaded successfully',
+      avatarUrl: updated.avatarUrl,
+    };
+  }
+
+  @Patch(':id/avatar')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Update team avatar URL or preset',
+  })
+  async updateAvatar(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('avatarUrl') avatarUrl: string,
+  ) {
+    const updated = await this.teamsService.update(id, { avatarUrl });
+    return {
+      message: 'Team avatar updated successfully',
+      avatarUrl: updated.avatarUrl,
+    };
+  }
+
+  @Public()
+  @Get('avatar/:fid')
+  @ApiOperation({
+    summary: 'Stream team avatar image directly from SeaweedFS object storage',
+  })
+  async getAvatarFile(
+    @Param('fid') fid: string,
+    @Res() res: Response,
+  ) {
+    const { buffer, contentType } = await this.teamsService.getAvatarBuffer(fid);
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.setHeader('Content-Disposition', 'inline');
+    res.send(buffer);
   }
 }

@@ -31,6 +31,7 @@ import { ListIssuesQueryDto } from './dto/list-issues-query.dto.js';
 import { UpdateIssueSprintDto } from './dto/update-issue-sprint.dto.js';
 import { LogWorkDto } from './dto/log-work.dto.js';
 import { CreateIssueLinkDto } from './dto/create-issue-link.dto.js';
+import { BulkUpdateIssuesDto, BulkDeleteIssuesDto } from './dto/bulk-issue.dto.js';
 import { ProjectPermissionGuard } from '../rbac/guards/project-permission.guard.js';
 import { RequireProjectPermission } from '../rbac/decorators/require-permission.decorator.js';
 import { ProjectPermission } from '../rbac/entities/permission-grant.entity.js';
@@ -112,6 +113,30 @@ export class IssuesController {
     return this.issuesService.create(dto, user);
   }
 
+  @Post('bulk')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Bulk update multiple issues (status, priority, assignee, sprint)',
+  })
+  async bulkUpdate(
+    @Body() dto: BulkUpdateIssuesDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.issuesService.bulkUpdate(dto, user);
+  }
+
+  @Post('bulk-delete')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Bulk delete multiple issues atomically',
+  })
+  async bulkDelete(
+    @Body() dto: BulkDeleteIssuesDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.issuesService.bulkDelete(dto, user);
+  }
+
   @Patch(':id/status')
   @RequireProjectPermission(ProjectPermission.TRANSITION_ISSUES)
   @HttpCode(HttpStatus.OK)
@@ -121,6 +146,7 @@ export class IssuesController {
   async updateStatus(
     @Param('id', ParseIntPipe) id: number,
     @Body('status') status: IssueStatus,
+    @CurrentUser() user: User,
   ) {
     return this.issuesService.updateStatus(id, status);
   }
@@ -155,13 +181,22 @@ export class IssuesController {
   @RequireProjectPermission(ProjectPermission.EDIT_ISSUES)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Update issue title, description, priority, severity, or assignee',
+    summary: 'Update issue title, description, priority, or assignee',
   })
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: Partial<CreateIssueDto>,
+    @CurrentUser() user: User,
   ) {
-    return this.issuesService.update(id, dto);
+    return this.issuesService.update(id, dto, user);
+  }
+
+  @Get(':id/history')
+  @ApiOperation({
+    summary: 'Get chronological audit log history for an issue',
+  })
+  async getIssueHistory(@Param('id', ParseIntPipe) id: number) {
+    return this.issuesService.getIssueHistory(id);
   }
 
   @Delete(':id')

@@ -6,10 +6,12 @@ import { Project } from '../projects/entities/project.entity.js';
 import { User } from '../users/entities/user.entity.js';
 import { TeamsService } from './teams.service.js';
 import { TeamsController } from './teams.controller.js';
+import { StorageModule } from '../storage/storage.module.js';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Team, TeamMember, Project, User]),
+    StorageModule,
   ],
   controllers: [TeamsController],
   providers: [TeamsService],

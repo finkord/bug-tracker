@@ -79,6 +79,26 @@ export class SprintsController {
     return this.sprintsService.completeSprint(id, dto);
   }
 
+  @Get(':id/burndown')
+  @RequireProjectPermission(ProjectPermission.BROWSE_PROJECTS)
+  @ApiOperation({ summary: 'Get daily burndown trajectory and historical snapshots for a sprint' })
+  async getSprintBurndown(
+    @Param('projectId', ParseIntPipe) _projectId: number,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.sprintsService.getBurndown(id);
+  }
+
+  @Get(':id/flow-metrics')
+  @RequireProjectPermission(ProjectPermission.BROWSE_PROJECTS)
+  @ApiOperation({ summary: 'Get CFD cumulative flow, cycle time control stats, and historical velocity' })
+  async getSprintFlowMetrics(
+    @Param('projectId', ParseIntPipe) _projectId: number,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.sprintsService.getFlowMetrics(id);
+  }
+
   @Delete(':id')
   @RequireProjectPermission(ProjectPermission.ADMINISTER_PROJECTS)
   @ApiOperation({ summary: 'Delete a sprint and return issues to backlog' })

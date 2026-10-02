@@ -13,6 +13,7 @@ describe('TeamsService (Scrum Teams & Capacity)', () => {
   let mockTeamMemberRepo: any;
   let mockProjectRepo: any;
   let mockUserRepo: any;
+  let mockSeaweedFsService: any;
 
   const mockProject: Project = Object.assign(new Project(), {
     id: 1,
@@ -69,11 +70,18 @@ describe('TeamsService (Scrum Teams & Capacity)', () => {
       findOne: vi.fn(),
     };
 
+    mockSeaweedFsService = {
+      uploadFile: vi.fn(),
+      getFileBuffer: vi.fn(),
+      deleteFile: vi.fn(),
+    };
+
     service = new TeamsService(
       mockTeamRepo as Repository<Team>,
       mockTeamMemberRepo as Repository<TeamMember>,
       mockProjectRepo as Repository<Project>,
       mockUserRepo as Repository<User>,
+      mockSeaweedFsService as any,
     );
   });
 
@@ -103,6 +111,7 @@ describe('TeamsService (Scrum Teams & Capacity)', () => {
         description: null,
         projectId: 1,
         leadId: 2,
+        avatarUrl: null,
         sprintCapacityHours: 160.0,
       });
       expect(result).toEqual(mockTeam);
@@ -203,6 +212,30 @@ describe('TeamsService (Scrum Teams & Capacity)', () => {
       expect(capacity.members).toHaveLength(2);
       expect(capacity.members[0].sprintCapacityHours).toBe(80.0);
       expect(capacity.members[1].sprintCapacityHours).toBe(60.0);
+    });
+  });
+
+  describe('uploadAvatar', () => {
+    it('should upload an image file to SeaweedFS and update team avatarUrl', async () => {
+      const qb = {
+        leftJoinAndSelect: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        getOne: vi.fn().mockResolvedValue({ ...mockTeam, avatarUrl: null }),
+      };
+      mockTeamRepo.createQueryBuilder.mockReturnValue(qb);
+      mockSeaweedFsService.uploadFile.mockResolvedValue({ fid: '9,12345678', url: 'http://storage/9,12345678' });
+
+      const file = {
+        originalname: 'team-logo.png',
+        buffer: Buffer.from('fake-image-bytes'),
+        mimetype: 'image/png',
+        size: 1024,
+      };
+
+      const updated = await service.uploadAvatar(10, file);
+      expect(mockSeaweedFsService.uploadFile).toHaveBeenCalledWith(file);
+      expect(mockTeamRepo.save).toHaveBeenCalled();
+      expect(updated).toBeDefined();
     });
   });
 });

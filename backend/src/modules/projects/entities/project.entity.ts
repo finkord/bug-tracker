@@ -36,6 +36,9 @@ export class Project {
   @JoinColumn({ name: 'lead_id' })
   lead: User;
 
+  @Column({ name: 'avatar_url', type: 'varchar', length: 500, nullable: true })
+  avatarUrl: string | null;
+
   @OneToMany('Issue', 'project')
   issues: Issue[];
 
@@ -52,6 +55,9 @@ export class Project {
   @ManyToOne('IssueSecurityScheme', { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'security_scheme_id' })
   securityScheme: IssueSecurityScheme | null;
+
+  @Column({ name: 'wip_limits', type: 'jsonb', nullable: true })
+  wipLimits: Record<string, number> | null;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;

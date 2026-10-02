@@ -174,4 +174,78 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       return -2;
     }
   }
+
+  async rpush(key: string, ...values: string[]): Promise<number> {
+    if (!this.client || values.length === 0) {
+      return 0;
+    }
+    try {
+      return await this.client.rpush(key, ...values);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Redis RPUSH failed for key "${key}": ${message}`);
+      return 0;
+    }
+  }
+
+  async lpop(key: string): Promise<string | null> {
+    if (!this.client) {
+      return null;
+    }
+    try {
+      return await this.client.lpop(key);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Redis LPOP failed for key "${key}": ${message}`);
+      return null;
+    }
+  }
+
+  async zadd(key: string, score: number, member: string): Promise<number> {
+    if (!this.client) {
+      return 0;
+    }
+    try {
+      return await this.client.zadd(key, score, member);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Redis ZADD failed for key "${key}": ${message}`);
+      return 0;
+    }
+  }
+
+  async zrangebyscore(
+    key: string,
+    min: number | string,
+    max: number | string,
+    limit?: number,
+  ): Promise<string[]> {
+    if (!this.client) {
+      return [];
+    }
+    try {
+      if (limit) {
+        return await this.client.zrangebyscore(key, min, max, 'LIMIT', 0, limit);
+      }
+      return await this.client.zrangebyscore(key, min, max);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Redis ZRANGEBYSCORE failed for key "${key}": ${message}`);
+      return [];
+    }
+  }
+
+  async zrem(key: string, ...members: string[]): Promise<number> {
+    if (!this.client || members.length === 0) {
+      return 0;
+    }
+    try {
+      return await this.client.zrem(key, ...members);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Redis ZREM failed for key "${key}": ${message}`);
+      return 0;
+    }
+  }
 }
+

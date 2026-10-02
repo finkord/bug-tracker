@@ -20,6 +20,7 @@ export enum IssueType {
   TASK = 'TASK',
   FEATURE = 'FEATURE',
   IMPROVEMENT = 'IMPROVEMENT',
+  SUBTASK = 'SUBTASK',
 }
 
 export enum IssueStatus {
@@ -35,13 +36,6 @@ export enum IssuePriority {
   MEDIUM = 'MEDIUM',
   HIGH = 'HIGH',
   CRITICAL = 'CRITICAL',
-}
-
-export enum IssueSeverity {
-  MINOR = 'MINOR',
-  MAJOR = 'MAJOR',
-  BLOCKER = 'BLOCKER',
-  TRIVIAL = 'TRIVIAL',
 }
 
 @Entity('issues')
@@ -93,13 +87,6 @@ export class Issue {
   })
   priority: IssuePriority;
 
-  @Column({
-    type: 'varchar',
-    length: 20,
-    default: IssueSeverity.MAJOR,
-  })
-  severity: IssueSeverity;
-
   // Estimated hours for completing the task (planning)
   @Column({ name: 'estimated_hours', type: 'float', default: 0 })
   estimatedHours: number;
@@ -116,6 +103,52 @@ export class Issue {
   @ManyToOne('Sprint', 'issues', { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'sprint_id' })
   sprint: import('../../sprints/entities/sprint.entity.js').Sprint | null;
+
+  // Parent-child subtask hierarchy
+  @Index()
+  @Column({ name: 'parent_id', type: 'int', nullable: true })
+  parentId: number | null;
+
+  @ManyToOne('Issue', 'subtasks', { nullable: true, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'parent_id' })
+  parent: Issue | null;
+
+  @OneToMany('Issue', 'parent')
+  subtasks: Issue[];
+
+  // Organizational taxonomy: project component
+  @Index()
+  @Column({ name: 'component_id', type: 'int', nullable: true })
+  componentId: number | null;
+
+  @ManyToOne('ProjectComponent', { eager: true, nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'component_id' })
+  component: import('../../projects/entities/project-component.entity.js').ProjectComponent | null;
+
+  // Organizational taxonomy: labels / tags array
+  @Column('text', { array: true, default: '{}' })
+  labels: string[];
+
+  // Software Releases / Versions
+  @Index()
+  @Column({ name: 'fix_version_id', type: 'int', nullable: true })
+  fixVersionId: number | null;
+
+  @ManyToOne('ProjectVersion', { eager: true, nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'fix_version_id' })
+  fixVersion: import('../../projects/entities/project-version.entity.js').ProjectVersion | null;
+
+  @Index()
+  @Column({ name: 'affects_version_id', type: 'int', nullable: true })
+  affectsVersionId: number | null;
+
+  @ManyToOne('ProjectVersion', { eager: true, nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'affects_version_id' })
+  affectsVersion: import('../../projects/entities/project-version.entity.js').ProjectVersion | null;
+
+  // Change history audit trail
+  @OneToMany('IssueHistory', 'issue')
+  history: import('./issue-history.entity.js').IssueHistory[];
 
   @Column({ name: 'reporter_id', type: 'int' })
   reporterId: number;

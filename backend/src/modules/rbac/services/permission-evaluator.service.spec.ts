@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { PermissionEvaluatorService, type EvaluationContext } from './permission-evaluator.service.js';
 import { User, SystemRole } from '../../users/entities/user.entity.js';
 import { Project } from '../../projects/entities/project.entity.js';
-import { Issue, IssueStatus, IssuePriority, IssueSeverity, IssueType } from '../../issues/entities/issue.entity.js';
+import { Issue, IssueStatus, IssuePriority, IssueType } from '../../issues/entities/issue.entity.js';
 import {
   ProjectPermission,
   PermissionGrantType,
@@ -44,7 +44,6 @@ describe('PermissionEvaluatorService', () => {
     issueType: IssueType.BUG,
     status: IssueStatus.OPEN,
     priority: IssuePriority.HIGH,
-    severity: IssueSeverity.MAJOR,
     reporterId: 10,
     assigneeId: 30,
     securityLevelId: null,

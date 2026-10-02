@@ -12,6 +12,7 @@ import {
   UploadedFile,
   Res,
   BadRequestException,
+  NotFoundException,
   ParseIntPipe,
   HttpCode,
   HttpStatus,
@@ -246,6 +247,29 @@ export class UsersController {
       query.isBlocked,
       query.isActivated,
     );
+  }
+
+  @Get(':id')
+  @ApiOperation({
+    summary: 'Get public user profile by ID',
+    description: 'Returns public user details for profile popovers and member pages.',
+  })
+  @ApiResponse({ status: 200, description: 'User public profile returned' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async getUserById(@Param('id', ParseIntPipe) id: number) {
+    const user = await this.usersService.findById(id);
+    if (!user) {
+      throw new NotFoundException(`User #${id} not found`);
+    }
+    return {
+      id: user.id,
+      fullName: user.fullName,
+      email: user.email,
+      systemRole: user.systemRole,
+      jobTitle: user.jobTitle,
+      avatarUrl: user.avatarUrl,
+      createdAt: user.createdAt,
+    };
   }
 
   @Patch(':id/role')

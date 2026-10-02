@@ -5,6 +5,7 @@ import { CreateIssueDto } from './dto/create-issue.dto.js';
 import { CreateIssueLinkDto } from './dto/create-issue-link.dto.js';
 import { ListIssuesQueryDto } from './dto/list-issues-query.dto.js';
 import { LogWorkDto } from './dto/log-work.dto.js';
+import { BulkUpdateIssuesDto, BulkDeleteIssuesDto, type BulkOperationResultDto } from './dto/bulk-issue.dto.js';
 import { type UploadedFileInput } from './services/seaweedfs.service.js';
 import { IssueCoreService } from './services/issue-core.service.js';
 import { IssueWorklogService } from './services/issue-worklog.service.js';
@@ -14,10 +15,8 @@ import { IssueAttachmentsService } from './services/issue-attachments.service.js
 import { EventsGateway } from '../events/events.gateway.js';
 import { Attachment } from './entities/attachment.entity.js';
 import type {
-  IssueSummaryDto,
   IssueDetailDto,
   WorklogItemDto,
-  MyWorklogItemDto,
   TimesheetMatrixResponseDto,
   WorklogStatsResponseDto,
   IssueLinkItemDto,
@@ -92,8 +91,15 @@ export class IssuesService {
   /**
    * Updates issue metadata.
    */
-  async update(id: number, dto: Partial<CreateIssueDto>): Promise<IssueDetailDto> {
-    return this.issueCoreService.update(id, dto);
+  async update(id: number, dto: Partial<CreateIssueDto>, user?: User): Promise<IssueDetailDto> {
+    return this.issueCoreService.update(id, dto, user);
+  }
+
+  /**
+   * Retrieves change audit log history for an issue.
+   */
+  async getIssueHistory(id: number) {
+    return this.issueCoreService.getIssueHistory(id);
   }
 
   /**
@@ -101,6 +107,20 @@ export class IssuesService {
    */
   async remove(id: number): Promise<{ success: boolean; message: string }> {
     return this.issueCoreService.remove(id);
+  }
+
+  /**
+   * Bulk updates multiple issues atomically.
+   */
+  async bulkUpdate(dto: BulkUpdateIssuesDto, user: User): Promise<BulkOperationResultDto> {
+    return this.issueCoreService.bulkUpdate(dto, user);
+  }
+
+  /**
+   * Bulk deletes multiple issues atomically.
+   */
+  async bulkDelete(dto: BulkDeleteIssuesDto, user: User): Promise<BulkOperationResultDto> {
+    return this.issueCoreService.bulkDelete(dto, user);
   }
 
   /**

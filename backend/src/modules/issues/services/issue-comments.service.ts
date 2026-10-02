@@ -5,6 +5,8 @@ import { Comment } from '../entities/comment.entity.js';
 import { Issue } from '../entities/issue.entity.js';
 import { User } from '../../users/entities/user.entity.js';
 import { EventsGateway } from '../../events/events.gateway.js';
+import { NotificationsService } from '../../notifications/notifications.service.js';
+import { NotificationType } from '../../notifications/entities/notification.entity.js';
 import type { CommentItemDto } from '../dto/issue-response.dto.js';
 
 /**
@@ -18,6 +20,7 @@ export class IssueCommentsService {
     @InjectRepository(Comment)
     private readonly commentRepository: Repository<Comment>,
     private readonly eventsGateway: EventsGateway,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   /**
@@ -49,6 +52,26 @@ export class IssueCommentsService {
       createdAt: saved.createdAt,
     };
     this.eventsGateway.broadcastCommentAdded({ issueId, comment: commentPayload });
+
+    // Trigger notification to assignee or reporter
+    const notifyTargetUserId =
+      issue.assigneeId && issue.assigneeId !== author.id
+        ? issue.assigneeId
+        : issue.reporterId && issue.reporterId !== author.id
+          ? issue.reporterId
+          : null;
+
+    if (notifyTargetUserId) {
+      await this.notificationsService.createNotification({
+        userId: notifyTargetUserId,
+        actorId: author.id,
+        issueId: issue.id,
+        type: NotificationType.COMMENT_ADDED,
+        title: `New comment on ${issue.title}`,
+        message: `${author.fullName}: "${text.slice(0, 100)}${text.length > 100 ? '...' : ''}"`,
+      });
+    }
+
     return commentPayload;
   }
 

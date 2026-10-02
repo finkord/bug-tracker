@@ -20,4 +20,14 @@ export class CreateProjectDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @ApiPropertyOptional({ example: { IN_PROGRESS: 5, REVIEW: 3 }, description: 'Column WIP limits' })
+  @IsOptional()
+  wipLimits?: Record<string, number> | null;
+
+  @ApiPropertyOptional({ example: 'preset:rocket:indigo', description: 'Project logo URL or preset identifier' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  avatarUrl?: string;
 }

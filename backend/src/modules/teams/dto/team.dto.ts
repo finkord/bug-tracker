@@ -38,6 +38,12 @@ export class CreateTeamDto {
   @Min(0)
   @Max(10000)
   sprintCapacityHours?: number;
+
+  @ApiPropertyOptional({ description: 'Team avatar URL or preset identifier', example: 'preset:geometric-1' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  avatarUrl?: string;
 }
 
 export class UpdateTeamDto {
@@ -57,10 +63,9 @@ export class UpdateTeamDto {
   @IsNumber()
   projectId?: number;
 
-  @ApiPropertyOptional({ description: 'User ID of the Team Lead / Scrum Master' })
+  @ApiPropertyOptional({ description: 'User ID of the Team Lead / Scrum Master (or null to unassign)', nullable: true })
   @IsOptional()
-  @IsNumber()
-  leadId?: number;
+  leadId?: number | null;
 
   @ApiPropertyOptional({ description: 'Default team sprint capacity in hours' })
   @IsOptional()
@@ -68,6 +73,12 @@ export class UpdateTeamDto {
   @Min(0)
   @Max(10000)
   sprintCapacityHours?: number;
+
+  @ApiPropertyOptional({ description: 'Team avatar URL or preset identifier', nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  avatarUrl?: string | null;
 }
 
 export class AddTeamMemberDto {
