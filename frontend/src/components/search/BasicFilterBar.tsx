@@ -7,7 +7,6 @@ import {
   SelectValue,
   SelectContent,
   SelectItem,
-  Badge,
 } from '../ui';
 import {
   FolderGit2,
@@ -25,6 +24,29 @@ import {
   X,
   RotateCcw,
 } from 'lucide-react';
+import { FilterMultiSelectPopover, type FilterMultiSelectOption } from './FilterMultiSelectPopover';
+
+const TYPE_OPTIONS: FilterMultiSelectOption[] = [
+  { value: 'BUG', label: 'Bug', icon: <Bug className="w-3.5 h-3.5 text-[var(--md-sys-color-error)]" /> },
+  { value: 'TASK', label: 'Task', icon: <CheckSquare className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" /> },
+  { value: 'FEATURE', label: 'Feature', icon: <Sparkles className="w-3.5 h-3.5 text-[var(--md-sys-color-success)]" /> },
+  { value: 'IMPROVEMENT', label: 'Improvement', icon: <Zap className="w-3.5 h-3.5 text-[var(--md-sys-color-tertiary)]" /> },
+];
+
+const STATUS_OPTIONS: FilterMultiSelectOption[] = [
+  { value: 'OPEN', label: 'To Do', colorDot: 'var(--md-sys-color-outline)' },
+  { value: 'IN_PROGRESS', label: 'In Progress', colorDot: 'var(--md-sys-color-primary)' },
+  { value: 'REVIEW', label: 'In Review', colorDot: 'var(--md-sys-color-tertiary)' },
+  { value: 'RESOLVED', label: 'Resolved', colorDot: 'var(--md-sys-color-success)' },
+  { value: 'CLOSED', label: 'Closed', colorDot: 'var(--md-sys-color-outline-variant)' },
+];
+
+const PRIORITY_OPTIONS: FilterMultiSelectOption[] = [
+  { value: 'CRITICAL', label: 'Critical', icon: <Flame className="w-3.5 h-3.5 text-[var(--md-sys-color-priority-critical)]" /> },
+  { value: 'HIGH', label: 'High', icon: <AlertCircle className="w-3.5 h-3.5 text-[var(--md-sys-color-priority-high)]" /> },
+  { value: 'MEDIUM', label: 'Medium', colorDot: 'var(--md-sys-color-priority-medium)' },
+  { value: 'LOW', label: 'Low', colorDot: 'var(--md-sys-color-priority-low)' },
+];
 
 interface BasicFilterBarProps {
   projects: ProjectItem[];
@@ -64,11 +86,11 @@ export const BasicFilterBar: React.FC<BasicFilterBarProps> = ({
     filters.sprint !== 'ALL';
 
   return (
-    <div className="flex flex-col gap-2.5 py-2">
+    <div className="py-1">
       {/* Search Input and Filter Dropdowns Row */}
       <div className="flex flex-wrap items-center gap-2">
         {/* Quick Text Search */}
-        <div className="relative flex-1 min-w-[200px] max-w-md">
+        <div className="relative w-56 sm:w-64 max-w-xs shrink-0">
           <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--md-sys-color-on-surface-variant)]" />
           <input
             type="text"
@@ -89,7 +111,7 @@ export const BasicFilterBar: React.FC<BasicFilterBarProps> = ({
         </div>
 
         {/* Project Selector */}
-        <div className="w-36 sm:w-44">
+        <div className="w-32 sm:w-36 shrink-0">
           <Select
             value={filters.projectKey}
             onValueChange={(val) => handleFieldChange('projectKey', val)}
@@ -118,96 +140,35 @@ export const BasicFilterBar: React.FC<BasicFilterBarProps> = ({
           </Select>
         </div>
 
-        {/* Issue Type Selector */}
-        <div className="w-32 sm:w-36">
-          <Select
-            value={filters.issueTypes.length === 1 ? filters.issueTypes[0] : 'ALL'}
-            onValueChange={(val) => handleFieldChange('issueTypes', val === 'ALL' ? [] : [val])}
-          >
-            <SelectTrigger size="sm" className="rounded-full bg-[var(--md-sys-color-surface-container)] text-xs font-semibold border-0">
-              <SelectValue placeholder="All Types" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All Types</SelectItem>
-              <SelectItem value="BUG">
-                <span className="flex items-center gap-1.5">
-                  <Bug className="w-3.5 h-3.5 text-[var(--md-sys-color-error)]" />
-                  <span>Bug</span>
-                </span>
-              </SelectItem>
-              <SelectItem value="TASK">
-                <span className="flex items-center gap-1.5">
-                  <CheckSquare className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
-                  <span>Task</span>
-                </span>
-              </SelectItem>
-              <SelectItem value="FEATURE">
-                <span className="flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-[var(--md-sys-color-success)]" />
-                  <span>Feature</span>
-                </span>
-              </SelectItem>
-              <SelectItem value="IMPROVEMENT">
-                <span className="flex items-center gap-1.5">
-                  <Zap className="w-3.5 h-3.5 text-[var(--md-sys-color-tertiary)]" />
-                  <span>Improvement</span>
-                </span>
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        {/* Issue Type Multi-Select Popover */}
+        <FilterMultiSelectPopover
+          label="Types"
+          options={TYPE_OPTIONS}
+          selectedValues={filters.issueTypes}
+          onSelectionChange={(selected) => handleFieldChange('issueTypes', selected)}
+          placeholder="Filter issue types..."
+        />
 
-        {/* Status Selector */}
-        <div className="w-32 sm:w-36">
-          <Select
-            value={filters.statuses.length === 1 ? filters.statuses[0] : 'ALL'}
-            onValueChange={(val) => handleFieldChange('statuses', val === 'ALL' ? [] : [val])}
-          >
-            <SelectTrigger size="sm" className="rounded-full bg-[var(--md-sys-color-surface-container)] text-xs font-semibold border-0">
-              <SelectValue placeholder="All Statuses" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All Statuses</SelectItem>
-              <SelectItem value="OPEN">To Do</SelectItem>
-              <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-              <SelectItem value="REVIEW">In Review</SelectItem>
-              <SelectItem value="RESOLVED">Resolved</SelectItem>
-              <SelectItem value="CLOSED">Closed</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        {/* Status Multi-Select Popover */}
+        <FilterMultiSelectPopover
+          label="Statuses"
+          options={STATUS_OPTIONS}
+          selectedValues={filters.statuses}
+          onSelectionChange={(selected) => handleFieldChange('statuses', selected)}
+          placeholder="Filter statuses..."
+        />
 
-        {/* Priority Selector */}
-        <div className="w-32 sm:w-36">
-          <Select
-            value={filters.priorities.length === 1 ? filters.priorities[0] : 'ALL'}
-            onValueChange={(val) => handleFieldChange('priorities', val === 'ALL' ? [] : [val])}
-          >
-            <SelectTrigger size="sm" className="rounded-full bg-[var(--md-sys-color-surface-container)] text-xs font-semibold border-0">
-              <SelectValue placeholder="All Priorities" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All Priorities</SelectItem>
-              <SelectItem value="CRITICAL">
-                <span className="flex items-center gap-1.5">
-                  <Flame className="w-3.5 h-3.5 text-[var(--md-sys-color-priority-critical)]" />
-                  <span>Critical</span>
-                </span>
-              </SelectItem>
-              <SelectItem value="HIGH">
-                <span className="flex items-center gap-1.5">
-                  <AlertCircle className="w-3.5 h-3.5 text-[var(--md-sys-color-priority-high)]" />
-                  <span>High</span>
-                </span>
-              </SelectItem>
-              <SelectItem value="MEDIUM">Medium</SelectItem>
-              <SelectItem value="LOW">Low</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        {/* Priority Multi-Select Popover */}
+        <FilterMultiSelectPopover
+          label="Priorities"
+          options={PRIORITY_OPTIONS}
+          selectedValues={filters.priorities}
+          onSelectionChange={(selected) => handleFieldChange('priorities', selected)}
+          placeholder="Filter priorities..."
+        />
 
         {/* Assignee Selector */}
-        <div className="w-36 sm:w-40">
+        <div className="w-32 sm:w-36 shrink-0">
           <Select
             value={filters.assignee}
             onValueChange={(val) => handleFieldChange('assignee', val)}
@@ -244,7 +205,7 @@ export const BasicFilterBar: React.FC<BasicFilterBarProps> = ({
         </div>
 
         {/* Sprint Selector */}
-        <div className="w-32 sm:w-36">
+        <div className="w-28 sm:w-32 shrink-0">
           <Select
             value={filters.sprint}
             onValueChange={(val) => handleFieldChange('sprint', val)}
@@ -270,119 +231,13 @@ export const BasicFilterBar: React.FC<BasicFilterBarProps> = ({
           <button
             type="button"
             onClick={onClearFilters}
-            className="p-1.5 rounded-full text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/30 transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/30 transition cursor-pointer whitespace-nowrap"
             title="Reset all filters"
           >
             <RotateCcw className="w-3.5 h-3.5" />
+            <span>Reset</span>
           </button>
         )}
-      </div>
-
-      {/* Active Filter Chips & Switch to JQL Row */}
-      <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
-        <div className="flex flex-wrap items-center gap-1.5">
-          {hasActiveFilters ? (
-            <>
-              <span className="text-[11px] font-medium text-[var(--md-sys-color-on-surface-variant)] mr-1">Active filters:</span>
-              {searchQuery && (
-                <Badge variant="neutral" className="gap-1 text-[11px] rounded-full px-2.5 py-0.5">
-                  <span>Text: "{searchQuery}"</span>
-                  <button
-                    type="button"
-                    onClick={() => onSearchQueryChange('')}
-                    className="hover:text-[var(--md-sys-color-error)] cursor-pointer"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </Badge>
-              )}
-              {filters.projectKey !== 'ALL' && (
-                <Badge variant="primary" className="gap-1 text-[11px] rounded-full px-2.5 py-0.5">
-                  <span>Project: {filters.projectKey}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleFieldChange('projectKey', 'ALL')}
-                    className="hover:text-[var(--md-sys-color-error)] cursor-pointer"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </Badge>
-              )}
-              {filters.issueTypes.length > 0 && (
-                <Badge variant="neutral" className="gap-1 text-[11px] rounded-full px-2.5 py-0.5">
-                  <span>Type: {filters.issueTypes.join(', ')}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleFieldChange('issueTypes', [])}
-                    className="hover:text-[var(--md-sys-color-error)] cursor-pointer"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </Badge>
-              )}
-              {filters.statuses.length > 0 && (
-                <Badge variant="neutral" className="gap-1 text-[11px] rounded-full px-2.5 py-0.5">
-                  <span>Status: {filters.statuses.join(', ')}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleFieldChange('statuses', [])}
-                    className="hover:text-[var(--md-sys-color-error)] cursor-pointer"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </Badge>
-              )}
-              {filters.priorities.length > 0 && (
-                <Badge variant="warning" className="gap-1 text-[11px] rounded-full px-2.5 py-0.5">
-                  <span>Priority: {filters.priorities.join(', ')}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleFieldChange('priorities', [])}
-                    className="hover:text-[var(--md-sys-color-error)] cursor-pointer"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </Badge>
-              )}
-              {filters.assignee !== 'ALL' && (
-                <Badge variant="neutral" className="gap-1 text-[11px] rounded-full px-2.5 py-0.5">
-                  <span>Assignee: {filters.assignee === 'ME' ? 'Me' : filters.assignee}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleFieldChange('assignee', 'ALL')}
-                    className="hover:text-[var(--md-sys-color-error)] cursor-pointer"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </Badge>
-              )}
-              {filters.sprint !== 'ALL' && (
-                <Badge variant="primary" className="gap-1 text-[11px] rounded-full px-2.5 py-0.5">
-                  <span>Sprint: {filters.sprint}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleFieldChange('sprint', 'ALL')}
-                    className="hover:text-[var(--md-sys-color-error)] cursor-pointer"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </Badge>
-              )}
-            </>
-          ) : (
-            <span className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]/60">
-              Showing all issues (no filters applied)
-            </span>
-          )}
-        </div>
-
-        <button
-          type="button"
-          onClick={onSwitchToJql}
-          className="text-xs font-semibold text-[var(--md-sys-color-primary)] hover:underline cursor-pointer bg-transparent border-0 p-0 ml-auto"
-        >
-          Switch to JQL Editor
-        </button>
       </div>
     </div>
   );

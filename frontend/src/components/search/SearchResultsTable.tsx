@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { IssueItem, IssuePriority, IssueStatus, IssueType } from '../../api/client';
 import {
@@ -10,6 +10,9 @@ import {
   SelectItem,
 } from '../ui';
 import { Avatar } from '../common/Avatar';
+import { IssueContextMenu } from '../common/IssueContextMenu';
+import { useAssignIssueToMeMutation } from '../../api/queries';
+import { useAuth } from '../../store';
 import {
   Bug,
   CheckSquare,
@@ -66,6 +69,26 @@ export const SearchResultsTable: React.FC<SearchResultsTableProps> = ({
   sortOrder,
   onSortChange,
 }) => {
+  const { user } = useAuth();
+  const assignMutation = useAssignIssueToMeMutation();
+  const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
+  const [contextMenuIssue, setContextMenuIssue] = useState<IssueItem | null>(null);
+
+  const handleContextMenu = (e: React.MouseEvent, issue: IssueItem) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenuIssue(issue);
+    setContextMenuPos({ x: e.clientX, y: e.clientY });
+  };
+
+  const handleAssignToMe = async (issueId: number) => {
+    try {
+      await assignMutation.mutateAsync(issueId);
+    } catch {
+      // Ignored
+    }
+  };
+
   const renderTypeIcon = (type: IssueType) => {
     switch (type) {
       case 'BUG':
@@ -158,8 +181,20 @@ export const SearchResultsTable: React.FC<SearchResultsTableProps> = ({
   }
 
   return (
-    <div className="bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/40 rounded-2xl shadow-xs overflow-hidden flex flex-col w-full">
-      <div className="overflow-x-auto">
+    <div className="bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/40 rounded-2xl shadow-xs overflow-hidden flex flex-col w-full flex-1 min-h-0">
+      {/* Table Results Bar (Ticket Count & Pagination Status) */}
+      <div className="px-4 py-2.5 border-b border-[var(--md-sys-color-outline-variant)]/30 flex items-center justify-between text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] bg-[var(--md-sys-color-surface-container)] shrink-0">
+        <span className="font-bold text-[var(--md-sys-color-on-surface)]">
+          {total ?? issues.length} {(total ?? issues.length) === 1 ? 'ticket' : 'tickets'} found
+        </span>
+        {totalPages > 1 && (
+          <span className="text-[11px] font-normal opacity-80">
+            Page {page} of {totalPages}
+          </span>
+        )}
+      </div>
+
+      <div className="overflow-x-auto flex-1 min-h-0">
         <table className="w-full text-left border-collapse text-sm">
           <thead>
             <tr className="border-b border-[var(--md-sys-color-outline-variant)]/40 bg-[var(--md-sys-color-surface-container)] text-xs font-bold text-[var(--md-sys-color-on-surface-variant)] select-none">
@@ -225,6 +260,7 @@ export const SearchResultsTable: React.FC<SearchResultsTableProps> = ({
               return (
                 <tr
                   key={issue.id}
+                  onContextMenu={(e) => handleContextMenu(e, issue)}
                   onClick={() => onSelectIssue?.(issue)}
                   className={`hover:bg-[var(--md-sys-color-surface-container-high)]/60 transition cursor-pointer group ${
                     isSelected ? 'bg-[var(--md-sys-color-primary-container)]/30' : ''
@@ -399,6 +435,21 @@ export const SearchResultsTable: React.FC<SearchResultsTableProps> = ({
           )}
         </div>
       </div>
+
+      {/* Right-Click Context Menu */}
+      {contextMenuPos && contextMenuIssue && (
+        <IssueContextMenu
+          issue={contextMenuIssue}
+          position={contextMenuPos}
+          onClose={() => {
+            setContextMenuPos(null);
+            setContextMenuIssue(null);
+          }}
+          onStatusChange={onUpdateStatus}
+          onAssignToMe={handleAssignToMe}
+          currentUserId={user?.id}
+        />
+      )}
     </div>
   );
 };

@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom';
 import type { IssueItem, IssuePriority, IssueStatus, IssueType } from '../../api/client';
 import { api } from '../../api/client';
 import { Avatar } from '../common/Avatar';
+import { IssueContextMenu } from '../common/IssueContextMenu';
+import { useAssignIssueToMeMutation } from '../../api/queries';
+import { useAuth } from '../../store';
 import {
   Badge,
   Select,
@@ -19,8 +22,6 @@ import {
   Flame,
   AlertCircle,
   ExternalLink,
-  Calendar,
-  Clock,
   Layers,
   Send,
   Loader2,
@@ -63,6 +64,26 @@ export const SearchSplitView: React.FC<SearchSplitViewProps> = ({
   onSelectIssue,
   onUpdateStatus,
 }) => {
+  const { user } = useAuth();
+  const assignMutation = useAssignIssueToMeMutation();
+  const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
+  const [contextMenuIssue, setContextMenuIssue] = useState<IssueItem | null>(null);
+
+  const handleContextMenu = (e: React.MouseEvent, issue: IssueItem) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenuIssue(issue);
+    setContextMenuPos({ x: e.clientX, y: e.clientY });
+  };
+
+  const handleAssignToMe = async (issueId: number) => {
+    try {
+      await assignMutation.mutateAsync(issueId);
+    } catch {
+      // Ignored
+    }
+  };
+
   const [detailedIssue, setDetailedIssue] = useState<IssueItem | null>(null);
   const [newComment, setNewComment] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
@@ -195,19 +216,27 @@ export const SearchSplitView: React.FC<SearchSplitViewProps> = ({
   const currentIssue = detailedIssue || activeIssue;
 
   return (
-    <div className="bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/40 rounded-2xl shadow-xs overflow-hidden flex flex-col lg:flex-row min-h-[600px] w-full">
+    <div className="bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/40 rounded-2xl shadow-xs overflow-hidden flex flex-col lg:flex-row flex-1 h-full min-h-0 w-full">
       {/* Left List Pane */}
-      <div className="w-full lg:w-84 xl:w-96 border-b lg:border-b-0 lg:border-r border-[var(--md-sys-color-outline-variant)]/40 flex flex-col shrink-0 bg-[var(--md-sys-color-surface-container)]">
-        <div className="p-3 border-b border-[var(--md-sys-color-outline-variant)]/30 text-xs font-bold text-[var(--md-sys-color-on-surface-variant)] flex items-center justify-between">
-          <span>{issues.length} {issues.length === 1 ? 'ticket' : 'tickets'}</span>
+      <div className="w-full lg:w-80 xl:w-96 border-b lg:border-b-0 lg:border-r border-[var(--md-sys-color-outline-variant)]/40 flex flex-col shrink-0 bg-[var(--md-sys-color-surface-container)] h-full overflow-hidden">
+        <div className="p-3 border-b border-[var(--md-sys-color-outline-variant)]/30 text-xs font-bold text-[var(--md-sys-color-on-surface-variant)] flex items-center justify-between shrink-0">
+          <span className="font-bold text-[var(--md-sys-color-on-surface)]">
+            {_total ?? issues.length} {(_total ?? issues.length) === 1 ? 'ticket' : 'tickets'}
+          </span>
+          {totalPages > 1 && (
+            <span className="text-[11px] font-normal opacity-80">
+              Page {page} of {totalPages}
+            </span>
+          )}
         </div>
 
-        <div className="flex-1 overflow-y-auto divide-y divide-[var(--md-sys-color-outline-variant)]/20 max-h-[320px] lg:max-h-[calc(100vh-280px)]">
+        <div className="flex-1 overflow-y-auto divide-y divide-[var(--md-sys-color-outline-variant)]/20 min-h-0">
           {issues.map((issue) => {
             const isSelected = activeIssue?.id === issue.id;
             return (
               <div
                 key={issue.id}
+                onContextMenu={(e) => handleContextMenu(e, issue)}
                 onClick={() => onSelectIssue(issue)}
                 className={`p-3.5 cursor-pointer transition flex flex-col gap-1.5 ${
                   isSelected
@@ -218,9 +247,17 @@ export const SearchSplitView: React.FC<SearchSplitViewProps> = ({
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5">
                     {renderTypeIcon(issue.issueType)}
-                    <span className="font-mono text-xs font-bold text-[var(--md-sys-color-primary)]">
+                    <a
+                      href={`/issues/${issue.key}`}
+                      onClick={(e) => {
+                        if (e.button === 1 || e.ctrlKey || e.metaKey) return;
+                        e.preventDefault();
+                        onSelectIssue(issue);
+                      }}
+                      className="font-mono text-xs font-bold text-[var(--md-sys-color-primary)] hover:underline"
+                    >
                       {issue.key}
-                    </span>
+                    </a>
                   </div>
                   {renderPriorityBadge(issue.priority)}
                 </div>
@@ -282,11 +319,11 @@ export const SearchSplitView: React.FC<SearchSplitViewProps> = ({
       </div>
 
       {/* Right Detail Preview Pane */}
-      <div className="flex-1 flex flex-col overflow-y-auto max-h-[calc(100vh-280px)] bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-low)] p-5 lg:p-7 space-y-6">
+      <div className="flex-1 flex flex-col overflow-y-auto h-full min-h-0 bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-low)] p-4 sm:p-6 lg:p-7">
         {currentIssue ? (
-          <>
+          <div className="flex flex-col flex-1 min-h-0 space-y-5">
             {/* Header / Actions */}
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--md-sys-color-outline-variant)]/30 pb-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--md-sys-color-outline-variant)]/30 pb-3 shrink-0">
               <div className="flex items-center gap-2">
                 {renderTypeIcon(currentIssue.issueType)}
                 <span className="font-mono text-sm font-bold text-[var(--md-sys-color-primary)]">
@@ -314,202 +351,247 @@ export const SearchSplitView: React.FC<SearchSplitViewProps> = ({
               </div>
             </div>
 
-            {/* Title & Status Bar */}
-            <div className="space-y-3">
-              <h2 className="text-xl font-bold text-[var(--md-sys-color-on-surface)] leading-snug">
-                {currentIssue.title}
-              </h2>
+            {/* 2-Column Responsive Body */}
+            <div className="flex flex-col xl:flex-row gap-6 items-start flex-1 min-h-0">
+              {/* Left Column (65%): Title, Description, Activity & Comments */}
+              <div className="flex-1 min-w-0 space-y-5 w-full">
+                <h2 className="text-xl sm:text-2xl font-bold text-[var(--md-sys-color-on-surface)] leading-snug">
+                  {currentIssue.title}
+                </h2>
 
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="w-36">
-                  <Select
-                    value={currentIssue.status}
-                    onValueChange={(val) => {
-                      const newStat = val as IssueStatus;
-                      onUpdateStatus?.(currentIssue.id, newStat);
-                      setDetailedIssue((prev) => (prev ? { ...prev, status: newStat } : null));
-                    }}
-                  >
-                    <SelectTrigger size="sm" className="rounded-full bg-[var(--md-sys-color-surface-container)] text-xs font-semibold border-0">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {STATUS_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                {renderPriorityBadge(currentIssue.priority)}
-                {currentIssue.sprint?.name ? (
-                  <Badge variant="primary" className="gap-1 text-xs rounded-full px-2.5 py-0.5">
-                    <Layers className="w-3 h-3" />
-                    <span>{currentIssue.sprint.name}</span>
-                  </Badge>
-                ) : (
-                  <Badge variant="neutral" className="text-xs rounded-full px-2.5 py-0.5">
-                    Backlog
-                  </Badge>
-                )}
-              </div>
-            </div>
-
-            {/* Description */}
-            <div className="space-y-2">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)]">
-                Description
-              </h4>
-              <div className="p-4 rounded-xl bg-[var(--md-sys-color-surface-container)] text-sm text-[var(--md-sys-color-on-surface)] whitespace-pre-wrap leading-relaxed min-h-[80px]">
-                {currentIssue.description || (
-                  <span className="italic text-[var(--md-sys-color-on-surface-variant)]/60">
-                    No description provided.
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Metadata Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-[var(--md-sys-color-surface-container)]">
-              {/* Assignee */}
-              <div className="space-y-1">
-                <span className="text-xs text-[var(--md-sys-color-on-surface-variant)]">Assignee</span>
-                <div className="flex items-center gap-2">
-                  {currentIssue.assignee ? (
-                    <>
-                      <Avatar
-                        name={currentIssue.assignee.fullName || 'User'}
-                        avatarUrl={currentIssue.assignee.avatarUrl}
-                        size="sm"
-                      />
-                      <span className="text-sm font-semibold text-[var(--md-sys-color-on-surface)]">
-                        {currentIssue.assignee.fullName}
+                {/* Description */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)]">
+                    Description
+                  </h4>
+                  <div className="p-4 rounded-2xl bg-[var(--md-sys-color-surface-container)] text-sm text-[var(--md-sys-color-on-surface)] whitespace-pre-wrap leading-relaxed min-h-[90px] border border-[var(--md-sys-color-outline-variant)]/20 shadow-2xs">
+                    {currentIssue.description || (
+                      <span className="italic text-[var(--md-sys-color-on-surface-variant)]/60">
+                        No description provided.
                       </span>
-                    </>
-                  ) : (
-                    <span className="text-sm text-[var(--md-sys-color-on-surface-variant)] italic">
-                      Unassigned
-                    </span>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              {/* Reporter */}
-              <div className="space-y-1">
-                <span className="text-xs text-[var(--md-sys-color-on-surface-variant)]">Reporter</span>
-                <div className="flex items-center gap-2">
-                  {currentIssue.reporter ? (
-                    <>
-                      <Avatar
-                        name={currentIssue.reporter.fullName || 'User'}
-                        avatarUrl={currentIssue.reporter.avatarUrl}
-                        size="sm"
-                      />
-                      <span className="text-sm font-semibold text-[var(--md-sys-color-on-surface)]">
-                        {currentIssue.reporter.fullName}
-                      </span>
-                    </>
-                  ) : (
-                    <span className="text-sm text-[var(--md-sys-color-on-surface-variant)]">Unknown</span>
-                  )}
-                </div>
-              </div>
+                {/* Activity & Comments Stream */}
+                <div className="space-y-3 pt-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)]">
+                    Activity & Comments ({currentIssue.comments?.length || 0})
+                  </h4>
 
-              {/* Dates */}
-              <div className="space-y-1">
-                <span className="text-xs text-[var(--md-sys-color-on-surface-variant)]">Created</span>
-                <div className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface)]">
-                  <Calendar className="w-3.5 h-3.5 text-[var(--md-sys-color-on-surface-variant)]" />
-                  <span>{new Date(currentIssue.createdAt).toLocaleString()}</span>
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <span className="text-xs text-[var(--md-sys-color-on-surface-variant)]">Updated</span>
-                <div className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface)]">
-                  <Clock className="w-3.5 h-3.5 text-[var(--md-sys-color-on-surface-variant)]" />
-                  <span>{new Date(currentIssue.updatedAt).toLocaleString()}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Comments Stream */}
-            <div className="space-y-3 pt-2">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)]">
-                Activity & Comments ({currentIssue.comments?.length || 0})
-              </h4>
-
-              {/* Add comment box with integrated Post button */}
-              <form onSubmit={handleAddComment} className="relative flex items-center">
-                <input
-                  type="text"
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Write a comment or post an update..."
-                  className="w-full pl-4 pr-24 py-2.5 text-xs sm:text-sm rounded-xl bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] placeholder-[var(--md-sys-color-on-surface-variant)]/60 focus:outline-none focus:ring-2 focus:ring-[var(--md-sys-color-primary)]/40 transition border border-[var(--md-sys-color-outline-variant)]/30"
-                />
-                <button
-                  type="submit"
-                  disabled={!newComment.trim() || submittingComment}
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] text-xs font-semibold hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none transition cursor-pointer"
-                >
-                  {submittingComment ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <>
-                      <span>Post</span>
-                      <Send className="w-3 h-3" />
-                    </>
-                  )}
-                </button>
-              </form>
-
-              {/* Existing comments */}
-              <div className="space-y-2.5 max-h-60 overflow-y-auto">
-                {currentIssue.comments && currentIssue.comments.length > 0 ? (
-                  currentIssue.comments.map((comment) => (
-                    <div
-                      key={comment.id}
-                      className="p-3 rounded-xl bg-[var(--md-sys-color-surface-container)] space-y-1 text-xs"
+                  {/* Add comment box with integrated Post button */}
+                  <form onSubmit={handleAddComment} className="relative flex items-center">
+                    <input
+                      type="text"
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      placeholder="Write a comment or post an update..."
+                      className="w-full pl-4 pr-24 py-2.5 text-xs sm:text-sm rounded-xl bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] placeholder-[var(--md-sys-color-on-surface-variant)]/60 focus:outline-none focus:ring-2 focus:ring-[var(--md-sys-color-primary)]/40 transition border border-[var(--md-sys-color-outline-variant)]/30"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!newComment.trim() || submittingComment}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] text-xs font-semibold hover:opacity-90 active:scale-95 disabled:opacity-40 disabled:pointer-events-none transition cursor-pointer"
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5 font-semibold text-[var(--md-sys-color-on-surface)]">
-                          <Avatar
-                            name={comment.author?.fullName || 'User'}
-                            avatarUrl={comment.author?.avatarUrl}
-                            size="xs"
-                          />
-                          <span>{comment.author?.fullName || 'User'}</span>
+                      {submittingComment ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <>
+                          <span>Post</span>
+                          <Send className="w-3 h-3" />
+                        </>
+                      )}
+                    </button>
+                  </form>
+
+                  {/* Existing comments */}
+                  <div className="space-y-2.5 max-h-60 overflow-y-auto">
+                    {currentIssue.comments && currentIssue.comments.length > 0 ? (
+                      currentIssue.comments.map((comment) => (
+                        <div
+                          key={comment.id}
+                          className="p-3 rounded-xl bg-[var(--md-sys-color-surface-container)] space-y-1 text-xs"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5 font-semibold text-[var(--md-sys-color-on-surface)]">
+                              <Avatar
+                                name={comment.author?.fullName || 'User'}
+                                avatarUrl={comment.author?.avatarUrl}
+                                size="xs"
+                              />
+                              <span>{comment.author?.fullName || 'User'}</span>
+                            </div>
+                            <span className="text-[var(--md-sys-color-on-surface-variant)]/70 text-[10px]">
+                              {new Date(comment.createdAt).toLocaleDateString(undefined, {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                          </div>
+                          <p className="text-[var(--md-sys-color-on-surface)] pt-0.5 whitespace-pre-wrap">
+                            {comment.text}
+                          </p>
                         </div>
-                        <span className="text-[var(--md-sys-color-on-surface-variant)]/70 text-[10px]">
-                          {new Date(comment.createdAt).toLocaleDateString(undefined, {
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </span>
-                      </div>
-                      <p className="text-[var(--md-sys-color-on-surface)] pt-0.5 whitespace-pre-wrap">
-                        {comment.text}
+                      ))
+                    ) : (
+                      <p className="text-xs text-[var(--md-sys-color-on-surface-variant)]/60 italic py-1">
+                        No comments yet.
                       </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column (35%): Properties Sidebar */}
+              <div className="w-full xl:w-72 xl:shrink-0 space-y-4">
+                {/* Status & Priority Card */}
+                <div className="p-4 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/25 space-y-3 shadow-2xs">
+                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)]">
+                    Attributes
+                  </h4>
+                  <div className="space-y-2.5">
+                    <div className="space-y-1">
+                      <span className="text-xs text-[var(--md-sys-color-on-surface-variant)]">Status</span>
+                      <Select
+                        value={currentIssue.status}
+                        onValueChange={(val) => {
+                          const newStat = val as IssueStatus;
+                          onUpdateStatus?.(currentIssue.id, newStat);
+                          setDetailedIssue((prev) => (prev ? { ...prev, status: newStat } : null));
+                        }}
+                      >
+                        <SelectTrigger size="sm" className="rounded-xl bg-[var(--md-sys-color-surface-container-high)] text-xs font-semibold border-0 w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {STATUS_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
-                  ))
-                ) : (
-                  <p className="text-xs text-[var(--md-sys-color-on-surface-variant)]/60 italic py-1">
-                    No comments yet.
-                  </p>
-                )}
+
+                    <div className="space-y-1">
+                      <span className="text-xs text-[var(--md-sys-color-on-surface-variant)]">Priority</span>
+                      <div>{renderPriorityBadge(currentIssue.priority)}</div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <span className="text-xs text-[var(--md-sys-color-on-surface-variant)]">Sprint</span>
+                      <div>
+                        {currentIssue.sprint?.name ? (
+                          <Badge variant="primary" className="gap-1 text-xs rounded-full px-2.5 py-0.5">
+                            <Layers className="w-3 h-3" />
+                            <span>{currentIssue.sprint.name}</span>
+                          </Badge>
+                        ) : (
+                          <Badge variant="neutral" className="text-xs rounded-full px-2.5 py-0.5">
+                            Backlog
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* People Card */}
+                <div className="p-4 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/25 space-y-3 shadow-2xs">
+                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)]">
+                    People
+                  </h4>
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <span className="text-xs text-[var(--md-sys-color-on-surface-variant)]">Assignee</span>
+                      <div className="flex items-center gap-2">
+                        {currentIssue.assignee ? (
+                          <>
+                            <Avatar
+                              name={currentIssue.assignee.fullName || 'User'}
+                              avatarUrl={currentIssue.assignee.avatarUrl}
+                              size="sm"
+                            />
+                            <span className="text-xs font-semibold text-[var(--md-sys-color-on-surface)] truncate">
+                              {currentIssue.assignee.fullName}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-xs text-[var(--md-sys-color-on-surface-variant)] italic">
+                            Unassigned
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <span className="text-xs text-[var(--md-sys-color-on-surface-variant)]">Reporter</span>
+                      <div className="flex items-center gap-2">
+                        {currentIssue.reporter ? (
+                          <>
+                            <Avatar
+                              name={currentIssue.reporter.fullName || 'User'}
+                              avatarUrl={currentIssue.reporter.avatarUrl}
+                              size="sm"
+                            />
+                            <span className="text-xs font-semibold text-[var(--md-sys-color-on-surface)] truncate">
+                              {currentIssue.reporter.fullName}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-xs text-[var(--md-sys-color-on-surface-variant)]">Unknown</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Timestamps Card */}
+                <div className="p-4 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/25 space-y-2.5 shadow-2xs">
+                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)]">
+                    Dates
+                  </h4>
+                  <div className="space-y-2 text-xs">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[var(--md-sys-color-on-surface-variant)]">Created</span>
+                      <span className="font-medium text-[var(--md-sys-color-on-surface)]">
+                        {new Date(currentIssue.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[var(--md-sys-color-on-surface-variant)]">Updated</span>
+                      <span className="font-medium text-[var(--md-sys-color-on-surface)]">
+                        {new Date(currentIssue.updatedAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          </>
+          </div>
         ) : (
           <div className="flex items-center justify-center h-full text-sm text-[var(--md-sys-color-on-surface-variant)]">
             Select an issue from the list to view details
           </div>
         )}
       </div>
+
+      {/* Right-Click Context Menu */}
+      {contextMenuPos && contextMenuIssue && (
+        <IssueContextMenu
+          issue={contextMenuIssue}
+          position={contextMenuPos}
+          onClose={() => {
+            setContextMenuPos(null);
+            setContextMenuIssue(null);
+          }}
+          onStatusChange={onUpdateStatus}
+          onAssignToMe={handleAssignToMe}
+          currentUserId={user?.id}
+        />
+      )}
     </div>
   );
 };

@@ -22,6 +22,7 @@ vi.mock('../api/queries', () => ({
   useUpdateSavedFilterMutation: () => ({ mutateAsync: mockUpdateFilterMutation }),
   useDeleteSavedFilterMutation: () => ({ mutateAsync: mockDeleteFilterMutation }),
   useUpdateIssueStatusMutation: () => ({ mutateAsync: mockUpdateIssueStatusMutation }),
+  useAssignIssueToMeMutation: () => ({ mutateAsync: vi.fn() }),
 }));
 
 vi.mock('../components/kanban/IssueDetailsModal', () => ({
@@ -52,7 +53,6 @@ describe('AdvancedSearchPage', () => {
             issueType: 'BUG',
             status: 'OPEN',
             priority: 'HIGH',
-            severity: 'MAJOR',
             estimatedHours: 4,
             loggedHours: 0,
             sprintId: null,
@@ -136,5 +136,22 @@ describe('AdvancedSearchPage', () => {
 
     // Verify backend saved filters query was used instead
     expect(mockUseSavedFiltersQuery).toHaveBeenCalled();
+  });
+
+  it('renders Linear-style quick-access pills for favorite saved filters', () => {
+    render(
+      <MemoryRouter>
+        <AdvancedSearchPage />
+      </MemoryRouter>,
+    );
+
+    // Verify 'All Issues' default pill is present
+    expect(screen.getByText('All Issues')).toBeInTheDocument();
+
+    // Verify favorite saved filter 'Critical Bugs Queue' is rendered directly as a quick-access pill
+    expect(screen.getByText('Critical Bugs Queue')).toBeInTheDocument();
+
+    // Verify 'More' dropdown trigger is present
+    expect(screen.getByText('More')).toBeInTheDocument();
   });
 });

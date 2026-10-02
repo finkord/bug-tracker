@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { SavedFilterPreset } from '../../types/search';
 import { SYSTEM_FILTER_PRESETS } from '../../types/search';
 import { Modal, Button, Badge, Tabs, TabsList, TabsTrigger } from '../ui';
-import { Star, Trash2, ArrowRight, Bookmark } from 'lucide-react';
+import { Star, Trash2, ArrowRight, Bookmark, Pencil } from 'lucide-react';
 
 interface ManageFiltersModalProps {
   isOpen: boolean;
@@ -11,6 +11,7 @@ interface ManageFiltersModalProps {
   onApplyFilter: (jql: string) => void;
   onToggleFavorite: (filterId: string) => void;
   onDeleteFilter: (filterId: string) => void;
+  onEditFilter?: (filter: SavedFilterPreset) => void;
 }
 
 export const ManageFiltersModal: React.FC<ManageFiltersModalProps> = ({
@@ -20,6 +21,7 @@ export const ManageFiltersModal: React.FC<ManageFiltersModalProps> = ({
   onApplyFilter,
   onToggleFavorite,
   onDeleteFilter,
+  onEditFilter,
 }) => {
   const [activeTab, setActiveTab] = useState<'custom' | 'system'>('custom');
 
@@ -91,6 +93,16 @@ export const ManageFiltersModal: React.FC<ManageFiltersModalProps> = ({
                   </div>
 
                   <div className="flex items-center gap-2 pl-6 sm:pl-0 shrink-0">
+                    {onEditFilter && (
+                      <button
+                        type="button"
+                        onClick={() => onEditFilter(filter)}
+                        className="p-1.5 rounded-lg text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] hover:bg-[var(--md-sys-color-surface-container-high)] transition cursor-pointer"
+                        title="Edit filter details"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => onDeleteFilter(filter.id)}
@@ -102,14 +114,14 @@ export const ManageFiltersModal: React.FC<ManageFiltersModalProps> = ({
                     <Button
                       variant="outline"
                       size="sm"
+                      rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
                       onClick={() => {
                         onApplyFilter(filter.jql);
                         onClose();
                       }}
-                      className="gap-1 text-xs"
+                      className="text-xs whitespace-nowrap shrink-0"
                     >
-                      <span>Apply</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
+                      Apply
                     </Button>
                   </div>
                 </div>
@@ -146,14 +158,14 @@ export const ManageFiltersModal: React.FC<ManageFiltersModalProps> = ({
                   <Button
                     variant="outline"
                     size="sm"
+                    rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
                     onClick={() => {
                       onApplyFilter(preset.jql);
                       onClose();
                     }}
-                    className="gap-1 text-xs"
+                    className="text-xs whitespace-nowrap shrink-0"
                   >
-                    <span>Apply</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    Apply
                   </Button>
                 </div>
               </div>

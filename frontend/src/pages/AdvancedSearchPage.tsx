@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   useIssuesQuery,
   useProjectsQuery,
@@ -18,7 +18,7 @@ import { SearchResultsTable } from '../components/search/SearchResultsTable';
 import { SearchSplitView } from '../components/search/SearchSplitView';
 import { SaveFilterModal } from '../components/search/SaveFilterModal';
 import { ManageFiltersModal } from '../components/search/ManageFiltersModal';
-import { IssueDetailsModal } from '../components/kanban/IssueDetailsModal';
+import { EditFilterModal } from '../components/search/EditFilterModal';
 import type {
   SearchMode,
   ViewLayout,
@@ -29,6 +29,7 @@ import { buildJqlFromFilters } from '../utils/jqlParser';
 
 export const AdvancedSearchPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   // Search Mode & Layout View
   const [mode, setMode] = useState<SearchMode>(() => {
@@ -61,13 +62,14 @@ export const AdvancedSearchPage: React.FC = () => {
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(50);
 
-  // Selected Issue for Split View / Details Modal
+  // Selected Issue for Split View
   const [selectedIssueId, setSelectedIssueId] = useState<number | null>(null);
-  const [detailsModalIssue, setDetailsModalIssue] = useState<IssueItem | null>(null);
 
   // Modals
   const [saveModalOpen, setSaveModalOpen] = useState<boolean>(false);
   const [manageFiltersOpen, setManageFiltersOpen] = useState<boolean>(false);
+  const [activeFilterId, setActiveFilterId] = useState<string | null>(null);
+  const [editingFilter, setEditingFilter] = useState<SavedFilterPreset | null>(null);
 
   // Saved Filters from backend database
   const { data: savedFiltersData = [], isLoading: filtersLoading, refetch: refetchSavedFilters } = useSavedFiltersQuery();
@@ -102,6 +104,16 @@ export const AdvancedSearchPage: React.FC = () => {
       sortOrder,
     });
   }, [mode, jqlQuery, searchQuery, basicFilters, sortBy, sortOrder]);
+
+  const activeSavedFilter = useMemo(
+    () => savedFilters.find((f) => String(f.id) === String(activeFilterId)),
+    [savedFilters, activeFilterId]
+  );
+
+  const isFilterDirty = useMemo(() => {
+    if (!activeSavedFilter) return false;
+    return effectiveJql.trim() !== (activeSavedFilter.jql || '').trim();
+  }, [activeSavedFilter, effectiveJql]);
 
   // TanStack Query Hooks for core server data with server-side JQL execution & pagination
   const {
@@ -209,11 +221,72 @@ export const AdvancedSearchPage: React.FC = () => {
     setPage(1);
   };
 
-  // Handle Saved Filter selection
-  const handleSelectSavedFilter = (jql: string) => {
-    setJqlQuery(jql);
-    setMode('jql');
+  // Handle Saved Filter selection (accepts SavedFilterPreset, filter object, or raw jql string)
+  const handleSelectSavedFilter = (
+    filterOrJql: SavedFilterPreset | { jql: string; id?: string } | string,
+  ) => {
+    if (typeof filterOrJql === 'string') {
+      setJqlQuery(filterOrJql);
+      setMode('jql');
+      const matched = savedFilters.find((f) => f.jql.trim() === filterOrJql.trim());
+      setActiveFilterId(matched ? matched.id : null);
+    } else {
+      setJqlQuery(filterOrJql.jql);
+      setMode('jql');
+      setActiveFilterId(filterOrJql.id || null);
+    }
     setPage(1);
+  };
+
+  // Clear active filter selection and reset filters
+  const handleClearActiveFilter = () => {
+    setActiveFilterId(null);
+    handleClearFilters();
+  };
+
+  // Direct save/update criteria for the active saved filter
+  const handleUpdateActiveFilter = async () => {
+    if (!activeSavedFilter) return;
+    try {
+      await updateFilterMutation.mutateAsync({
+        id: Number(activeSavedFilter.id),
+        criteria: effectiveJql,
+      });
+    } catch (err) {
+      console.error('Failed to update filter criteria:', err);
+    }
+  };
+
+  // Revert criteria to the active filter's saved JQL
+  const handleRevertActiveFilter = () => {
+    if (!activeSavedFilter) return;
+    setJqlQuery(activeSavedFilter.jql);
+    setMode('jql');
+  };
+
+  // Save changes from EditFilterModal
+  const handleSaveEditedFilter = async (updated: {
+    id: string;
+    name: string;
+    description: string;
+    jql: string;
+    isFavorite: boolean;
+  }) => {
+    try {
+      await updateFilterMutation.mutateAsync({
+        id: Number(updated.id),
+        name: updated.name,
+        description: updated.description,
+        criteria: updated.jql,
+        isFavorite: updated.isFavorite,
+      });
+      setEditingFilter(null);
+      if (activeFilterId === updated.id) {
+        setJqlQuery(updated.jql);
+      }
+    } catch (err) {
+      console.error('Failed to update filter details:', err);
+    }
   };
 
   // Handle Saving Filter to backend
@@ -323,7 +396,7 @@ export const AdvancedSearchPage: React.FC = () => {
   };
 
   return (
-    <div className="w-full min-h-full flex flex-col px-3 sm:px-5 py-4 animate-in fade-in duration-200">
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-5 flex-1 flex flex-col min-w-0 animate-in fade-in duration-200">
       {/* Top Search & Filter Toolbar */}
       <SearchToolbar
         mode={mode}
@@ -335,7 +408,13 @@ export const AdvancedSearchPage: React.FC = () => {
           }
         }}
         savedFilters={savedFilters}
+        activeFilterId={activeFilterId}
+        isFilterDirty={isFilterDirty}
         onSelectSavedFilter={handleSelectSavedFilter}
+        onUpdateActiveFilter={handleUpdateActiveFilter}
+        onRevertActiveFilter={handleRevertActiveFilter}
+        onEditFilter={(filter) => setEditingFilter(filter)}
+        onClearActiveFilter={handleClearActiveFilter}
         onSaveCurrentFilter={() => setSaveModalOpen(true)}
         onManageFilters={() => setManageFiltersOpen(true)}
         viewLayout={viewLayout}
@@ -372,7 +451,7 @@ export const AdvancedSearchPage: React.FC = () => {
       </div>
 
       {/* Main Results View */}
-      <div className="flex-1 mt-4">
+      <div className={`flex-1 min-h-0 flex flex-col mt-2 ${viewLayout === 'detail' ? 'h-[calc(100vh-215px)] min-h-[480px]' : ''}`}>
         {viewLayout === 'list' ? (
           <SearchResultsTable
             issues={issues}
@@ -386,7 +465,7 @@ export const AdvancedSearchPage: React.FC = () => {
               setPage(1);
             }}
             selectedIssueId={selectedIssueId}
-            onSelectIssue={(issue) => setDetailsModalIssue(issue)}
+            onSelectIssue={(issue) => navigate(`/issues/${issue.key}`, { state: { from: 'search', label: 'Back to Search' } })}
             onUpdateStatus={handleUpdateStatus}
             sortBy={sortBy}
             sortOrder={sortOrder}
@@ -423,13 +502,19 @@ export const AdvancedSearchPage: React.FC = () => {
         onApplyFilter={handleSelectSavedFilter}
         onToggleFavorite={handleToggleFavorite}
         onDeleteFilter={handleDeleteFilter}
+        onEditFilter={(filter) => {
+          setManageFiltersOpen(false);
+          setEditingFilter(filter);
+        }}
       />
 
-      {/* Detailed Modal on Row Double Click */}
-      <IssueDetailsModal
-        isOpen={!!detailsModalIssue}
-        issueId={detailsModalIssue?.id ?? null}
-        onClose={() => setDetailsModalIssue(null)}
+      {/* Edit Filter Modal */}
+      <EditFilterModal
+        isOpen={!!editingFilter}
+        onClose={() => setEditingFilter(null)}
+        filter={editingFilter}
+        onSave={handleSaveEditedFilter}
+        onDelete={handleDeleteFilter}
       />
     </div>
   );
