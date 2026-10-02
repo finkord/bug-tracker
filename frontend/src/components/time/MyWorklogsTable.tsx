@@ -1,6 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import type { WorklogItem } from '../../api/client';
+import type { WorklogItem, IssueItem, IssueStatus } from '../../api/client';
+import { IssueContextMenu } from '../common/IssueContextMenu';
+import { useAssignIssueToMeMutation, useUpdateIssueStatusMutation } from '../../api/queries';
+import { useAuth } from '../../store';
 import { Button } from '../ui';
 import {
   Clock,
@@ -42,6 +45,50 @@ export const MyWorklogsTable: React.FC<MyWorklogsTableProps> = ({
   onOpenLogModal,
   onDeleteWorklog,
 }) => {
+  const { user } = useAuth();
+  const assignMutation = useAssignIssueToMeMutation();
+  const updateStatusMutation = useUpdateIssueStatusMutation();
+
+  const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
+  const [contextMenuIssue, setContextMenuIssue] = useState<IssueItem | null>(null);
+
+  const handleContextMenu = (e: React.MouseEvent, rawIssue: NonNullable<WorklogItem['issue']>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const issueItem: IssueItem = {
+      id: rawIssue.id,
+      key: rawIssue.key,
+      title: rawIssue.title,
+      status: rawIssue.status,
+      priority: rawIssue.priority,
+      issueType: 'TASK',
+      projectId: 0,
+      createdAt: '',
+      updatedAt: '',
+      reporter: { id: 0, fullName: '', email: '' },
+      estimatedHours: 0,
+      loggedHours: 0,
+    };
+    setContextMenuIssue(issueItem);
+    setContextMenuPos({ x: e.clientX, y: e.clientY });
+  };
+
+  const handleStatusChange = async (issueId: number, status: IssueStatus) => {
+    try {
+      await updateStatusMutation.mutateAsync({ issueId, status });
+    } catch {
+      // Ignored
+    }
+  };
+
+  const handleAssignToMe = async (issueId: number) => {
+    try {
+      await assignMutation.mutateAsync(issueId);
+    } catch {
+      // Ignored
+    }
+  };
+
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
 
@@ -214,6 +261,11 @@ export const MyWorklogsTable: React.FC<MyWorklogsTableProps> = ({
                   return (
                     <tr
                       key={log.id}
+                      onContextMenu={(e) => {
+                        if (log.issue) {
+                          handleContextMenu(e, log.issue);
+                        }
+                      }}
                       className="hover:bg-[var(--md-sys-color-surface-container-highest)]/30 transition-colors"
                     >
                       {/* Date */}
@@ -238,6 +290,7 @@ export const MyWorklogsTable: React.FC<MyWorklogsTableProps> = ({
                           <div className="flex items-center gap-2">
                             <Link
                               to={`/issues/${log.issue.key}`}
+                              state={{ from: '/time-tracking', label: 'Back to Time Tracking' }}
                               className="font-mono font-bold text-[var(--md-sys-color-primary)] hover:underline shrink-0"
                             >
                               {log.issue.key}
@@ -426,6 +479,21 @@ export const MyWorklogsTable: React.FC<MyWorklogsTableProps> = ({
             </div>
           )}
         </div>
+      )}
+
+      {/* Right-Click Context Menu */}
+      {contextMenuPos && contextMenuIssue && (
+        <IssueContextMenu
+          issue={contextMenuIssue}
+          position={contextMenuPos}
+          onClose={() => {
+            setContextMenuPos(null);
+            setContextMenuIssue(null);
+          }}
+          onStatusChange={handleStatusChange}
+          onAssignToMe={handleAssignToMe}
+          currentUserId={user?.id}
+        />
       )}
     </div>
   );

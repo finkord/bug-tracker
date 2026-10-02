@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import type { IssueItem, IssueType } from '../../api/client';
+import type { IssueItem, IssueType, IssueStatus } from '../../api/client';
+import { IssueContextMenu } from '../common/IssueContextMenu';
+import { useAssignIssueToMeMutation, useUpdateIssueStatusMutation } from '../../api/queries';
+import { useAuth } from '../../store';
 import { Avatar } from '../common/Avatar';
 import { Badge, Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../ui';
 import {
@@ -21,6 +24,36 @@ export const IssueEstimatesView: React.FC<IssueEstimatesViewProps> = ({
   issues,
   onOpenLogWorkForIssue,
 }) => {
+  const { user } = useAuth();
+  const assignMutation = useAssignIssueToMeMutation();
+  const updateStatusMutation = useUpdateIssueStatusMutation();
+
+  const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
+  const [contextMenuIssue, setContextMenuIssue] = useState<IssueItem | null>(null);
+
+  const handleContextMenu = (e: React.MouseEvent, issue: IssueItem) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenuIssue(issue);
+    setContextMenuPos({ x: e.clientX, y: e.clientY });
+  };
+
+  const handleStatusChange = async (issueId: number, status: IssueStatus) => {
+    try {
+      await updateStatusMutation.mutateAsync({ issueId, status });
+    } catch {
+      // Ignored
+    }
+  };
+
+  const handleAssignToMe = async (issueId: number) => {
+    try {
+      await assignMutation.mutateAsync(issueId);
+    } catch {
+      // Ignored
+    }
+  };
+
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
 
@@ -117,12 +150,18 @@ export const IssueEstimatesView: React.FC<IssueEstimatesViewProps> = ({
                 const isOverEstimate = estimated > 0 && logged > estimated;
 
                 return (
-                  <tr key={issue.id} className="hover:bg-[var(--md-sys-color-surface-container-high)]/40 transition">
+                  <tr
+                    key={issue.id}
+                    onContextMenu={(e) => handleContextMenu(e, issue)}
+                    className="hover:bg-[var(--md-sys-color-surface-container-high)]/40 transition cursor-pointer select-none"
+                  >
                     {/* Key */}
                     <td className="py-2.5 px-4 font-mono font-bold whitespace-nowrap">
                       <Link
                         to={`/issues/${issue.key}`}
+                        state={{ from: '/time-tracking', label: 'Back to Time Tracking' }}
                         className="text-[var(--md-sys-color-primary)] hover:underline"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         {issue.key}
                       </Link>
@@ -137,7 +176,9 @@ export const IssueEstimatesView: React.FC<IssueEstimatesViewProps> = ({
                     <td className="py-2.5 px-4">
                       <Link
                         to={`/issues/${issue.key}`}
+                        state={{ from: '/time-tracking', label: 'Back to Time Tracking' }}
                         className="font-semibold text-xs text-[var(--md-sys-color-on-surface)] hover:text-[var(--md-sys-color-primary)] line-clamp-1"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         {issue.title}
                       </Link>
@@ -220,6 +261,21 @@ export const IssueEstimatesView: React.FC<IssueEstimatesViewProps> = ({
           </tbody>
         </table>
       </div>
+
+      {/* Right-Click Context Menu */}
+      {contextMenuPos && contextMenuIssue && (
+        <IssueContextMenu
+          issue={contextMenuIssue}
+          position={contextMenuPos}
+          onClose={() => {
+            setContextMenuPos(null);
+            setContextMenuIssue(null);
+          }}
+          onStatusChange={handleStatusChange}
+          onAssignToMe={handleAssignToMe}
+          currentUserId={user?.id}
+        />
+      )}
     </div>
   );
 };

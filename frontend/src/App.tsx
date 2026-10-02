@@ -3,12 +3,17 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './api/queryClient';
 import { useAuth, useSidebar } from './store';
+import { useDragAutoScroll } from './hooks/useDragAutoScroll';
+import { useGlobalKeyboardShortcuts } from './hooks/useGlobalKeyboardShortcuts';
+import { useScrollRestoration } from './hooks/useScrollRestoration';
 import { SessionExpiredModal } from './components/common/SessionExpiredModal';
 import { WorkspaceHeader } from './components/workspace/WorkspaceHeader';
 import { Sidebar } from './components/common/Sidebar';
 import { Footer } from './components/common/Footer';
 import { ProtectedRoute, AdminRoute, PublicOnlyRoute } from './components/common/ProtectedRoute';
 import { PageSkeletonLoader } from './components/common/PageSkeletonLoader';
+import { TicketDragOverlay } from './components/common/TicketDragOverlay';
+import { KeyboardShortcutsModal } from './components/common/KeyboardShortcutsModal';
 import { Menu, Shield } from 'lucide-react';
 
 const HomePage = React.lazy(() =>
@@ -32,6 +37,9 @@ const ResetPasswordPage = React.lazy(() =>
 const ProfilePage = React.lazy(() =>
   import('./pages/ProfilePage').then((m) => ({ default: m.ProfilePage })),
 );
+const UserProfileViewPage = React.lazy(() =>
+  import('./pages/UserProfileViewPage').then((m) => ({ default: m.UserProfileViewPage })),
+);
 const PreferencesPage = React.lazy(() =>
   import('./pages/PreferencesPage').then((m) => ({ default: m.PreferencesPage })),
 );
@@ -50,6 +58,9 @@ const IssueDetailPage = React.lazy(() =>
 const AdvancedSearchPage = React.lazy(() =>
   import('./pages/AdvancedSearchPage').then((m) => ({ default: m.AdvancedSearchPage })),
 );
+const MyIssuesPage = React.lazy(() =>
+  import('./pages/MyIssuesPage').then((m) => ({ default: m.MyIssuesPage })),
+);
 const TimeTrackingPage = React.lazy(() =>
   import('./pages/TimeTrackingPage').then((m) => ({ default: m.TimeTrackingPage })),
 );
@@ -59,13 +70,21 @@ const AdminDashboardPage = React.lazy(() =>
 const ProjectSettingsPage = React.lazy(() =>
   import('./pages/ProjectSettingsPage').then((m) => ({ default: m.ProjectSettingsPage })),
 );
+const ProjectOverviewPage = React.lazy(() =>
+  import('./pages/ProjectOverviewPage').then((m) => ({ default: m.ProjectOverviewPage })),
+);
 const OAuthCallbackPage = React.lazy(() =>
   import('./pages/OAuthCallbackPage').then((m) => ({ default: m.OAuthCallbackPage })),
 );
 
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
-  const { toggleMobile } = useSidebar();
+  const { toggleMobile, collapsed, collapseMode } = useSidebar();
+  const isZeroPxSidebar = collapsed && collapseMode === 'hidden';
+
+  useDragAutoScroll();
+  useGlobalKeyboardShortcuts(Boolean(user));
+  useScrollRestoration('main-content');
 
   if (loading) {
     return <PageSkeletonLoader />;
@@ -84,7 +103,11 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         <main
           id="main-content"
           tabIndex={-1}
-          className={`flex-1 min-w-0 overflow-y-auto overflow-x-hidden mx-1 mb-1 sm:mx-2 sm:mb-2 md:mr-3 md:mb-3 md:mx-0 bg-[var(--md-sys-color-background)] rounded-xl sm:rounded-2xl md:rounded-3xl border border-[var(--md-sys-color-outline-variant)]/25 shadow-xs transition-all duration-200 flex flex-col ${
+          className={`flex-1 min-w-0 outline-none focus:outline-none focus-visible:outline-none overflow-y-auto overflow-x-hidden mb-1 sm:mb-2 md:mb-3 bg-[var(--md-sys-color-background)] rounded-xl sm:rounded-2xl md:rounded-3xl border border-[var(--md-sys-color-outline-variant)]/25 shadow-xs transition-[margin,colors] duration-200 ease-in-out flex flex-col ${
+            isZeroPxSidebar
+              ? 'mx-1 sm:mx-2 md:mx-3'
+              : 'mr-1 sm:mr-2 md:mr-3 ml-0'
+          } ${
             !user ? 'mt-1 sm:mt-2 md:mt-3' : ''
           }`}
         >
@@ -115,6 +138,8 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           {!user && <Footer />}
         </main>
       </div>
+      <TicketDragOverlay />
+      <KeyboardShortcutsModal />
     </div>
   );
 };
@@ -173,6 +198,14 @@ export const App: React.FC = () => {
                 }
               />
               <Route
+                path="/my-issues"
+                element={
+                  <ProtectedRoute>
+                    <MyIssuesPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/projects"
                 element={
                   <ProtectedRoute>
@@ -181,26 +214,10 @@ export const App: React.FC = () => {
                 }
               />
               <Route
-                path="/board"
-                element={
-                  <ProtectedRoute>
-                    <KanbanBoardPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
                 path="/projects/:projectId/board"
                 element={
                   <ProtectedRoute>
                     <KanbanBoardPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/backlog"
-                element={
-                  <ProtectedRoute>
-                    <BacklogPage />
                   </ProtectedRoute>
                 }
               />
@@ -245,6 +262,14 @@ export const App: React.FC = () => {
                 }
               />
               <Route
+                path="/users/:id"
+                element={
+                  <ProtectedRoute>
+                    <UserProfileViewPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/preferences"
                 element={
                   <ProtectedRoute>
@@ -253,7 +278,33 @@ export const App: React.FC = () => {
                 }
               />
 
+              {/* Project Overview Hub */}
+              <Route
+                path="/projects/:projectId"
+                element={
+                  <ProtectedRoute>
+                    <ProjectOverviewPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/projects/:id"
+                element={
+                  <ProtectedRoute>
+                    <ProjectOverviewPage />
+                  </ProtectedRoute>
+                }
+              />
+
               {/* Project Settings / People */}
+              <Route
+                path="/projects/:projectId/settings"
+                element={
+                  <ProtectedRoute>
+                    <ProjectSettingsPage />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/projects/:id/settings"
                 element={

@@ -7,7 +7,8 @@ import { Clock, Trophy, Flame, Award, Sparkles, Zap, Target } from 'lucide-react
  * Material 3 Personal Time & Effort tab with streak calculation, milestone badges, and monthly calendar.
  */
 export const ProfileTimeTab: React.FC = () => {
-  const { data: myLogs = [] } = useMyWorklogsQuery();
+  const { data: myWorklogsData } = useMyWorklogsQuery(1, 100);
+  const myLogs = myWorklogsData?.items || [];
   const [calendarDate, setCalendarDate] = useState<Date>(new Date());
 
   // Compute daily hours for personal calendar

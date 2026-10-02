@@ -557,3 +557,27 @@ iframe[src*="challenges.cloudflare.com"],
 .animate-banner-marquee:hover {
   animation-play-state: paused;
 }
+
+/* ========================================================================= */
+/* Drag-and-Drop Active Session Optimization                                 */
+/* ========================================================================= */
+body.is-dragging-ticket * {
+  user-select: none !important;
+}
+
+body.is-dragging-ticket {
+  cursor: grabbing !important;
+}
+
+/* ========================================================================= */
+/* Main Content Focus Outline Suppression                                   */
+/* ========================================================================= */
+#main-content {
+  outline: none !important;
+}
+
+#main-content:focus,
+#main-content:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}

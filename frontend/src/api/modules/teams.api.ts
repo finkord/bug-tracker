@@ -1,4 +1,4 @@
-import { request } from '../http.js';
+import { request, API_BASE_URL } from '../http.js';
 import type {
   TeamItem,
   TeamMemberItem,
@@ -67,5 +67,37 @@ export const teamsApi = {
     return request<TeamCapacityReport>(
       `/teams/${teamId}/capacity?sprintWeeks=${sprintWeeks}`,
     );
+  },
+
+  uploadTeamAvatar: async (teamId: number, file: File): Promise<{ message: string; avatarUrl: string }> => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    const token = localStorage.getItem('accessToken');
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const res = await fetch(`${API_BASE_URL}/teams/${teamId}/avatar/upload`, {
+      method: 'POST',
+      credentials: 'include',
+      headers,
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to upload team avatar');
+    }
+
+    return res.json();
+  },
+
+  updateTeamAvatar: (teamId: number, avatarUrl: string) => {
+    return request<{ message: string; avatarUrl: string }>(`/teams/${teamId}/avatar`, {
+      method: 'PATCH',
+      body: JSON.stringify({ avatarUrl }),
+    });
   },
 };

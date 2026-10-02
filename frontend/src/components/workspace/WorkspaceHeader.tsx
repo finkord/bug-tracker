@@ -1,58 +1,74 @@
-import React, { useState } from 'react';
-import { Menu } from 'lucide-react';
+import React from 'react';
+import { Menu, PanelLeft } from 'lucide-react';
 import { useAuth, useSidebar } from '../../store';
+import { HeaderBreadcrumbs } from './HeaderBreadcrumbs';
 import { WorkspaceGlobalSearch } from './WorkspaceGlobalSearch';
 import { WorkspaceBroadcastBanner } from './WorkspaceBroadcastBanner';
-import { WorkspaceQuickFiltersMenu } from './WorkspaceQuickFiltersMenu';
 import { WorkspaceCreateIssueAction } from './WorkspaceCreateIssueAction';
-import { WorkspaceUserMenu } from './WorkspaceUserMenu';
+import { NotificationBell } from '../notifications/NotificationBell';
+import { Tooltip } from '../ui/Tooltip';
 
 /**
- * Workspace top control strip for authenticated application sessions.
- * Coordinates global search, announcements, quick filters, creation, and user controls.
+ * Slim Workspace Header (44px) for authenticated application sessions.
+ * Provides clean breadcrumbs, fast search chip, creation trigger, and notifications
+ * while maximizing vertical canvas space for Kanban boards and backlogs.
  */
 export const WorkspaceHeader: React.FC = () => {
-  const { user, logout } = useAuth();
-  const { toggleMobile } = useSidebar();
-  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const { user } = useAuth();
+  const { toggleMobile, collapsed, toggleSidebar } = useSidebar();
 
   if (!user) return null;
 
   return (
-    <header className="w-full h-14 sm:h-16 flex items-center px-2.5 sm:px-4 gap-2 sm:gap-3 shrink-0 select-none z-10 transition-colors duration-200 relative">
-      {/* Search Bar / Mobile Search Overlay */}
-      <WorkspaceGlobalSearch
-        isMobileOpen={isMobileSearchOpen}
-        onMobileToggle={setIsMobileSearchOpen}
-      />
+    <header className="w-full h-11 flex items-center px-3 sm:px-4 justify-between gap-3 shrink-0 select-none z-10 border-b border-[var(--md-sys-color-outline-variant)]/15 bg-[var(--md-sys-color-surface-container-low)] transition-colors duration-200">
+      {/* Left Column: Mobile Drawer Toggle + Desktop Expand Toggle + Breadcrumbs (flex-1, left-aligned) */}
+      <div className="flex-1 min-w-0 flex items-center justify-start gap-2">
+        <button
+          type="button"
+          onClick={toggleMobile}
+          className="md:hidden w-8 h-8 rounded-lg bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] flex items-center justify-center cursor-pointer shrink-0 transition-colors border border-[var(--md-sys-color-outline-variant)]/20 shadow-2xs"
+          aria-label="Open sidebar navigation"
+        >
+          <Menu className="w-4 h-4" />
+        </button>
 
-      {!isMobileSearchOpen && (
-        <>
-          {/* Left: Mobile Drawer Toggle + Announcement Banner */}
-          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
-            <button
-              type="button"
-              onClick={toggleMobile}
-              className="md:hidden w-9 h-9 rounded-xl bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] flex items-center justify-center cursor-pointer shrink-0 transition-colors border border-[var(--md-sys-color-outline-variant)]/20 shadow-2xs"
-              aria-label="Open sidebar navigation"
-            >
-              <Menu className="w-4 h-4" />
-            </button>
+        {/* Desktop Sidebar Toggle (Permanent Static Placement) */}
+        <Tooltip
+          content={
+            <span>
+              {collapsed ? 'Expand sidebar' : 'Collapse sidebar'}{' '}
+              <kbd className="ml-1 text-[10px] opacity-70 font-mono">[</kbd>
+            </span>
+          }
+          side="bottom"
+        >
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            className="hidden md:flex w-7 h-7 rounded-lg hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] items-center justify-center cursor-pointer shrink-0 transition-colors"
+            aria-label={collapsed ? 'Expand sidebar navigation' : 'Collapse sidebar navigation'}
+          >
+            <PanelLeft className="w-4 h-4" />
+          </button>
+        </Tooltip>
 
-            <WorkspaceBroadcastBanner />
-          </div>
+        <HeaderBreadcrumbs />
 
-          {/* Right Controls: Quick Filters, Create Action, User Avatar Menu */}
-          <div className="shrink-0 flex items-center gap-1.5 sm:gap-2">
-            <WorkspaceQuickFiltersMenu />
+        <div className="hidden xl:block ml-2 min-w-0">
+          <WorkspaceBroadcastBanner />
+        </div>
+      </div>
 
-            <WorkspaceCreateIssueAction />
+      {/* Center Column: Quick Search Command Pill (shrink-0, centered) */}
+      <div className="hidden sm:flex shrink-0 items-center justify-center px-2">
+        <WorkspaceGlobalSearch />
+      </div>
 
-            <WorkspaceUserMenu user={user} onLogout={logout} />
-          </div>
-        </>
-      )}
+      {/* Right Column: Actions (flex-1, right-aligned) */}
+      <div className="flex-1 min-w-0 flex items-center justify-end gap-1.5 sm:gap-2">
+        <WorkspaceCreateIssueAction />
+        <NotificationBell />
+      </div>
     </header>
   );
 };
-

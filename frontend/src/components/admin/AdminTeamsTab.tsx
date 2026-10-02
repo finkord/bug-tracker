@@ -29,8 +29,6 @@ import {
   CheckCircle,
   AlertTriangle,
   UserPlus,
-  Shield,
-  Layers,
 } from 'lucide-react';
 
 const ROLE_LABELS: Record<TeamMemberRole, string> = {
@@ -61,7 +59,7 @@ export const AdminTeamsTab: React.FC = () => {
   );
   const { data: projects = [] } = useProjectsQuery();
   const { data: usersData } = useUsersQuery({ limit: 200 });
-  const users = usersData?.data || [];
+  const users = usersData?.items || [];
 
   const createTeamMutation = useCreateTeamMutation();
   const updateTeamMutation = useUpdateTeamMutation();
@@ -446,7 +444,7 @@ export const AdminTeamsTab: React.FC = () => {
                     {team.lead ? (
                       <div className="flex items-center gap-2">
                         <Avatar
-                          src={team.lead.avatarUrl}
+                          avatarUrl={team.lead.avatarUrl}
                           name={team.lead.fullName || team.lead.email}
                           size="xs"
                         />
@@ -563,7 +561,7 @@ export const AdminTeamsTab: React.FC = () => {
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
                             <Avatar
-                              src={member.user?.avatarUrl}
+                              avatarUrl={member.user?.avatarUrl}
                               name={member.user?.fullName || member.user?.email || 'Member'}
                               size="sm"
                             />

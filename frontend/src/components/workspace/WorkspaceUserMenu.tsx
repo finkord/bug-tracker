@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Sliders, LogOut } from 'lucide-react';
+import { User, Sliders, LogOut, Shield } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -91,6 +91,16 @@ export const WorkspaceUserMenu: React.FC<WorkspaceUserMenuProps> = ({
           <Sliders className="w-3.5 h-3.5 text-[var(--md-sys-color-on-surface-variant)]" />
           <span>Preferences</span>
         </DropdownMenuItem>
+
+        {(user.isAdmin || user.systemRole === 'ADMIN') && (
+          <DropdownMenuItem
+            onClick={() => navigate('/admin')}
+            className="flex items-center gap-2 cursor-pointer font-semibold text-[var(--md-sys-color-primary)]"
+          >
+            <Shield className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
+            <span>Admin Console</span>
+          </DropdownMenuItem>
+        )}
 
         <DropdownMenuSeparator />
 

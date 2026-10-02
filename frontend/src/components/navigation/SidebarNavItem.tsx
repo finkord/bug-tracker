@@ -21,7 +21,7 @@ interface SidebarNavItemProps {
 
 /**
  * Individual navigation item inside the Super-Sidebar.
- * Implements M3 capsule active pill and zero-jitter 72px anchor slot.
+ * Implements high-density Linear-style compact layout (34px height, 16px icons, 13px text).
  */
 export const SidebarNavItem: React.FC<SidebarNavItemProps> = ({
   item,
@@ -38,70 +38,54 @@ export const SidebarNavItem: React.FC<SidebarNavItemProps> = ({
     ? location.pathname === item.path
     : location.pathname.startsWith(item.path);
 
-  const navLinkElement = (
-    <NavLink
-      to={item.path}
-      end={item.exact}
-      onClick={onNavigate}
-      className={`w-full flex items-center rounded-xl overflow-hidden transition-colors group select-none ${
-        collapsed && showCollapsedLabels ? 'py-1.5' : 'h-11'
-      } ${
-        !collapsed && isActive
-          ? 'bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] font-bold shadow-xs'
-          : !collapsed
-          ? 'text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)]'
-          : ''
-      }`}
-    >
-      {/* Fixed 72px left-anchored slot — stays stationary at x=0 in both states */}
-      <div className="w-[72px] shrink-0 flex flex-col items-center justify-center">
-        {/* M3 capsule indicator pill highlights the icon */}
-        <div
-          className={`w-14 h-8 rounded-full flex items-center justify-center transition-colors ${
-            collapsed && isActive
-              ? 'bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-primary)]'
-              : collapsed
-              ? 'text-[var(--md-sys-color-on-surface-variant)] group-hover:bg-[var(--md-sys-color-surface-container-high)] group-hover:text-[var(--md-sys-color-on-surface)]'
-              : isActive
-              ? 'text-[var(--md-sys-color-primary)]'
-              : 'text-[var(--md-sys-color-on-surface-variant)]'
-          }`}
-        >
-          <Icon className="w-5 h-5 shrink-0" />
-        </div>
-
-        {/* Short label text rendered exclusively when collapsed is active AND preference is enabled */}
-        {collapsed && showCollapsedLabels && (
-          <span
-            className={`text-[10px] leading-tight text-center whitespace-nowrap mt-0.5 animate-in fade-in duration-150 ${
-              isActive
-                ? 'font-bold text-[var(--md-sys-color-on-surface)]'
-                : 'font-medium text-[var(--md-sys-color-on-surface-variant)] group-hover:text-[var(--md-sys-color-on-surface)]'
-            }`}
-          >
+  if (collapsed) {
+    const railContent = (
+      <NavLink
+        to={item.path}
+        end={item.exact}
+        onClick={onNavigate}
+        className={`w-9 h-9 mx-auto rounded-lg flex flex-col items-center justify-center transition-all group select-none ${
+          isActive
+            ? 'bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] font-semibold shadow-2xs'
+            : 'text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)]'
+        }`}
+        aria-label={item.label}
+      >
+        <Icon className="w-4 h-4 shrink-0" />
+        {showCollapsedLabels && (
+          <span className="text-[9px] leading-tight mt-0.5 font-medium truncate max-w-[32px]">
             {item.shortLabel}
           </span>
         )}
-      </div>
+      </NavLink>
+    );
 
-      {/* Full label for expanded drawer mode */}
-      <span
-        className={`text-xs font-semibold whitespace-nowrap truncate transition-opacity duration-200 ${
-          collapsed ? 'opacity-0 w-0 pointer-events-none' : 'opacity-100 flex-1 pr-3'
-        }`}
-      >
-        {item.label}
-      </span>
-    </NavLink>
-  );
-
-  if (collapsed) {
     return (
-      <Tooltip content={item.label} side="right">
-        {navLinkElement}
+      <Tooltip content={item.label} side="right" sideOffset={8}>
+        {railContent}
       </Tooltip>
     );
   }
 
-  return navLinkElement;
+  return (
+    <NavLink
+      to={item.path}
+      end={item.exact}
+      onClick={onNavigate}
+      className={`w-full h-[34px] px-2.5 flex items-center gap-2.5 rounded-lg transition-colors select-none text-[13px] ${
+        isActive
+          ? 'bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] font-semibold shadow-2xs'
+          : 'text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)] font-medium'
+      }`}
+    >
+      <Icon
+        className={`w-4 h-4 shrink-0 ${
+          isActive
+            ? 'text-[var(--md-sys-color-primary)]'
+            : 'text-[var(--md-sys-color-on-surface-variant)] group-hover:text-[var(--md-sys-color-on-surface)]'
+        }`}
+      />
+      <span className="truncate flex-1 leading-none">{item.label}</span>
+    </NavLink>
+  );
 };

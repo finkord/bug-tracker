@@ -75,6 +75,30 @@ export function useDeleteTeamMutation() {
   });
 }
 
+export function useUploadTeamAvatarMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ teamId, file }: { teamId: number; file: File }) =>
+      api.uploadTeamAvatar(teamId, file),
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({ queryKey: teamKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: teamKeys.detail(vars.teamId) });
+    },
+  });
+}
+
+export function useUpdateTeamAvatarMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ teamId, avatarUrl }: { teamId: number; avatarUrl: string }) =>
+      api.updateTeamAvatar(teamId, avatarUrl),
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({ queryKey: teamKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: teamKeys.detail(vars.teamId) });
+    },
+  });
+}
+
 export function useAddTeamMemberMutation() {
   const queryClient = useQueryClient();
   return useMutation({

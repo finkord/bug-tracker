@@ -19,3 +19,10 @@ HTMLElement.prototype.getBoundingClientRect = function () {
     toJSON: () => '',
   };
 };
+
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+window.ResizeObserver = global.ResizeObserver;

@@ -3,3 +3,7 @@ export * from './useProjects';
 export * from './useIssues';
 export * from './useIssueDetails';
 export * from './useWorklogs';
+export * from './useDragAutoScroll';
+export * from './useGlobalKeyboardShortcuts';
+export * from './useListKeyboardNavigation';
+export * from './useScrollRestoration';

@@ -26,7 +26,7 @@ export const ProfilePage: React.FC = () => {
   if (!user) return null;
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6 animate-in fade-in duration-200">
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-5 flex-1 flex flex-col min-w-0 space-y-6 animate-in fade-in duration-200">
       {/* 1. Profile Overview Header Card with Inline Profile Editing */}
       <ProfileOverviewHeader />
 

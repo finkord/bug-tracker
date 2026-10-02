@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useAuth } from '../../store';
 import { api, usersApi } from '../../api/client';
-import { X, User, Briefcase, Image, Check, UploadCloud, Trash2 } from 'lucide-react';
+import { X, User, Briefcase, UploadCloud, Trash2 } from 'lucide-react';
 import { Button } from '../ui';
 
 interface EditProfileModalProps {
@@ -10,17 +10,9 @@ interface EditProfileModalProps {
   onSuccess: () => void;
 }
 
-const AVATAR_PRESETS = [
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
-];
-
 /**
  * Material 3 Modal for updating profile details (Full Name, Job Title, Avatar) with native SeaweedFS storage.
+ * Only accepts direct image file uploads from the device.
  */
 export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   isOpen,
@@ -34,7 +26,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || '');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
-  const [customAvatarInput, setCustomAvatarInput] = useState('');
+  const [isAvatarRemoved, setIsAvatarRemoved] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -52,15 +44,17 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
     }
     setError(null);
     setSelectedFile(file);
+    setIsAvatarRemoved(false);
     const reader = new FileReader();
     reader.onload = (e) => setFilePreview(e.target?.result as string);
     reader.readAsDataURL(file);
-    setCustomAvatarInput('');
   };
 
-  const handleClearSelectedFile = () => {
+  const handleRemoveAvatar = () => {
     setSelectedFile(null);
     setFilePreview(null);
+    setAvatarUrl('');
+    setIsAvatarRemoved(true);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -79,12 +73,9 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       // 2. Upload Avatar File to SeaweedFS if selected
       if (selectedFile) {
         await usersApi.uploadAvatar(selectedFile);
-      } else {
-        // Otherwise update avatar URL / preset if changed
-        const finalAvatar = customAvatarInput.trim() || avatarUrl;
-        if (finalAvatar !== user.avatarUrl) {
-          await api.updateAvatar(finalAvatar);
-        }
+      } else if (isAvatarRemoved) {
+        // Clear avatar if user explicitly removed it
+        await api.updateAvatar('');
       }
 
       onSuccess();
@@ -165,10 +156,10 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
 
           <div>
             <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] mb-2">
-              Avatar (Upload File or Choose Preset)
+              Profile Photo (Images only)
             </label>
 
-            {/* SeaweedFS File Upload Dropzone */}
+            {/* Hidden file input */}
             <input
               ref={fileInputRef}
               type="file"
@@ -180,85 +171,58 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
               }}
             />
 
-            {filePreview ? (
-              <div className="flex items-center justify-between p-3 mb-3 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-primary)]/40">
+            {filePreview || (avatarUrl && !isAvatarRemoved) ? (
+              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/40">
                 <div className="flex items-center gap-3">
                   <img
-                    src={filePreview}
-                    alt="Uploaded preview"
-                    className="w-12 h-12 rounded-xl object-cover border border-[var(--md-sys-color-outline-variant)]/40"
+                    src={filePreview || avatarUrl}
+                    alt="Profile avatar preview"
+                    className="w-12 h-12 rounded-xl object-cover border border-[var(--md-sys-color-outline-variant)]/40 shadow-xs"
                   />
                   <div>
                     <p className="text-xs font-semibold text-[var(--md-sys-color-on-surface)] truncate max-w-[200px]">
-                      {selectedFile?.name}
+                      {selectedFile ? selectedFile.name : 'Current Profile Photo'}
                     </p>
                     <p className="text-[10px] text-[var(--md-sys-color-on-surface-variant)]">
-                      {(Number(selectedFile?.size || 0) / 1024).toFixed(1)} KB (SeaweedFS storage)
+                      {selectedFile
+                        ? `${(Number(selectedFile.size) / 1024).toFixed(1)} KB (SeaweedFS storage)`
+                        : 'Stored in SeaweedFS'}
                     </p>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleClearSelectedFile}
-                  className="p-2 rounded-xl text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/30 transition-colors"
-                  title="Remove uploaded image"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-2.5 py-1.5 rounded-xl text-xs font-medium text-[var(--md-sys-color-primary)] hover:bg-[var(--md-sys-color-primary-container)]/20 transition-colors cursor-pointer"
+                  >
+                    Change
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRemoveAvatar}
+                    className="p-1.5 rounded-xl text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/30 transition-colors cursor-pointer"
+                    title="Remove avatar"
+                    aria-label="Remove avatar"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             ) : (
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="flex items-center justify-center gap-2 p-3 mb-3 rounded-2xl border border-dashed border-[var(--md-sys-color-outline-variant)] hover:border-[var(--md-sys-color-primary)] hover:bg-[var(--md-sys-color-surface-container)] cursor-pointer transition-all text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)]"
+                className="flex flex-col items-center justify-center gap-2 p-5 rounded-2xl border-2 border-dashed border-[var(--md-sys-color-outline-variant)] hover:border-[var(--md-sys-color-primary)] hover:bg-[var(--md-sys-color-surface-container)] cursor-pointer transition-all text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] text-center select-none"
               >
-                <UploadCloud className="w-4 h-4" />
-                <span className="text-xs font-medium">Upload photo from device (max 5MB)</span>
+                <div className="w-10 h-10 rounded-full bg-[var(--md-sys-color-surface-container-high)] flex items-center justify-center">
+                  <UploadCloud className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-xs font-semibold block">Click to upload photo</span>
+                  <span className="text-[11px] opacity-70 block mt-0.5">PNG, JPEG, WEBP, GIF, SVG up to 5MB</span>
+                </div>
               </div>
             )}
-
-            <div className="grid grid-cols-6 gap-2 mb-3">
-              {AVATAR_PRESETS.map((preset) => {
-                const isSelected = !selectedFile && avatarUrl === preset && !customAvatarInput;
-                return (
-                  <button
-                    key={preset}
-                    type="button"
-                    onClick={() => {
-                      handleClearSelectedFile();
-                      setAvatarUrl(preset);
-                      setCustomAvatarInput('');
-                    }}
-                    className={`relative w-12 h-12 rounded-2xl overflow-hidden border-2 transition-transform active:scale-95 ${
-                      isSelected
-                        ? 'border-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-primary)]/40 scale-105'
-                        : 'border-transparent opacity-80 hover:opacity-100'
-                    }`}
-                  >
-                    <img src={preset} alt="preset" className="w-full h-full object-cover" />
-                    {isSelected && (
-                      <div className="absolute inset-0 bg-[var(--md-sys-color-primary)]/30 flex items-center justify-center">
-                        <Check className="w-4 h-4 text-white drop-shadow-sm font-bold" />
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="relative">
-              <Image className="absolute left-3.5 top-3 w-4 h-4 text-[var(--md-sys-color-outline)]" />
-              <input
-                type="url"
-                value={customAvatarInput}
-                onChange={(e) => {
-                  handleClearSelectedFile();
-                  setCustomAvatarInput(e.target.value);
-                  if (e.target.value) setAvatarUrl(e.target.value);
-                }}
-                placeholder="Or paste custom image URL (https://...)"
-                className="w-full pl-10 pr-4 py-2.5 text-xs rounded-2xl bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]/40 font-medium focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)]"
-              />
-            </div>
           </div>
 
           <div className="flex items-center justify-end gap-2 pt-3 border-t border-[var(--md-sys-color-outline-variant)]/20">

@@ -325,6 +325,7 @@ export const WorklogCalendarView: React.FC<WorklogCalendarViewProps> = ({
                   <div className="flex items-center gap-1.5 min-w-0">
                     <Link
                       to={`/issues/${log.issueKey}`}
+                      state={{ from: '/time-tracking', label: 'Back to Time Tracking' }}
                       className="px-2 py-0.5 rounded-md font-mono font-bold text-[11px] bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] hover:bg-[var(--md-sys-color-primary)] hover:text-[var(--md-sys-color-on-primary)] transition shrink-0"
                     >
                       {log.issueKey}
@@ -356,6 +357,7 @@ export const WorklogCalendarView: React.FC<WorklogCalendarViewProps> = ({
                   {log.issueKey && (
                     <Link
                       to={`/issues/${log.issueKey}`}
+                      state={{ from: '/time-tracking', label: 'Back to Time Tracking' }}
                       className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--md-sys-color-primary)] hover:underline ml-auto"
                     >
                       <span>Open Issue</span>

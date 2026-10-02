@@ -17,6 +17,8 @@ vi.mock('../api/queries', () => ({
     mockUseMyWorklogsQuery(page, limit),
   useIssuesQuery: () => mockUseIssuesQuery(),
   useDeleteWorklogMutation: () => ({ mutateAsync: mockDeleteWorklogMutation }),
+  useAssignIssueToMeMutation: () => ({ mutateAsync: vi.fn() }),
+  useUpdateIssueStatusMutation: () => ({ mutateAsync: vi.fn() }),
 }));
 
 vi.mock('../store', () => ({

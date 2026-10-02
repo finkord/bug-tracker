@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Shield, X } from 'lucide-react';
-import { SidebarContextSwitcher } from './SidebarContextSwitcher';
+import { SidebarProjectSwitcher } from './SidebarProjectSwitcher';
 import { SidebarNavList } from './SidebarNavList';
 import { SidebarBottomActions } from './SidebarBottomActions';
 import type { ProjectItem, UserProfile } from '../../api/client';
@@ -12,6 +12,7 @@ interface SidebarMobileDrawerProps {
   user?: UserProfile | null;
   projects: ProjectItem[];
   activeProject?: ProjectItem;
+  projectId?: number;
 }
 
 /**
@@ -23,6 +24,7 @@ export const SidebarMobileDrawer: React.FC<SidebarMobileDrawerProps> = ({
   user,
   projects,
   activeProject,
+  projectId,
 }) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -72,10 +74,10 @@ export const SidebarMobileDrawer: React.FC<SidebarMobileDrawerProps> = ({
           </button>
         </div>
 
-        {/* Project Switcher (Authenticated Only) */}
-        {user && (
-          <div className="px-2">
-            <SidebarContextSwitcher
+        {/* Project Switcher */}
+        {user && projects.length > 0 && (
+          <div className="pt-2">
+            <SidebarProjectSwitcher
               projects={projects}
               activeProject={activeProject}
               collapsed={false}
@@ -84,12 +86,12 @@ export const SidebarMobileDrawer: React.FC<SidebarMobileDrawerProps> = ({
           </div>
         )}
 
-
         {/* Navigation List */}
         <div className="flex-1 px-2 overflow-y-auto">
           <SidebarNavList
             user={user}
             activeProject={activeProject}
+            projectId={projectId}
             collapsed={false}
             onNavigate={onClose}
           />
@@ -99,7 +101,6 @@ export const SidebarMobileDrawer: React.FC<SidebarMobileDrawerProps> = ({
         <div className="px-2">
           <SidebarBottomActions
             collapsed={false}
-            onToggleSidebar={onClose}
             onNavigate={onClose}
           />
         </div>

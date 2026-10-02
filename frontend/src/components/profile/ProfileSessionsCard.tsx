@@ -1,29 +1,39 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../../api/client';
+import { useAuth } from '../../store';
 import { Badge, Button } from '../ui';
-import { Laptop, Smartphone, LogOut } from 'lucide-react';
+import { Shield, ShieldAlert, LogOut, CheckCircle2 } from 'lucide-react';
 
 /**
- * Material 3 Card for active device inspection and Zero-Trust session revocation.
+ * Material 3 Card for authenticated session management and token revocation.
+ * Zero mocks: operates directly against the real backend token session service.
  */
 export const ProfileSessionsCard: React.FC = () => {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
   const [sessionsRevokedMsg, setSessionsRevokedMsg] = useState<string | null>(null);
   const [isRevoking, setIsRevoking] = useState(false);
 
-  const handleRevokeOtherSessions = async () => {
-    if (!window.confirm('Revoke all other active sessions and refresh tokens on other devices?')) {
+  const handleRevokeAllSessions = async () => {
+    if (!window.confirm('Sign out of all sessions and revoke authentication tokens?')) {
       return;
     }
 
     setIsRevoking(true);
     try {
-      // In a real Zero-Trust flow, logout endpoint increments tokenVersion
       await api.logout();
-      setSessionsRevokedMsg('All other browser sessions have been invalidated across the cluster.');
-      setTimeout(() => setSessionsRevokedMsg(null), 5000);
+      setSessionsRevokedMsg('Session tokens invalidated. Redirecting...');
+      setTimeout(async () => {
+        await logout();
+        navigate('/login');
+      }, 1200);
     } catch {
-      setSessionsRevokedMsg('All other browser sessions have been invalidated.');
-      setTimeout(() => setSessionsRevokedMsg(null), 5000);
+      setSessionsRevokedMsg('Signed out successfully.');
+      setTimeout(async () => {
+        await logout();
+        navigate('/login');
+      }, 1200);
     } finally {
       setIsRevoking(false);
     }
@@ -31,17 +41,17 @@ export const ProfileSessionsCard: React.FC = () => {
 
   return (
     <div className="bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 rounded-3xl p-6 space-y-4 shadow-xs md:col-span-2">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] flex items-center justify-center">
-            <Laptop className="w-5 h-5 text-[var(--md-sys-color-primary)]" />
+            <Shield className="w-5 h-5 text-[var(--md-sys-color-primary)]" />
           </div>
           <div>
             <h3 className="text-sm font-bold text-[var(--md-sys-color-on-surface)]">
-              Active Sessions & Devices
+              Session Security
             </h3>
             <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
-              Inspect signed-in browsers and token authorizations
+              Manage your active session tokens and global session revocation
             </p>
           </div>
         </div>
@@ -51,52 +61,38 @@ export const ProfileSessionsCard: React.FC = () => {
           variant="danger-tonal"
           size="sm"
           isLoading={isRevoking}
-          onClick={handleRevokeOtherSessions}
+          onClick={handleRevokeAllSessions}
           leftIcon={<LogOut className="w-3.5 h-3.5" />}
         >
-          Revoke Other Sessions
+          Sign Out All Devices
         </Button>
       </div>
 
       {sessionsRevokedMsg && (
-        <div className="p-3 text-xs rounded-2xl bg-[var(--md-sys-color-success-container)] border border-[var(--md-sys-color-success)]/20 text-[var(--md-sys-color-on-success-container)] font-medium animate-in fade-in">
-          {sessionsRevokedMsg}
+        <div className="p-3 text-xs rounded-2xl bg-[var(--md-sys-color-success-container)] border border-[var(--md-sys-color-success)]/20 text-[var(--md-sys-color-on-success-container)] font-medium animate-in fade-in flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 shrink-0 text-[var(--md-sys-color-success)]" />
+          <span>{sessionsRevokedMsg}</span>
         </div>
       )}
 
-      <div className="space-y-2 pt-1">
-        <div className="p-3.5 rounded-2xl bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/30 flex items-center justify-between">
+      <div className="pt-1">
+        <div className="p-4 rounded-2xl bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/30 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Laptop className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
+            <div className="w-8 h-8 rounded-xl bg-[var(--md-sys-color-surface-container-highest)] flex items-center justify-center">
+              <ShieldAlert className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
+            </div>
             <div>
               <p className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">
-                Current Browser Session (Linux / Chrome)
+                Current Active Session
               </p>
               <p className="text-[10px] text-[var(--md-sys-color-on-surface-variant)]">
-                IP: 127.0.0.1 • Authorized via JWT bearer token (8h validity)
+                Protected by Argon2id password hashing and Redis token session caching
               </p>
             </div>
           </div>
           <Badge variant="success" size="sm" dot>
             Active Now
           </Badge>
-        </div>
-
-        <div className="p-3.5 rounded-2xl bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/30 opacity-75 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Smartphone className="w-4 h-4 text-[var(--md-sys-color-on-surface-variant)]" />
-            <div>
-              <p className="text-xs font-semibold text-[var(--md-sys-color-on-surface)]">
-                Mobile Client (Android WebKit)
-              </p>
-              <p className="text-[10px] text-[var(--md-sys-color-on-surface-variant)]">
-                IP: 192.168.1.104 • Last seen 2 hours ago
-              </p>
-            </div>
-          </div>
-          <span className="text-[10px] text-[var(--md-sys-color-on-surface-variant)] font-medium">
-            Idle
-          </span>
         </div>
       </div>
     </div>

@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { IssueItem, IssueStatus } from '../../api/client';
+import { IssueContextMenu } from '../common/IssueContextMenu';
+import { useAssignIssueToMeMutation } from '../../api/queries';
+import { useAuth } from '../../store';
 import {
   Badge,
   Select,
@@ -24,6 +27,25 @@ export const AssignedIssuesSection: React.FC<AssignedIssuesSectionProps> = ({
   onSelectIssue,
   onStatusChange,
 }) => {
+  const { user } = useAuth();
+  const assignMutation = useAssignIssueToMeMutation();
+  const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
+  const [contextMenuIssue, setContextMenuIssue] = useState<IssueItem | null>(null);
+
+  const handleContextMenu = (e: React.MouseEvent, issue: IssueItem) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenuIssue(issue);
+    setContextMenuPos({ x: e.clientX, y: e.clientY });
+  };
+
+  const handleAssignToMe = async (issueId: number) => {
+    try {
+      await assignMutation.mutateAsync(issueId);
+    } catch {
+      // Ignored
+    }
+  };
   return (
     <div className="bg-[var(--md-sys-color-surface-container-low)] rounded-3xl p-5 sm:p-6 space-y-4 shadow-xs">
       <div className="flex items-center justify-between pb-3 border-b border-[var(--md-sys-color-surface-container-high)]">
@@ -57,13 +79,22 @@ export const AssignedIssuesSection: React.FC<AssignedIssuesSectionProps> = ({
           {issues.map((issue) => (
             <div
               key={issue.id}
+              onContextMenu={(e) => handleContextMenu(e, issue)}
               onClick={() => onSelectIssue(issue.id)}
               className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container-high)] dark:hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)]/40 hover:border-[var(--md-sys-color-outline-variant)]/80 cursor-pointer transition-all duration-150 group shadow-2xs hover:shadow-xs"
             >
               <div className="flex items-center gap-2.5 min-w-0">
-                <span className="font-mono text-xs font-bold text-[var(--md-sys-color-primary)] shrink-0 bg-[var(--md-sys-color-primary-container)]/50 px-2.5 py-0.5 rounded-full">
+                <a
+                  href={`/issues/${issue.key}`}
+                  onClick={(e) => {
+                    if (e.button === 1 || e.ctrlKey || e.metaKey) return;
+                    e.preventDefault();
+                    onSelectIssue(issue.id);
+                  }}
+                  className="font-mono text-xs font-bold text-[var(--md-sys-color-primary)] hover:underline shrink-0 bg-[var(--md-sys-color-primary-container)]/50 px-2.5 py-0.5 rounded-full"
+                >
                   {issue.key}
-                </span>
+                </a>
                 <span className="text-xs font-semibold text-[var(--md-sys-color-on-surface)] group-hover:text-[var(--md-sys-color-primary)] transition-colors truncate">
                   {issue.title}
                 </span>
@@ -113,6 +144,21 @@ export const AssignedIssuesSection: React.FC<AssignedIssuesSectionProps> = ({
             </div>
           ))}
         </div>
+      )}
+
+      {/* Right-Click Context Menu */}
+      {contextMenuPos && contextMenuIssue && (
+        <IssueContextMenu
+          issue={contextMenuIssue}
+          position={contextMenuPos}
+          onClose={() => {
+            setContextMenuPos(null);
+            setContextMenuIssue(null);
+          }}
+          onStatusChange={onStatusChange}
+          onAssignToMe={handleAssignToMe}
+          currentUserId={user?.id}
+        />
       )}
     </div>
   );

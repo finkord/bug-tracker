@@ -202,13 +202,13 @@ export const AdminProjectsTab: React.FC = () => {
                 )}
 
                 <div className="pt-2 flex items-center justify-end gap-2 border-t border-[var(--md-sys-color-outline-variant)]/10">
-                  <Link to={`/projects/${proj.id}/settings`}>
+                  <Link to={`/projects/${proj.key || proj.id}/settings`}>
                     <Button variant="ghost" size="sm" className="h-7 text-xs gap-1">
                       <Settings className="w-3 h-3 text-[var(--md-sys-color-primary)]" />
                       Settings
                     </Button>
                   </Link>
-                  <Link to={`/projects/${proj.id}/board`}>
+                  <Link to={`/projects/${proj.key || proj.id}/board`}>
                     <Button variant="outline" size="sm" className="h-7 text-xs gap-1">
                       <Layers className="w-3 h-3 text-[var(--md-sys-color-primary)]" />
                       Board

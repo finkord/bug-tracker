@@ -56,4 +56,20 @@ describe('useSidebarStore', () => {
     useSidebarStore.getState().toggleCollapsedLabels();
     expect(useSidebarStore.getState().showCollapsedLabels).toBe(false);
   });
+
+  it('should set collapseMode correctly', () => {
+    expect(useSidebarStore.getState().collapseMode).toBe('rail');
+    useSidebarStore.getState().setCollapseMode('hidden');
+    expect(useSidebarStore.getState().collapseMode).toBe('hidden');
+    useSidebarStore.getState().setCollapseMode('rail');
+    expect(useSidebarStore.getState().collapseMode).toBe('rail');
+  });
+
+  it('should set brandStyle correctly', () => {
+    expect(useSidebarStore.getState().brandStyle).toBe('vibrant');
+    useSidebarStore.getState().setBrandStyle('metallic');
+    expect(useSidebarStore.getState().brandStyle).toBe('metallic');
+    useSidebarStore.getState().setBrandStyle('vibrant');
+    expect(useSidebarStore.getState().brandStyle).toBe('vibrant');
+  });
 });

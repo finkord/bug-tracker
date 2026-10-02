@@ -6,3 +6,4 @@ export * from './useWorklogsQuery';
 export * from './useRbacQuery';
 export * from './useTeamsQuery';
 export * from './useSystemBannerQuery';
+export * from './useWebhooksQuery';

@@ -7,3 +7,4 @@ export * from './rbac.api.js';
 export * from './sprints.api.js';
 export * from './teams.api.js';
 export * from './system.api.js';
+export * from './notifications.api.js';

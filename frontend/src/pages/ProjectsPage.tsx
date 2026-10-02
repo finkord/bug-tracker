@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useProjectsQuery, useCreateProjectMutation } from '../api/queries';
 import { CreateProjectSchema } from '../schemas';
 import { Button, Input, Modal, Badge } from '../components/ui';
+import { ProjectAvatar } from '../components/projects/ProjectAvatar';
 import {
   FolderGit2,
   Plus,
@@ -60,7 +61,7 @@ export const ProjectsPage: React.FC = () => {
   const totalIssues = projects.reduce((acc, p) => acc + (p.totalIssues || 0), 0);
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-5 flex-1 flex flex-col min-w-0 space-y-6 animate-in fade-in duration-200">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -151,17 +152,28 @@ export const ProjectsPage: React.FC = () => {
             >
               <div className="p-5 space-y-3">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-mono text-xs font-bold text-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/50 px-2.5 py-0.5 rounded-full">
-                    {project.key}
-                  </span>
+                  <div className="flex items-center gap-2.5">
+                    <ProjectAvatar
+                      name={project.name}
+                      projectKey={project.key}
+                      avatarUrl={project.avatarUrl}
+                      size="sm"
+                    />
+                    <span className="font-mono text-xs font-bold text-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/50 px-2.5 py-0.5 rounded-full">
+                      {project.key}
+                    </span>
+                  </div>
                   <Badge variant="neutral" size="sm">
                     {project.openIssues} open
                   </Badge>
                 </div>
 
-                <h3 className="font-bold text-base text-[var(--md-sys-color-on-surface)]">
+                <Link
+                  to={`/projects/${project.key}/board`}
+                  className="block font-bold text-base text-[var(--md-sys-color-on-surface)] hover:text-[var(--md-sys-color-primary)] transition-colors"
+                >
                   {project.name}
-                </h3>
+                </Link>
 
                 <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] line-clamp-3 leading-relaxed">
                   {project.description || 'No workspace description provided.'}
@@ -179,7 +191,7 @@ export const ProjectsPage: React.FC = () => {
 
                 <div className="grid grid-cols-3 gap-2">
                   <Link
-                    to={`/projects/${project.id}/board`}
+                    to={`/projects/${project.key}/board`}
                     className="py-2 px-2.5 rounded-full bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-surface)] hover:text-[var(--md-sys-color-on-primary-container)] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors border border-[var(--md-sys-color-outline-variant)]/30 cursor-pointer"
                   >
                     <Kanban className="w-3.5 h-3.5" />
@@ -187,7 +199,7 @@ export const ProjectsPage: React.FC = () => {
                   </Link>
 
                   <Link
-                    to={`/projects/${project.id}/backlog`}
+                    to={`/projects/${project.key}/backlog`}
                     className="py-2 px-2.5 rounded-full bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-surface)] hover:text-[var(--md-sys-color-on-primary-container)] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors border border-[var(--md-sys-color-outline-variant)]/30 cursor-pointer"
                   >
                     <Layers className="w-3.5 h-3.5" />
@@ -195,11 +207,11 @@ export const ProjectsPage: React.FC = () => {
                   </Link>
 
                   <Link
-                    to={`/projects/${project.id}/settings`}
+                    to={`/projects/${project.key}/settings`}
                     className="py-2 px-2.5 rounded-full bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-surface)] hover:text-[var(--md-sys-color-on-secondary-container)] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors border border-[var(--md-sys-color-outline-variant)]/30 cursor-pointer"
                   >
                     <Shield className="w-3.5 h-3.5" />
-                    <span>People</span>
+                    <span>Settings</span>
                   </Link>
                 </div>
               </div>

@@ -457,6 +457,7 @@ export const TimesheetMatrixGrid: React.FC<TimesheetMatrixGridProps> = ({
                                 <div className="flex items-center gap-2">
                                   <Link
                                     to={`/issues/${subIssue.issueKey}`}
+                                    state={{ from: '/time-tracking', label: 'Back to Time Tracking' }}
                                     className="font-mono font-bold text-[10px] text-[var(--md-sys-color-primary)] hover:underline shrink-0"
                                   >
                                     {subIssue.issueKey}
@@ -573,6 +574,7 @@ export const TimesheetMatrixGrid: React.FC<TimesheetMatrixGridProps> = ({
                               </button>
                               <Link
                                 to={`/issues/${issueItem.issueKey}`}
+                                state={{ from: '/time-tracking', label: 'Back to Time Tracking' }}
                                 className="font-mono font-bold text-xs text-[var(--md-sys-color-primary)] hover:underline shrink-0"
                               >
                                 {issueItem.issueKey}

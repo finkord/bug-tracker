@@ -46,7 +46,7 @@ export const ProjectBoardsSection: React.FC<ProjectBoardsSectionProps> = ({ proj
               </p>
             </div>
             <div className="flex items-center gap-2 pt-2 border-t border-[var(--md-sys-color-surface-container-high)]">
-              <Link to={`/projects/${p.id}/board`} className="flex-1">
+              <Link to={`/projects/${p.key || p.id}/board`} className="flex-1">
                 <Button
                   type="button"
                   variant="filled"
@@ -57,7 +57,7 @@ export const ProjectBoardsSection: React.FC<ProjectBoardsSectionProps> = ({ proj
                   Board
                 </Button>
               </Link>
-              <Link to={`/projects/${p.id}/backlog`}>
+              <Link to={`/projects/${p.key || p.id}/backlog`}>
                 <Button
                   type="button"
                   variant="outline"

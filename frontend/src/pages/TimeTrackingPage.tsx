@@ -247,7 +247,7 @@ export const TimeTrackingPage: React.FC = () => {
   }, [matrix]);
 
   return (
-    <div className="w-full min-h-full flex flex-col px-3 sm:px-5 py-4 animate-in fade-in duration-200">
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-5 flex-1 flex flex-col min-w-0 animate-in fade-in duration-200">
       <div className="w-full space-y-4">
         {/* Top Control Bar & Segmented Tab Switcher */}
         <TimeTrackingToolbar

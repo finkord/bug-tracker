@@ -119,6 +119,12 @@ class RealtimeSocketService {
     s.on('presence:viewing', callback);
     return () => { s.off('presence:viewing', callback); };
   }
+
+  onNotificationNew(callback: (notification: any) => void) {
+    const s = this.getSocket();
+    s.on('notification:new', callback);
+    return () => { s.off('notification:new', callback); };
+  }
 }
 
 export const realtimeSocket = new RealtimeSocketService();

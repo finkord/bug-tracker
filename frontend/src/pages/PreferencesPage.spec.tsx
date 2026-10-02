@@ -8,6 +8,10 @@ vi.mock('../store', () => ({
     showCollapsedLabels: false,
     setShowCollapsedLabels: vi.fn(),
     toggleCollapsedLabels: vi.fn(),
+    collapseMode: 'rail',
+    setCollapseMode: vi.fn(),
+    brandStyle: 'vibrant',
+    setBrandStyle: vi.fn(),
   }),
   useTheme: () => ({
     theme: 'dark',
@@ -49,6 +53,7 @@ describe('PreferencesPage', () => {
 
     expect(screen.getByRole('heading', { name: /^Preferences$/i })).toBeInTheDocument();
     expect(screen.getByText(/Collapsed Sidebar Text Labels/i)).toBeInTheDocument();
+    expect(screen.getByText(/Brand Logo Style/i)).toBeInTheDocument();
     expect(screen.getByText(/Visual Theme/i)).toBeInTheDocument();
     expect(screen.getByText(/Live Rail Preview/i)).toBeInTheDocument();
   });

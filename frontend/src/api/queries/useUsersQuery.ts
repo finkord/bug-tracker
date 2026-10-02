@@ -8,6 +8,7 @@ export const userKeys = {
   list: (params?: Record<string, unknown>) => [...userKeys.lists(), params ?? {}] as const,
   assignees: (params?: Record<string, unknown>) => [...userKeys.all, 'assignees', params ?? {}] as const,
   profile: () => [...userKeys.all, 'profile'] as const,
+  detail: (id: number) => [...userKeys.all, 'detail', id] as const,
   stats: () => [...userKeys.all, 'admin-stats'] as const,
   auditLogs: (page?: number, limit?: number) =>
     [...userKeys.all, 'audit-logs', { page, limit }] as const,
@@ -40,6 +41,14 @@ export function useProfileQuery() {
   return useQuery({
     queryKey: userKeys.profile(),
     queryFn: () => api.getProfile(),
+  });
+}
+
+export function useUserDetailQuery(id?: number) {
+  return useQuery({
+    queryKey: userKeys.detail(id || 0),
+    queryFn: () => api.getUserById(id!),
+    enabled: typeof id === 'number' && !Number.isNaN(id) && id > 0,
   });
 }
 

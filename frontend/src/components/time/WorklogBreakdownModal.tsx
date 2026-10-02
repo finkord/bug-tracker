@@ -82,6 +82,7 @@ export const WorklogBreakdownModal: React.FC<WorklogBreakdownModalProps> = ({
                     {log.issueKey ? (
                       <Link
                         to={`/issues/${log.issueKey}`}
+                        state={{ from: '/time-tracking', label: 'Back to Time Tracking' }}
                         className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-mono font-black text-xs bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] hover:bg-[var(--md-sys-color-primary)] hover:text-[var(--md-sys-color-on-primary)] transition-colors shadow-2xs shrink-0"
                       >
                         <span>{log.issueKey}</span>
@@ -152,7 +153,10 @@ export const WorklogBreakdownModal: React.FC<WorklogBreakdownModalProps> = ({
                     )}
 
                     {log.issueKey && (
-                      <Link to={`/issues/${log.issueKey}`}>
+                      <Link
+                        to={`/issues/${log.issueKey}`}
+                        state={{ from: '/time-tracking', label: 'Back to Time Tracking' }}
+                      >
                         <Button
                           variant="ghost"
                           size="xs"

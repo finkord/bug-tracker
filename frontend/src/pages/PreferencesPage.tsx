@@ -13,10 +13,19 @@ import {
   Check,
   Cloud,
   RefreshCw,
+  Shield,
 } from 'lucide-react';
 
 export const PreferencesPage: React.FC = () => {
-  const { showCollapsedLabels, setShowCollapsedLabels, toggleCollapsedLabels } = useSidebar();
+  const {
+    showCollapsedLabels,
+    setShowCollapsedLabels,
+    toggleCollapsedLabels,
+    collapseMode,
+    setCollapseMode,
+    brandStyle,
+    setBrandStyle,
+  } = useSidebar();
   const { theme, setTheme } = useTheme();
 
   const { data: serverPrefs } = useUserPreferencesQuery();
@@ -51,7 +60,7 @@ export const PreferencesPage: React.FC = () => {
   };
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6 animate-in fade-in duration-200">
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-5 flex-1 flex flex-col min-w-0 space-y-6 animate-in fade-in duration-200">
       {/* Page Header */}
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-2.5">
@@ -122,6 +131,154 @@ export const PreferencesPage: React.FC = () => {
               >
                 Reset to Default
               </Button>
+            </div>
+          </div>
+
+          {/* Setting Card: Sidebar Collapse Behavior (Rail vs Hidden) */}
+          <div className="p-6 space-y-5 rounded-3xl border border-[var(--md-sys-color-outline-variant)]/20 bg-[var(--md-sys-color-surface-container-low)] shadow-xs">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-bold text-[var(--md-sys-color-on-surface)]">
+                  Sidebar Collapse Behavior
+                </h2>
+                <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] font-semibold">
+                  Layout
+                </span>
+              </div>
+              <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] leading-relaxed">
+                Choose how the sidebar behaves when collapsed using the shortcut <kbd className="px-1.5 py-0.5 rounded-md bg-[var(--md-sys-color-surface-container-high)] font-mono text-[10px] text-[var(--md-sys-color-on-surface)]">[</kbd> or the collapse button.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Option 1: Rail */}
+              <button
+                type="button"
+                onClick={() => setCollapseMode('rail')}
+                className={`p-4 rounded-2xl border text-left flex flex-col justify-between gap-3 transition-all cursor-pointer ${
+                  collapseMode === 'rail'
+                    ? 'border-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/20 shadow-xs'
+                    : 'border-[var(--md-sys-color-outline-variant)]/30 bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)]'
+                }`}
+              >
+                <div>
+                  <p className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">
+                    Navigation Rail (60px)
+                  </p>
+                  <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] mt-1 leading-relaxed">
+                    Shrinks to a compact icon strip. Navigation landmarks and tooltips remain 1-click accessible.
+                  </p>
+                </div>
+                {collapseMode === 'rail' && (
+                  <span className="flex items-center gap-1 text-[11px] font-bold text-[var(--md-sys-color-primary)]">
+                    <Check className="w-3.5 h-3.5" /> Active
+                  </span>
+                )}
+              </button>
+
+              {/* Option 2: Hidden (Linear style) */}
+              <button
+                type="button"
+                onClick={() => setCollapseMode('hidden')}
+                className={`p-4 rounded-2xl border text-left flex flex-col justify-between gap-3 transition-all cursor-pointer ${
+                  collapseMode === 'hidden'
+                    ? 'border-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/20 shadow-xs'
+                    : 'border-[var(--md-sys-color-outline-variant)]/30 bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)]'
+                }`}
+              >
+                <div>
+                  <p className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">
+                    Completely Hidden (0px)
+                  </p>
+                  <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] mt-1 leading-relaxed">
+                    Hides the sidebar entirely to maximize board and issue detail horizontal canvas. Expand via <kbd className="font-mono">[</kbd> or header button.
+                  </p>
+                </div>
+                {collapseMode === 'hidden' && (
+                  <span className="flex items-center gap-1 text-[11px] font-bold text-[var(--md-sys-color-primary)]">
+                    <Check className="w-3.5 h-3.5" /> Active
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Setting Card: Brand Logo Style (Vibrant vs Metallic) */}
+          <div className="p-6 space-y-5 rounded-3xl border border-[var(--md-sys-color-outline-variant)]/20 bg-[var(--md-sys-color-surface-container-low)] shadow-xs">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-bold text-[var(--md-sys-color-on-surface)]">
+                  Brand Logo Style
+                </h2>
+                <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] font-semibold">
+                  Branding
+                </span>
+              </div>
+              <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] leading-relaxed">
+                Choose the visual aesthetic for the BugTracker logo and title in the sidebar.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Option 1: Vibrant Gradient */}
+              <button
+                type="button"
+                onClick={() => setBrandStyle('vibrant')}
+                className={`p-4 rounded-2xl border text-left flex flex-col justify-between gap-3 transition-all cursor-pointer ${
+                  brandStyle === 'vibrant'
+                    ? 'border-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/20 shadow-xs'
+                    : 'border-[var(--md-sys-color-outline-variant)]/30 bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)]'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--md-sys-color-primary)] via-indigo-600 to-cyan-500 text-white flex items-center justify-center shadow-[0_0_12px_rgba(99,102,241,0.35)] shrink-0">
+                    <Shield className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold bg-gradient-to-r from-[var(--md-sys-color-primary)] via-indigo-500 to-cyan-400 bg-clip-text text-transparent">
+                      Vibrant Gradient (Default)
+                    </p>
+                    <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] mt-0.5 leading-relaxed">
+                      Electric primary, indigo, and cyan gradient with an illuminated shield badge.
+                    </p>
+                  </div>
+                </div>
+                {brandStyle === 'vibrant' && (
+                  <span className="flex items-center gap-1 text-[11px] font-bold text-[var(--md-sys-color-primary)]">
+                    <Check className="w-3.5 h-3.5" /> Active
+                  </span>
+                )}
+              </button>
+
+              {/* Option 2: Metallic Titanium */}
+              <button
+                type="button"
+                onClick={() => setBrandStyle('metallic')}
+                className={`p-4 rounded-2xl border text-left flex flex-col justify-between gap-3 transition-all cursor-pointer ${
+                  brandStyle === 'metallic'
+                    ? 'border-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/20 shadow-xs'
+                    : 'border-[var(--md-sys-color-outline-variant)]/30 bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)]'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-800 via-slate-900 to-black dark:from-slate-700 dark:via-zinc-800 dark:to-zinc-950 text-slate-100 ring-1 ring-white/20 border border-white/10 shadow-xs flex items-center justify-center shrink-0">
+                    <Shield className="w-4 h-4 text-slate-200" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold bg-gradient-to-r from-slate-900 via-slate-600 to-slate-900 dark:from-white dark:via-slate-200 dark:to-slate-400 bg-clip-text text-transparent">
+                      Metallic Titanium
+                    </p>
+                    <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] mt-0.5 leading-relaxed">
+                      High-contrast titanium silver finish with dark glassmorphic badge.
+                    </p>
+                  </div>
+                </div>
+                {brandStyle === 'metallic' && (
+                  <span className="flex items-center gap-1 text-[11px] font-bold text-[var(--md-sys-color-primary)]">
+                    <Check className="w-3.5 h-3.5" /> Active
+                  </span>
+                )}
+              </button>
             </div>
           </div>
 

@@ -5,6 +5,8 @@ import type { SavedFilterItem } from '../types/worklogs.types.js';
 export const usersApi = {
   getProfile: () => request<UserProfile>('/users/me'),
 
+  getUserById: (id: number) => request<UserProfile>(`/users/${id}`),
+
   updateAvatar: (avatarUrl: string) =>
     request<{ message: string; avatarUrl: string }>('/users/me/avatar', {
       method: 'PATCH',

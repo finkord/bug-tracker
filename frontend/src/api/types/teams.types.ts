@@ -26,6 +26,7 @@ export interface TeamItem {
   project?: ProjectItem;
   leadId: number | null;
   lead?: UserProfile | null;
+  avatarUrl?: string | null;
   sprintCapacityHours: number;
   members: TeamMemberItem[];
   createdAt: string;
@@ -37,6 +38,7 @@ export interface CreateTeamPayload {
   description?: string;
   projectId: number;
   leadId?: number;
+  avatarUrl?: string;
   sprintCapacityHours?: number;
 }
 
@@ -45,6 +47,7 @@ export interface UpdateTeamPayload {
   description?: string;
   projectId?: number;
   leadId?: number | null;
+  avatarUrl?: string | null;
   sprintCapacityHours?: number;
 }
 
