@@ -5,7 +5,9 @@ import { cn } from '../../utils/cn';
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?:
     | 'filled'
+    | 'primary'
     | 'tonal'
+    | 'secondary'
     | 'outlined'
     | 'outline'
     | 'elevated'
@@ -40,7 +42,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const variantStyles: Record<NonNullable<ButtonProps['variant']>, string> = {
       filled:
         'bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] hover:brightness-105 shadow-xs',
+      primary:
+        'bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] hover:brightness-105 shadow-xs',
       tonal:
+        'bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] hover:brightness-105',
+      secondary:
         'bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] hover:brightness-105',
       outlined:
         'bg-transparent text-[var(--md-sys-color-primary)] border border-[var(--md-sys-color-outline)] hover:bg-[var(--md-sys-color-primary)]/8',
@@ -71,7 +77,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         disabled={disabled || isLoading}
-        className={cn(baseStyles, variantStyles[variant], sizeStyles[size], className)}
+        className={cn(baseStyles, variantStyles[variant] || variantStyles.filled, sizeStyles[size] || sizeStyles.md, className)}
         {...props}
       >
         {isLoading ? (
@@ -79,7 +85,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ) : (
           leftIcon && <span className="shrink-0">{leftIcon}</span>
         )}
-        {children && <span>{children}</span>}
+        {children && (
+          <span className="inline-flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+            {children}
+          </span>
+        )}
         {!isLoading && rightIcon && <span className="shrink-0">{rightIcon}</span>}
       </button>
     );
