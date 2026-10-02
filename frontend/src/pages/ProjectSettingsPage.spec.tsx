@@ -1,9 +1,13 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ProjectSettingsPage } from './ProjectSettingsPage';
 
 vi.mock('../api/queries', () => ({
+  useProjectsQuery: () => ({
+    data: [{ id: 1, key: 'BTC', name: 'BugTracker Core' }],
+    isLoading: false,
+  }),
   useProjectDetailQuery: () => ({
     data: {
       id: 1,
@@ -14,6 +18,32 @@ vi.mock('../api/queries', () => ({
       lead: { id: 1, fullName: 'Chief Architect' },
       permissionSchemeId: 1,
     },
+    isLoading: false,
+  }),
+  useTeamsQuery: () => ({
+    data: [
+      {
+        id: 1,
+        name: 'Alpha Team',
+        description: 'Core platform team',
+        sprintCapacityHours: 160,
+        leadId: 1,
+        lead: { id: 1, fullName: 'Chief Architect' },
+        members: [],
+      },
+    ],
+    isLoading: false,
+  }),
+  useTeamCapacityQuery: () => ({
+    data: { totalCapacityHours: 160, members: [] },
+    isLoading: false,
+  }),
+  useProjectComponentsQuery: () => ({
+    data: [{ id: 1, name: 'Frontend Engine', description: 'UI and React layer' }],
+    isLoading: false,
+  }),
+  useProjectVersionsQuery: () => ({
+    data: [{ id: 1, name: 'v1.0.0', status: 'UNRELEASED', description: 'Initial stable launch' }],
     isLoading: false,
   }),
   useProjectPeopleQuery: () => ({
@@ -39,7 +69,7 @@ vi.mock('../api/queries', () => ({
     isLoading: false,
   }),
   useUsersQuery: () => ({
-    data: { items: [{ id: 1, fullName: 'Chief Architect' }] },
+    data: { items: [{ id: 1, fullName: 'Chief Architect', email: 'admin@bugtracker.local' }] },
     isLoading: false,
   }),
   useGroupsQuery: () => ({
@@ -54,22 +84,30 @@ vi.mock('../api/queries', () => ({
     data: { BROWSE_PROJECTS: true, ADMINISTER_PROJECTS: true },
     isLoading: false,
   }),
-  useAddActorToProjectRoleMutation: () => ({
-    mutateAsync: vi.fn(),
-    isPending: false,
-  }),
-  useRemoveActorFromProjectRoleMutation: () => ({
-    mutateAsync: vi.fn(),
-    isPending: false,
-  }),
-  useAssignPermissionSchemeToProjectMutation: () => ({
-    mutateAsync: vi.fn(),
-    isPending: false,
-  }),
+  useUpdateProjectMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useDeleteProjectMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useUploadProjectAvatarMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useUpdateProjectAvatarMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useCreateTeamMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useUpdateTeamMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useDeleteTeamMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useUploadTeamAvatarMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useAddTeamMemberMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useUpdateTeamMemberMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useRemoveTeamMemberMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useCreateProjectComponentMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useDeleteProjectComponentMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useCreateProjectVersionMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useUpdateProjectVersionMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useReleaseProjectVersionMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useDeleteProjectVersionMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useAddActorToProjectRoleMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useRemoveActorFromProjectRoleMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useAssignPermissionSchemeToProjectMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
 describe('ProjectSettingsPage', () => {
-  it('renders with full width container class and no max-w restriction', () => {
+  it('renders with full width container and all 6 sidebar navigation tabs', () => {
     const { container } = render(
       <MemoryRouter initialEntries={['/projects/1/settings']}>
         <Routes>
@@ -81,21 +119,46 @@ describe('ProjectSettingsPage', () => {
     const rootDiv = container.firstElementChild as HTMLElement;
     expect(rootDiv).toBeInTheDocument();
     expect(rootDiv.className).toContain('w-full');
-    expect(rootDiv.className).not.toContain('max-w-6xl');
+
+    // Sidebar navigation tabs
+    expect(screen.getByRole('button', { name: /^General$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Teams & Rosters/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Components/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Releases & Versions/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /People & Permissions/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Webhooks/i })).toBeInTheDocument();
+
+    // Default General tab content
+    expect(screen.getByRole('heading', { name: /General Project Settings/i })).toBeInTheDocument();
+    expect(screen.getAllByText('BTC').length).toBeGreaterThanOrEqual(1);
   });
 
-  it('renders project header, active permission scheme selector, and role members', () => {
+  it('navigates to Teams tab and displays team cards', () => {
     render(
-      <MemoryRouter initialEntries={['/projects/1/settings']}>
+      <MemoryRouter initialEntries={['/projects/1/settings?tab=teams']}>
         <Routes>
           <Route path="/projects/:id/settings" element={<ProjectSettingsPage />} />
         </Routes>
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole('heading', { name: /People & Permissions/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Project Teams/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Create Team/i })).toBeInTheDocument();
+    expect(screen.getByText('Alpha Team')).toBeInTheDocument();
+    expect(screen.getByText(/160h \/ sprint/i)).toBeInTheDocument();
+  });
+
+  it('navigates to People & Permissions tab and renders permission scheme selector and roles', () => {
+    render(
+      <MemoryRouter initialEntries={['/projects/1/settings?tab=access']}>
+        <Routes>
+          <Route path="/projects/:id/settings" element={<ProjectSettingsPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('heading', { name: /People, Roles & Permission Scheme/i })).toBeInTheDocument();
     expect(screen.getByText(/Active Permission Scheme/i)).toBeInTheDocument();
-    expect(screen.getByText(/Project Roles & Members/i)).toBeInTheDocument();
-    expect(screen.getByText('BTC')).toBeInTheDocument();
+    expect(screen.getByText('Administrators')).toBeInTheDocument();
   });
 });

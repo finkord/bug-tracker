@@ -1,103 +1,75 @@
-import React, { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useMemo } from 'react';
+import { useParams, useSearchParams } from 'react-router-dom';
 import {
+  Settings,
+  Users2,
+  Layers,
+  Tag,
   Shield,
-  UserPlus,
-  Trash2,
-  CheckCircle2,
-  AlertCircle,
-  ArrowLeft,
-  Building2,
-  FileCheck2,
+  Webhook,
 } from 'lucide-react';
 import {
+  useProjectsQuery,
   useProjectDetailQuery,
-  useProjectPeopleQuery,
   useUsersQuery,
-  useGroupsQuery,
-  usePermissionSchemesQuery,
-  useMyProjectPermissionsQuery,
-  useAddActorToProjectRoleMutation,
-  useRemoveActorFromProjectRoleMutation,
-  useAssignPermissionSchemeToProjectMutation,
+  useTeamsQuery,
+  useProjectComponentsQuery,
+  useProjectVersionsQuery,
 } from '../api/queries';
-import { Avatar } from '../components/common/Avatar';
-import { Badge, Button, Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../components/ui';
+import { Badge } from '../components/ui';
+import { BackButton } from '../components/common/BackButton';
+import { ProjectAvatar } from '../components/projects/ProjectAvatar';
+import { ProjectGeneralTab } from '../components/projects/ProjectGeneralTab';
+import { ProjectTeamsTab } from '../components/projects/ProjectTeamsTab';
+import { ProjectComponentsTab } from '../components/projects/ProjectComponentsTab';
+import { ProjectVersionsTab } from '../components/projects/ProjectVersionsTab';
+import { ProjectPermissionsTab } from '../components/projects/ProjectPermissionsTab';
+import { ProjectWebhooksTab } from '../components/projects/ProjectWebhooksTab';
+
+export type SettingsTab = 'general' | 'teams' | 'components' | 'versions' | 'access' | 'webhooks';
 
 export const ProjectSettingsPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
-  const projectId = id ? parseInt(id, 10) : 0;
+  const { id, projectId: paramProjectId } = useParams<{ id?: string; projectId?: string }>();
+  const rawIdentifier = paramProjectId || id;
 
-  // TanStack Query Hooks for project server state
+  const [searchParams, setSearchParams] = useSearchParams();
+  const rawTab = searchParams.get('tab') as SettingsTab | null;
+  const activeTab: SettingsTab = rawTab && ['general', 'teams', 'components', 'versions', 'access', 'webhooks'].includes(rawTab)
+    ? rawTab
+    : 'general';
+
+  const setActiveTab = (tab: SettingsTab) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('tab', tab);
+      return next;
+    });
+  };
+
+  const { data: projects = [] } = useProjectsQuery();
+
+  const projectId = useMemo(() => {
+    if (!rawIdentifier) return 0;
+    const num = parseInt(rawIdentifier, 10);
+    if (!Number.isNaN(num)) return num;
+    const found = projects.find(
+      (p) => p.key?.toUpperCase() === rawIdentifier.toUpperCase(),
+    );
+    return found ? found.id : 0;
+  }, [rawIdentifier, projects]);
+
   const { data: project = null, isLoading: projectLoading } = useProjectDetailQuery(projectId);
-  const { data: people = [], isLoading: peopleLoading } = useProjectPeopleQuery(projectId);
   const { data: usersData, isLoading: usersLoading } = useUsersQuery({ page: 1, limit: 100 });
   const allUsers = usersData?.items || [];
-  const { data: allGroups = [], isLoading: groupsLoading } = useGroupsQuery();
-  const { data: permissionSchemes = [], isLoading: schemesLoading } = usePermissionSchemesQuery();
-  const { data: myPermissions = {}, isLoading: permsLoading } = useMyProjectPermissionsQuery(projectId);
 
-  const addActorMutation = useAddActorToProjectRoleMutation();
-  const removeActorMutation = useRemoveActorFromProjectRoleMutation();
-  const assignSchemeMutation = useAssignPermissionSchemeToProjectMutation();
+  const { data: teams = [] } = useTeamsQuery(projectId);
+  const { data: components = [] } = useProjectComponentsQuery(projectId);
+  const { data: versions = [] } = useProjectVersionsQuery(projectId);
 
-  const loading = projectLoading || peopleLoading || usersLoading || groupsLoading || schemesLoading || permsLoading;
-
-  const [error, setError] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
-
-  // Add actor modal/form state
-  const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null);
-  const [actorType, setActorType] = useState<'USER' | 'GROUP'>('USER');
-  const [selectedUserId, setSelectedUserId] = useState<number | ''>('');
-  const [selectedGroupId, setSelectedGroupId] = useState<number | ''>('');
-
-  const handleAddActor = async (roleId: number) => {
-    if (actorType === 'USER' && !selectedUserId) return;
-    if (actorType === 'GROUP' && !selectedGroupId) return;
-
-    try {
-      await addActorMutation.mutateAsync({
-        projectId,
-        roleId,
-        payload: {
-          actorType,
-          userId: actorType === 'USER' ? Number(selectedUserId) : undefined,
-          groupId: actorType === 'GROUP' ? Number(selectedGroupId) : undefined,
-        },
-      });
-
-      setSuccessMsg('Member assigned to role successfully.');
-      setSelectedRoleId(null);
-      setSelectedUserId('');
-      setSelectedGroupId('');
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to assign actor to role');
-    }
-  };
-
-  const handleRemoveActor = async (roleId: number, actorId: number) => {
-    try {
-      await removeActorMutation.mutateAsync({ projectId, roleId, actorId });
-      setSuccessMsg('Member removed from role.');
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to remove member');
-    }
-  };
-
-  const handleSchemeChange = async (schemeId: number) => {
-    try {
-      await assignSchemeMutation.mutateAsync({ projectId, schemeId });
-      setSuccessMsg('Project permission scheme updated.');
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to update permission scheme');
-    }
-  };
-
-  if (loading) {
+  if (projectLoading || usersLoading) {
     return (
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-16 text-center text-xs text-[var(--md-sys-color-on-surface-variant)]">
-        Loading project access settings...
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-16 text-center text-xs text-[var(--md-sys-color-on-surface-variant)] animate-pulse">
+        Loading project configuration...
       </div>
     );
   }
@@ -105,330 +77,159 @@ export const ProjectSettingsPage: React.FC = () => {
   if (!project) {
     return (
       <div className="w-full px-4 sm:px-6 lg:px-8 py-16 text-center text-xs text-[var(--md-sys-color-error)]">
-        Project not found.
+        Project workspace not found.
       </div>
     );
   }
 
+  const navItems = [
+    {
+      id: 'general' as const,
+      label: 'General',
+      description: 'Details & Ownership',
+      Icon: Settings,
+    },
+    {
+      id: 'teams' as const,
+      label: 'Teams & Rosters',
+      description: 'Scrum teams & capacities',
+      Icon: Users2,
+      count: teams.length,
+    },
+    {
+      id: 'components' as const,
+      label: 'Components',
+      description: 'Subsystems & modules',
+      Icon: Layers,
+      count: components.length,
+    },
+    {
+      id: 'versions' as const,
+      label: 'Releases & Versions',
+      description: 'Milestones & changelogs',
+      Icon: Tag,
+      count: versions.length,
+    },
+    {
+      id: 'access' as const,
+      label: 'People & Permissions',
+      description: 'Roles & security scheme',
+      Icon: Shield,
+    },
+    {
+      id: 'webhooks' as const,
+      label: 'Webhooks',
+      description: 'Automation & events',
+      Icon: Webhook,
+    },
+  ];
+
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-6 space-y-6 animate-in fade-in duration-200">
-      {/* Back button & Header */}
-      <div className="space-y-3 border-b border-[var(--md-sys-color-outline-variant)]/20 pb-6">
-        <Link
-          to={`/projects/${projectId}/board`}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--md-sys-color-primary)] hover:underline"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back to Kanban Board</span>
-        </Link>
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-5 flex-1 flex flex-col min-w-0 space-y-6 animate-in fade-in duration-200">
+      {/* Back button & Header Strip */}
+      <div className="space-y-4 border-b border-[var(--md-sys-color-outline-variant)]/20 pb-5">
+        <div className="flex items-center justify-between">
+          <BackButton
+            fallbackPath={`/projects/${project.key}`}
+            label={`Back to ${project.key}`}
+          />
+          <Badge variant="primary" size="md">
+            Lead: {project.lead?.fullName || `User #${project.leadId}`}
+          </Badge>
+        </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-primary)] flex items-center justify-center font-black text-base shadow-xs">
-              {project.key}
-            </div>
+            <ProjectAvatar
+              name={project.name}
+              projectKey={project.key}
+              avatarUrl={project.avatarUrl}
+              size="lg"
+            />
             <div>
               <h1 className="text-xl sm:text-2xl font-black text-[var(--md-sys-color-on-surface)] tracking-tight">
-                {project.name} — People & Permissions
+                {project.name} — Project Settings
               </h1>
               <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-0.5">
-                Manage project role memberships, assign engineers, and configure permission schemes.
+                Centralized project administration hub for teams, components, releases, permissions, and automation.
               </p>
             </div>
           </div>
-
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary" size="md">
-              <Shield className="w-3.5 h-3.5 mr-1" />
-              {Object.values(myPermissions).filter(Boolean).length} Active Permissions
-            </Badge>
-            <Badge variant="primary" size="md">
-              Lead: {project.lead?.fullName || `User #${project.leadId}`}
-            </Badge>
-          </div>
         </div>
       </div>
 
-      {/* Notifications */}
-      {error && (
-        <div className="p-4 rounded-2xl bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] text-xs flex items-center justify-between animate-in fade-in">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0 text-[var(--md-sys-color-error)]" />
-            <span>{error}</span>
-          </div>
-          <button onClick={() => setError(null)} className="text-xs font-bold hover:underline cursor-pointer">
-            Dismiss
-          </button>
-        </div>
-      )}
+      {/* Two-Column Responsive Settings Layout */}
+      <div className="flex flex-col md:flex-row gap-6 items-start flex-1 min-w-0">
+        {/* Left Navigation Sidebar */}
+        <aside className="w-full md:w-60 lg:w-64 shrink-0">
+          <nav className="flex md:flex-col gap-1 overflow-x-auto md:overflow-x-visible pb-2 md:pb-0 p-1.5 rounded-2xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/30">
+            {navItems.map((item) => {
+              const active = activeTab === item.id;
+              const Icon = item.Icon;
 
-      {successMsg && (
-        <div className="p-4 rounded-2xl bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] text-xs flex items-center justify-between animate-in fade-in">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 shrink-0 text-[var(--md-sys-color-success)]" />
-            <span>{successMsg}</span>
-          </div>
-          <button onClick={() => setSuccessMsg(null)} className="text-xs font-bold hover:underline cursor-pointer">
-            Dismiss
-          </button>
-        </div>
-      )}
-
-      {/* Permission Scheme Selector Banner */}
-      <div className="p-5 rounded-3xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] flex items-center justify-center">
-            <FileCheck2 className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">
-              Active Permission Scheme
-            </h2>
-            <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
-              Controls granular operations (Browse, Create, Edit, Log Work, Transition) for this project.
-            </p>
-          </div>
-        </div>
-
-        <div className="w-full sm:w-72">
-          <Select
-            value={project.permissionSchemeId ? String(project.permissionSchemeId) : ''}
-            onValueChange={(val) => val && handleSchemeChange(Number(val))}
-          >
-            <SelectTrigger className="h-9 text-xs rounded-xl bg-[var(--md-sys-color-surface)]">
-              <SelectValue placeholder="Select permission scheme..." />
-            </SelectTrigger>
-            <SelectContent>
-              {permissionSchemes.map((scheme) => (
-                <SelectItem key={scheme.id} value={String(scheme.id)}>
-                  {scheme.name} {scheme.isDefault ? '(Default)' : ''}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Project Roles & Members Table */}
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-base font-bold text-[var(--md-sys-color-on-surface)]">
-              Project Roles & Members
-            </h2>
-            <p className="text-xs text-[var(--md-sys-color-on-surface-variant)]">
-              Assign engineers and directory groups to specific project roles.
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 gap-5">
-          {people.map((roleGroup) => (
-            <div
-              key={roleGroup.roleId}
-              className="p-6 rounded-3xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 space-y-4 shadow-xs"
-            >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--md-sys-color-outline-variant)]/20 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-primary)] flex items-center justify-center font-bold text-xs">
-                    <Building2 className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-black text-[var(--md-sys-color-on-surface)]">
-                        {roleGroup.roleName}
-                      </h3>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--md-sys-color-surface-container-highest)] font-mono font-bold">
-                        {roleGroup.users.length} Users, {roleGroup.groups.length} Groups
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] mt-0.5">
-                      {roleGroup.description}
-                    </p>
-                  </div>
-                </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedRoleId(selectedRoleId === roleGroup.roleId ? null : roleGroup.roleId)}
-                  leftIcon={<UserPlus className="w-3.5 h-3.5" />}
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setActiveTab(item.id)}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer shrink-0 md:shrink select-none ${
+                    active
+                      ? 'bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] shadow-2xs'
+                      : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container)]'
+                  }`}
                 >
-                  Assign Member
-                </Button>
-              </div>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <Icon className="w-4 h-4 shrink-0" />
+                    <span className="truncate">{item.label}</span>
+                  </div>
 
-              {/* Add Member Form for this role */}
-              {selectedRoleId === roleGroup.roleId && (
-                <div className="p-4 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/30 space-y-3 animate-in fade-in">
-                  <p className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">
-                    Assign User or Group to <span className="text-[var(--md-sys-color-primary)]">{roleGroup.roleName}</span>
-                  </p>
-
-                  <div className="flex flex-wrap items-center gap-3">
-                    <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)]/30 text-xs">
-                      <button
-                        type="button"
-                        onClick={() => setActorType('USER')}
-                        className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
-                          actorType === 'USER'
-                            ? 'bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)]'
-                            : 'text-[var(--md-sys-color-on-surface-variant)]'
-                        }`}
-                      >
-                        Individual Engineer
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setActorType('GROUP')}
-                        className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
-                          actorType === 'GROUP'
-                            ? 'bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)]'
-                            : 'text-[var(--md-sys-color-on-surface-variant)]'
-                        }`}
-                      >
-                        Directory Group
-                      </button>
-                    </div>
-
-                    {actorType === 'USER' ? (
-                      <div className="w-56 sm:w-64">
-                        <Select
-                          value={selectedUserId ? String(selectedUserId) : ''}
-                          onValueChange={(val) => setSelectedUserId(val ? Number(val) : '')}
-                        >
-                          <SelectTrigger size="sm" className="h-9 text-xs rounded-xl bg-[var(--md-sys-color-surface)]">
-                            <SelectValue placeholder="Select engineer..." />
-                          </SelectTrigger>
-                          <SelectContent className="max-h-60">
-                            {allUsers.map((u) => (
-                              <SelectItem key={u.id} value={String(u.id)}>
-                                <span className="truncate">{u.fullName} ({u.email})</span>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    ) : (
-                      <div className="w-56 sm:w-64">
-                        <Select
-                          value={selectedGroupId ? String(selectedGroupId) : ''}
-                          onValueChange={(val) => setSelectedGroupId(val ? Number(val) : '')}
-                        >
-                          <SelectTrigger size="sm" className="h-9 text-xs rounded-xl bg-[var(--md-sys-color-surface)]">
-                            <SelectValue placeholder="Select directory group..." />
-                          </SelectTrigger>
-                          <SelectContent className="max-h-60">
-                            {allGroups.map((g) => (
-                              <SelectItem key={g.id} value={String(g.id)}>
-                                <span className="truncate">{g.name} ({g.description || 'Group'})</span>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-
-                    <Button
-                      variant="filled"
-                      size="sm"
-                      onClick={() => handleAddActor(roleGroup.roleId)}
+                  {item.count !== undefined && item.count > 0 && (
+                    <span
+                      className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ml-1.5 shrink-0 ${
+                        active
+                          ? 'bg-[var(--md-sys-color-on-primary)]/20 text-[var(--md-sys-color-on-primary)]'
+                          : 'bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-on-surface)]'
+                      }`}
                     >
-                      Save Assignment
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSelectedRoleId(null)}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* Members Chips / Grid */}
-              <div className="space-y-3">
-                {/* Groups assigned */}
-                {roleGroup.groups.length > 0 && (
-                  <div className="space-y-1.5">
-                    <span className="text-[10px] font-bold text-[var(--md-sys-color-outline)] uppercase">
-                      Directory Groups
+                      {item.count}
                     </span>
-                    <div className="flex flex-wrap gap-2">
-                      {roleGroup.groups.map((ga) => (
-                        <div
-                          key={ga.actorId}
-                          className="px-3 py-1.5 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/30 flex items-center gap-2 text-xs"
-                        >
-                          <Shield className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
-                          <span className="font-bold text-[var(--md-sys-color-on-surface)]">
-                            {ga.group.name}
-                          </span>
-                          <button
-                            onClick={() => handleRemoveActor(roleGroup.roleId, ga.actorId)}
-                            className="text-[var(--md-sys-color-outline)] hover:text-[var(--md-sys-color-error)] cursor-pointer"
-                            title="Remove group assignment"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+        </aside>
 
-                {/* Individual users */}
-                {roleGroup.users.length > 0 && (
-                  <div className="space-y-1.5">
-                    <span className="text-[10px] font-bold text-[var(--md-sys-color-outline)] uppercase">
-                      Individual Engineers
-                    </span>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
-                      {roleGroup.users.map((ua) => (
-                        <div
-                          key={ua.actorId}
-                          className="p-2.5 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/20 flex items-center justify-between"
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <Avatar
-                              name={ua.user?.fullName || 'User'}
-                              avatarUrl={ua.user?.avatarUrl}
-                              role={ua.user?.systemRole}
-                              size="sm"
-                            />
-                            <div className="min-w-0">
-                              <p className="text-xs font-bold text-[var(--md-sys-color-on-surface)] truncate">
-                                {ua.user?.fullName || 'Assigned User'}
-                              </p>
-                              <p className="text-[10px] text-[var(--md-sys-color-on-surface-variant)] truncate">
-                                {ua.user?.email || ''}
-                              </p>
-                            </div>
-                          </div>
+        {/* Right Active Panel */}
+        <main className="flex-1 min-w-0 w-full p-6 rounded-3xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/30 shadow-2xs">
+          {activeTab === 'general' && (
+            <ProjectGeneralTab project={project} allUsers={allUsers} />
+          )}
 
-                          <button
-                            onClick={() => handleRemoveActor(roleGroup.roleId, ua.actorId)}
-                            className="p-1 text-[var(--md-sys-color-outline)] hover:text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/30 rounded-xl transition-colors cursor-pointer"
-                            title="Remove user assignment"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+          {activeTab === 'teams' && (
+            <ProjectTeamsTab projectId={projectId} allUsers={allUsers} />
+          )}
 
-                {roleGroup.users.length === 0 && roleGroup.groups.length === 0 && (
-                  <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] italic">
-                    No members assigned to this role yet. Click "Assign Member" above.
-                  </p>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+          {activeTab === 'components' && (
+            <ProjectComponentsTab projectId={projectId} allUsers={allUsers} />
+          )}
+
+          {activeTab === 'versions' && (
+            <ProjectVersionsTab projectId={projectId} />
+          )}
+
+          {activeTab === 'access' && (
+            <ProjectPermissionsTab
+              projectId={projectId}
+              project={project}
+              allUsers={allUsers}
+            />
+          )}
+
+          {activeTab === 'webhooks' && (
+            <ProjectWebhooksTab projectId={projectId} />
+          )}
+        </main>
       </div>
     </div>
   );
