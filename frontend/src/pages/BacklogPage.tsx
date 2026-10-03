@@ -18,6 +18,9 @@ import type {
 import { Loader2 } from 'lucide-react';
 import { useProjectsQuery } from '../api/queries';
 import { FloatingBulkActionBar } from '../components/common/FloatingBulkActionBar';
+import { AgileBacklogLeftDrawer } from '../components/agile/AgileBacklogLeftDrawer';
+
+const BACKLOG_DRAWER_STORAGE_KEY = 'bugtracker_backlog_drawer';
 
 export const BacklogPage: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -71,6 +74,31 @@ export const BacklogPage: React.FC = () => {
   // Collapse toggles state
   const [collapsedSprints, setCollapsedSprints] = useState<Record<string, boolean>>({});
   const [isBacklogCollapsed, setIsBacklogCollapsed] = useState<boolean>(false);
+
+  // Left Drawer state ('epics' | 'versions' | 'closed')
+  const [drawerState, setDrawerState] = useState<'epics' | 'versions' | 'closed'>(() => {
+    try {
+      const stored = localStorage.getItem(BACKLOG_DRAWER_STORAGE_KEY);
+      if (stored === 'epics' || stored === 'versions' || stored === 'closed') {
+        return stored;
+      }
+    } catch {
+      // Ignored
+    }
+    return 'closed'; // Default collapsed on desktop (Jira-aligned)
+  });
+
+  const handleToggleDrawer = (tab: 'epics' | 'versions') => {
+    setDrawerState((prev) => {
+      const next = prev === tab ? 'closed' : tab;
+      try {
+        localStorage.setItem(BACKLOG_DRAWER_STORAGE_KEY, next);
+      } catch {
+        // Ignored
+      }
+      return next;
+    });
+  };
 
   // Modals State
   const [isSprintFormOpen, setIsSprintFormOpen] = useState<boolean>(false);
@@ -138,6 +166,9 @@ export const BacklogPage: React.FC = () => {
         loading={loading}
         totalIssuesCount={filteredIssues.length}
         activeSprintName={activeSprint?.name}
+        isDrawerOpen={drawerState !== 'closed'}
+        drawerTab={drawerState === 'versions' ? 'versions' : 'epics'}
+        onToggleDrawer={handleToggleDrawer}
       />
 
       {/* Error alert banner */}
@@ -179,54 +210,91 @@ export const BacklogPage: React.FC = () => {
             currentUserId={user?.id}
           />
         ) : (
-          /* Backlog Planning View (Stacked Sprints + Product Backlog) */
-          <div className="w-full pb-8 space-y-4">
-            {/* Stacked Sprint Containers */}
-            {sprintList.map((sprint) => {
-              const sprintIssues = filteredIssues.filter((i) => i.sprintId === sprint.id);
-              return (
-                <SprintContainer
-                  key={sprint.id || sprint.name}
-                  sprint={sprint}
-                  issues={sprintIssues}
-                  availableSprints={sprintList}
-                  isCollapsed={!!collapsedSprints[sprint.name]}
-                  onToggleCollapse={() => handleToggleSprintCollapse(sprint.name)}
-                  onSelectIssue={handleOpenIssue}
-                  onMoveToSprint={handleMoveToSprint}
-                  onStartSprint={handleStartSprint}
-                  onCompleteSprint={(target) => {
-                    setCompletingSprint(target);
-                    setIsCompleteSprintOpen(true);
-                  }}
-                  onEditSprint={(s) => {
-                    setEditingSprint(s);
-                    setSprintFormMode('edit');
-                    setIsSprintFormOpen(true);
-                  }}
-                  onDeleteSprint={(sprintId, sprintName) => handleDeleteSprint(sprintId, sprintName)}
-                  onGoToActiveBoard={() => setViewMode('board')}
-                  onQuickCreateInSprint={(sId) => {
-                    setCreateIssueSprintId(sId);
-                    setIsCreateIssueOpen(true);
-                  }}
-                />
-              );
-            })}
+          /* Backlog Planning View (Side Drawer + Stacked Sprints + Product Backlog) */
+          <div className="flex flex-col md:flex-row gap-4 items-start w-full pb-8">
+            {/* Left Rail: Epics & Releases Drawer */}
+            {drawerState !== 'closed' && (
+              <AgileBacklogLeftDrawer
+                projectId={selectedProjectId}
+                projectKey={activeProject?.key}
+                issues={issues}
+                activeDrawerTab={drawerState === 'versions' ? 'versions' : 'epics'}
+                onDrawerTabChange={(tab) => {
+                  setDrawerState(tab);
+                  try {
+                    localStorage.setItem(BACKLOG_DRAWER_STORAGE_KEY, tab);
+                  } catch {
+                    // Ignored
+                  }
+                }}
+                selectedEpicId={filters.epicId}
+                onSelectEpic={(epicId) => setFilters({ ...filters, epicId })}
+                selectedVersionId={filters.versionId}
+                onSelectVersion={(versionId) => setFilters({ ...filters, versionId })}
+                onClose={() => {
+                  setDrawerState('closed');
+                  try {
+                    localStorage.setItem(BACKLOG_DRAWER_STORAGE_KEY, 'closed');
+                  } catch {
+                    // Ignored
+                  }
+                }}
+                onCreateEpic={() => {
+                  setCreateIssueSprintId(null);
+                  setIsCreateIssueOpen(true);
+                }}
+              />
+            )}
 
-            {/* Product Backlog Section */}
-            <BacklogSection
-              issues={filteredIssues.filter((i) => !i.sprintId)}
-              availableSprints={sprintList}
-              isCollapsed={isBacklogCollapsed}
-              onToggleCollapse={() => setIsBacklogCollapsed((prev) => !prev)}
-              onSelectIssue={handleOpenIssue}
-              onMoveToSprint={handleMoveToSprint}
-              onQuickCreateInBacklog={() => {
-                setCreateIssueSprintId(null);
-                setIsCreateIssueOpen(true);
-              }}
-            />
+            {/* Right Main Column: Stacked Sprints + Product Backlog */}
+            <div className="flex-1 min-w-0 w-full space-y-4">
+              {/* Stacked Sprint Containers */}
+              {sprintList.map((sprint) => {
+                const sprintIssues = filteredIssues.filter((i) => i.sprintId === sprint.id);
+                return (
+                  <SprintContainer
+                    key={sprint.id || sprint.name}
+                    sprint={sprint}
+                    issues={sprintIssues}
+                    availableSprints={sprintList}
+                    isCollapsed={!!collapsedSprints[sprint.name]}
+                    onToggleCollapse={() => handleToggleSprintCollapse(sprint.name)}
+                    onSelectIssue={handleOpenIssue}
+                    onMoveToSprint={handleMoveToSprint}
+                    onStartSprint={handleStartSprint}
+                    onCompleteSprint={(target) => {
+                      setCompletingSprint(target);
+                      setIsCompleteSprintOpen(true);
+                    }}
+                    onEditSprint={(s) => {
+                      setEditingSprint(s);
+                      setSprintFormMode('edit');
+                      setIsSprintFormOpen(true);
+                    }}
+                    onDeleteSprint={(sprintId, sprintName) => handleDeleteSprint(sprintId, sprintName)}
+                    onGoToActiveBoard={() => setViewMode('board')}
+                    onQuickCreateInSprint={(sId) => {
+                      setCreateIssueSprintId(sId);
+                      setIsCreateIssueOpen(true);
+                    }}
+                  />
+                );
+              })}
+
+              {/* Product Backlog Section */}
+              <BacklogSection
+                issues={filteredIssues.filter((i) => !i.sprintId)}
+                availableSprints={sprintList}
+                isCollapsed={isBacklogCollapsed}
+                onToggleCollapse={() => setIsBacklogCollapsed((prev) => !prev)}
+                onSelectIssue={handleOpenIssue}
+                onMoveToSprint={handleMoveToSprint}
+                onQuickCreateInBacklog={() => {
+                  setCreateIssueSprintId(null);
+                  setIsCreateIssueOpen(true);
+                }}
+              />
+            </div>
           </div>
         )}
       </div>

@@ -147,6 +147,20 @@ export function useAgileBacklog(selectedProjectId: number | null) {
       if (filters.onlyMine && user && issue.assignee?.id !== user.id) return false;
       if (filters.unassignedOnly && issue.assignee !== null && issue.assignee !== undefined) return false;
       if (filters.highPriorityOnly && issue.priority !== 'CRITICAL' && issue.priority !== 'HIGH') return false;
+      if (filters.epicId && filters.epicId !== 'ALL') {
+        if (filters.epicId === 'NONE') {
+          if (issue.parentId || issue.issueType === 'EPIC') return false;
+        } else {
+          if (issue.parentId !== filters.epicId && issue.id !== filters.epicId) return false;
+        }
+      }
+      if (filters.versionId && filters.versionId !== 'ALL') {
+        if (filters.versionId === 'NONE') {
+          if (issue.fixVersionId) return false;
+        } else {
+          if (issue.fixVersionId !== filters.versionId) return false;
+        }
+      }
       if (filters.searchTerm.trim()) {
         const term = filters.searchTerm.toLowerCase();
         const matchTitle = issue.title.toLowerCase().includes(term);
@@ -178,11 +192,15 @@ export function useAgileBacklog(selectedProjectId: number | null) {
   }, [sprintsData]);
 
   const sprintList = useMemo(() => {
-    return Object.values(sprintDefinitions).sort((a, b) => {
+    let list = Object.values(sprintDefinitions);
+    if (filters.teamId && filters.teamId !== 'ALL') {
+      list = list.filter((s) => s.teamId === filters.teamId);
+    }
+    return list.sort((a, b) => {
       const order = { ACTIVE: 0, PLANNED: 1, COMPLETED: 2 };
       return order[a.status] - order[b.status];
     });
-  }, [sprintDefinitions]);
+  }, [sprintDefinitions, filters.teamId]);
 
   const loadData = async () => {
     await Promise.all([refetchIssues(), refetchSprints()]);

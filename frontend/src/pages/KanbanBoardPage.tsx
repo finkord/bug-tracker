@@ -5,6 +5,10 @@ import {
   useProjectsQuery,
   useProjectQuickFiltersQuery,
   useProjectComponentsQuery,
+  useProjectVersionsQuery,
+  useTeamsQuery,
+  useProjectSprintsQuery,
+  useCompleteSprintMutation,
   useIssuesQuery,
   useUpdateIssueStatusMutation,
   useUpdateIssueMutation,
@@ -28,15 +32,26 @@ import { KanbanMobileView } from '../components/kanban/KanbanMobileView';
 import { KanbanBoardSettingsModal } from '../components/kanban/KanbanBoardSettingsModal';
 import { SaveFilterModal } from '../components/kanban/SaveFilterModal';
 import { FloatingBulkActionBar } from '../components/common/FloatingBulkActionBar';
+import { CompleteSprintModal } from '../components/agile/CompleteSprintModal';
+import { SprintAnalyticsModal } from '../components/kanban/SprintAnalyticsModal';
+import { Button } from '../components/ui';
 import { useListKeyboardNavigation } from '../hooks';
 import type {
   KanbanSettings,
   BoardViewMode,
 } from '../types/kanban';
 import { DEFAULT_KANBAN_SETTINGS } from '../types/kanban';
-import { CheckCircle2 } from 'lucide-react';
+import {
+  CheckCircle2,
+  Zap,
+  BarChart3,
+  Clock,
+  Users,
+  ArrowRight,
+} from 'lucide-react';
 
 const SETTINGS_STORAGE_KEY = 'bt_kanban_settings';
+const BOARD_MODE_STORAGE_KEY = 'bt_board_mode';
 
 export const KanbanBoardPage: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -147,21 +162,100 @@ export const KanbanBoardPage: React.FC = () => {
     }
   };
 
+  // Board Mode: 'kanban' continuous flow vs 'scrum' active sprint execution
+  const [boardMode, setBoardMode] = useState<'kanban' | 'scrum'>(() => {
+    const urlMode = searchParams.get('mode');
+    if (urlMode === 'scrum' || urlMode === 'kanban') return urlMode;
+    try {
+      const stored = localStorage.getItem(BOARD_MODE_STORAGE_KEY);
+      if (stored === 'scrum' || stored === 'kanban') return stored;
+    } catch {
+      // Ignored
+    }
+    return 'kanban';
+  });
+
+  const handleBoardModeChange = (mode: 'kanban' | 'scrum') => {
+    setBoardMode(mode);
+    try {
+      localStorage.setItem(BOARD_MODE_STORAGE_KEY, mode);
+    } catch {
+      // Ignored
+    }
+  };
+
   // Filters State
   const [searchTerm, setSearchTerm] = useState<string>(searchParams.get('search') || '');
   const [filterType, setFilterType] = useState<string>(searchParams.get('issueType') || 'ALL');
   const [filterPriority, setFilterPriority] = useState<string>(searchParams.get('priority') || 'ALL');
   const [selectedComponentId, setSelectedComponentId] = useState<number | null>(null);
-  // Quick Filters & Components State
+  const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
+  const [selectedVersionId, setSelectedVersionId] = useState<number | null>(null);
+
+  // Queries for Components, Quick Filters, Versions, Teams, and Sprints
   const { data: projectQuickFilters = [] } = useProjectQuickFiltersQuery(selectedProjectId);
   const { data: projectComponents = [] } = useProjectComponentsQuery(selectedProjectId);
+  const { data: projectVersions = [] } = useProjectVersionsQuery(selectedProjectId);
+  const { data: teams = [] } = useTeamsQuery(selectedProjectId);
+  const { data: projectSprints = [] } = useProjectSprintsQuery(
+    selectedProjectId,
+    selectedTeamId || undefined,
+  );
+  const completeSprintMutation = useCompleteSprintMutation();
+
   const [activeQuickFilterIds, setActiveQuickFilterIds] = useState<number[]>([]);
   const [settingsInitialTab, setSettingsInitialTab] = useState<'layout' | 'quickFilters'>('layout');
+  const [isCompleteSprintOpen, setIsCompleteSprintOpen] = useState(false);
+  const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
+
+  const activeSprint = useMemo(() => {
+    return projectSprints.find((s) => s.status === 'ACTIVE') || null;
+  }, [projectSprints]);
+
+  const sprintDefinitions = useMemo(() => {
+    const map: Record<string, any> = {};
+    projectSprints.forEach((s) => {
+      map[s.name] = s;
+    });
+    return map;
+  }, [projectSprints]);
+
+  const daysRemaining = useMemo(() => {
+    if (!activeSprint?.endDate) return null;
+    const end = new Date(activeSprint.endDate).getTime();
+    const diff = end - Date.now();
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+  }, [activeSprint?.endDate]);
+
+  const activeSprintIssues = useMemo(() => {
+    if (!activeSprint) return [];
+    return issues.filter((i) => i.sprintId === activeSprint.id);
+  }, [issues, activeSprint]);
+
+  const completedSprintIssuesCount = useMemo(() => {
+    return activeSprintIssues.filter((i) => i.status === 'RESOLVED' || i.status === 'CLOSED').length;
+  }, [activeSprintIssues]);
 
   const handleToggleQuickFilter = (id: number) => {
     setActiveQuickFilterIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
+  };
+
+  const handleConfirmCompleteSprint = async (
+    sprintId: number,
+    rolloverTargetSprintId: number | null,
+  ) => {
+    try {
+      await completeSprintMutation.mutateAsync({
+        projectId: selectedProjectId,
+        sprintId,
+        data: { transferSprintId: rolloverTargetSprintId },
+      });
+      setIsCompleteSprintOpen(false);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to complete sprint');
+    }
   };
 
   // Modals state
@@ -234,12 +328,25 @@ export const KanbanBoardPage: React.FC = () => {
     };
   }, [selectedProjectId, issueFilter, queryClient]);
 
-  // Filtering logic respecting dynamic quick filters and component
+  // Filtering logic respecting board mode, dynamic quick filters, component, release, and team
   const filteredIssues = useMemo(() => {
     return issues.filter((issue) => {
+      // In Scrum active sprint mode, only display tickets belonging to the active sprint
+      if (boardMode === 'scrum') {
+        if (!activeSprint || issue.sprintId !== activeSprint.id) return false;
+      }
       if (filterType !== 'ALL' && issue.issueType !== filterType) return false;
       if (filterPriority !== 'ALL' && issue.priority !== filterPriority) return false;
       if (selectedComponentId !== null && issue.componentId !== selectedComponentId) return false;
+      if (selectedVersionId !== null && issue.fixVersionId !== selectedVersionId) return false;
+      if (selectedTeamId !== null) {
+        if (issue.sprint?.id) {
+          const sprint = projectSprints.find((s) => s.id === issue.sprint?.id);
+          if (!sprint || sprint.teamId !== selectedTeamId) return false;
+        } else {
+          return false;
+        }
+      }
 
       // Evaluate active quick filter JQL conditions
       for (const filterId of activeQuickFilterIds) {
@@ -269,7 +376,21 @@ export const KanbanBoardPage: React.FC = () => {
 
       return true;
     });
-  }, [issues, filterType, filterPriority, selectedComponentId, activeQuickFilterIds, projectQuickFilters, searchTerm, user]);
+  }, [
+    issues,
+    boardMode,
+    activeSprint,
+    filterType,
+    filterPriority,
+    selectedComponentId,
+    selectedVersionId,
+    selectedTeamId,
+    projectSprints,
+    activeQuickFilterIds,
+    projectQuickFilters,
+    searchTerm,
+    user,
+  ]);
 
   // J/K/Enter/O high-velocity list keyboard navigation
   const { focusedId } = useListKeyboardNavigation({
@@ -396,6 +517,8 @@ export const KanbanBoardPage: React.FC = () => {
       {/* Kanban Action Toolbar */}
       <KanbanToolbar
         activeProject={activeProject}
+        boardMode={boardMode}
+        onBoardModeChange={handleBoardModeChange}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         filterType={filterType}
@@ -405,6 +528,12 @@ export const KanbanBoardPage: React.FC = () => {
         projectComponents={projectComponents}
         selectedComponentId={selectedComponentId}
         onSelectComponent={setSelectedComponentId}
+        projectVersions={projectVersions}
+        selectedVersionId={selectedVersionId}
+        onSelectVersion={setSelectedVersionId}
+        teams={teams}
+        selectedTeamId={selectedTeamId}
+        onSelectTeam={setSelectedTeamId}
         projectQuickFilters={projectQuickFilters}
         activeQuickFilterIds={activeQuickFilterIds}
         onToggleQuickFilter={handleToggleQuickFilter}
@@ -439,6 +568,145 @@ export const KanbanBoardPage: React.FC = () => {
           >
             Dismiss
           </button>
+        </div>
+      )}
+
+      {/* Scrum Mode: Active Sprint Goal & Status Banner */}
+      {boardMode === 'scrum' && (
+        <div className="mt-3">
+          {activeSprint ? (
+            <div className="p-4 rounded-3xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/30 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2 mb-1">
+                  <span className="text-sm font-bold text-[var(--md-sys-color-on-surface)] flex items-center gap-1.5">
+                    <Zap className="w-4 h-4 text-[var(--md-sys-color-primary)] shrink-0" />
+                    <span>{activeSprint.name}</span>
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] uppercase">
+                    Active Sprint
+                  </span>
+                  {activeSprint.team && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[var(--md-sys-color-tertiary-container)] text-[var(--md-sys-color-on-tertiary-container)] flex items-center gap-1">
+                      <Users className="w-3 h-3" />
+                      <span>{activeSprint.team.name}</span>
+                    </span>
+                  )}
+                  {daysRemaining !== null && (
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-semibold flex items-center gap-1 ${
+                        daysRemaining < 0
+                          ? 'bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)]'
+                          : daysRemaining <= 2
+                          ? 'bg-[var(--md-sys-color-tertiary-container)] text-[var(--md-sys-color-on-tertiary-container)]'
+                          : 'bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)]'
+                      }`}
+                    >
+                      <Clock className="w-3 h-3" />
+                      <span>
+                        {daysRemaining < 0
+                          ? `${Math.abs(daysRemaining)}d overdue`
+                          : daysRemaining === 0
+                          ? 'Ends today'
+                          : `${daysRemaining}d left`}
+                      </span>
+                    </span>
+                  )}
+                </div>
+
+                {activeSprint.goal ? (
+                  <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] line-clamp-1 italic">
+                    Goal: {activeSprint.goal}
+                  </p>
+                ) : (
+                  <p className="text-xs text-[var(--md-sys-color-outline)] italic">
+                    No sprint goal defined
+                  </p>
+                )}
+
+                {/* Capacity & Progress Mini Bar */}
+                <div className="flex items-center gap-3 mt-2 text-xs text-[var(--md-sys-color-on-surface-variant)]">
+                  <div className="flex items-center gap-1 font-mono text-[11px]">
+                    <span>
+                      {completedSprintIssuesCount}/{activeSprintIssues.length} issues done
+                    </span>
+                  </div>
+                  <div className="w-32 h-2 rounded-full bg-[var(--md-sys-color-surface-container-highest)] overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-[var(--md-sys-color-primary)] transition-all duration-300"
+                      style={{
+                        width: `${
+                          activeSprintIssues.length > 0
+                            ? Math.round((completedSprintIssuesCount / activeSprintIssues.length) * 100)
+                            : 0
+                        }%`,
+                      }}
+                    />
+                  </div>
+                  <span className="font-mono text-[10px] opacity-80">
+                    {activeSprintIssues.length > 0
+                      ? Math.round((completedSprintIssuesCount / activeSprintIssues.length) * 100)
+                      : 0}
+                    %
+                  </span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsAnalyticsOpen(true)}
+                  className="text-xs flex items-center gap-1.5"
+                >
+                  <BarChart3 className="w-3.5 h-3.5" />
+                  <span>Sprint Analytics</span>
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setIsCompleteSprintOpen(true)}
+                  className="text-xs flex items-center gap-1.5"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Complete Sprint</span>
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="p-8 my-2 rounded-3xl bg-[var(--md-sys-color-surface-container-low)] border border-dashed border-[var(--md-sys-color-outline-variant)] text-center flex flex-col items-center justify-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-primary)] flex items-center justify-center">
+                <Zap className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-[var(--md-sys-color-on-surface)]">
+                  No Active Sprint
+                </h3>
+                <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] max-w-md">
+                  There is currently no running sprint in this project. Start a planned sprint from the Backlog planning board to track active sprint delivery here.
+                </p>
+              </div>
+              <div className="flex items-center gap-2.5 pt-2">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => navigate(`/projects/${selectedProject?.key || selectedProjectId}/backlog`)}
+                  className="flex items-center gap-1.5 text-xs"
+                >
+                  <span>Go to Backlog Planning</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleBoardModeChange('kanban')}
+                  className="text-xs"
+                >
+                  <span>Switch to Kanban Continuous Flow</span>
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -525,6 +793,30 @@ export const KanbanBoardPage: React.FC = () => {
 
       {/* Floating Bulk Action Bar */}
       <FloatingBulkActionBar projectId={selectedProjectId} />
+
+      {/* Complete Sprint Modal */}
+      {activeSprint && (
+        <CompleteSprintModal
+          isOpen={isCompleteSprintOpen}
+          onClose={() => setIsCompleteSprintOpen(false)}
+          sprint={activeSprint}
+          issues={activeSprintIssues}
+          availableSprints={projectSprints}
+          onConfirmComplete={handleConfirmCompleteSprint}
+        />
+      )}
+
+      {/* Sprint Analytics & Burndown Modal */}
+      {activeSprint && (
+        <SprintAnalyticsModal
+          isOpen={isAnalyticsOpen}
+          onClose={() => setIsAnalyticsOpen(false)}
+          sprint={activeSprint}
+          sprintIssues={activeSprintIssues}
+          allSprints={sprintDefinitions}
+          allIssues={issues}
+        />
+      )}
     </div>
   );
 };

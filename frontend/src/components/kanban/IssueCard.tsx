@@ -25,6 +25,9 @@ import {
   GripVertical,
   Check,
   GitCommitHorizontal,
+  Layers,
+  Box,
+  Milestone,
 } from 'lucide-react';
 import { Dropdown } from '../ui';
 import { useIssueSelectionStore } from '../../store/useIssueSelectionStore';
@@ -393,7 +396,7 @@ const IssueCardComponent: React.FC<IssueCardProps> = ({
         } ${isFocused ? 'ring-2 ring-[var(--md-sys-color-primary)] ring-offset-1 ring-offset-[var(--md-sys-color-surface)] shadow-md !border-[var(--md-sys-color-primary)]' : ''}`}
       >
         <div className="flex items-center justify-between gap-1.5 mb-1.5 pointer-events-none">
-          <div className="flex items-center gap-1.5 min-w-0">
+          <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
             {renderSelectionCheckbox()}
             <a
               href={`/issues/${issue.key}`}
@@ -407,6 +410,33 @@ const IssueCardComponent: React.FC<IssueCardProps> = ({
               {issue.key}
             </a>
             {renderTypeBadge(issue.issueType, true)}
+            {issue.parent && (
+              <span
+                className="inline-flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] whitespace-nowrap shrink-0 truncate max-w-[80px]"
+                title={`Epic: ${issue.parent.title || issue.parent.key}`}
+              >
+                <Layers className="w-2.5 h-2.5 shrink-0" />
+                <span>{issue.parent.key}</span>
+              </span>
+            )}
+            {issue.component && (
+              <span
+                className="inline-flex items-center gap-0.5 text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] border border-[var(--md-sys-color-outline-variant)]/30 whitespace-nowrap shrink-0 truncate max-w-[80px]"
+                title={`Component: ${issue.component.name}`}
+              >
+                <Box className="w-2.5 h-2.5 shrink-0" />
+                <span>{issue.component.name}</span>
+              </span>
+            )}
+            {issue.fixVersion && (
+              <span
+                className="inline-flex items-center gap-0.5 text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--md-sys-color-tertiary-container)]/50 text-[var(--md-sys-color-on-tertiary-container)] whitespace-nowrap shrink-0 truncate max-w-[80px]"
+                title={`Version: ${issue.fixVersion.name}`}
+              >
+                <Milestone className="w-2.5 h-2.5 shrink-0" />
+                <span>{issue.fixVersion.name}</span>
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-1">
@@ -534,6 +564,33 @@ const IssueCardComponent: React.FC<IssueCardProps> = ({
           {issue.sprint?.name && (
             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--md-sys-color-tertiary-container)] text-[var(--md-sys-color-on-tertiary-container)] whitespace-nowrap shrink-0 truncate max-w-[90px]">
               {issue.sprint.name}
+            </span>
+          )}
+          {issue.parent && (
+            <span
+              className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] whitespace-nowrap shrink-0 truncate max-w-[110px]"
+              title={`Epic: ${issue.parent.title || issue.parent.key}`}
+            >
+              <Layers className="w-2.5 h-2.5 shrink-0" />
+              <span>{issue.parent.key}</span>
+            </span>
+          )}
+          {issue.component && (
+            <span
+              className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] border border-[var(--md-sys-color-outline-variant)]/30 whitespace-nowrap shrink-0 truncate max-w-[100px]"
+              title={`Component: ${issue.component.name}`}
+            >
+              <Box className="w-2.5 h-2.5 shrink-0" />
+              <span>{issue.component.name}</span>
+            </span>
+          )}
+          {issue.fixVersion && (
+            <span
+              className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--md-sys-color-tertiary-container)]/50 text-[var(--md-sys-color-on-tertiary-container)] whitespace-nowrap shrink-0 truncate max-w-[100px]"
+              title={`Fix Version: ${issue.fixVersion.name}`}
+            >
+              <Milestone className="w-2.5 h-2.5 shrink-0" />
+              <span>{issue.fixVersion.name}</span>
             </span>
           )}
         </div>

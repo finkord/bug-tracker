@@ -1,6 +1,7 @@
 import React from 'react';
 import type { ProjectItem } from '../../api/client';
 import type { AgileViewMode, AgileFilterState } from '../../types/agile';
+import { useTeamsQuery } from '../../api/queries/useTeamsQuery.js';
 import {
   Button,
   Tooltip,
@@ -30,6 +31,8 @@ import {
   Zap,
   Flame,
   AlertCircle,
+  Milestone,
+  Users,
 } from 'lucide-react';
 
 interface AgileToolbarProps {
@@ -44,10 +47,13 @@ interface AgileToolbarProps {
   loading: boolean;
   totalIssuesCount: number;
   activeSprintName?: string;
+  isDrawerOpen?: boolean;
+  drawerTab?: 'epics' | 'versions';
+  onToggleDrawer?: (tab: 'epics' | 'versions') => void;
 }
 
 export const AgileToolbar: React.FC<AgileToolbarProps> = ({
-  activeProject: _activeProject,
+  activeProject,
   viewMode,
   onViewModeChange,
   filters,
@@ -58,7 +64,12 @@ export const AgileToolbar: React.FC<AgileToolbarProps> = ({
   loading,
   totalIssuesCount,
   activeSprintName,
+  isDrawerOpen = false,
+  drawerTab = 'epics',
+  onToggleDrawer,
 }) => {
+  const { data: teams = [] } = useTeamsQuery(activeProject?.id);
+
   const handleToggleQuickFilter = (key: 'onlyMine' | 'unassignedOnly' | 'highPriorityOnly') => {
     onFiltersChange({
       ...filters,
@@ -111,6 +122,39 @@ export const AgileToolbar: React.FC<AgileToolbarProps> = ({
               </TabsTrigger>
             </TabsList>
           </Tabs>
+
+          {/* Epics and Versions Drawer Toggles (When in Backlog planning mode) */}
+          {viewMode === 'backlog' && onToggleDrawer && (
+            <div className="flex items-center gap-1.5 ml-1">
+              <button
+                type="button"
+                onClick={() => onToggleDrawer('epics')}
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                  isDrawerOpen && drawerTab === 'epics'
+                    ? 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] ring-1 ring-[var(--md-sys-color-primary)]'
+                    : 'bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)]'
+                }`}
+                title="Toggle Epics side panel"
+              >
+                <Layers className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
+                <span>Epics</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onToggleDrawer('versions')}
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                  isDrawerOpen && drawerTab === 'versions'
+                    ? 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] ring-1 ring-[var(--md-sys-color-primary)]'
+                    : 'bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)]'
+                }`}
+                title="Toggle Releases / Versions side panel"
+              >
+                <Milestone className="w-3.5 h-3.5 text-[var(--md-sys-color-tertiary)]" />
+                <span>Versions</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Right Controls: View Switcher (Backlog Planning vs Active Sprint), Actions */}
@@ -151,7 +195,7 @@ export const AgileToolbar: React.FC<AgileToolbarProps> = ({
         </div>
       </div>
 
-      {/* Bottom Row: Search, Type & Priority Selects, Quick Filters */}
+      {/* Bottom Row: Search, Type & Priority Selects, Team Filter, Quick Filters */}
       <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
         <div className="flex flex-wrap items-center gap-2 flex-1 min-w-[260px]">
           {/* Search Input */}
@@ -174,6 +218,36 @@ export const AgileToolbar: React.FC<AgileToolbarProps> = ({
               </button>
             )}
           </div>
+
+          {/* Team Filter Select (if teams exist) */}
+          {teams.length > 0 && (
+            <div className="w-36">
+              <Select
+                value={String(filters.teamId || 'ALL')}
+                onValueChange={(val) =>
+                  onFiltersChange({
+                    ...filters,
+                    teamId: val === 'ALL' ? 'ALL' : Number(val),
+                  })
+                }
+              >
+                <SelectTrigger size="sm" className="rounded-full bg-[var(--md-sys-color-surface-container)] text-xs border-0">
+                  <SelectValue placeholder="All Teams" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">All Teams</SelectItem>
+                  {teams.map((t) => (
+                    <SelectItem key={t.id} value={String(t.id)}>
+                      <span className="flex items-center gap-1.5">
+                        <Users className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)] shrink-0" />
+                        <span className="truncate">{t.name}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Type Filter Select */}
           <div className="w-36">

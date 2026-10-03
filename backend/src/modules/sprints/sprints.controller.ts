@@ -5,6 +5,7 @@ import {
   Patch,
   Delete,
   Param,
+  Query,
   Body,
   UseGuards,
   ParseIntPipe,
@@ -29,9 +30,16 @@ export class SprintsController {
 
   @Get()
   @RequireProjectPermission(ProjectPermission.BROWSE_PROJECTS)
-  @ApiOperation({ summary: 'List all sprints for a given project' })
-  async getProjectSprints(@Param('projectId', ParseIntPipe) projectId: number) {
-    return this.sprintsService.getProjectSprints(projectId);
+  @ApiOperation({ summary: 'List all sprints for a given project, optionally filtered by team' })
+  async getProjectSprints(
+    @Param('projectId', ParseIntPipe) projectId: number,
+    @Query('teamId') teamId?: string,
+  ) {
+    const parsedTeamId = teamId ? parseInt(teamId, 10) : undefined;
+    return this.sprintsService.getProjectSprints(
+      projectId,
+      Number.isNaN(parsedTeamId) ? undefined : parsedTeamId,
+    );
   }
 
   @Post()

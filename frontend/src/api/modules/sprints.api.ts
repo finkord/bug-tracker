@@ -8,8 +8,10 @@ import type {
 } from '../types/sprints.types.js';
 
 export const sprintsApi = {
-  getProjectSprints: (projectId: number) =>
-    request<SprintItem[]>(`/projects/${projectId}/sprints`),
+  getProjectSprints: (projectId: number, teamId?: number) =>
+    request<SprintItem[]>(
+      `/projects/${projectId}/sprints${teamId ? `?teamId=${teamId}` : ''}`,
+    ),
 
   createSprint: (projectId: number, payload: CreateSprintPayload) =>
     request<SprintItem>(`/projects/${projectId}/sprints`, {

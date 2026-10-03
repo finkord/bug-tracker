@@ -25,6 +25,9 @@ export interface AgileFilterState {
   onlyMine: boolean;
   unassignedOnly: boolean;
   highPriorityOnly: boolean;
+  teamId?: number | 'ALL';
+  epicId?: number | 'ALL' | 'NONE';
+  versionId?: number | 'ALL' | 'NONE';
 }
 
 export const DEFAULT_AGILE_FILTERS: AgileFilterState = {
@@ -34,4 +37,7 @@ export const DEFAULT_AGILE_FILTERS: AgileFilterState = {
   onlyMine: false,
   unassignedOnly: false,
   highPriorityOnly: false,
+  teamId: 'ALL',
+  epicId: 'ALL',
+  versionId: 'ALL',
 };

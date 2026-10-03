@@ -10,6 +10,7 @@ import { IssueLink } from './entities/issue-link.entity.js';
 import { Project } from '../projects/entities/project.entity.js';
 import { User } from '../users/entities/user.entity.js';
 import { Sprint } from '../sprints/entities/sprint.entity.js';
+import { ProjectComponent } from '../projects/entities/project-component.entity.js';
 import { IssuesController } from './issues.controller.js';
 import { IssuesService } from './issues.service.js';
 import { IssueCoreService } from './services/issue-core.service.js';
@@ -35,6 +36,7 @@ import { WebhooksModule } from '../webhooks/webhooks.module.js';
       Attachment,
       IssueLink,
       Sprint,
+      ProjectComponent,
     ]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     RbacModule,

@@ -9,18 +9,18 @@ import { issueKeys } from './useIssuesQuery';
 
 export const sprintKeys = {
   all: ['sprints'] as const,
-  project: (projectId?: number) => [...sprintKeys.all, 'project', projectId] as const,
+  project: (projectId?: number, teamId?: number) =>
+    [...sprintKeys.all, 'project', projectId, { teamId }] as const,
   burndown: (projectId?: number, sprintId?: number) =>
     [...sprintKeys.all, 'burndown', projectId, sprintId] as const,
   flowMetrics: (projectId?: number, sprintId?: number) =>
     [...sprintKeys.all, 'flow-metrics', projectId, sprintId] as const,
 };
 
-
-export function useProjectSprintsQuery(projectId?: number) {
+export function useProjectSprintsQuery(projectId?: number, teamId?: number) {
   return useQuery({
-    queryKey: sprintKeys.project(projectId),
-    queryFn: () => api.getProjectSprints(projectId!),
+    queryKey: sprintKeys.project(projectId, teamId),
+    queryFn: () => api.getProjectSprints(projectId!, teamId),
     enabled: typeof projectId === 'number' && !isNaN(projectId),
   });
 }

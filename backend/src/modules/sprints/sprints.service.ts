@@ -37,18 +37,22 @@ export class SprintsService {
   /**
    * Retrieves all sprints for a specific project, syncing legacy issue sprints if needed.
    */
-  async getProjectSprints(projectId: number): Promise<Sprint[]> {
+  async getProjectSprints(projectId: number, teamId?: number | null): Promise<Sprint[]> {
     const project = await this.projectRepository.findOne({ where: { id: projectId } });
     if (!project) {
       throw new NotFoundException(`Project #${projectId} not found`);
     }
+    const whereClause: any = { projectId };
+    if (teamId !== undefined && teamId !== null) {
+      whereClause.teamId = teamId;
+    }
     const existingSprints = await this.sprintRepository.find({
-      where: { projectId },
+      where: whereClause,
       relations: { team: true },
       order: { createdAt: 'ASC' },
       take: 100,
     });
-    if (existingSprints.length === 0) {
+    if (existingSprints.length === 0 && (teamId === undefined || teamId === null)) {
       return this.initializeDefaultSprints(projectId);
     }
     return existingSprints;

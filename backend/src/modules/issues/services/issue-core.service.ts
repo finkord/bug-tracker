@@ -8,6 +8,7 @@ import { Project } from '../../projects/entities/project.entity.js';
 import { User, SystemRole } from '../../users/entities/user.entity.js';
 import { Attachment } from '../entities/attachment.entity.js';
 import { Sprint } from '../../sprints/entities/sprint.entity.js';
+import { ProjectComponent } from '../../projects/entities/project-component.entity.js';
 import { EventsGateway } from '../../events/events.gateway.js';
 import { CreateIssueDto } from '../dto/create-issue.dto.js';
 import { ListIssuesQueryDto } from '../dto/list-issues-query.dto.js';
@@ -46,6 +47,8 @@ export class IssueCoreService {
     private readonly attachmentRepository: Repository<Attachment>,
     @InjectRepository(Sprint)
     private readonly sprintRepository: Repository<Sprint>,
+    @InjectRepository(ProjectComponent)
+    private readonly componentRepository: Repository<ProjectComponent>,
     private readonly issueLinksService: IssueLinksService,
     private readonly eventsGateway: EventsGateway,
     private readonly jqlParserService: JqlParserService,
@@ -420,6 +423,16 @@ export class IssueCoreService {
 
     const issueType = dto.issueType || (parentId ? IssueType.SUBTASK : IssueType.BUG);
 
+    let assigneeId: number | null = dto.assigneeId || null;
+    if (!assigneeId && dto.componentId) {
+      const component = await this.componentRepository.findOne({
+        where: { id: dto.componentId, projectId: dto.projectId },
+      });
+      if (component?.leadId) {
+        assigneeId = component.leadId;
+      }
+    }
+
     const issue = this.issueRepository.create({
       projectId: dto.projectId,
       project,
@@ -437,7 +450,7 @@ export class IssueCoreService {
       labels: dto.labels || [],
       reporterId: reporter.id,
       reporter,
-      assigneeId: dto.assigneeId || null,
+      assigneeId,
     });
 
     const saved = await this.issueRepository.save(issue);

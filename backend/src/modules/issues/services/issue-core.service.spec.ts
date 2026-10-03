@@ -102,6 +102,11 @@ describe('IssueCoreService', () => {
       find: vi.fn().mockResolvedValue([]),
     };
 
+    const mockComponentRepo = {
+      findOne: vi.fn().mockResolvedValue(null),
+      find: vi.fn().mockResolvedValue([]),
+    };
+
     const mockWebhooksService = {
       dispatch: vi.fn().mockResolvedValue(undefined),
     };
@@ -112,6 +117,7 @@ describe('IssueCoreService', () => {
       mockProjectRepo,
       mockAttachmentRepo,
       mockSprintRepo,
+      mockComponentRepo as any,
       mockIssueLinksService,
       mockEventsGateway,
       mockJqlParser as any,
@@ -240,6 +246,35 @@ describe('IssueCoreService', () => {
           mockUser,
         ),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should auto-assign issue to component lead if component is specified without assignee', async () => {
+      mockProjectRepo.findOne.mockResolvedValue(mockProject);
+      const mockQb = {
+        select: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        getRawOne: vi.fn().mockResolvedValue({ maxNum: 1 }),
+      };
+      mockIssueRepo.createQueryBuilder.mockReturnValue(mockQb);
+      mockIssueRepo.findOne.mockResolvedValue(Object.assign(new Issue(), mockIssue, { issueNum: 2 }));
+      const mockCompRepo = (service as any).componentRepository;
+      mockCompRepo.findOne.mockResolvedValue({ id: 5, leadId: 42 });
+
+      await service.create(
+        {
+          projectId: 1,
+          title: 'Component Bug',
+          componentId: 5,
+        },
+        mockUser,
+      );
+
+      expect(mockIssueRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          componentId: 5,
+          assigneeId: 42,
+        }),
+      );
     });
 
     it('should create subtask with parentId and broadcast event', async () => {

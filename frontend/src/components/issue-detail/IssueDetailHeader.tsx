@@ -75,14 +75,29 @@ export const IssueDetailHeader: React.FC<IssueDetailHeaderProps> = ({
           {issue.projectName}
         </Link>
 
+        {issue.parent?.parent && (
+          <>
+            <span className="text-[var(--md-sys-color-on-surface-variant)]">/</span>
+            <Link
+              to={`/issues/${issue.parent.parent.key}`}
+              className="text-sm font-medium text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] transition-colors font-mono inline-flex items-center gap-1"
+              title={`Epic: ${issue.parent.parent.title}`}
+            >
+              <Layers className="w-3.5 h-3.5 text-[var(--md-sys-color-secondary)]" />
+              <span>{issue.parent.parent.key}</span>
+            </Link>
+          </>
+        )}
+
         {issue.parent && (
           <>
             <span className="text-[var(--md-sys-color-on-surface-variant)]">/</span>
             <Link
               to={`/issues/${issue.parent.key}`}
-              className="text-sm font-medium text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] transition-colors font-mono"
+              className="text-sm font-medium text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] transition-colors font-mono inline-flex items-center gap-1"
+              title={`Parent: ${issue.parent.title}`}
             >
-              {issue.parent.key}
+              <span>{issue.parent.key}</span>
             </Link>
           </>
         )}

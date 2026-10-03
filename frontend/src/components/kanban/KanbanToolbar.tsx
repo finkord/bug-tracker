@@ -1,5 +1,11 @@
 import React from 'react';
-import type { ProjectItem, ProjectQuickFilterItem, ProjectComponentItem } from '../../api/client';
+import type {
+  ProjectItem,
+  ProjectQuickFilterItem,
+  ProjectComponentItem,
+  ProjectVersionItem,
+  TeamItem,
+} from '../../api/client';
 import type { KanbanSettings } from '../../types/kanban';
 import {
   Tooltip,
@@ -17,6 +23,8 @@ import {
   Settings,
   Columns3,
   Users2,
+  Users,
+  Milestone,
   X,
   SlidersHorizontal,
   Bug,
@@ -29,6 +37,8 @@ import {
 
 interface KanbanToolbarProps {
   activeProject: ProjectItem | null;
+  boardMode?: 'kanban' | 'scrum';
+  onBoardModeChange?: (mode: 'kanban' | 'scrum') => void;
   searchTerm: string;
   onSearchChange: (val: string) => void;
   filterType: string;
@@ -38,6 +48,12 @@ interface KanbanToolbarProps {
   projectComponents?: ProjectComponentItem[];
   selectedComponentId?: number | null;
   onSelectComponent?: (id: number | null) => void;
+  projectVersions?: ProjectVersionItem[];
+  selectedVersionId?: number | null;
+  onSelectVersion?: (id: number | null) => void;
+  teams?: TeamItem[];
+  selectedTeamId?: number | null;
+  onSelectTeam?: (id: number | null) => void;
   projectQuickFilters?: ProjectQuickFilterItem[];
   activeQuickFilterIds?: number[];
   onToggleQuickFilter: (id: number) => void;
@@ -52,6 +68,8 @@ interface KanbanToolbarProps {
 
 export const KanbanToolbar: React.FC<KanbanToolbarProps> = ({
   activeProject: _activeProject,
+  boardMode = 'kanban',
+  onBoardModeChange,
   searchTerm,
   onSearchChange,
   filterType,
@@ -61,6 +79,12 @@ export const KanbanToolbar: React.FC<KanbanToolbarProps> = ({
   projectComponents = [],
   selectedComponentId = null,
   onSelectComponent,
+  projectVersions = [],
+  selectedVersionId = null,
+  onSelectVersion,
+  teams = [],
+  selectedTeamId = null,
+  onSelectTeam,
   projectQuickFilters = [],
   activeQuickFilterIds = [],
   onToggleQuickFilter,
@@ -77,14 +101,45 @@ export const KanbanToolbar: React.FC<KanbanToolbarProps> = ({
     filterType !== 'ALL' ||
     filterPriority !== 'ALL' ||
     selectedComponentId !== null ||
+    (selectedTeamId !== null && selectedTeamId !== undefined) ||
+    (selectedVersionId !== null && selectedVersionId !== undefined) ||
     activeQuickFilterIds.length > 0;
 
   return (
     <div className="flex flex-col gap-2.5 pb-2.5 border-b border-[var(--md-sys-color-outline-variant)]/20">
       {/* Primary Row: Ticket Count, Search, Filters, and Layout Controls */}
       <div className="flex flex-wrap items-center justify-between gap-2.5">
-        {/* Left: Ticket Count Badge, Search Bar, Type & Priority Selects */}
+        {/* Left: Board Mode Toggle, Ticket Count Badge, Search Bar, Type & Priority Selects */}
         <div className="flex flex-wrap items-center gap-2 flex-1 min-w-[280px]">
+          {onBoardModeChange && (
+            <div className="flex items-center p-0.5 rounded-full bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/30 text-xs shrink-0">
+              <button
+                type="button"
+                onClick={() => onBoardModeChange('kanban')}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-full font-semibold transition-all cursor-pointer ${
+                  boardMode === 'kanban'
+                    ? 'bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] shadow-xs'
+                    : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]'
+                }`}
+              >
+                <Columns3 className="w-3.5 h-3.5 shrink-0" />
+                <span>Kanban</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onBoardModeChange('scrum')}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-full font-semibold transition-all cursor-pointer ${
+                  boardMode === 'scrum'
+                    ? 'bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] shadow-xs'
+                    : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]'
+                }`}
+              >
+                <Zap className="w-3.5 h-3.5 shrink-0" />
+                <span>Scrum Sprint</span>
+              </button>
+            </div>
+          )}
+
           {/* Ticket Count Badge */}
           <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] border border-[var(--md-sys-color-outline-variant)]/20 shadow-2xs shrink-0">
             {totalFilteredCount} {totalFilteredCount === 1 ? 'ticket' : 'tickets'}
@@ -198,6 +253,56 @@ export const KanbanToolbar: React.FC<KanbanToolbarProps> = ({
                   {projectComponents.map((c) => (
                     <SelectItem key={c.id} value={String(c.id)}>
                       {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Team Filter Select */}
+          {teams && teams.length > 0 && (
+            <div className="w-36 sm:w-40">
+              <Select
+                value={selectedTeamId !== null && selectedTeamId !== undefined ? String(selectedTeamId) : 'ALL'}
+                onValueChange={(val) => onSelectTeam?.(val === 'ALL' ? null : Number(val))}
+              >
+                <SelectTrigger size="sm" className="rounded-full bg-[var(--md-sys-color-surface-container)] text-xs border-0">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <Users className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)] shrink-0" />
+                    <SelectValue placeholder="All Teams" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">All Teams</SelectItem>
+                  {teams.map((t) => (
+                    <SelectItem key={t.id} value={String(t.id)}>
+                      {t.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Release / Version Filter Select */}
+          {projectVersions && projectVersions.length > 0 && (
+            <div className="w-36 sm:w-40">
+              <Select
+                value={selectedVersionId !== null && selectedVersionId !== undefined ? String(selectedVersionId) : 'ALL'}
+                onValueChange={(val) => onSelectVersion?.(val === 'ALL' ? null : Number(val))}
+              >
+                <SelectTrigger size="sm" className="rounded-full bg-[var(--md-sys-color-surface-container)] text-xs border-0">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <Milestone className="w-3.5 h-3.5 text-[var(--md-sys-color-tertiary)] shrink-0" />
+                    <SelectValue placeholder="All Releases" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">All Releases</SelectItem>
+                  {projectVersions.map((v) => (
+                    <SelectItem key={v.id} value={String(v.id)}>
+                      {v.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -341,6 +446,8 @@ export const KanbanToolbar: React.FC<KanbanToolbarProps> = ({
                 onFilterTypeChange('ALL');
                 onFilterPriorityChange('ALL');
                 onSelectComponent?.(null);
+                onSelectTeam?.(null);
+                onSelectVersion?.(null);
                 activeQuickFilterIds.forEach((id) => onToggleQuickFilter(id));
               }}
               className="text-xs font-semibold text-[var(--md-sys-color-primary)] hover:underline cursor-pointer"
