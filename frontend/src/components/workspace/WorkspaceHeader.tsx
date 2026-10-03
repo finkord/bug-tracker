@@ -20,7 +20,7 @@ export const WorkspaceHeader: React.FC = () => {
   if (!user) return null;
 
   return (
-    <header className="w-full h-11 flex items-center px-3 sm:px-4 justify-between gap-3 shrink-0 select-none z-10 border-b border-[var(--md-sys-color-outline-variant)]/15 bg-[var(--md-sys-color-surface-container-low)] transition-colors duration-200">
+    <header className="relative w-full h-11 flex items-center px-3 sm:px-4 justify-between gap-3 shrink-0 select-none z-30 border-b border-[var(--md-sys-color-outline-variant)]/15 bg-[var(--md-sys-color-surface-container-low)] transition-colors duration-200">
       {/* Left Column: Mobile Drawer Toggle + Desktop Expand Toggle + Breadcrumbs (flex-1, left-aligned) */}
       <div className="flex-1 min-w-0 flex items-center justify-start gap-2">
         <button

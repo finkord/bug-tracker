@@ -21,7 +21,10 @@ describe('SidebarProjectSwitcher Component', () => {
       name: 'Alpha Project',
       key: 'ALPHA',
       description: 'Alpha description',
-      ownerId: 1,
+      leadId: null,
+      lead: null,
+      totalIssues: 0,
+      openIssues: 0,
       createdAt: '2026-01-01',
       updatedAt: '2026-01-01',
     },
@@ -30,7 +33,10 @@ describe('SidebarProjectSwitcher Component', () => {
       name: 'Beta Platform',
       key: 'BETA',
       description: 'Beta description',
-      ownerId: 1,
+      leadId: null,
+      lead: null,
+      totalIssues: 0,
+      openIssues: 0,
       createdAt: '2026-01-01',
       updatedAt: '2026-01-01',
     },
@@ -134,5 +140,40 @@ describe('SidebarProjectSwitcher Component', () => {
 
     expect(screen.getByRole('menuitem', { name: /beta platform/i })).toBeInTheDocument();
     expect(screen.queryByRole('menuitem', { name: /alpha project/i })).not.toBeInTheDocument();
+  });
+
+  it('closes dropdown automatically when collapsed prop transitions to true', () => {
+    const onOpenChangeMock = vi.fn();
+    const { rerender } = render(
+      <MemoryRouter>
+        <SidebarProjectSwitcher
+          projects={mockProjects}
+          activeProject={mockProjects[0]}
+          collapsed={false}
+          onOpenChange={onOpenChangeMock}
+        />
+      </MemoryRouter>,
+    );
+
+    const triggerButton = screen.getByRole('button', { name: /switch active project/i });
+    fireEvent.pointerDown(triggerButton, { button: 0 });
+    fireEvent.keyDown(triggerButton, { key: 'ArrowDown' });
+
+    expect(screen.getByPlaceholderText('Find project...')).toBeInTheDocument();
+
+    // Rerender with collapsed=true (e.g., when flyout unhovers or user triggers collapse)
+    rerender(
+      <MemoryRouter>
+        <SidebarProjectSwitcher
+          projects={mockProjects}
+          activeProject={mockProjects[0]}
+          collapsed={true}
+          onOpenChange={onOpenChangeMock}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByPlaceholderText('Find project...')).not.toBeInTheDocument();
+    expect(onOpenChangeMock).toHaveBeenCalledWith(false);
   });
 });

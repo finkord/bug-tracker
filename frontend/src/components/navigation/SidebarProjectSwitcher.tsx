@@ -39,7 +39,21 @@ export const SidebarProjectSwitcher: React.FC<SidebarProjectSwitcherProps> = ({
 }) => {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
   const recentProjects = useActiveProjectStore((state) => state.recentProjects);
+
+  // Close dropdown whenever sidebar collapse state changes (e.g. flyout dismisses or hotkey toggles)
+  React.useEffect(() => {
+    if (isOpen) {
+      setIsOpen(false);
+      onOpenChange?.(false);
+    }
+  }, [collapsed]);
+
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    onOpenChange?.(open);
+  };
 
   const filteredProjects = useMemo(() => {
     if (!search.trim()) return projects;
@@ -52,6 +66,8 @@ export const SidebarProjectSwitcher: React.FC<SidebarProjectSwitcherProps> = ({
   }, [projects, search]);
 
   const handleSelectProject = (project: ProjectItem, view: 'board' | 'backlog' = 'board') => {
+    setIsOpen(false);
+    onOpenChange?.(false);
     useActiveProjectStore.getState().setActiveProject({
       id: project.id,
       key: project.key || String(project.id),
@@ -61,9 +77,6 @@ export const SidebarProjectSwitcher: React.FC<SidebarProjectSwitcherProps> = ({
     onNavigate?.();
   };
 
-  const projectInitial = activeProject
-    ? activeProject.name.charAt(0).toUpperCase()
-    : 'P';
   const projectName = activeProject?.name || 'Select Project';
   const projectKey = activeProject?.key || (activeProject ? `PRJ-${activeProject.id}` : 'Workspace');
 
@@ -200,6 +213,8 @@ export const SidebarProjectSwitcher: React.FC<SidebarProjectSwitcherProps> = ({
       {/* Quick Management Links */}
       <DropdownMenuItem
         onClick={() => {
+          setIsOpen(false);
+          onOpenChange?.(false);
           navigate('/projects');
           onNavigate?.();
         }}
@@ -214,7 +229,7 @@ export const SidebarProjectSwitcher: React.FC<SidebarProjectSwitcherProps> = ({
   if (collapsed) {
     return (
       <div className="shrink-0 flex items-center justify-center py-1">
-        <DropdownMenu onOpenChange={onOpenChange}>
+        <DropdownMenu open={isOpen} onOpenChange={handleOpenChange}>
           <DropdownMenuTrigger asChild>
             <Tooltip content={projectName} side="right" sideOffset={8}>
               <button
@@ -239,7 +254,7 @@ export const SidebarProjectSwitcher: React.FC<SidebarProjectSwitcherProps> = ({
 
   return (
     <div className="shrink-0 px-2.5 flex items-center">
-      <DropdownMenu onOpenChange={onOpenChange}>
+      <DropdownMenu open={isOpen} onOpenChange={handleOpenChange}>
         <DropdownMenuTrigger asChild>
           <button
             type="button"

@@ -35,6 +35,7 @@ export const SuperSidebar: React.FC<SuperSidebarProps> = () => {
   // Hover peek flyout state for collapsed icon rail
   const [isHovered, setIsHovered] = React.useState(false);
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const asideRef = React.useRef<HTMLElement>(null);
   const enterTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const leaveTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -49,12 +50,19 @@ export const SuperSidebar: React.FC<SuperSidebarProps> = () => {
     }, 100);
   };
 
-  const handleMouseLeave = () => {
-    // Keep flyout open while an internal dropdown menu is active to prevent loop
+  const handleMouseLeave = (e?: React.MouseEvent) => {
+    // Keep flyout open while an internal dropdown menu is active
     if (isMenuOpen) return;
+    // If the mouse is still inside the aside element, ignore leave events from inner boundaries
+    if (e?.relatedTarget instanceof Node && asideRef.current?.contains(e.relatedTarget)) {
+      return;
+    }
     if (enterTimerRef.current) {
       clearTimeout(enterTimerRef.current);
       enterTimerRef.current = null;
+    }
+    if (leaveTimerRef.current) {
+      clearTimeout(leaveTimerRef.current);
     }
     leaveTimerRef.current = setTimeout(() => {
       setIsHovered(false);
@@ -63,11 +71,19 @@ export const SuperSidebar: React.FC<SuperSidebarProps> = () => {
 
   const handleMenuOpenChange = (open: boolean) => {
     setIsMenuOpen(open);
-    if (!open) {
-      // When dropdown closes, close flyout after short debounce if mouse is outside
+    if (open) {
+      if (leaveTimerRef.current) {
+        clearTimeout(leaveTimerRef.current);
+        leaveTimerRef.current = null;
+      }
+      setIsHovered(true);
+    } else {
+      if (leaveTimerRef.current) {
+        clearTimeout(leaveTimerRef.current);
+      }
       leaveTimerRef.current = setTimeout(() => {
         setIsHovered(false);
-      }, 150);
+      }, 200);
     }
   };
 
@@ -75,6 +91,14 @@ export const SuperSidebar: React.FC<SuperSidebarProps> = () => {
   useEffect(() => {
     setIsHovered(false);
     setIsMenuOpen(false);
+    if (enterTimerRef.current) {
+      clearTimeout(enterTimerRef.current);
+      enterTimerRef.current = null;
+    }
+    if (leaveTimerRef.current) {
+      clearTimeout(leaveTimerRef.current);
+      leaveTimerRef.current = null;
+    }
   }, [collapsed, location.pathname, isAnyModalOpen]);
 
   useEffect(() => {
@@ -217,11 +241,12 @@ export const SuperSidebar: React.FC<SuperSidebarProps> = () => {
         )}
 
         <aside
+          ref={asideRef}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
           className={`flex flex-col h-screen select-none overflow-hidden transition-[width,box-shadow] duration-200 ease-in-out ${
             isFlyout
-              ? 'fixed left-0 top-0 w-60 z-30 shadow-2xl bg-[var(--md-sys-color-surface-container)] border-r border-[var(--md-sys-color-outline-variant)]/40'
+              ? 'fixed left-0 top-0 w-60 z-40 shadow-2xl bg-[var(--md-sys-color-surface-container)] border-r border-[var(--md-sys-color-outline-variant)]/40'
               : collapsed
                 ? collapseMode === 'hidden'
                   ? 'w-0 pointer-events-none bg-[var(--md-sys-color-surface-container-low)]'

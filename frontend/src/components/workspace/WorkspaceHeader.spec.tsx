@@ -71,4 +71,17 @@ describe('WorkspaceHeader Component', () => {
     fireEvent.click(toggleButton);
     expect(useSidebarStore.getState().collapsed).toBe(false);
   });
+
+  it('renders with relative positioning and z-30 stacking context for notification modal layering', () => {
+    const { container } = render(
+      <MemoryRouter>
+        <WorkspaceHeader />
+      </MemoryRouter>,
+    );
+
+    const header = container.querySelector('header');
+    expect(header).toBeInTheDocument();
+    expect(header).toHaveClass('relative');
+    expect(header).toHaveClass('z-30');
+  });
 });

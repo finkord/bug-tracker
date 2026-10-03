@@ -19,6 +19,7 @@ import {
 } from '../ui/Dropdown';
 import { Avatar } from '../common/Avatar';
 import { useTheme, useAuth } from '../../store';
+import { api } from '../../api/client';
 
 interface SidebarBottomActionsProps {
   collapsed?: boolean;
@@ -38,8 +39,34 @@ export const SidebarBottomActions: React.FC<SidebarBottomActionsProps> = ({
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
+  const [isProfileOpen, setIsProfileOpen] = React.useState(false);
+
+  // Close dropdown whenever sidebar collapse state changes (e.g. flyout dismisses or hotkey toggles)
+  React.useEffect(() => {
+    if (isProfileOpen) {
+      setIsProfileOpen(false);
+      onOpenChange?.(false);
+    }
+  }, [collapsed]);
+
+  const handleProfileOpenChange = (open: boolean) => {
+    setIsProfileOpen(open);
+    onOpenChange?.(open);
+  };
+
+  const handleToggleTheme = () => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    toggleTheme();
+    if (user) {
+      api.updatePreferences({ theme: nextTheme }).catch(() => {
+        // Non-blocking preference sync
+      });
+    }
+  };
 
   const handleLogout = async () => {
+    setIsProfileOpen(false);
+    onOpenChange?.(false);
     await logout();
     navigate('/');
     onNavigate?.();
@@ -52,7 +79,7 @@ export const SidebarBottomActions: React.FC<SidebarBottomActionsProps> = ({
     user?.groups?.some((g: string) => ['administrators', 'admin', 'admins'].includes(g.toLowerCase()));
 
   const userProfileMenu = user ? (
-    <DropdownMenu onOpenChange={onOpenChange}>
+    <DropdownMenu open={isProfileOpen} onOpenChange={handleProfileOpenChange}>
       <DropdownMenuTrigger asChild>
         <button
           type="button"
@@ -104,6 +131,8 @@ export const SidebarBottomActions: React.FC<SidebarBottomActionsProps> = ({
 
         <DropdownMenuItem
           onClick={() => {
+            setIsProfileOpen(false);
+            onOpenChange?.(false);
             navigate('/profile');
             onNavigate?.();
           }}
@@ -115,6 +144,8 @@ export const SidebarBottomActions: React.FC<SidebarBottomActionsProps> = ({
 
         <DropdownMenuItem
           onClick={() => {
+            setIsProfileOpen(false);
+            onOpenChange?.(false);
             navigate('/preferences');
             onNavigate?.();
           }}
@@ -127,6 +158,8 @@ export const SidebarBottomActions: React.FC<SidebarBottomActionsProps> = ({
         {isUserAdmin && (
           <DropdownMenuItem
             onClick={() => {
+              setIsProfileOpen(false);
+              onOpenChange?.(false);
               navigate('/admin');
               onNavigate?.();
             }}
@@ -160,7 +193,7 @@ export const SidebarBottomActions: React.FC<SidebarBottomActionsProps> = ({
           <Tooltip content={theme === 'dark' ? 'Switch to Light mode' : 'Switch to Dark mode'} side="right">
             <button
               type="button"
-              onClick={toggleTheme}
+              onClick={handleToggleTheme}
               className="w-9 h-9 mx-auto rounded-lg flex items-center justify-center text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)] transition-colors cursor-pointer"
               aria-label="Toggle theme"
             >
@@ -174,7 +207,7 @@ export const SidebarBottomActions: React.FC<SidebarBottomActionsProps> = ({
         ) : (
           <button
             type="button"
-            onClick={toggleTheme}
+            onClick={handleToggleTheme}
             className="w-full h-8 px-2 flex items-center gap-2 rounded-lg text-xs font-medium text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)] transition-colors cursor-pointer"
             aria-label="Toggle theme"
           >

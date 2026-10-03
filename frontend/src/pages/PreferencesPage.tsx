@@ -31,11 +31,19 @@ export const PreferencesPage: React.FC = () => {
   const { data: serverPrefs } = useUserPreferencesQuery();
   const updatePrefsMutation = useUpdateUserPreferencesMutation();
 
-  // Sync initial preferences from PostgreSQL when available
+  const hasSyncedServerThemeRef = React.useRef(false);
+
+  // Sync initial preferences from PostgreSQL when available without destructively overriding active local session
   useEffect(() => {
     if (serverPrefs) {
-      if (serverPrefs.theme && (serverPrefs.theme === 'light' || serverPrefs.theme === 'dark') && serverPrefs.theme !== theme) {
-        setTheme(serverPrefs.theme);
+      if (!hasSyncedServerThemeRef.current) {
+        hasSyncedServerThemeRef.current = true;
+        const hasStoredLocal = typeof window !== 'undefined' && !!localStorage.getItem('theme');
+        if (!hasStoredLocal && serverPrefs.theme && (serverPrefs.theme === 'light' || serverPrefs.theme === 'dark')) {
+          setTheme(serverPrefs.theme);
+        } else if (hasStoredLocal && serverPrefs.theme && serverPrefs.theme !== theme) {
+          updatePrefsMutation.mutate({ theme });
+        }
       }
       if (typeof serverPrefs.showCollapsedLabels === 'boolean' && serverPrefs.showCollapsedLabels !== showCollapsedLabels) {
         setShowCollapsedLabels(serverPrefs.showCollapsedLabels);

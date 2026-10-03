@@ -20,8 +20,8 @@ import {
 } from 'lucide-react';
 import { useIssuesQuery, useProjectsQuery } from '../../api/queries';
 import { Badge } from '../ui';
-import type { IssuePriority, IssueStatus } from '../../api/client';
-import { useModalStore, useSidebarStore, useThemeStore, useRecentIssuesStore } from '../../store';
+import { api, type IssuePriority, type IssueStatus } from '../../api/client';
+import { useModalStore, useSidebarStore, useThemeStore, useRecentIssuesStore, useAuth } from '../../store';
 
 export interface QuickSearchModalProps {
   isOpen: boolean;
@@ -94,6 +94,7 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
   const { openCreateIssue, openShortcuts } = useModalStore();
   const toggleSidebar = useSidebarStore((state) => state.toggleSidebar);
   const toggleTheme = useThemeStore((state) => state.toggleTheme);
+  const { user } = useAuth();
   const { data: projectsData } = useProjectsQuery({ enabled: isOpen });
   const recentIssues = useRecentIssuesStore((state) => state.recentIssues);
 
@@ -148,7 +149,12 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
         label: 'Toggle dark / light theme',
         icon: <SunMoon className="w-4 h-4" />,
         onExecute: () => {
+          const currentTheme = useThemeStore.getState().theme;
+          const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
           toggleTheme();
+          if (user) {
+            api.updatePreferences({ theme: nextTheme }).catch(() => {});
+          }
           handleClose();
         },
       },
@@ -378,6 +384,7 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
     navigate,
     onSelectIssue,
     handleClose,
+    user,
   ]);
 
   const safeActiveIndex = items.length > 0 ? Math.min(activeIndex, items.length - 1) : 0;
