@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import * as PopoverPrimitive from '@radix-ui/react-popover';
 import { cn } from '../../utils/cn';
 import { Avatar } from '../common/Avatar';
+import { UserProfilePopover } from '../common/UserProfilePopover.js';
 import { Search, Check, UserPlus, UserX, ChevronDown, User } from 'lucide-react';
 
 export interface UserPickerUser {
@@ -16,10 +17,12 @@ export interface UserPickerProps {
   value: number | null | undefined;
   onChange: (userId: number | null, user: UserPickerUser | null) => void;
   users: UserPickerUser[];
+  fallbackUser?: UserPickerUser | null;
   currentUserId?: number;
   placeholder?: string;
   showAssignToMe?: boolean;
   allowUnassigned?: boolean;
+  showProfileOnAvatar?: boolean;
   disabled?: boolean;
   size?: 'sm' | 'md';
   variant?: 'standard' | 'ghost' | 'chip';
@@ -31,10 +34,12 @@ export const UserPicker: React.FC<UserPickerProps> = ({
   value,
   onChange,
   users,
+  fallbackUser,
   currentUserId,
   placeholder = 'Unassigned',
   showAssignToMe = true,
   allowUnassigned = true,
+  showProfileOnAvatar = true,
   disabled = false,
   size = 'md',
   variant = 'standard',
@@ -46,8 +51,11 @@ export const UserPicker: React.FC<UserPickerProps> = ({
 
   const selectedUser = useMemo(() => {
     if (!value) return null;
-    return users.find((u) => u.id === value) || null;
-  }, [value, users]);
+    const found = users.find((u) => u.id === value);
+    if (found) return found;
+    if (fallbackUser && fallbackUser.id === value) return fallbackUser;
+    return null;
+  }, [value, users, fallbackUser]);
 
   const currentUser = useMemo(() => {
     if (!currentUserId) return null;
@@ -107,13 +115,33 @@ export const UserPicker: React.FC<UserPickerProps> = ({
           <div className="flex items-center gap-2 min-w-0 flex-1 mr-1.5">
             {selectedUser ? (
               <>
-                <Avatar
-                  name={selectedUser.fullName}
-                  avatarUrl={selectedUser.avatarUrl}
-                  size={avatarSize}
-                  showTooltip={false}
-                  className="w-4 h-4 text-[9px] shrink-0"
-                />
+                {showProfileOnAvatar ? (
+                  <span
+                    onClick={(e) => e.stopPropagation()}
+                    className="shrink-0 inline-flex"
+                    title={`View profile for ${selectedUser.fullName}`}
+                  >
+                    <UserProfilePopover user={selectedUser}>
+                      <span className="cursor-pointer inline-flex hover:opacity-80 transition-opacity">
+                        <Avatar
+                          name={selectedUser.fullName}
+                          avatarUrl={selectedUser.avatarUrl}
+                          size={avatarSize}
+                          showTooltip={false}
+                          className="w-4 h-4 text-[9px] shrink-0"
+                        />
+                      </span>
+                    </UserProfilePopover>
+                  </span>
+                ) : (
+                  <Avatar
+                    name={selectedUser.fullName}
+                    avatarUrl={selectedUser.avatarUrl}
+                    size={avatarSize}
+                    showTooltip={false}
+                    className="w-4 h-4 text-[9px] shrink-0"
+                  />
+                )}
                 <span className="font-semibold text-[var(--md-sys-color-on-surface)] truncate">
                   {selectedUser.fullName}
                 </span>

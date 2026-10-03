@@ -1,10 +1,27 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBadge } from './StatusBadge';
 import { PriorityBadge } from './PriorityBadge';
 import { UserPicker } from './UserPicker';
 import { EmptyState } from './EmptyState';
 import { Inbox } from 'lucide-react';
+
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { retry: false } },
+});
+
+const renderWithProviders = (ui: React.ReactElement) => {
+  return render(
+    <MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        {ui}
+      </QueryClientProvider>
+    </MemoryRouter>,
+  );
+};
 
 describe('StatusBadge', () => {
   it('renders correct labels for each status', () => {
@@ -63,7 +80,7 @@ describe('UserPicker', () => {
 
   it('renders placeholder when value is null', () => {
     const onChange = vi.fn();
-    render(
+    renderWithProviders(
       <UserPicker
         value={null}
         onChange={onChange}
@@ -76,7 +93,7 @@ describe('UserPicker', () => {
 
   it('renders selected user name when value matches a user', () => {
     const onChange = vi.fn();
-    render(
+    renderWithProviders(
       <UserPicker
         value={1}
         onChange={onChange}

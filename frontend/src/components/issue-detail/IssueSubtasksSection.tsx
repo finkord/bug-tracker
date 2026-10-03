@@ -75,23 +75,23 @@ export const IssueSubtasksSection: React.FC<IssueSubtasksSectionProps> = ({
     subtasks.length > 0 ? Math.round((completedCount / subtasks.length) * 100) : 0;
 
   return (
-    <Card className="p-5 bg-[var(--md-sys-color-surface-container-low)] border-[var(--md-sys-color-outline-variant)] space-y-4">
+    <Card className="p-3.5 bg-[var(--md-sys-color-surface-container-low)] border-[var(--md-sys-color-outline-variant)] space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <GitCommitHorizontal className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
-          <h3 className="text-sm font-bold text-[var(--md-sys-color-on-surface)] uppercase tracking-wider">
+          <GitCommitHorizontal className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
+          <h3 className="text-xs font-bold text-[var(--md-sys-color-on-surface)] uppercase tracking-wider">
             Subtasks
           </h3>
           {subtasks.length > 0 && (
-            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)]">
+            <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)]">
               {completedCount} / {subtasks.length}
             </span>
           )}
         </div>
 
         {subtasks.length > 0 && (
-          <span className="text-xs text-[var(--md-sys-color-on-surface-variant)] font-medium">
+          <span className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] font-medium">
             {progressPercent}% completed
           </span>
         )}

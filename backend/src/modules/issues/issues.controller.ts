@@ -27,6 +27,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { User } from '../users/entities/user.entity.js';
 import { IssueStatus } from './entities/issue.entity.js';
 import { CreateIssueDto } from './dto/create-issue.dto.js';
+import { UpdateIssueDto } from './dto/update-issue.dto.js';
 import { ListIssuesQueryDto } from './dto/list-issues-query.dto.js';
 import { UpdateIssueSprintDto } from './dto/update-issue-sprint.dto.js';
 import { LogWorkDto } from './dto/log-work.dto.js';
@@ -185,7 +186,7 @@ export class IssuesController {
   })
   async update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: Partial<CreateIssueDto>,
+    @Body() dto: UpdateIssueDto,
     @CurrentUser() user: User,
   ) {
     return this.issuesService.update(id, dto, user);

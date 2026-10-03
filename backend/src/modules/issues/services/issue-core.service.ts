@@ -11,6 +11,7 @@ import { Sprint } from '../../sprints/entities/sprint.entity.js';
 import { ProjectComponent } from '../../projects/entities/project-component.entity.js';
 import { EventsGateway } from '../../events/events.gateway.js';
 import { CreateIssueDto } from '../dto/create-issue.dto.js';
+import { UpdateIssueDto } from '../dto/update-issue.dto.js';
 import { ListIssuesQueryDto } from '../dto/list-issues-query.dto.js';
 import { BulkUpdateIssuesDto, BulkDeleteIssuesDto, type BulkOperationResultDto } from '../dto/bulk-issue.dto.js';
 import { IssueLinksService } from './issue-links.service.js';
@@ -49,6 +50,8 @@ export class IssueCoreService {
     private readonly sprintRepository: Repository<Sprint>,
     @InjectRepository(ProjectComponent)
     private readonly componentRepository: Repository<ProjectComponent>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
     private readonly issueLinksService: IssueLinksService,
     private readonly eventsGateway: EventsGateway,
     private readonly jqlParserService: JqlParserService,
@@ -580,10 +583,10 @@ export class IssueCoreService {
   /**
    * Updates issue metadata and assignments.
    */
-  async update(id: number, dto: Partial<CreateIssueDto>, user?: User): Promise<IssueDetailDto> {
+  async update(id: number, dto: UpdateIssueDto, user?: User): Promise<IssueDetailDto> {
     const issue = await this.issueRepository.findOne({
       where: { id },
-      relations: { sprint: true, component: true, assignee: true },
+      relations: { sprint: true, component: true, assignee: true, reporter: true },
     });
     if (!issue) {
       throw new NotFoundException(`Issue with ID #${id} not found`);
@@ -619,16 +622,26 @@ export class IssueCoreService {
         }
         await this.logHistory(id, 'sprint', prevSprint, sprint.name, user?.id);
         issue.sprintId = sprint.id;
+        issue.sprint = sprint;
       } else {
         await this.logHistory(id, 'sprint', prevSprint, 'Backlog', user?.id);
         issue.sprintId = null;
+        issue.sprint = null;
       }
     }
     if (dto.assigneeId !== undefined && dto.assigneeId !== issue.assigneeId) {
+      let assigneeUser: User | null = null;
+      if (dto.assigneeId) {
+        assigneeUser = await this.userRepository.findOne({ where: { id: dto.assigneeId } });
+        if (!assigneeUser) {
+          throw new NotFoundException(`Assignee user #${dto.assigneeId} not found`);
+        }
+      }
       const prevAssignee = issue.assignee?.fullName || (issue.assigneeId ? `User #${issue.assigneeId}` : 'Unassigned');
-      const newAssignee = dto.assigneeId ? `User #${dto.assigneeId}` : 'Unassigned';
+      const newAssignee = assigneeUser ? assigneeUser.fullName : 'Unassigned';
       await this.logHistory(id, 'assignee', prevAssignee, newAssignee, user?.id);
-      issue.assigneeId = dto.assigneeId || null;
+      issue.assigneeId = assigneeUser ? assigneeUser.id : null;
+      issue.assignee = assigneeUser;
 
       if (dto.assigneeId && dto.assigneeId !== user?.id && this.notificationsService) {
         await this.notificationsService.createNotification({
@@ -641,6 +654,16 @@ export class IssueCoreService {
         });
       }
     }
+    if (dto.reporterId !== undefined && dto.reporterId !== issue.reporterId) {
+      const reporterUser = await this.userRepository.findOne({ where: { id: dto.reporterId } });
+      if (!reporterUser) {
+        throw new NotFoundException(`Reporter user #${dto.reporterId} not found`);
+      }
+      const prevReporter = issue.reporter?.fullName || (issue.reporterId ? `User #${issue.reporterId}` : 'Unknown');
+      await this.logHistory(id, 'reporter', prevReporter, reporterUser.fullName, user?.id);
+      issue.reporterId = reporterUser.id;
+      issue.reporter = reporterUser;
+    }
     if (dto.fixVersionId !== undefined) {
       issue.fixVersionId = dto.fixVersionId || null;
     }
@@ -648,9 +671,19 @@ export class IssueCoreService {
       issue.affectsVersionId = dto.affectsVersionId || null;
     }
     if (dto.componentId !== undefined && dto.componentId !== issue.componentId) {
+      let comp: ProjectComponent | null = null;
+      if (dto.componentId) {
+        comp = await this.componentRepository.findOne({
+          where: { id: dto.componentId, projectId: issue.projectId },
+        });
+        if (!comp) {
+          throw new NotFoundException(`Component #${dto.componentId} not found in project #${issue.projectId}`);
+        }
+      }
       const prevComp = issue.component?.name || 'None';
-      await this.logHistory(id, 'component', prevComp, dto.componentId ? `Component #${dto.componentId}` : 'None', user?.id);
-      issue.componentId = dto.componentId || null;
+      await this.logHistory(id, 'component', prevComp, comp ? comp.name : 'None', user?.id);
+      issue.componentId = comp ? comp.id : null;
+      issue.component = comp;
     }
     if (dto.labels !== undefined) {
       const prevLabels = (issue.labels || []).join(', ');

@@ -39,10 +39,10 @@ export class CreateIssueDto {
   @IsInt()
   sprintId?: number | null;
 
-  @ApiPropertyOptional({ example: 2, description: 'Assigned user ID' })
+  @ApiPropertyOptional({ example: 2, description: 'Assigned user ID or null' })
   @IsOptional()
   @IsInt()
-  assigneeId?: number;
+  assigneeId?: number | null;
 
   @ApiPropertyOptional({ example: 42, description: 'Parent issue ID for subtasks' })
   @IsOptional()

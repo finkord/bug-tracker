@@ -184,27 +184,22 @@ export const IssueLinksSection: React.FC<IssueLinksSectionProps> = ({
   };
 
   return (
-    <Card variant="filled" padding="md" rounded="xl" className="space-y-4">
+    <Card variant="filled" padding="md" rounded="xl" className="space-y-3">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[var(--md-sys-color-outline-variant)]">
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-2.5 border-b border-[var(--md-sys-color-outline-variant)]/40">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center">
-            <GitBranch className="w-4 h-4" />
+          <div className="w-6 h-6 rounded-lg bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center">
+            <Link2 className="w-3.5 h-3.5" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-bold text-[var(--md-sys-color-on-surface)]">
-                Linked Issues & Dependencies
-              </h3>
-              {links.length > 0 && (
-                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)]">
-                  {links.length}
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-[var(--md-sys-color-on-surface-variant)]">
-              Directed Semantic Dependency Model
-            </p>
+          <div className="flex items-center gap-2">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface)]">
+              Links
+            </h3>
+            {links.length > 0 && (
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)]">
+                {links.length}
+              </span>
+            )}
           </div>
         </div>
 
@@ -214,24 +209,24 @@ export const IssueLinksSection: React.FC<IssueLinksSectionProps> = ({
               <button
                 type="button"
                 onClick={() => setViewMode('list')}
-                className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors cursor-pointer ${
+                className={`px-2 py-0.5 text-xs font-semibold rounded-md transition-colors cursor-pointer ${
                   viewMode === 'list'
                     ? 'bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] shadow-xs'
                     : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]'
                 }`}
               >
-                List Chips
+                List
               </button>
               <button
                 type="button"
                 onClick={() => setViewMode('tree')}
-                className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors cursor-pointer ${
+                className={`px-2 py-0.5 text-xs font-semibold rounded-md transition-colors cursor-pointer ${
                   viewMode === 'tree'
                     ? 'bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] shadow-xs'
                     : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]'
                 }`}
               >
-                Graph Hierarchy
+                Tree
               </button>
             </div>
           )}
@@ -242,6 +237,7 @@ export const IssueLinksSection: React.FC<IssueLinksSectionProps> = ({
             size="sm"
             onClick={() => setIsModalOpen(true)}
             leftIcon={<Plus className="w-3.5 h-3.5" />}
+            className="text-xs h-7 px-2.5"
           >
             Link Issue
           </Button>
@@ -250,22 +246,16 @@ export const IssueLinksSection: React.FC<IssueLinksSectionProps> = ({
 
       {/* Main Content Area */}
       {links.length === 0 ? (
-        <div className="text-center py-6 px-4 rounded-xl border border-dashed border-[var(--md-sys-color-outline-variant)] bg-[var(--md-sys-color-surface)]/50 space-y-2">
-          <div className="w-9 h-9 rounded-full bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] mx-auto flex items-center justify-center">
-            <Link2 className="w-4.5 h-4.5 opacity-60" />
-          </div>
-          <p className="text-xs text-[var(--md-sys-color-on-surface-variant)]">
-            No dependencies or linked issues attached yet.
-          </p>
-          <Button
+        <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/30 text-xs text-[var(--md-sys-color-on-surface-variant)]">
+          <span className="italic">No links attached.</span>
+          <button
             type="button"
-            variant="ghost"
-            size="sm"
             onClick={() => setIsModalOpen(true)}
-            className="text-xs text-[var(--md-sys-color-primary)]"
+            className="text-xs font-semibold text-[var(--md-sys-color-primary)] hover:underline cursor-pointer flex items-center gap-1"
           >
-            Add blocker, duplicate, or related issue
-          </Button>
+            <Plus className="w-3.5 h-3.5" />
+            Add Link
+          </button>
         </div>
       ) : viewMode === 'list' ? (
         /* List / Chip Mode */

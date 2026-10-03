@@ -113,6 +113,18 @@ describe('IssueCoreService', () => {
       dispatch: vi.fn().mockResolvedValue(undefined),
     };
 
+    const mockUserRepo = {
+      findOne: vi.fn().mockImplementation(({ where }) => {
+        if (where.id === 2) {
+          return Promise.resolve({ id: 2, fullName: 'Second User', email: 'second@test.com' });
+        }
+        if (where.id === 1) {
+          return Promise.resolve(mockUser);
+        }
+        return Promise.resolve(null);
+      }),
+    };
+
     service = new IssueCoreService(
       mockIssueRepo,
       mockHistoryRepo as any,
@@ -120,6 +132,7 @@ describe('IssueCoreService', () => {
       mockAttachmentRepo,
       mockSprintRepo,
       mockComponentRepo as any,
+      mockUserRepo as any,
       mockIssueLinksService,
       mockEventsGateway,
       mockJqlParser as any,
@@ -626,6 +639,59 @@ describe('IssueCoreService', () => {
       await expect(
         service.bulkDelete({ issueIds: [] }, mockUser),
       ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('update', () => {
+    it('should update assignee and sync relation', async () => {
+      const existingIssue = { ...mockIssue, assigneeId: null, assignee: null };
+      mockIssueRepo.findOne
+        .mockResolvedValueOnce(existingIssue)
+        .mockResolvedValueOnce({ ...existingIssue, assigneeId: 2, assignee: { id: 2, fullName: 'Second User' } });
+
+      const result = await service.update(10, { assigneeId: 2 }, mockUser);
+      expect(mockIssueRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          assigneeId: 2,
+          assignee: expect.objectContaining({ id: 2, fullName: 'Second User' }),
+        }),
+      );
+      expect(mockEventsGateway.broadcastIssueUpdated).toHaveBeenCalled();
+      expect(result.id).toBe(10);
+    });
+
+    it('should update reporter and sync relation', async () => {
+      const existingIssue = { ...mockIssue, reporterId: 1, reporter: mockUser };
+      mockIssueRepo.findOne
+        .mockResolvedValueOnce(existingIssue)
+        .mockResolvedValueOnce({ ...existingIssue, reporterId: 2, reporter: { id: 2, fullName: 'Second User' } });
+
+      const result = await service.update(10, { reporterId: 2 }, mockUser);
+      expect(mockIssueRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          reporterId: 2,
+          reporter: expect.objectContaining({ id: 2, fullName: 'Second User' }),
+        }),
+      );
+      expect(mockEventsGateway.broadcastIssueUpdated).toHaveBeenCalled();
+      expect(result.id).toBe(10);
+    });
+
+    it('should unassign issue when assigneeId is null', async () => {
+      const existingIssue = { ...mockIssue, assigneeId: 2, assignee: { id: 2, fullName: 'Second User' } };
+      mockIssueRepo.findOne
+        .mockResolvedValueOnce(existingIssue)
+        .mockResolvedValueOnce({ ...existingIssue, assigneeId: null, assignee: null });
+
+      const result = await service.update(10, { assigneeId: null }, mockUser);
+      expect(mockIssueRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          assigneeId: null,
+          assignee: null,
+        }),
+      );
+      expect(mockEventsGateway.broadcastIssueUpdated).toHaveBeenCalled();
+      expect(result.id).toBe(10);
     });
   });
 });

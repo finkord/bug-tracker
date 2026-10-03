@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { IssueStatus } from './entities/issue.entity.js';
 import { User } from '../users/entities/user.entity.js';
 import { CreateIssueDto } from './dto/create-issue.dto.js';
+import { UpdateIssueDto } from './dto/update-issue.dto.js';
 import { CreateIssueLinkDto } from './dto/create-issue-link.dto.js';
 import { ListIssuesQueryDto } from './dto/list-issues-query.dto.js';
 import { LogWorkDto } from './dto/log-work.dto.js';
@@ -91,7 +92,7 @@ export class IssuesService {
   /**
    * Updates issue metadata.
    */
-  async update(id: number, dto: Partial<CreateIssueDto>, user?: User): Promise<IssueDetailDto> {
+  async update(id: number, dto: UpdateIssueDto, user?: User): Promise<IssueDetailDto> {
     return this.issueCoreService.update(id, dto, user);
   }
 

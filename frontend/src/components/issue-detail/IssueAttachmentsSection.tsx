@@ -83,10 +83,10 @@ export const IssueAttachmentsSection: React.FC<IssueAttachmentsSectionProps> = (
         onDragLeave={() => setIsDragOver(false)}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
-        className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-colors ${
+        className={`border border-dashed rounded-xl py-2.5 px-4 text-center cursor-pointer transition-colors ${
           isDragOver
             ? 'border-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/20'
-            : 'border-[var(--md-sys-color-outline-variant)]/70 hover:border-[var(--md-sys-color-primary)]/50 bg-[var(--md-sys-color-surface-container-low)]'
+            : 'border-[var(--md-sys-color-outline-variant)]/60 hover:border-[var(--md-sys-color-primary)]/50 bg-[var(--md-sys-color-surface-container-low)]'
         }`}
       >
         <input
@@ -96,18 +96,18 @@ export const IssueAttachmentsSection: React.FC<IssueAttachmentsSectionProps> = (
           className="hidden"
           multiple
         />
-        <div className="flex flex-col items-center justify-center gap-2">
+        <div className="flex items-center justify-center gap-2">
           {uploading ? (
-            <Loader2 className="w-6 h-6 text-[var(--md-sys-color-primary)] animate-spin" />
+            <Loader2 className="w-4 h-4 text-[var(--md-sys-color-primary)] animate-spin" />
           ) : (
-            <UploadCloud className="w-6 h-6 text-[var(--md-sys-color-on-surface-variant)]" />
+            <UploadCloud className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
           )}
-          <p className="text-sm font-medium text-[var(--md-sys-color-on-surface)]">
-            {uploading ? 'Uploading to SeaweedFS...' : 'Drop files here or click to browse'}
-          </p>
-          <p className="text-xs text-[var(--md-sys-color-on-surface-variant)]">
-            Support for images, PDFs, logs and screenshots
-          </p>
+          <span className="text-xs font-medium text-[var(--md-sys-color-on-surface)]">
+            {uploading ? 'Uploading...' : 'Drop files here or click to browse'}
+          </span>
+          <span className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] hidden sm:inline">
+            (Images, PDFs, logs)
+          </span>
         </div>
       </div>
 

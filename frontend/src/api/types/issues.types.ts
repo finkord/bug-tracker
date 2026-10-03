@@ -128,6 +128,7 @@ export interface CreateIssuePayload {
   estimatedHours?: number;
   sprintId?: number | null;
   assigneeId?: number | null;
+  reporterId?: number;
   componentId?: number | null;
   fixVersionId?: number | null;
   affectsVersionId?: number | null;

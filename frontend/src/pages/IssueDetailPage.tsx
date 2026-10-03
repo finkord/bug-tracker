@@ -30,7 +30,15 @@ import {
   IssueSubtasksSection,
 } from '../components/issue-detail';
 import { Card, Button, Modal } from '../components/ui';
-import { Loader2, AlertCircle } from 'lucide-react';
+import {
+  Loader2,
+  AlertCircle,
+  FileText,
+  MessageSquare,
+  GitCommitHorizontal,
+  Link2,
+  Paperclip,
+} from 'lucide-react';
 
 export const IssueDetailPage: React.FC = () => {
   const { key, id } = useParams<{ key?: string; id?: string }>();
@@ -272,30 +280,102 @@ export const IssueDetailPage: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Title, Description, Links, Comments, Attachments */}
         <div className="lg:col-span-8 xl:col-span-8 2xl:col-span-9 space-y-6">
-          <IssueDetailDescription
-            issue={issue}
-            onUpdateIssue={handleUpdateIssue}
-          />
+          <div id="description-section">
+            <IssueDetailDescription
+              issue={issue}
+              onUpdateIssue={handleUpdateIssue}
+            />
+          </div>
 
-          <IssueSubtasksSection
-            issue={issue}
-            onSubtasksChanged={() => fetchIssue()}
-          />
+          {/* Quick Anchor Navigation Bar (Linear / Jira Ergonomics) */}
+          <div className="flex items-center gap-1.5 py-1 px-1.5 rounded-xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/40 text-xs overflow-x-auto">
+            <button
+              type="button"
+              onClick={() => {
+                document.getElementById('description-section')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="px-2.5 py-1 font-semibold rounded-lg text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container)] transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
+            >
+              <FileText className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
+              Description
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                document.getElementById('activity-tabs-section')?.scrollIntoView({ behavior: 'smooth' });
+                setActiveActivityTab('comments');
+              }}
+              className="px-2.5 py-1 font-semibold rounded-lg text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container)] transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
+            >
+              <MessageSquare className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
+              Comments & Activity
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-[var(--md-sys-color-surface-container-high)] font-bold">
+                {issue.comments?.length || issue.commentsCount || 0}
+              </span>
+            </button>
+            {(issue.subtasks?.length ?? 0) > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  document.getElementById('subtasks-section')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="px-2.5 py-1 font-semibold rounded-lg text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container)] transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
+              >
+                <GitCommitHorizontal className="w-3.5 h-3.5" />
+                Subtasks ({issue.subtasks?.length})
+              </button>
+            )}
+            {(issue.links?.length ?? 0) > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  document.getElementById('links-section')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="px-2.5 py-1 font-semibold rounded-lg text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container)] transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
+              >
+                <Link2 className="w-3.5 h-3.5" />
+                Links ({issue.links?.length})
+              </button>
+            )}
+            {(issue.attachments?.length ?? 0) > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  document.getElementById('attachments-section')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="px-2.5 py-1 font-semibold rounded-lg text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container)] transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
+              >
+                <Paperclip className="w-3.5 h-3.5" />
+                Attachments ({issue.attachments?.length})
+              </button>
+            )}
+          </div>
 
-          <IssueLinksSection
-            issueId={issue.id}
-            currentIssueKey={issue.key}
-            projectId={issue.projectId}
-            links={issue.links}
-            onLinksChanged={() => fetchIssue()}
-          />
+          <div id="subtasks-section">
+            <IssueSubtasksSection
+              issue={issue}
+              onSubtasksChanged={() => fetchIssue()}
+            />
+          </div>
 
-          <IssueAttachmentsSection
-            attachments={issue.attachments || []}
-            currentUser={user}
-            onUpload={handleUploadAttachment}
-            onDelete={handleDeleteAttachment}
-          />
+          <div id="links-section">
+            <IssueLinksSection
+              issueId={issue.id}
+              currentIssueKey={issue.key}
+              projectId={issue.projectId}
+              links={issue.links}
+              onLinksChanged={() => fetchIssue()}
+            />
+          </div>
+
+          <div id="attachments-section">
+            <IssueAttachmentsSection
+              attachments={issue.attachments || []}
+              currentUser={user}
+              onUpload={handleUploadAttachment}
+              onDelete={handleDeleteAttachment}
+            />
+          </div>
 
           <div id="activity-tabs-section">
             <IssueActivityTabs
