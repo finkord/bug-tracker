@@ -8,6 +8,8 @@ import {
   SelectValue,
   SelectContent,
   SelectItem,
+  StatusBadge,
+  PriorityBadge,
 } from '../ui';
 import { Avatar } from '../common/Avatar';
 import { IssueContextMenu } from '../common/IssueContextMenu';
@@ -120,38 +122,7 @@ export const SearchResultsTable: React.FC<SearchResultsTableProps> = ({
     }
   };
 
-  const renderPriorityBadge = (priority: IssuePriority) => {
-    switch (priority) {
-      case 'CRITICAL':
-        return (
-          <Badge variant="critical" className="gap-1 px-2 py-0.5 text-[11px] rounded-full">
-            <Flame className="w-3 h-3 text-[var(--md-sys-color-priority-critical)]" />
-            <span>Critical</span>
-          </Badge>
-        );
-      case 'HIGH':
-        return (
-          <Badge variant="high" className="gap-1 px-2 py-0.5 text-[11px] rounded-full">
-            <AlertCircle className="w-3 h-3 text-[var(--md-sys-color-priority-high)]" />
-            <span>High</span>
-          </Badge>
-        );
-      case 'MEDIUM':
-        return (
-          <Badge variant="medium" className="gap-1.5 px-2 py-0.5 text-[11px] rounded-full">
-            <span>Medium</span>
-          </Badge>
-        );
-      case 'LOW':
-        return (
-          <Badge variant="low" className="gap-1.5 px-2 py-0.5 text-[11px] rounded-full">
-            <span>Low</span>
-          </Badge>
-        );
-      default:
-        return null;
-    }
-  };
+
 
   const renderSortIcon = (column: string) => {
     if (sortBy !== column) {
@@ -297,34 +268,17 @@ export const SearchResultsTable: React.FC<SearchResultsTableProps> = ({
 
                   {/* Status */}
                   <td className="py-2 px-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                    {onUpdateStatus ? (
-                      <div className="w-32">
-                        <Select
-                          value={issue.status}
-                          onValueChange={(val) => onUpdateStatus(issue.id, val as IssueStatus)}
-                        >
-                          <SelectTrigger size="sm" className="rounded-full bg-[var(--md-sys-color-surface-container)] text-xs font-semibold border-0">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {STATUS_OPTIONS.map((opt) => (
-                              <SelectItem key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    ) : (
-                      <Badge variant="neutral" className="text-xs rounded-full">
-                        {issue.status.replace('_', ' ')}
-                      </Badge>
-                    )}
+                    <StatusBadge
+                      status={issue.status}
+                      interactive={Boolean(onUpdateStatus)}
+                      onStatusChange={(newStatus) => onUpdateStatus?.(issue.id, newStatus)}
+                      size="sm"
+                    />
                   </td>
 
                   {/* Priority */}
                   <td className="py-2.5 px-4 whitespace-nowrap">
-                    {renderPriorityBadge(issue.priority)}
+                    <PriorityBadge priority={issue.priority} size="sm" />
                   </td>
 
                   {/* Sprint */}

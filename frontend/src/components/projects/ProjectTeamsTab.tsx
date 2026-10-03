@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { TeamItem, UserProfile } from '../../api/client';
 import { useTeamsQuery, useDeleteTeamMutation } from '../../api/queries';
-import { Button } from '../ui';
+import { Button, ConfirmDialog } from '../ui';
 import { Avatar } from '../common/Avatar';
 import { TeamAvatar } from '../teams/TeamAvatar';
 import { TeamModal } from '../teams/TeamModal';
@@ -29,15 +29,10 @@ export const ProjectTeamsTab: React.FC<ProjectTeamsTabProps> = ({
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editingTeam, setEditingTeam] = useState<TeamItem | null>(null);
   const [rosterTeam, setRosterTeam] = useState<TeamItem | null>(null);
+  const [teamToDelete, setTeamToDelete] = useState<TeamItem | null>(null);
 
-  const handleDeleteTeam = async (team: TeamItem) => {
-    if (window.confirm(`Are you sure you want to delete team "${team.name}"?`)) {
-      try {
-        await deleteMutation.mutateAsync(team.id);
-      } catch (err: unknown) {
-        alert(err instanceof Error ? err.message : 'Failed to delete team');
-      }
-    }
+  const handleDeleteTeam = (team: TeamItem) => {
+    setTeamToDelete(team);
   };
 
   return (
@@ -247,6 +242,20 @@ export const ProjectTeamsTab: React.FC<ProjectTeamsTabProps> = ({
           allUsers={allUsers}
         />
       )}
+
+      <ConfirmDialog
+        isOpen={Boolean(teamToDelete)}
+        onClose={() => setTeamToDelete(null)}
+        onConfirm={async () => {
+          if (teamToDelete) {
+            await deleteMutation.mutateAsync(teamToDelete.id);
+            setTeamToDelete(null);
+          }
+        }}
+        title="Delete Team"
+        description={`Are you sure you want to delete team "${teamToDelete?.name}"? Team assignments will be cleared.`}
+        isLoading={deleteMutation.isPending}
+      />
     </div>
   );
 };

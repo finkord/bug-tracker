@@ -72,6 +72,10 @@ vi.mock('../api/queries', () => ({
     data: { items: [{ id: 1, fullName: 'Chief Architect', email: 'admin@bugtracker.local' }] },
     isLoading: false,
   }),
+  useUserDetailQuery: () => ({
+    data: { id: 1, fullName: 'Chief Architect', email: 'admin@bugtracker.local' },
+    isLoading: false,
+  }),
   useGroupsQuery: () => ({
     data: [],
     isLoading: false,

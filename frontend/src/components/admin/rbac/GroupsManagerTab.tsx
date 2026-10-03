@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import type { GroupItem, UserProfile } from '../../../api/client';
 import { Avatar } from '../../common/Avatar';
-import { Badge, Button } from '../../ui';
+import { Badge, Button, SearchInput } from '../../ui';
 import { AddGroupMembersModal } from './AddGroupMembersModal';
 
 interface GroupsManagerTabProps {
@@ -120,16 +120,13 @@ export const GroupsManagerTab: React.FC<GroupsManagerTabProps> = ({
         )}
 
         {/* Search */}
-        <div className="relative">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-[var(--md-sys-color-outline)]" />
-          <input
-            type="text"
-            placeholder="Search groups..."
-            value={groupSearch}
-            onChange={(e) => setGroupSearch(e.target.value)}
-            className="w-full pl-8 pr-3 py-2 text-xs rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)]/30 text-[var(--md-sys-color-on-surface)] focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)]"
-          />
-        </div>
+        <SearchInput
+          placeholder="Search groups..."
+          value={groupSearch}
+          onChange={setGroupSearch}
+          size="sm"
+          className="w-full"
+        />
 
         {/* List */}
         <div className="space-y-1.5 max-h-[500px] overflow-y-auto">

@@ -7,7 +7,7 @@ import { Search, Check, UserPlus, UserX, ChevronDown, User } from 'lucide-react'
 
 export interface UserPickerUser {
   id: number;
-  fullName: string;
+  fullName?: string;
   avatarUrl?: string | null;
   email?: string;
   systemRole?: string;
@@ -79,7 +79,7 @@ export const UserPicker: React.FC<UserPickerProps> = ({
     const q = searchQuery.toLowerCase().trim();
     return allUsers.filter(
       (u) =>
-        u.fullName.toLowerCase().includes(q) ||
+        (u.fullName && u.fullName.toLowerCase().includes(q)) ||
         (u.email && u.email.toLowerCase().includes(q)) ||
         (u.systemRole && u.systemRole.toLowerCase().includes(q)),
     );
@@ -131,12 +131,12 @@ export const UserPicker: React.FC<UserPickerProps> = ({
                   <span
                     onClick={(e) => e.stopPropagation()}
                     className="shrink-0 inline-flex"
-                    title={`View profile for ${selectedUser.fullName}`}
+                    title={`View profile for ${selectedUser.fullName || selectedUser.email || 'User'}`}
                   >
                     <UserProfilePopover user={selectedUser}>
                       <span className="cursor-pointer inline-flex hover:opacity-80 transition-opacity">
                         <Avatar
-                          name={selectedUser.fullName}
+                          name={selectedUser.fullName || selectedUser.email || 'User'}
                           avatarUrl={selectedUser.avatarUrl}
                           size={avatarSize}
                           showTooltip={false}
@@ -147,7 +147,7 @@ export const UserPicker: React.FC<UserPickerProps> = ({
                   </span>
                 ) : (
                   <Avatar
-                    name={selectedUser.fullName}
+                    name={selectedUser.fullName || selectedUser.email || 'User'}
                     avatarUrl={selectedUser.avatarUrl}
                     size={avatarSize}
                     showTooltip={false}
@@ -155,7 +155,7 @@ export const UserPicker: React.FC<UserPickerProps> = ({
                   />
                 )}
                 <span className="font-semibold text-[var(--md-sys-color-on-surface)] truncate">
-                  {selectedUser.fullName}
+                  {selectedUser.fullName || selectedUser.email || 'User'}
                 </span>
               </>
             ) : (
@@ -267,7 +267,7 @@ export const UserPicker: React.FC<UserPickerProps> = ({
                   >
                     <div className="flex items-center gap-2 min-w-0 flex-1 mr-2">
                       <Avatar
-                        name={user.fullName}
+                        name={user.fullName || user.email || 'User'}
                         avatarUrl={user.avatarUrl}
                         size="xs"
                         showTooltip={false}
@@ -275,7 +275,7 @@ export const UserPicker: React.FC<UserPickerProps> = ({
                       />
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-[var(--md-sys-color-on-surface)]">
-                          {user.fullName}
+                          {user.fullName || user.email || 'User'}
                           {resolvedCurrentUser && user.id === resolvedCurrentUser.id && (
                             <span className="ml-1 text-[10px] text-[var(--md-sys-color-on-surface-variant)] font-normal">
                               (You)

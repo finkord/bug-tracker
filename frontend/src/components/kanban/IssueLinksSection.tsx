@@ -8,7 +8,7 @@ import {
   type IssueStatus,
   type IssuePriority,
 } from '../../api/client';
-import { Card, Button, Modal, Tooltip, Badge, SelectField } from '../ui';
+import { Card, Button, Modal, Tooltip, Badge, SelectField, ConfirmDialog } from '../ui';
 import {
   Link2,
   Plus,
@@ -74,6 +74,7 @@ export const IssueLinksSection: React.FC<IssueLinksSectionProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [confirmDeleteLinkId, setConfirmDeleteLinkId] = useState<number | null>(null);
 
   // Quick project issue suggestion search
   const [projectIssues, setProjectIssues] = useState<IssueItem[]>([]);
@@ -136,14 +137,19 @@ export const IssueLinksSection: React.FC<IssueLinksSectionProps> = ({
   };
 
   const handleDeleteLink = async (linkId: number) => {
-    if (!window.confirm('Remove this issue relationship?')) return;
-    setDeletingId(linkId);
+    setConfirmDeleteLinkId(linkId);
+  };
+
+  const handleConfirmDeleteLink = async () => {
+    if (!confirmDeleteLinkId) return;
+    setDeletingId(confirmDeleteLinkId);
     try {
-      await api.deleteIssueLink(linkId);
+      await api.deleteIssueLink(confirmDeleteLinkId);
       onLinksChanged();
+      setConfirmDeleteLinkId(null);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to remove link';
-      alert(message);
+      setError(message);
     } finally {
       setDeletingId(null);
     }
@@ -562,6 +568,15 @@ export const IssueLinksSection: React.FC<IssueLinksSectionProps> = ({
           </div>
         </form>
       </Modal>
+
+      <ConfirmDialog
+        isOpen={confirmDeleteLinkId !== null}
+        onClose={() => setConfirmDeleteLinkId(null)}
+        onConfirm={handleConfirmDeleteLink}
+        title="Remove Issue Link"
+        description="Are you sure you want to remove this relationship between issues?"
+        isLoading={deletingId !== null}
+      />
     </Card>
   );
 };

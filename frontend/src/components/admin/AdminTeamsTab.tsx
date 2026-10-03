@@ -16,6 +16,7 @@ import {
   Button,
   Badge,
   Modal,
+  SearchInput,
 } from '../ui/index.js';
 import {
   Users,
@@ -297,14 +298,13 @@ export const AdminTeamsTab: React.FC = () => {
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-4 rounded-3xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/30">
         <div className="flex flex-1 flex-col sm:flex-row items-stretch sm:items-center gap-3">
           {/* Search */}
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3.5 top-3 text-[var(--md-sys-color-on-surface-variant)]" />
-            <input
-              type="text"
+          <div className="flex-1">
+            <SearchInput
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={setSearchQuery}
               placeholder="Search teams by name, description, or project..."
-              className="w-full pl-9 pr-4 py-2 text-xs rounded-2xl bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]/40 focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] font-medium"
+              size="md"
+              className="w-full"
             />
           </div>
 

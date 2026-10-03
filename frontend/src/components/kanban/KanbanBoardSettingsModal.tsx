@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Modal, Button, Tabs, TabsList, TabsTrigger } from '../ui';
+import { Modal, Button, Tabs, TabsList, TabsTrigger, ConfirmDialog } from '../ui';
 import type { KanbanSettings, SwimlaneType, CardDensity, UnassignedPosition } from '../../types/kanban';
 import { DEFAULT_KANBAN_SETTINGS } from '../../types/kanban';
 import {
@@ -45,6 +45,7 @@ export const KanbanBoardSettingsModal: React.FC<KanbanBoardSettingsModalProps> =
   const [newFilterName, setNewFilterName] = useState('');
   const [newFilterJql, setNewFilterJql] = useState('');
   const [filterError, setFilterError] = useState<string | null>(null);
+  const [filterToDelete, setFilterToDelete] = useState<{ id: number; name: string } | null>(null);
 
   const { data: quickFilters = [] } = useProjectQuickFiltersQuery(projectId);
   const createFilterMutation = useCreateQuickFilterMutation();
@@ -71,12 +72,16 @@ export const KanbanBoardSettingsModal: React.FC<KanbanBoardSettingsModalProps> =
     }
   };
 
-  const handleDeleteQuickFilter = async (filterId: number, filterName: string) => {
+  const handleDeleteQuickFilter = (filterId: number, filterName: string) => {
     if (!projectId) return;
-    if (!window.confirm(`Delete quick filter "${filterName}"?`)) return;
+    setFilterToDelete({ id: filterId, name: filterName });
+  };
 
+  const confirmDeleteQuickFilter = async () => {
+    if (!projectId || !filterToDelete) return;
     try {
-      await deleteFilterMutation.mutateAsync({ projectId, filterId });
+      await deleteFilterMutation.mutateAsync({ projectId, filterId: filterToDelete.id });
+      setFilterToDelete(null);
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : 'Failed to delete filter');
     }
@@ -128,7 +133,8 @@ export const KanbanBoardSettingsModal: React.FC<KanbanBoardSettingsModalProps> =
     settings.swimlaneType || (settings.viewMode === 'swimlanes' ? 'assignee' : 'none');
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Kanban Board Settings" size="md">
+    <>
+      <Modal isOpen={isOpen} onClose={onClose} title="Kanban Board Settings" size="md">
       <div className="space-y-5 text-[var(--md-sys-color-on-surface)]">
         {projectId && (
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'layout' | 'quickFilters')}>
@@ -476,5 +482,17 @@ export const KanbanBoardSettingsModal: React.FC<KanbanBoardSettingsModalProps> =
         )}
       </div>
     </Modal>
+
+    <ConfirmDialog
+      isOpen={!!filterToDelete}
+      onClose={() => setFilterToDelete(null)}
+      onConfirm={confirmDeleteQuickFilter}
+      title="Delete Quick Filter"
+      description={`Are you sure you want to delete quick filter "${filterToDelete?.name}"?`}
+      confirmLabel="Delete Filter"
+      variant="danger"
+      isLoading={deleteFilterMutation.isPending}
+    />
+  </>
   );
 };

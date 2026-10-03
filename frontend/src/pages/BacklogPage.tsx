@@ -19,6 +19,7 @@ import { Loader2 } from 'lucide-react';
 import { useProjectsQuery } from '../api/queries';
 import { FloatingBulkActionBar } from '../components/common/FloatingBulkActionBar';
 import { AgileBacklogLeftDrawer } from '../components/agile/AgileBacklogLeftDrawer';
+import { ConfirmDialog } from '../components/ui';
 
 const BACKLOG_DRAWER_STORAGE_KEY = 'bugtracker_backlog_drawer';
 
@@ -117,6 +118,7 @@ export const BacklogPage: React.FC = () => {
   // Issue creation modal
   const [isCreateIssueOpen, setIsCreateIssueOpen] = useState<boolean>(false);
   const [createIssueSprintId, setCreateIssueSprintId] = useState<number | null>(null);
+  const [sprintToDelete, setSprintToDelete] = useState<{ id: number; name: string } | null>(null);
 
   // J/K/Enter/O high-velocity list keyboard navigation
   useListKeyboardNavigation({
@@ -271,7 +273,7 @@ export const BacklogPage: React.FC = () => {
                       setSprintFormMode('edit');
                       setIsSprintFormOpen(true);
                     }}
-                    onDeleteSprint={(sprintId, sprintName) => handleDeleteSprint(sprintId, sprintName)}
+                    onDeleteSprint={(sprintId, sprintName) => setSprintToDelete({ id: sprintId, name: sprintName })}
                     onGoToActiveBoard={() => setViewMode('board')}
                     onQuickCreateInSprint={(sId) => {
                       setCreateIssueSprintId(sId);
@@ -369,6 +371,21 @@ export const BacklogPage: React.FC = () => {
       <FloatingBulkActionBar
         projectId={selectedProjectId}
         onActionComplete={() => loadData()}
+      />
+
+      {/* Delete Sprint Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={!!sprintToDelete}
+        onClose={() => setSprintToDelete(null)}
+        onConfirm={async () => {
+          if (!sprintToDelete) return;
+          await handleDeleteSprint(sprintToDelete.id);
+          setSprintToDelete(null);
+        }}
+        title="Delete Sprint"
+        description={`Are you sure you want to delete ${sprintToDelete?.name}? Tickets will be moved to the backlog.`}
+        confirmLabel="Delete Sprint"
+        variant="danger"
       />
     </div>
   );

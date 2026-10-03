@@ -7,7 +7,9 @@ import {
   SelectValue,
   SelectContent,
   SelectItem,
+  SearchInput,
 } from '../ui';
+import { Avatar } from '../common/Avatar';
 import {
   FolderGit2,
   Bug,
@@ -90,25 +92,14 @@ export const BasicFilterBar: React.FC<BasicFilterBarProps> = ({
       {/* Search Input and Filter Dropdowns Row */}
       <div className="flex flex-wrap items-center gap-2">
         {/* Quick Text Search */}
-        <div className="relative w-56 sm:w-64 max-w-xs shrink-0">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--md-sys-color-on-surface-variant)]" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => onSearchQueryChange(e.target.value)}
-            placeholder="Search summary, description, or key..."
-            className="w-full pl-8 pr-7 py-1.5 text-xs rounded-full bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] placeholder-[var(--md-sys-color-on-surface-variant)]/60 focus:outline-none focus:ring-2 focus:ring-[var(--md-sys-color-primary)]/40 transition border-0"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => onSearchQueryChange('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] cursor-pointer p-0.5"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          )}
-        </div>
+        <SearchInput
+          value={searchQuery}
+          onChange={onSearchQueryChange}
+          placeholder="Search summary, description, or key..."
+          enableShortcut
+          size="sm"
+          className="w-56 sm:w-64 max-w-xs shrink-0"
+        />
 
         {/* Project Selector */}
         <div className="w-32 sm:w-36 shrink-0">
@@ -174,7 +165,18 @@ export const BasicFilterBar: React.FC<BasicFilterBarProps> = ({
             onValueChange={(val) => handleFieldChange('assignee', val)}
           >
             <SelectTrigger size="sm" className="rounded-full bg-[var(--md-sys-color-surface-container)] text-xs font-semibold border-0">
-              <SelectValue placeholder="All Assignees" />
+              {(() => {
+                const selUser = users.find((u) => String(u.id) === filters.assignee);
+                if (selUser) {
+                  return (
+                    <span className="flex items-center gap-1.5 truncate">
+                      <Avatar name={selUser.fullName} avatarUrl={selUser.avatarUrl} size="xs" showTooltip={false} className="w-4 h-4 text-[9px] shrink-0" />
+                      <span className="truncate">{selUser.fullName}</span>
+                    </span>
+                  );
+                }
+                return <SelectValue placeholder="All Assignees" />;
+              })()}
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">
@@ -197,7 +199,10 @@ export const BasicFilterBar: React.FC<BasicFilterBarProps> = ({
               </SelectItem>
               {users.map((u) => (
                 <SelectItem key={u.id} value={String(u.id)}>
-                  <span className="truncate">{u.fullName}</span>
+                  <span className="flex items-center gap-1.5 truncate">
+                    <Avatar name={u.fullName} avatarUrl={u.avatarUrl} size="xs" showTooltip={false} className="w-4 h-4 text-[9px] shrink-0" />
+                    <span className="truncate">{u.fullName}</span>
+                  </span>
                 </SelectItem>
               ))}
             </SelectContent>

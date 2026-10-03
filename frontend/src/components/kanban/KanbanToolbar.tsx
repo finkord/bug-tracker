@@ -14,6 +14,7 @@ import {
   SelectValue,
   SelectContent,
   SelectItem,
+  SearchInput,
 } from '../ui';
 import {
   Search,
@@ -146,25 +147,14 @@ export const KanbanToolbar: React.FC<KanbanToolbarProps> = ({
           </span>
 
           {/* Search Input */}
-          <div className="relative flex-1 min-w-[180px] max-w-sm">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--md-sys-color-on-surface-variant)]" />
-            <input
-              type="text"
-              placeholder="Search by title, key, desc..."
-              value={searchTerm}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="w-full pl-8.5 pr-8 py-1.5 rounded-full bg-[var(--md-sys-color-surface-container)] focus:bg-[var(--md-sys-color-surface-container-high)] text-xs text-[var(--md-sys-color-on-surface)] border-0 focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] transition-all font-medium"
-            />
-            {searchTerm && (
-              <button
-                type="button"
-                onClick={() => onSearchChange('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-full text-[var(--md-sys-color-outline)] hover:text-[var(--md-sys-color-on-surface)] cursor-pointer"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            )}
-          </div>
+          <SearchInput
+            value={searchTerm}
+            onChange={onSearchChange}
+            placeholder="Search by title, key, desc..."
+            enableShortcut
+            size="sm"
+            className="flex-1 min-w-[180px] max-w-sm"
+          />
 
           {/* Type Filter Select using UI Component Kit */}
           <div className="w-32 sm:w-36">

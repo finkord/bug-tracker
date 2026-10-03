@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import type { IssueItem } from '../../api/client';
 import { useSprintBurndownQuery, useSprintFlowMetricsQuery } from '../../api/queries';
-import { Modal, Button, Badge, Tabs, TabsList, TabsTrigger } from '../ui';
+import { Modal, Button, Badge, Tabs, TabsList, TabsTrigger, StatusBadge, PriorityBadge } from '../ui';
 import {
   TrendingDown,
   Layers,
@@ -23,21 +23,7 @@ interface SprintAnalyticsModalProps {
   allIssues: IssueItem[];
 }
 
-function getStatusBadgeVariant(status: string): NonNullable<React.ComponentProps<typeof Badge>['variant']> {
-  const normalized = status.toLowerCase().replace('_', '-');
-  if (['open', 'in-progress', 'review', 'resolved', 'closed'].includes(normalized)) {
-    return normalized as NonNullable<React.ComponentProps<typeof Badge>['variant']>;
-  }
-  return 'neutral';
-}
 
-function getPriorityBadgeVariant(priority: string): NonNullable<React.ComponentProps<typeof Badge>['variant']> {
-  const normalized = priority.toLowerCase();
-  if (['low', 'medium', 'high', 'critical'].includes(normalized)) {
-    return normalized as NonNullable<React.ComponentProps<typeof Badge>['variant']>;
-  }
-  return 'neutral';
-}
 
 export const SprintAnalyticsModal: React.FC<SprintAnalyticsModalProps> = ({
   isOpen,
@@ -861,9 +847,7 @@ export const SprintAnalyticsModal: React.FC<SprintAnalyticsModalProps> = ({
                     <div className="flex items-center gap-2 min-w-0 pr-3">
                       <span className="font-mono font-bold text-[var(--md-sys-color-primary)]">{item.key}</span>
                       <span className="font-semibold text-[var(--md-sys-color-on-surface)] truncate">{item.title}</span>
-                      <Badge variant={getPriorityBadgeVariant(item.priority)} size="sm">
-                        {item.priority}
-                      </Badge>
+                      <PriorityBadge priority={item.priority as any} size="xs" />
                     </div>
                     <div className="flex items-center gap-3 shrink-0 text-right">
                       <div>
@@ -997,14 +981,10 @@ export const SprintAnalyticsModal: React.FC<SprintAnalyticsModalProps> = ({
                         {issue.title}
                       </td>
                       <td className="p-3">
-                        <Badge variant={getStatusBadgeVariant(issue.status)} size="sm">
-                          {issue.status}
-                        </Badge>
+                        <StatusBadge status={issue.status} size="xs" />
                       </td>
                       <td className="p-3">
-                        <Badge variant={getPriorityBadgeVariant(issue.priority)} size="sm">
-                          {issue.priority}
-                        </Badge>
+                        <PriorityBadge priority={issue.priority} size="xs" />
                       </td>
                       <td className="p-3 text-[var(--md-sys-color-on-surface-variant)]">
                         {issue.assignee?.fullName || 'Unassigned'}

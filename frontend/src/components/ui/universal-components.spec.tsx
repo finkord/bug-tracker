@@ -7,6 +7,8 @@ import { StatusBadge } from './StatusBadge';
 import { PriorityBadge } from './PriorityBadge';
 import { UserPicker } from './UserPicker';
 import { EmptyState } from './EmptyState';
+import { ConfirmDialog } from './ConfirmDialog';
+import { SearchInput } from './SearchInput';
 import { Inbox } from 'lucide-react';
 
 const queryClient = new QueryClient({
@@ -174,3 +176,88 @@ describe('EmptyState', () => {
     expect(onAction).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('ConfirmDialog', () => {
+  it('renders title, description, and triggers onConfirm when confirmed', () => {
+    const onConfirm = vi.fn();
+    const onClose = vi.fn();
+
+    render(
+      <ConfirmDialog
+        isOpen={true}
+        onClose={onClose}
+        onConfirm={onConfirm}
+        title="Delete Item"
+        description="Are you sure you want to delete this item?"
+        confirmLabel="Yes, Delete"
+        cancelLabel="No, Cancel"
+        variant="danger"
+      />,
+    );
+
+    expect(screen.getByText('Delete Item')).toBeInTheDocument();
+    expect(screen.getByText('Are you sure you want to delete this item?')).toBeInTheDocument();
+
+    const confirmBtn = screen.getByRole('button', { name: /yes, delete/i });
+    fireEvent.click(confirmBtn);
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+
+    const cancelBtn = screen.getByRole('button', { name: /no, cancel/i });
+    fireEvent.click(cancelBtn);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not render content when isOpen is false', () => {
+    const onConfirm = vi.fn();
+    const onClose = vi.fn();
+
+    render(
+      <ConfirmDialog
+        isOpen={false}
+        onClose={onClose}
+        onConfirm={onConfirm}
+        title="Hidden Dialog"
+        description="This should not appear"
+      />,
+    );
+
+    expect(screen.queryByText('Hidden Dialog')).not.toBeInTheDocument();
+  });
+});
+
+describe('SearchInput', () => {
+  it('renders input with value and calls onChange when typing', () => {
+    const onChange = vi.fn();
+    render(
+      <SearchInput
+        value=""
+        onChange={onChange}
+        placeholder="Search tickets..."
+      />,
+    );
+
+    const input = screen.getByPlaceholderText('Search tickets...');
+    expect(input).toBeInTheDocument();
+
+    fireEvent.change(input, { target: { value: 'BUG-123' } });
+    expect(onChange).toHaveBeenCalledWith('BUG-123');
+  });
+
+  it('renders clear button when value is present and clears on click', () => {
+    const onChange = vi.fn();
+    render(
+      <SearchInput
+        value="Search term"
+        onChange={onChange}
+        placeholder="Search..."
+      />,
+    );
+
+    const clearBtn = screen.getByRole('button', { name: /clear search/i });
+    expect(clearBtn).toBeInTheDocument();
+
+    fireEvent.click(clearBtn);
+    expect(onChange).toHaveBeenCalledWith('');
+  });
+});
+

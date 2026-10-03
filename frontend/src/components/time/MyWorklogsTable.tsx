@@ -4,11 +4,10 @@ import type { WorklogItem, IssueItem, IssueStatus } from '../../api/client';
 import { IssueContextMenu } from '../common/IssueContextMenu';
 import { useAssignIssueToMeMutation, useUpdateIssueStatusMutation } from '../../api/queries';
 import { useAuth } from '../../store';
-import { Button } from '../ui';
+import { Button, SearchInput, EmptyState, ConfirmDialog } from '../ui';
 import {
   Clock,
   Calendar,
-  Search,
   ArrowUpDown,
   PlusCircle,
   FileText,
@@ -91,6 +90,12 @@ export const MyWorklogsTable: React.FC<MyWorklogsTableProps> = ({
 
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+  const [worklogToDelete, setWorklogToDelete] = useState<{
+    issueId: number;
+    worklogId: number;
+    hours: number;
+    issueKey?: string;
+  } | null>(null);
 
   // Filter and sort worklogs locally for client-level fast query/sort
   const filteredWorklogs = useMemo(() => {
@@ -177,19 +182,13 @@ export const MyWorklogsTable: React.FC<MyWorklogsTableProps> = ({
 
       {/* Filter and Action Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-2xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]">
-        <div className="flex items-center gap-2 flex-1 min-w-[240px] max-w-md">
-          <div className="relative w-full">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--md-sys-color-on-surface-variant)]" />
-            <input
-              type="text"
-              placeholder="Search worklogs by ticket, note, date..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              aria-label="Search worklogs"
-              className="w-full pl-9 pr-3 py-1.5 rounded-xl text-xs bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] placeholder:text-[var(--md-sys-color-on-surface-variant)]/60 focus:outline-none focus:ring-1 focus:ring-[var(--md-sys-color-primary)]"
-            />
-          </div>
-        </div>
+        <SearchInput
+          value={searchQuery}
+          onChange={setSearchQuery}
+          placeholder="Search worklogs by ticket, note, date..."
+          className="flex-1 min-w-[240px] max-w-md"
+          aria-label="Search worklogs"
+        />
 
         <div className="flex items-center gap-2">
           <Button
@@ -223,17 +222,23 @@ export const MyWorklogsTable: React.FC<MyWorklogsTableProps> = ({
           </p>
         </div>
       ) : filteredWorklogs.length === 0 ? (
-        <div className="p-12 text-center rounded-2xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]">
-          <Inbox className="w-10 h-10 text-[var(--md-sys-color-on-surface-variant)]/40 mx-auto mb-3" />
-          <h3 className="text-sm font-bold text-[var(--md-sys-color-on-surface)]">
-            No worklogs found
-          </h3>
-          <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-1 max-w-sm mx-auto">
-            {searchQuery
+        <EmptyState
+          icon={<Inbox className="w-10 h-10" />}
+          title="No worklogs found"
+          description={
+            searchQuery
               ? `No worklog records matching "${searchQuery}"`
-              : 'You have not logged any time yet. Click "Log Time" to record your first entry.'}
-          </p>
-        </div>
+              : 'You have not logged any time yet. Click "Log Time" to record your first entry.'
+          }
+          action={
+            !searchQuery && onOpenLogModal
+              ? {
+                  label: 'Log Time',
+                  onClick: onOpenLogModal,
+                }
+              : undefined
+          }
+        />
       ) : (
         <div className="rounded-2xl border border-[var(--md-sys-color-outline-variant)] bg-[var(--md-sys-color-surface)] overflow-hidden shadow-2xs">
           {/* Desktop Table View */}
@@ -327,9 +332,12 @@ export const MyWorklogsTable: React.FC<MyWorklogsTableProps> = ({
                               variant="ghost"
                               size="xs"
                               onClick={() => {
-                                if (window.confirm(`Delete worklog of ${log.timeSpentHours}h on ${log.issue?.key}?`)) {
-                                  onDeleteWorklog(log.issue!.id, log.id);
-                                }
+                                setWorklogToDelete({
+                                  issueId: log.issue!.id,
+                                  worklogId: log.id,
+                                  hours: log.timeSpentHours,
+                                  issueKey: log.issue?.key,
+                                });
                               }}
                               className="text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/30"
                               title="Delete worklog"
@@ -389,9 +397,12 @@ export const MyWorklogsTable: React.FC<MyWorklogsTableProps> = ({
                         <button
                           type="button"
                           onClick={() => {
-                            if (window.confirm(`Delete worklog of ${log.timeSpentHours}h?`)) {
-                              onDeleteWorklog(log.issue!.id, log.id);
-                            }
+                            setWorklogToDelete({
+                              issueId: log.issue!.id,
+                              worklogId: log.id,
+                              hours: log.timeSpentHours,
+                              issueKey: log.issue?.key,
+                            });
                           }}
                           className="p-1 rounded-md text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/30 transition-colors"
                           aria-label="Delete worklog"
@@ -495,6 +506,25 @@ export const MyWorklogsTable: React.FC<MyWorklogsTableProps> = ({
           currentUserId={user?.id}
         />
       )}
+
+      <ConfirmDialog
+        isOpen={!!worklogToDelete}
+        onClose={() => setWorklogToDelete(null)}
+        onConfirm={() => {
+          if (worklogToDelete && onDeleteWorklog) {
+            onDeleteWorklog(worklogToDelete.issueId, worklogToDelete.worklogId);
+          }
+          setWorklogToDelete(null);
+        }}
+        title="Delete Worklog"
+        description={
+          worklogToDelete?.issueKey
+            ? `Are you sure you want to delete worklog of ${worklogToDelete.hours}h on ${worklogToDelete.issueKey}?`
+            : `Are you sure you want to delete worklog of ${worklogToDelete?.hours}h?`
+        }
+        confirmLabel="Delete Worklog"
+        variant="danger"
+      />
     </div>
   );
 };

@@ -5,7 +5,7 @@ import { useIssuesQuery } from '../api/queries/useIssuesQuery.js';
 import { useAuth } from '../store/index.js';
 import { Avatar } from '../components/common/Avatar.js';
 import { BackButton } from '../components/common/BackButton.js';
-import { Card, Badge, Button, Tabs, TabsList, TabsTrigger } from '../components/ui/index.js';
+import { Card, Badge, Button, Tabs, TabsList, TabsTrigger, StatusBadge, PriorityBadge } from '../components/ui/index.js';
 import { IssueDetailsModal } from '../components/kanban/IssueDetailsModal.js';
 import {
   Mail,
@@ -66,34 +66,7 @@ export const UserProfileViewPage: React.FC = () => {
     (i) => i.status === 'RESOLVED' || i.status === 'CLOSED',
   ).length;
 
-  const getStatusBadgeVariant = (status: IssueStatus) => {
-    switch (status) {
-      case 'OPEN':
-        return 'neutral';
-      case 'IN_PROGRESS':
-        return 'primary';
-      case 'REVIEW':
-        return 'warning';
-      case 'RESOLVED':
-      case 'CLOSED':
-        return 'success';
-      default:
-        return 'neutral';
-    }
-  };
 
-  const getPriorityBadgeVariant = (priority: string) => {
-    switch (priority) {
-      case 'CRITICAL':
-        return 'critical';
-      case 'HIGH':
-        return 'high';
-      case 'MEDIUM':
-        return 'medium';
-      default:
-        return 'low';
-    }
-  };
 
   if (isUserLoading) {
     return (
@@ -341,12 +314,8 @@ export const UserProfileViewPage: React.FC = () => {
                       {issue.projectName}
                     </span>
                   )}
-                  <Badge variant={getPriorityBadgeVariant(issue.priority)} size="sm">
-                    {issue.priority}
-                  </Badge>
-                  <Badge variant={getStatusBadgeVariant(issue.status)} size="sm">
-                    {issue.status}
-                  </Badge>
+                  <PriorityBadge priority={issue.priority} size="sm" />
+                  <StatusBadge status={issue.status} size="sm" />
                 </div>
               </div>
             ))}

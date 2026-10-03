@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { CellBreakdownData } from '../../types/timeTracking';
-import { Modal, Button, Badge } from '../ui';
+import { Modal, Button, Badge, ConfirmDialog } from '../ui';
 import { Avatar } from '../common/Avatar';
 import {
   Clock,
@@ -25,6 +25,12 @@ export const WorklogBreakdownModal: React.FC<WorklogBreakdownModalProps> = ({
   onLogMoreWork,
   onDeleteWorklog,
 }) => {
+  const [worklogToDelete, setWorklogToDelete] = useState<{
+    issueId: number;
+    worklogId: number;
+    hours: number;
+  } | null>(null);
+
   if (!data) return null;
 
   const formattedDate = new Date(data.date + 'T00:00:00').toLocaleDateString(undefined, {
@@ -35,9 +41,10 @@ export const WorklogBreakdownModal: React.FC<WorklogBreakdownModalProps> = ({
   });
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
+    <>
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
       title={
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center shrink-0 shadow-xs">
@@ -140,9 +147,11 @@ export const WorklogBreakdownModal: React.FC<WorklogBreakdownModalProps> = ({
                         variant="ghost"
                         size="xs"
                         onClick={() => {
-                          if (window.confirm(`Delete worklog of ${log.timeSpentHours}h?`)) {
-                            onDeleteWorklog(log.issueId!, log.id);
-                          }
+                          setWorklogToDelete({
+                            issueId: log.issueId!,
+                            worklogId: log.id,
+                            hours: log.timeSpentHours,
+                          });
                         }}
                         className="text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/30"
                         title="Delete worklog"
@@ -192,6 +201,22 @@ export const WorklogBreakdownModal: React.FC<WorklogBreakdownModalProps> = ({
           </Button>
         </div>
       </div>
-    </Modal>
+      </Modal>
+
+      <ConfirmDialog
+        isOpen={!!worklogToDelete}
+        onClose={() => setWorklogToDelete(null)}
+        onConfirm={() => {
+          if (worklogToDelete && onDeleteWorklog) {
+            onDeleteWorklog(worklogToDelete.issueId, worklogToDelete.worklogId);
+          }
+          setWorklogToDelete(null);
+        }}
+        title="Delete Worklog"
+        description={`Are you sure you want to delete this worklog entry of ${worklogToDelete?.hours}h?`}
+        confirmLabel="Delete Worklog"
+        variant="danger"
+      />
+    </>
   );
 };

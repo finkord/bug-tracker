@@ -11,6 +11,7 @@ import {
   TabsTrigger,
   TabsContent,
   EmptyState,
+  ConfirmDialog,
 } from '../ui/index.js';
 import {
   MessageSquare,
@@ -73,6 +74,8 @@ export const IssueActivityTabs: React.FC<IssueActivityTabsProps> = ({
   // Editing comment state
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [editingText, setEditingText] = useState('');
+  const [deleteCommentId, setDeleteCommentId] = useState<number | null>(null);
+  const [deleteWorklogId, setDeleteWorklogId] = useState<number | null>(null);
 
   const updateCommentMutation = useUpdateIssueCommentMutation();
   const deleteCommentMutation = useDeleteIssueCommentMutation();
@@ -165,21 +168,11 @@ export const IssueActivityTabs: React.FC<IssueActivityTabsProps> = ({
   };
 
   const handleDeleteComment = async (commentId: number) => {
-    if (window.confirm('Are you sure you want to delete this comment?')) {
-      await deleteCommentMutation.mutateAsync({
-        issueId: issue.id,
-        commentId,
-      });
-    }
+    setDeleteCommentId(commentId);
   };
 
   const handleDeleteWorklog = async (worklogId: number) => {
-    if (window.confirm('Are you sure you want to delete this worklog entry?')) {
-      await deleteWorklogMutation.mutateAsync({
-        issueId: issue.id,
-        worklogId,
-      });
-    }
+    setDeleteWorklogId(worklogId);
   };
 
   return (
@@ -575,6 +568,40 @@ export const IssueActivityTabs: React.FC<IssueActivityTabsProps> = ({
           />
         </TabsContent>
       </Tabs>
+
+      <ConfirmDialog
+        isOpen={deleteCommentId !== null}
+        onClose={() => setDeleteCommentId(null)}
+        onConfirm={async () => {
+          if (deleteCommentId !== null) {
+            await deleteCommentMutation.mutateAsync({
+              issueId: issue.id,
+              commentId: deleteCommentId,
+            });
+            setDeleteCommentId(null);
+          }
+        }}
+        title="Delete Comment"
+        description="Are you sure you want to delete this comment? This action cannot be undone."
+        isLoading={deleteCommentMutation.isPending}
+      />
+
+      <ConfirmDialog
+        isOpen={deleteWorklogId !== null}
+        onClose={() => setDeleteWorklogId(null)}
+        onConfirm={async () => {
+          if (deleteWorklogId !== null) {
+            await deleteWorklogMutation.mutateAsync({
+              issueId: issue.id,
+              worklogId: deleteWorklogId,
+            });
+            setDeleteWorklogId(null);
+          }
+        }}
+        title="Delete Worklog"
+        description="Are you sure you want to remove this logged work entry?"
+        isLoading={deleteWorklogMutation.isPending}
+      />
     </div>
   );
 };

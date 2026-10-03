@@ -5,7 +5,7 @@ import {
   useUpdateTeamMutation,
   useUploadTeamAvatarMutation,
 } from '../../api/queries';
-import { Button, Input, Modal } from '../ui';
+import { Button, Input, Modal, UserPicker } from '../ui';
 import { TeamAvatar } from './TeamAvatar';
 import { TEAM_PRESET_ICONS, TEAM_PRESET_COLORS } from './team-presets.js';
 import { Upload, Sparkles, AlertCircle, X } from 'lucide-react';
@@ -341,18 +341,14 @@ export const TeamModal: React.FC<TeamModalProps> = ({
             <label className="block text-xs font-bold text-[var(--md-sys-color-on-surface)] mb-1">
               Team Lead / Scrum Master
             </label>
-            <select
-              value={leadId}
-              onChange={(e) => setLeadId(e.target.value ? Number(e.target.value) : '')}
-              className="w-full p-2 text-xs rounded-xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] font-medium focus:outline-none focus:ring-2 focus:ring-[var(--md-sys-color-primary)]/40 cursor-pointer"
-            >
-              <option value="">None / Unassigned</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.fullName || u.email}
-                </option>
-              ))}
-            </select>
+            <UserPicker
+              value={leadId ? Number(leadId) : null}
+              onChange={(userId) => setLeadId(userId ?? '')}
+              users={users}
+              placeholder="None / Unassigned"
+              showAssignToMe
+              className="w-full"
+            />
           </div>
 
           <div>

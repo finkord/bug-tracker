@@ -41,6 +41,10 @@ import {
   Tabs,
   TabsList,
   TabsTrigger,
+  StatusBadge,
+  PriorityBadge,
+  UserPicker,
+  ConfirmDialog,
 } from '../ui';
 import {
   Calendar,
@@ -111,6 +115,7 @@ export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
   const [logWorkOpen, setLogWorkOpen] = useState<boolean>(false);
   const [activityTab, setActivityTab] = useState<'COMMENTS' | 'HISTORY'>('COMMENTS');
   const [newLabelInput, setNewLabelInput] = useState<string>('');
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState<boolean>(false);
 
   const { data: projectComponents = [] } = useProjectComponentsQuery(issue?.projectId);
   const { data: projectVersions = [] } = useProjectVersionsQuery(issue?.projectId);
@@ -295,13 +300,10 @@ export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
   // Delete issue
   const handleDelete = async () => {
     if (!issue) return;
-    if (!window.confirm(`Are you sure you want to permanently delete ${issue.key}?`)) {
-      return;
-    }
-
     try {
       await deleteIssueMutation.mutateAsync(issue.id);
       onIssueDeleted?.(issue.id);
+      setDeleteConfirmOpen(false);
       onClose();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to delete issue');
@@ -360,21 +362,13 @@ export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
               {issue && (
                 <div className="flex items-center gap-2 shrink-0">
                   <div className="w-36 shrink-0">
-                    <Select
-                      value={issue.status}
-                      onValueChange={(val) => handleStatusChange(val as IssueStatus)}
-                    >
-                      <SelectTrigger size="sm" className="rounded-lg bg-[var(--md-sys-color-surface-container)] text-xs font-semibold h-7 border-[var(--md-sys-color-outline-variant)]/40">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="OPEN">To Do</SelectItem>
-                        <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                        <SelectItem value="REVIEW">Code Review</SelectItem>
-                        <SelectItem value="RESOLVED">Resolved</SelectItem>
-                        <SelectItem value="CLOSED">Closed</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <StatusBadge
+                      status={issue.status}
+                      interactive
+                      onStatusChange={handleStatusChange}
+                      size="sm"
+                      className="w-full justify-between"
+                    />
                   </div>
 
                   {issue.sprint?.name && (
@@ -403,7 +397,7 @@ export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
                 <Tooltip content="Delete issue">
                   <button
                     type="button"
-                    onClick={handleDelete}
+                    onClick={() => setDeleteConfirmOpen(true)}
                     disabled={deleteIssueMutation.isPending}
                     className="p-1.5 rounded-lg text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/30 transition-colors cursor-pointer disabled:opacity-50 shrink-0"
                   >
@@ -602,61 +596,42 @@ export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
 
                 <div>
                   <span className="text-[var(--md-sys-color-on-surface-variant)] block mb-1 font-medium">Priority</span>
-                  <Select
-                    value={issue.priority}
-                    onValueChange={(val) => handleUpdateFields({ priority: val as IssuePriority })}
-                  >
-                    <SelectTrigger size="sm" className="h-8 rounded-lg bg-[var(--md-sys-color-surface-container-high)] text-xs font-semibold border-[var(--md-sys-color-outline-variant)]/40 w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="CRITICAL">Critical / P0</SelectItem>
-                      <SelectItem value="HIGH">High / P1</SelectItem>
-                      <SelectItem value="MEDIUM">Medium / P2</SelectItem>
-                      <SelectItem value="LOW">Low / P3</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <PriorityBadge
+                    priority={issue.priority}
+                    interactive
+                    onPriorityChange={(val) => handleUpdateFields({ priority: val as IssuePriority })}
+                    size="sm"
+                    className="w-full justify-between"
+                  />
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-[var(--md-sys-color-on-surface-variant)] font-medium">Assignee</span>
-                    {!isAssignedToMe && (
-                      <button
-                        type="button"
-                        onClick={handleAssignToMe}
-                        className="text-[11px] font-semibold text-[var(--md-sys-color-primary)] hover:underline flex items-center gap-0.5 cursor-pointer"
-                      >
-                        <UserPlus className="w-3 h-3" />
-                        <span>Assign me</span>
-                      </button>
-                    )}
                   </div>
-                  <Select
-                    value={issue.assignee ? String(issue.assignee.id) : 'unassigned'}
-                    onValueChange={(val) =>
-                      handleUpdateFields({ assigneeId: val === 'unassigned' ? null : Number(val) })
+                  <UserPicker
+                    value={issue.assignee?.id ?? null}
+                    fallbackUser={issue.assignee}
+                    onChange={(userId) => handleUpdateFields({ assigneeId: userId })}
+                    users={assignees}
+                    currentUser={
+                      user
+                        ? {
+                            id: user.id,
+                            fullName: user.fullName,
+                            email: user.email,
+                            avatarUrl: user.avatarUrl,
+                            systemRole: user.systemRole,
+                          }
+                        : null
                     }
-                  >
-                    <SelectTrigger size="sm" className="h-8 rounded-lg bg-[var(--md-sys-color-surface-container-high)] text-xs font-semibold border-[var(--md-sys-color-outline-variant)]/40 w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="unassigned">Unassigned</SelectItem>
-                      {user && (
-                        <SelectItem value={String(user.id)}>
-                          {user.fullName} (Assign to Me)
-                        </SelectItem>
-                      )}
-                      {assignees
-                        .filter((a) => a.id !== user?.id)
-                        .map((a) => (
-                          <SelectItem key={a.id} value={String(a.id)}>
-                            {a.fullName}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
+                    currentUserId={user?.id}
+                    placeholder="Unassigned"
+                    showAssignToMe
+                    showProfileOnAvatar
+                    size="md"
+                    className="w-full"
+                  />
                 </div>
 
                 <div>
@@ -1237,6 +1212,17 @@ export const IssueDetailsModal: React.FC<IssueDetailsModalProps> = ({
             await fetchIssue();
             if (issue) onIssueUpdated?.({ ...issue, loggedHours: (issue.loggedHours || 0) + 1 });
           }}
+        />
+      )}
+
+      {issue && (
+        <ConfirmDialog
+          isOpen={deleteConfirmOpen}
+          onClose={() => setDeleteConfirmOpen(false)}
+          onConfirm={handleDelete}
+          title="Delete Issue"
+          description={`Are you sure you want to permanently delete ${issue.key}? This action cannot be undone.`}
+          isLoading={deleteIssueMutation.isPending}
         />
       )}
     </>

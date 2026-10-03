@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { SavedFilterPreset } from '../../types/search';
-import { Modal, Button, Input } from '../ui';
+import { Modal, Button, Input, ConfirmDialog } from '../ui';
 import { Star, Trash2 } from 'lucide-react';
 
 interface EditFilterModalProps {
@@ -29,6 +29,7 @@ export const EditFilterModal: React.FC<EditFilterModalProps> = ({
   const [jql, setJql] = useState('');
   const [isFavorite, setIsFavorite] = useState(false);
   const [error, setError] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     if (filter) {
@@ -61,14 +62,18 @@ export const EditFilterModal: React.FC<EditFilterModalProps> = ({
   };
 
   const handleDelete = () => {
-    if (onDelete && window.confirm(`Are you sure you want to delete filter "${filter.name}"?`)) {
-      onDelete(filter.id);
-      onClose();
-    }
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    setShowDeleteConfirm(false);
+    onDelete?.(filter.id);
+    onClose();
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Edit Saved Filter" size="md">
+    <>
+      <Modal isOpen={isOpen} onClose={onClose} title="Edit Saved Filter" size="md">
       <form onSubmit={handleSubmit} className="space-y-4 pt-1">
         <div>
           <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface)] mb-1.5">
@@ -158,5 +163,16 @@ export const EditFilterModal: React.FC<EditFilterModalProps> = ({
         </div>
       </form>
     </Modal>
+
+    <ConfirmDialog
+      isOpen={showDeleteConfirm}
+      onClose={() => setShowDeleteConfirm(false)}
+      onConfirm={confirmDelete}
+      title="Delete Saved Filter"
+      description={`Are you sure you want to delete filter "${filter.name}"? This action cannot be undone.`}
+      confirmLabel="Delete Filter"
+      variant="danger"
+    />
+  </>
   );
 };

@@ -7,7 +7,7 @@ import {
   useReleaseProjectVersionMutation,
   useDeleteProjectVersionMutation,
 } from '../../api/queries';
-import { Button, Input, Modal, Badge } from '../ui';
+import { Button, Input, Modal, Badge, ConfirmDialog } from '../ui';
 import {
   Tag,
   Plus,
@@ -35,6 +35,7 @@ export const ProjectVersionsTab: React.FC<ProjectVersionsTabProps> = ({ projectI
   const [releaseDate, setReleaseDate] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [versionToDelete, setVersionToDelete] = useState<ProjectVersionItem | null>(null);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,13 +96,17 @@ export const ProjectVersionsTab: React.FC<ProjectVersionsTabProps> = ({ projectI
     }
   };
 
-  const handleDelete = async (version: ProjectVersionItem) => {
-    if (window.confirm(`Delete version "${version.name}"?`)) {
-      try {
-        await deleteMutation.mutateAsync({ projectId, versionId: version.id });
-      } catch (err: unknown) {
-        alert(err instanceof Error ? err.message : 'Failed to delete version');
-      }
+  const handleDelete = (version: ProjectVersionItem) => {
+    setVersionToDelete(version);
+  };
+
+  const confirmDelete = async () => {
+    if (!versionToDelete) return;
+    try {
+      await deleteMutation.mutateAsync({ projectId, versionId: versionToDelete.id });
+      setVersionToDelete(null);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Failed to delete version');
     }
   };
 
@@ -345,6 +350,17 @@ export const ProjectVersionsTab: React.FC<ProjectVersionsTabProps> = ({ projectI
           </div>
         </form>
       </Modal>
+
+      <ConfirmDialog
+        isOpen={!!versionToDelete}
+        onClose={() => setVersionToDelete(null)}
+        onConfirm={confirmDelete}
+        title="Delete Version"
+        description={`Are you sure you want to delete version "${versionToDelete?.name}"? Issues assigned to this version will have it unlinked.`}
+        confirmLabel="Delete Version"
+        variant="danger"
+        isLoading={deleteMutation.isPending}
+      />
     </div>
   );
 };

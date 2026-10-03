@@ -306,11 +306,8 @@ export function useAgileBacklog(selectedProjectId: number | null) {
     }
   };
 
-  const handleDeleteSprint = async (sprintId: number, sprintName: string) => {
+  const handleDeleteSprint = async (sprintId: number) => {
     if (!selectedProjectId) return;
-    if (!window.confirm(`Are you sure you want to delete ${sprintName}? Tickets will be moved to the backlog.`)) {
-      return;
-    }
     try {
       await deleteSprintMutation.mutateAsync({ projectId: selectedProjectId, sprintId });
     } catch (err: unknown) {

@@ -22,6 +22,8 @@ import {
   SelectValue,
   SelectContent,
   SelectItem,
+  SearchInput,
+  ConfirmDialog,
 } from '../ui/index.js';
 import {
   Search,
@@ -289,13 +291,12 @@ export const AdminUsersTab: React.FC = () => {
       >
         <form onSubmit={handleSearch} className="flex flex-col sm:flex-row items-center gap-3 p-2">
           <div className="relative flex-1 w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--md-sys-color-on-surface-variant)]" />
-            <input
-              type="text"
+            <SearchInput
               value={userSearch}
-              onChange={(e) => setUserSearch(e.target.value)}
+              onChange={setUserSearch}
               placeholder="Search users by name or email..."
-              className="w-full pl-9 pr-3 py-2 text-xs bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)]/40 rounded-xl text-[var(--md-sys-color-on-surface)] placeholder:text-[var(--md-sys-color-on-surface-variant)] focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)]"
+              size="md"
+              className="w-full"
             />
           </div>
 
@@ -606,47 +607,16 @@ export const AdminUsersTab: React.FC = () => {
       </Card>
 
       {/* Delete User Modal */}
-      {deleteModalOpen && userToDelete && (
-        <Modal
-          isOpen={deleteModalOpen}
-          onClose={() => setDeleteModalOpen(false)}
-          title="Delete User Account"
-          description="Confirm permanent removal of user identity and associated credentials"
-          size="sm"
-        >
-          <div className="space-y-4">
-            <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] leading-relaxed">
-              Are you sure you want to permanently delete user{' '}
-              <strong className="text-[var(--md-sys-color-on-surface)] font-bold">
-                {userToDelete.fullName} ({userToDelete.email})
-              </strong>
-              ? This action cannot be undone.
-            </p>
-
-            <div className="flex items-center justify-end gap-2 pt-4 border-t border-[var(--md-sys-color-outline-variant)]/20">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setDeleteModalOpen(false)}
-                disabled={deleteMutation.isPending}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                variant="danger"
-                size="sm"
-                onClick={handleDeleteUser}
-                disabled={deleteMutation.isPending}
-                isLoading={deleteMutation.isPending}
-              >
-                Delete User
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      )}
+      <ConfirmDialog
+        isOpen={deleteModalOpen && !!userToDelete}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={handleDeleteUser}
+        title="Delete User Account"
+        description={`Are you sure you want to permanently delete user ${userToDelete?.fullName} (${userToDelete?.email})? This action cannot be undone.`}
+        confirmLabel="Delete User"
+        variant="danger"
+        isLoading={deleteMutation.isPending}
+      />
 
       {/* Edit Job Title Modal */}
       {jobTitleModalOpen && userToEditJob && (

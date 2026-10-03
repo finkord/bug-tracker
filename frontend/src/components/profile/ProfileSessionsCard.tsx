@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../api/client';
 import { useAuth } from '../../store';
-import { Badge, Button } from '../ui';
+import { Badge, Button, ConfirmDialog } from '../ui';
 import { Shield, ShieldAlert, LogOut, CheckCircle2 } from 'lucide-react';
 
 /**
@@ -14,12 +14,9 @@ export const ProfileSessionsCard: React.FC = () => {
   const navigate = useNavigate();
   const [sessionsRevokedMsg, setSessionsRevokedMsg] = useState<string | null>(null);
   const [isRevoking, setIsRevoking] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const handleRevokeAllSessions = async () => {
-    if (!window.confirm('Sign out of all sessions and revoke authentication tokens?')) {
-      return;
-    }
-
     setIsRevoking(true);
     try {
       await api.logout();
@@ -61,7 +58,7 @@ export const ProfileSessionsCard: React.FC = () => {
           variant="danger-tonal"
           size="sm"
           isLoading={isRevoking}
-          onClick={handleRevokeAllSessions}
+          onClick={() => setConfirmOpen(true)}
           leftIcon={<LogOut className="w-3.5 h-3.5" />}
         >
           Sign Out All Devices
@@ -95,6 +92,16 @@ export const ProfileSessionsCard: React.FC = () => {
           </Badge>
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={handleRevokeAllSessions}
+        title="Revoke All Sessions"
+        description="Are you sure you want to sign out of all active sessions and invalidate your authentication tokens across all devices?"
+        confirmLabel="Revoke Sessions"
+        isLoading={isRevoking}
+      />
     </div>
   );
 };

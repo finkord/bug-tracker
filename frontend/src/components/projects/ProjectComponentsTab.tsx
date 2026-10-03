@@ -5,7 +5,7 @@ import {
   useCreateProjectComponentMutation,
   useDeleteProjectComponentMutation,
 } from '../../api/queries';
-import { Button, Input, Modal } from '../ui';
+import { Button, Input, Modal, ConfirmDialog, UserPicker } from '../ui';
 import { Avatar } from '../common/Avatar';
 import {
   Layers,
@@ -34,6 +34,7 @@ export const ProjectComponentsTab: React.FC<ProjectComponentsTabProps> = ({
   const [leadId, setLeadId] = useState<number | ''>('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [componentToDelete, setComponentToDelete] = useState<{ id: number; name: string } | null>(null);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,13 +72,17 @@ export const ProjectComponentsTab: React.FC<ProjectComponentsTabProps> = ({
     }
   };
 
-  const handleDelete = async (componentId: number, compName: string) => {
-    if (window.confirm(`Delete component "${compName}"? Issues linked to this component will have component unassigned.`)) {
-      try {
-        await deleteMutation.mutateAsync({ projectId, componentId });
-      } catch (err: unknown) {
-        alert(err instanceof Error ? err.message : 'Failed to delete component');
-      }
+  const handleDelete = (componentId: number, compName: string) => {
+    setComponentToDelete({ id: componentId, name: compName });
+  };
+
+  const confirmDelete = async () => {
+    if (!componentToDelete) return;
+    try {
+      await deleteMutation.mutateAsync({ projectId, componentId: componentToDelete.id });
+      setComponentToDelete(null);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Failed to delete component');
     }
   };
 
@@ -239,18 +244,14 @@ export const ProjectComponentsTab: React.FC<ProjectComponentsTabProps> = ({
             <label className="block text-xs font-bold text-[var(--md-sys-color-on-surface)] mb-1">
               Component Lead
             </label>
-            <select
-              value={leadId}
-              onChange={(e) => setLeadId(e.target.value ? Number(e.target.value) : '')}
-              className="w-full p-2 text-xs rounded-xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] font-medium focus:outline-none focus:ring-2 focus:ring-[var(--md-sys-color-primary)]/40 cursor-pointer"
-            >
-              <option value="">None / Unassigned</option>
-              {allUsers.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.fullName || u.email}
-                </option>
-              ))}
-            </select>
+            <UserPicker
+              value={leadId ? Number(leadId) : null}
+              onChange={(userId) => setLeadId(userId ?? '')}
+              users={allUsers}
+              placeholder="None / Unassigned"
+              showAssignToMe
+              className="w-full"
+            />
           </div>
 
           <div className="flex items-center justify-end gap-2 pt-3 border-t border-[var(--md-sys-color-outline-variant)]/30">
@@ -263,6 +264,17 @@ export const ProjectComponentsTab: React.FC<ProjectComponentsTabProps> = ({
           </div>
         </form>
       </Modal>
+
+      <ConfirmDialog
+        isOpen={!!componentToDelete}
+        onClose={() => setComponentToDelete(null)}
+        onConfirm={confirmDelete}
+        title="Delete Component"
+        description={`Are you sure you want to delete component "${componentToDelete?.name}"? Issues linked to this component will have component unassigned.`}
+        confirmLabel="Delete Component"
+        variant="danger"
+        isLoading={deleteMutation.isPending}
+      />
     </div>
   );
 };

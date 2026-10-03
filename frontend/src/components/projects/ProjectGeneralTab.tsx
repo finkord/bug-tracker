@@ -6,8 +6,7 @@ import {
   useDeleteProjectMutation,
   useUploadProjectAvatarMutation,
 } from '../../api/queries';
-import { Button, Input } from '../ui';
-import { Avatar } from '../common/Avatar';
+import { Button, Input, UserPicker } from '../ui';
 import { ProjectAvatar } from './ProjectAvatar';
 import { TEAM_PRESET_ICONS, TEAM_PRESET_COLORS } from '../teams/team-presets';
 import {
@@ -454,28 +453,16 @@ export const ProjectGeneralTab: React.FC<ProjectGeneralTabProps> = ({
           <label className="block text-xs font-bold text-[var(--md-sys-color-on-surface)] mb-1">
             Project Lead
           </label>
-          <div className="flex items-center gap-3">
-            <select
-              value={leadId}
-              onChange={(e) => setLeadId(Number(e.target.value))}
-              className="flex-1 p-2 text-xs rounded-xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] font-medium focus:outline-none focus:ring-2 focus:ring-[var(--md-sys-color-primary)]/40 cursor-pointer"
-            >
-              {allUsers.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.fullName} ({u.email})
-                </option>
-              ))}
-            </select>
-            {project.lead && (
-              <div className="flex items-center gap-2 shrink-0">
-                <Avatar
-                  name={project.lead.fullName || 'Lead'}
-                  avatarUrl={project.lead.avatarUrl}
-                  size="sm"
-                />
-              </div>
-            )}
-          </div>
+          <UserPicker
+            value={leadId || null}
+            onChange={(userId) => setLeadId(userId || 0)}
+            users={allUsers}
+            fallbackUser={project.lead}
+            placeholder="Select project lead..."
+            allowUnassigned={false}
+            showAssignToMe
+            className="w-full"
+          />
           <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] mt-1">
             The project lead receives notifications for unassigned issues and has administrative control.
           </p>
