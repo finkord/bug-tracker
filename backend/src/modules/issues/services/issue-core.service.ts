@@ -548,6 +548,7 @@ export class IssueCoreService {
     }
     const previousAssignee = issue.assignee?.fullName || (issue.assigneeId ? `User #${issue.assigneeId}` : 'Unassigned');
     issue.assigneeId = user.id;
+    issue.assignee = user;
     await this.issueRepository.save(issue);
     await this.logHistory(id, 'assignee', previousAssignee, user.fullName, user.id);
     const updated = await this.findById(id);

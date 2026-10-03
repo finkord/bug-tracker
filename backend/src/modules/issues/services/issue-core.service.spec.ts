@@ -474,7 +474,7 @@ describe('IssueCoreService', () => {
 
       // Assert
       expect(mockIssueRepo.save).toHaveBeenCalledWith(
-        expect.objectContaining({ assigneeId: 1 }),
+        expect.objectContaining({ assigneeId: 1, assignee: mockUser }),
       );
       expect(mockEventsGateway.broadcastIssueUpdated).toHaveBeenCalled();
       expect(result).toBeDefined();

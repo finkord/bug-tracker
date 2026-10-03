@@ -153,7 +153,11 @@ export class IssuesController {
   }
 
   @Patch(':id/assign-me')
-  @RequireProjectPermission(ProjectPermission.ASSIGNABLE_USER)
+  @RequireProjectPermission(
+    ProjectPermission.ASSIGNABLE_USER,
+    ProjectPermission.ASSIGN_ISSUES,
+    ProjectPermission.EDIT_ISSUES,
+  )
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Assign the issue directly to the authenticated developer (Self-assignment)',

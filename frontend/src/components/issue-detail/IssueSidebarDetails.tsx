@@ -49,7 +49,7 @@ interface IssueSidebarDetailsProps {
 export const IssueSidebarDetails: React.FC<IssueSidebarDetailsProps> = ({
   issue,
   currentUser,
-  onAssignToMe,
+  onAssignToMe: _onAssignToMe,
   onSprintChange,
   onStatusChange,
   onUpdateFields,
@@ -144,16 +144,23 @@ export const IssueSidebarDetails: React.FC<IssueSidebarDetailsProps> = ({
                 value={issue.assignee?.id ?? null}
                 fallbackUser={issue.assignee}
                 onChange={(userId) => {
-                  if (userId === currentUser?.id && onAssignToMe) {
-                    handleFieldChange('assignee', onAssignToMe);
-                  } else {
-                    handleFieldChange('assignee', () =>
-                      onUpdateFields({ assigneeId: userId }),
-                    );
-                  }
+                  handleFieldChange('assignee', () =>
+                    onUpdateFields({ assigneeId: userId }),
+                  );
                 }}
                 users={assignees}
                 currentUserId={currentUser?.id}
+                currentUser={
+                  currentUser
+                    ? {
+                        id: currentUser.id,
+                        fullName: currentUser.fullName,
+                        email: currentUser.email,
+                        avatarUrl: currentUser.avatarUrl,
+                        systemRole: currentUser.systemRole,
+                      }
+                    : null
+                }
                 placeholder="Unassigned"
                 showAssignToMe
                 showProfileOnAvatar
@@ -187,6 +194,17 @@ export const IssueSidebarDetails: React.FC<IssueSidebarDetailsProps> = ({
                 }}
                 users={assignees}
                 currentUserId={currentUser?.id}
+                currentUser={
+                  currentUser
+                    ? {
+                        id: currentUser.id,
+                        fullName: currentUser.fullName,
+                        email: currentUser.email,
+                        avatarUrl: currentUser.avatarUrl,
+                        systemRole: currentUser.systemRole,
+                      }
+                    : null
+                }
                 placeholder="Select reporter"
                 showAssignToMe={false}
                 allowUnassigned={false}

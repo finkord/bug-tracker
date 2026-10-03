@@ -18,6 +18,7 @@ export interface UserPickerProps {
   onChange: (userId: number | null, user: UserPickerUser | null) => void;
   users: UserPickerUser[];
   fallbackUser?: UserPickerUser | null;
+  currentUser?: UserPickerUser | null;
   currentUserId?: number;
   placeholder?: string;
   showAssignToMe?: boolean;
@@ -35,6 +36,7 @@ export const UserPicker: React.FC<UserPickerProps> = ({
   onChange,
   users,
   fallbackUser,
+  currentUser: currentUserProp,
   currentUserId,
   placeholder = 'Unassigned',
   showAssignToMe = true,
@@ -49,29 +51,39 @@ export const UserPicker: React.FC<UserPickerProps> = ({
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+  const effectiveCurrentUserId = currentUserProp?.id || currentUserId;
+
+  const resolvedCurrentUser = useMemo(() => {
+    if (currentUserProp) return currentUserProp;
+    if (!effectiveCurrentUserId) return null;
+    return users.find((u) => u.id === effectiveCurrentUserId) || null;
+  }, [currentUserProp, effectiveCurrentUserId, users]);
+
+  const allUsers = useMemo(() => {
+    if (resolvedCurrentUser && !users.some((u) => u.id === resolvedCurrentUser.id)) {
+      return [resolvedCurrentUser, ...users];
+    }
+    return users;
+  }, [resolvedCurrentUser, users]);
+
   const selectedUser = useMemo(() => {
     if (!value) return null;
-    const found = users.find((u) => u.id === value);
+    const found = allUsers.find((u) => u.id === value);
     if (found) return found;
     if (fallbackUser && fallbackUser.id === value) return fallbackUser;
     return null;
-  }, [value, users, fallbackUser]);
-
-  const currentUser = useMemo(() => {
-    if (!currentUserId) return null;
-    return users.find((u) => u.id === currentUserId) || null;
-  }, [currentUserId, users]);
+  }, [value, allUsers, fallbackUser]);
 
   const filteredUsers = useMemo(() => {
-    if (!searchQuery.trim()) return users;
+    if (!searchQuery.trim()) return allUsers;
     const q = searchQuery.toLowerCase().trim();
-    return users.filter(
+    return allUsers.filter(
       (u) =>
         u.fullName.toLowerCase().includes(q) ||
         (u.email && u.email.toLowerCase().includes(q)) ||
         (u.systemRole && u.systemRole.toLowerCase().includes(q)),
     );
-  }, [users, searchQuery]);
+  }, [allUsers, searchQuery]);
 
   const handleSelectUser = (user: UserPickerUser | null) => {
     onChange(user ? user.id : null, user);
@@ -79,7 +91,7 @@ export const UserPicker: React.FC<UserPickerProps> = ({
     setSearchQuery('');
   };
 
-  const isCurrentAssigned = currentUserId && value === currentUserId;
+  const isCurrentAssigned = Boolean(effectiveCurrentUserId && value === effectiveCurrentUserId);
 
   const sizeClasses = {
     sm: 'h-7 text-xs px-2 gap-1.5',
@@ -192,10 +204,10 @@ export const UserPicker: React.FC<UserPickerProps> = ({
 
           <div className="max-h-56 overflow-y-auto space-y-0.5">
             {/* Assign To Me Option */}
-            {showAssignToMe && currentUser && !isCurrentAssigned && (
+            {showAssignToMe && resolvedCurrentUser && !isCurrentAssigned && (
               <button
                 type="button"
-                onClick={() => handleSelectUser(currentUser)}
+                onClick={() => handleSelectUser(resolvedCurrentUser)}
                 className={cn(
                   'w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-lg transition-colors cursor-pointer text-left',
                   'hover:bg-[var(--md-sys-color-primary-container)]/30 text-[var(--md-sys-color-primary)] font-medium',
@@ -264,7 +276,7 @@ export const UserPicker: React.FC<UserPickerProps> = ({
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-[var(--md-sys-color-on-surface)]">
                           {user.fullName}
-                          {currentUser && user.id === currentUser.id && (
+                          {resolvedCurrentUser && user.id === resolvedCurrentUser.id && (
                             <span className="ml-1 text-[10px] text-[var(--md-sys-color-on-surface-variant)] font-normal">
                               (You)
                             </span>

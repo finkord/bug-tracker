@@ -102,6 +102,52 @@ describe('UserPicker', () => {
     );
     expect(screen.getByText('Alice Smith')).toBeInTheDocument();
   });
+
+  it('renders Assign to me option and selects currentUser when clicked', () => {
+    const onChange = vi.fn();
+    const currentUser = { id: 2, fullName: 'Bob Jones', email: 'bob@example.com' };
+    renderWithProviders(
+      <UserPicker
+        value={1}
+        onChange={onChange}
+        users={mockUsers}
+        currentUser={currentUser}
+        showAssignToMe
+      />,
+    );
+
+    const trigger = screen.getByText('Alice Smith');
+    fireEvent.click(trigger);
+
+    const assignToMeBtn = screen.getByText('Assign to me');
+    expect(assignToMeBtn).toBeInTheDocument();
+
+    fireEvent.click(assignToMeBtn);
+    expect(onChange).toHaveBeenCalledWith(2, currentUser);
+  });
+
+  it('renders current user with (You) badge in dropdown even if not initially in users list', () => {
+    const onChange = vi.fn();
+    const currentUser = { id: 99, fullName: 'Super Dev', email: 'super@example.com' };
+    renderWithProviders(
+      <UserPicker
+        value={null}
+        onChange={onChange}
+        users={mockUsers}
+        currentUser={currentUser}
+        placeholder="Unassigned"
+      />,
+    );
+
+    const trigger = screen.getByText('Unassigned');
+    fireEvent.click(trigger);
+
+    expect(screen.getByText('(You)')).toBeInTheDocument();
+    expect(screen.getByText('Super Dev')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Super Dev'));
+    expect(onChange).toHaveBeenCalledWith(99, currentUser);
+  });
 });
 
 describe('EmptyState', () => {

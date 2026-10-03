@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -33,8 +33,6 @@ import { Card, Button, Modal } from '../components/ui';
 import {
   Loader2,
   AlertCircle,
-  FileText,
-  MessageSquare,
   GitCommitHorizontal,
   Link2,
   Paperclip,
@@ -61,6 +59,9 @@ export const IssueDetailPage: React.FC = () => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [activeViewers, setActiveViewers] = useState<{ id: number; fullName: string; avatarUrl?: string }[]>([]);
   const [activeActivityTab, setActiveActivityTab] = useState<'comments' | 'history' | 'worklogs' | 'development'>('comments');
+  const [showSubtasks, setShowSubtasks] = useState(false);
+  const [showLinks, setShowLinks] = useState(false);
+  const [showAttachments, setShowAttachments] = useState(false);
 
   const handleSwitchActivityTab = (tab: 'comments' | 'history' | 'worklogs' | 'development') => {
     setActiveActivityTab(tab);
@@ -198,7 +199,7 @@ export const IssueDetailPage: React.FC = () => {
     await deleteAttachmentMutation.mutateAsync({ issueId: issue.id, attachmentId });
   };
 
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     if (window.history.state && typeof window.history.state.idx === 'number' && window.history.state.idx > 0) {
       navigate(-1);
     } else if (issue?.projectKey || issue?.projectId) {
@@ -206,7 +207,7 @@ export const IssueDetailPage: React.FC = () => {
     } else {
       navigate('/projects');
     }
-  };
+  }, [navigate, issue]);
 
   // Keyboard shortcut Esc to return back when not editing
   useEffect(() => {
@@ -227,7 +228,7 @@ export const IssueDetailPage: React.FC = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [issue?.projectKey, issue?.projectId, logWorkOpen, editModalOpen, deleteModalOpen]);
+  }, [issue?.projectKey, issue?.projectId, logWorkOpen, editModalOpen, deleteModalOpen, handleBack]);
 
   const handleDeleteIssue = async () => {
     if (!issue) return;
@@ -263,6 +264,10 @@ export const IssueDetailPage: React.FC = () => {
     );
   }
 
+  const hasSubtasks = Boolean((issue?.subtasks?.length ?? 0) > 0 || issue?.issueType === 'SUBTASK');
+  const hasLinks = Boolean((issue?.links?.length ?? 0) > 0);
+  const hasAttachments = Boolean((issue?.attachments?.length ?? 0) > 0);
+
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-5 flex-1 flex flex-col min-w-0 space-y-6 animate-in fade-in duration-200">
       {/* Top Header Bar */}
@@ -287,96 +292,78 @@ export const IssueDetailPage: React.FC = () => {
             />
           </div>
 
-          {/* Quick Anchor Navigation Bar (Linear / Jira Ergonomics) */}
-          <div className="flex items-center gap-1.5 py-1 px-1.5 rounded-xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/40 text-xs overflow-x-auto">
-            <button
-              type="button"
-              onClick={() => {
-                document.getElementById('description-section')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="px-2.5 py-1 font-semibold rounded-lg text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container)] transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
-            >
-              <FileText className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
-              Description
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                document.getElementById('activity-tabs-section')?.scrollIntoView({ behavior: 'smooth' });
-                setActiveActivityTab('comments');
-              }}
-              className="px-2.5 py-1 font-semibold rounded-lg text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container)] transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
-            >
-              <MessageSquare className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
-              Comments & Activity
-              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-[var(--md-sys-color-surface-container-high)] font-bold">
-                {issue.comments?.length || issue.commentsCount || 0}
-              </span>
-            </button>
-            {(issue.subtasks?.length ?? 0) > 0 && (
-              <button
-                type="button"
-                onClick={() => {
-                  document.getElementById('subtasks-section')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="px-2.5 py-1 font-semibold rounded-lg text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container)] transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
-              >
-                <GitCommitHorizontal className="w-3.5 h-3.5" />
-                Subtasks ({issue.subtasks?.length})
-              </button>
-            )}
-            {(issue.links?.length ?? 0) > 0 && (
-              <button
-                type="button"
-                onClick={() => {
-                  document.getElementById('links-section')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="px-2.5 py-1 font-semibold rounded-lg text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container)] transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
-              >
-                <Link2 className="w-3.5 h-3.5" />
-                Links ({issue.links?.length})
-              </button>
-            )}
-            {(issue.attachments?.length ?? 0) > 0 && (
-              <button
-                type="button"
-                onClick={() => {
-                  document.getElementById('attachments-section')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="px-2.5 py-1 font-semibold rounded-lg text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container)] transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
-              >
-                <Paperclip className="w-3.5 h-3.5" />
-                Attachments ({issue.attachments?.length})
-              </button>
-            )}
-          </div>
+          {/* Linear / Jira Quick Actions Bar (Only for unopened/empty secondary sections) */}
+          {(!hasSubtasks || !hasLinks || !hasAttachments) && (
+            <div className="flex flex-wrap items-center gap-2 pt-1 pb-1">
+              {!hasSubtasks && !showSubtasks && (
+                <button
+                  type="button"
+                  onClick={() => setShowSubtasks(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] hover:bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/60 transition-colors cursor-pointer"
+                >
+                  <GitCommitHorizontal className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
+                  Add subtask
+                </button>
+              )}
+              {!hasLinks && !showLinks && (
+                <button
+                  type="button"
+                  onClick={() => setShowLinks(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] hover:bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/60 transition-colors cursor-pointer"
+                >
+                  <Link2 className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
+                  Link issue
+                </button>
+              )}
+              {!hasAttachments && !showAttachments && (
+                <button
+                  type="button"
+                  onClick={() => setShowAttachments(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] hover:bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/60 transition-colors cursor-pointer"
+                >
+                  <Paperclip className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
+                  Attach files
+                </button>
+              )}
+            </div>
+          )}
 
-          <div id="subtasks-section">
-            <IssueSubtasksSection
-              issue={issue}
-              onSubtasksChanged={() => fetchIssue()}
-            />
-          </div>
+          {/* Subtasks Section - shown when subtasks exist or when user clicks 'Add subtask' */}
+          {(hasSubtasks || showSubtasks) && (
+            <div id="subtasks-section">
+              <IssueSubtasksSection
+                issue={issue}
+                onSubtasksChanged={() => fetchIssue()}
+              />
+            </div>
+          )}
 
-          <div id="links-section">
-            <IssueLinksSection
-              issueId={issue.id}
-              currentIssueKey={issue.key}
-              projectId={issue.projectId}
-              links={issue.links}
-              onLinksChanged={() => fetchIssue()}
-            />
-          </div>
+          {/* Links Section - shown when links exist or when user clicks 'Link issue' */}
+          {(hasLinks || showLinks) && (
+            <div id="links-section">
+              <IssueLinksSection
+                issueId={issue.id}
+                currentIssueKey={issue.key}
+                projectId={issue.projectId}
+                links={issue.links}
+                onLinksChanged={() => fetchIssue()}
+              />
+            </div>
+          )}
 
-          <div id="attachments-section">
-            <IssueAttachmentsSection
-              attachments={issue.attachments || []}
-              currentUser={user}
-              onUpload={handleUploadAttachment}
-              onDelete={handleDeleteAttachment}
-            />
-          </div>
+          {/* Attachments Section - shown when attachments exist or when user clicks 'Attach files' */}
+          {(hasAttachments || showAttachments) && (
+            <div id="attachments-section">
+              <IssueAttachmentsSection
+                attachments={issue.attachments || []}
+                currentUser={user}
+                onUpload={handleUploadAttachment}
+                onDelete={handleDeleteAttachment}
+              />
+            </div>
+          )}
 
+          {/* Activity / Comments Stream - directly visible under active content */}
           <div id="activity-tabs-section">
             <IssueActivityTabs
               issue={issue}
