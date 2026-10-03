@@ -193,8 +193,8 @@ export class RbacController {
   }
 
   @Put('projects/:id/rbac/permission-scheme')
-  @UseGuards(RolesGuard)
-  @Roles(SystemRole.ADMIN)
+  @UseGuards(ProjectPermissionGuard)
+  @RequireProjectPermission(ProjectPermission.ADMINISTER_PROJECTS)
   @ApiOperation({ summary: 'Assign permission scheme to project' })
   async assignPermissionSchemeToProject(
     @Param('id', ParseIntPipe) projectId: number,

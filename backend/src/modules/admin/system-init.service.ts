@@ -1,6 +1,7 @@
-import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import { Injectable, Logger, OnApplicationBootstrap, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
+import { RedisService } from '../redis/redis.service.js';
 import * as argon2 from 'argon2';
 import { ARGON2_OPTIONS } from '../auth/constants/argon2.constants.js';
 import { User, SystemRole } from '../users/entities/user.entity.js';
@@ -50,6 +51,8 @@ export class SystemInitService implements OnApplicationBootstrap {
     @InjectRepository(IssueSecurityGrant)
     private readonly securityGrantRepository: Repository<IssueSecurityGrant>,
     private readonly dataSource: DataSource,
+    @Optional()
+    private readonly redisService?: RedisService,
   ) {}
 
   /**
@@ -234,84 +237,214 @@ export class SystemInitService implements OnApplicationBootstrap {
     roles: Record<string, ProjectRole>,
     groups: Record<string, Group>,
   ): Promise<PermissionScheme> {
-    const schemeName = 'Default Software Scheme';
+    const targetSchemeName = 'Default Agile Collaborative Scheme';
     let scheme = await this.schemeRepository.findOne({ where: { isDefault: true } });
     if (!scheme) {
-      scheme = await this.schemeRepository.findOne({ where: { name: schemeName } });
+      scheme = await this.schemeRepository.findOne({ where: { name: targetSchemeName } });
+    }
+    if (!scheme) {
+      scheme = await this.schemeRepository.findOne({
+        where: [
+          { name: 'Default Software Scheme' },
+          { name: 'Default Software Permission Scheme' },
+        ],
+      });
     }
 
     if (!scheme) {
       scheme = this.schemeRepository.create({
-        name: schemeName,
-        description: 'Standard agile software development permission matrix for engineering spaces',
+        name: targetSchemeName,
+        description: 'Standard agile collaborative software development permission matrix for engineering spaces',
         isDefault: true,
       });
       scheme = await this.schemeRepository.save(scheme);
       this.logger.log(`Created default permission scheme: ${scheme.name}`);
+    } else {
+      let needsSave = false;
+      if (scheme.name !== targetSchemeName) {
+        scheme.name = targetSchemeName;
+        scheme.description = 'Standard agile collaborative software development permission matrix for engineering spaces';
+        needsSave = true;
+      }
+      if (!scheme.isDefault) {
+        scheme.isDefault = true;
+        needsSave = true;
+      }
+      if (needsSave) {
+        scheme = await this.schemeRepository.save(scheme);
+        this.logger.log(`Upgraded default permission scheme: ${scheme.name}`);
+      }
+    }
 
-      const grantsToCreate: Partial<PermissionGrant>[] = [];
+    const adminRoleId = (roles['Administrators'] || roles['Administrator'])?.id;
+    const leadRoleId = (roles['Project Lead'] || roles['Lead'])?.id;
+    const devRoleId = (roles['Developers'] || roles['Developer'])?.id;
+    const viewerRoleId = (roles['Viewers'] || roles['Viewer'])?.id;
+    const allUsersGroupId = groups['all-users']?.id;
 
-      // Project Administration
-      grantsToCreate.push(
-        { schemeId: scheme.id, permission: ProjectPermission.ADMINISTER_PROJECTS, grantType: PermissionGrantType.ROLE, roleId: roles['Administrators']?.id },
-        { schemeId: scheme.id, permission: ProjectPermission.ADMINISTER_PROJECTS, grantType: PermissionGrantType.ROLE, roleId: roles['Project Lead']?.id },
-        { schemeId: scheme.id, permission: ProjectPermission.VIEW_ROADMAP, grantType: PermissionGrantType.GROUP, groupId: groups['all-users']?.id },
+    const targetGrants: Array<{
+      permission: ProjectPermission;
+      grantType: PermissionGrantType;
+      roleId?: number | null;
+      groupId?: number | null;
+    }> = [];
+
+    // 1. Project Governance
+    if (adminRoleId) {
+      targetGrants.push({ permission: ProjectPermission.ADMINISTER_PROJECTS, grantType: PermissionGrantType.ROLE, roleId: adminRoleId });
+    }
+    if (leadRoleId) {
+      targetGrants.push({ permission: ProjectPermission.ADMINISTER_PROJECTS, grantType: PermissionGrantType.ROLE, roleId: leadRoleId });
+    }
+    targetGrants.push({ permission: ProjectPermission.ADMINISTER_PROJECTS, grantType: PermissionGrantType.LEAD });
+
+    if (allUsersGroupId) {
+      targetGrants.push({ permission: ProjectPermission.VIEW_ROADMAP, grantType: PermissionGrantType.GROUP, groupId: allUsersGroupId });
+      targetGrants.push({ permission: ProjectPermission.BROWSE_PROJECTS, grantType: PermissionGrantType.GROUP, groupId: allUsersGroupId });
+      targetGrants.push({ permission: ProjectPermission.CREATE_ISSUES, grantType: PermissionGrantType.GROUP, groupId: allUsersGroupId });
+    }
+    if (adminRoleId) {
+      targetGrants.push({ permission: ProjectPermission.VIEW_ROADMAP, grantType: PermissionGrantType.ROLE, roleId: adminRoleId });
+      targetGrants.push({ permission: ProjectPermission.BROWSE_PROJECTS, grantType: PermissionGrantType.ROLE, roleId: adminRoleId });
+      targetGrants.push({ permission: ProjectPermission.CREATE_ISSUES, grantType: PermissionGrantType.ROLE, roleId: adminRoleId });
+    }
+    if (devRoleId) {
+      targetGrants.push({ permission: ProjectPermission.VIEW_ROADMAP, grantType: PermissionGrantType.ROLE, roleId: devRoleId });
+      targetGrants.push({ permission: ProjectPermission.BROWSE_PROJECTS, grantType: PermissionGrantType.ROLE, roleId: devRoleId });
+      targetGrants.push({ permission: ProjectPermission.CREATE_ISSUES, grantType: PermissionGrantType.ROLE, roleId: devRoleId });
+    }
+    if (viewerRoleId) {
+      targetGrants.push({ permission: ProjectPermission.VIEW_ROADMAP, grantType: PermissionGrantType.ROLE, roleId: viewerRoleId });
+      targetGrants.push({ permission: ProjectPermission.BROWSE_PROJECTS, grantType: PermissionGrantType.ROLE, roleId: viewerRoleId });
+    }
+
+    // 2. Issue Mutation & Core Developer Permissions
+    const standardDevPermissions = [
+      ProjectPermission.EDIT_ISSUES,
+      ProjectPermission.ASSIGN_ISSUES,
+      ProjectPermission.ASSIGNABLE_USER,
+      ProjectPermission.TRANSITION_ISSUES,
+      ProjectPermission.MOVE_ISSUES,
+      ProjectPermission.LOG_WORK,
+      ProjectPermission.CLOSE_ISSUES,
+    ];
+    for (const perm of standardDevPermissions) {
+      if (devRoleId) targetGrants.push({ permission: perm, grantType: PermissionGrantType.ROLE, roleId: devRoleId });
+      if (adminRoleId) targetGrants.push({ permission: perm, grantType: PermissionGrantType.ROLE, roleId: adminRoleId });
+      if (leadRoleId) targetGrants.push({ permission: perm, grantType: PermissionGrantType.ROLE, roleId: leadRoleId });
+    }
+
+    // Dynamic Issue Entities (Assignee & Reporter)
+    targetGrants.push(
+      { permission: ProjectPermission.EDIT_ISSUES, grantType: PermissionGrantType.ASSIGNEE },
+      { permission: ProjectPermission.EDIT_ISSUES, grantType: PermissionGrantType.REPORTER },
+      { permission: ProjectPermission.TRANSITION_ISSUES, grantType: PermissionGrantType.ASSIGNEE },
+      { permission: ProjectPermission.LOG_WORK, grantType: PermissionGrantType.ASSIGNEE },
+    );
+
+    // 3. Time Tracking (Worklogs)
+    if (allUsersGroupId) {
+      targetGrants.push(
+        { permission: ProjectPermission.EDIT_OWN_WORKLOGS, grantType: PermissionGrantType.GROUP, groupId: allUsersGroupId },
+        { permission: ProjectPermission.DELETE_OWN_WORKLOGS, grantType: PermissionGrantType.GROUP, groupId: allUsersGroupId },
       );
+    }
+    if (devRoleId) {
+      targetGrants.push(
+        { permission: ProjectPermission.EDIT_OWN_WORKLOGS, grantType: PermissionGrantType.ROLE, roleId: devRoleId },
+        { permission: ProjectPermission.DELETE_OWN_WORKLOGS, grantType: PermissionGrantType.ROLE, roleId: devRoleId },
+      );
+    }
+    if (adminRoleId) {
+      targetGrants.push(
+        { permission: ProjectPermission.EDIT_OWN_WORKLOGS, grantType: PermissionGrantType.ROLE, roleId: adminRoleId },
+        { permission: ProjectPermission.DELETE_OWN_WORKLOGS, grantType: PermissionGrantType.ROLE, roleId: adminRoleId },
+        { permission: ProjectPermission.EDIT_ALL_WORKLOGS, grantType: PermissionGrantType.ROLE, roleId: adminRoleId },
+        { permission: ProjectPermission.DELETE_ALL_WORKLOGS, grantType: PermissionGrantType.ROLE, roleId: adminRoleId },
+      );
+    }
+    if (leadRoleId) {
+      targetGrants.push(
+        { permission: ProjectPermission.EDIT_ALL_WORKLOGS, grantType: PermissionGrantType.ROLE, roleId: leadRoleId },
+        { permission: ProjectPermission.DELETE_ALL_WORKLOGS, grantType: PermissionGrantType.ROLE, roleId: leadRoleId },
+      );
+    }
 
-      // Issue Lifecycle Permissions
-      const standardIssuePermissions = [
-        ProjectPermission.BROWSE_PROJECTS,
-        ProjectPermission.CREATE_ISSUES,
-        ProjectPermission.ADD_COMMENTS,
-        ProjectPermission.CREATE_ATTACHMENTS,
-      ];
-      for (const perm of standardIssuePermissions) {
-        grantsToCreate.push({
+    // 4. Collaboration (Comments & Attachments)
+    if (allUsersGroupId) {
+      targetGrants.push(
+        { permission: ProjectPermission.ADD_COMMENTS, grantType: PermissionGrantType.GROUP, groupId: allUsersGroupId },
+        { permission: ProjectPermission.EDIT_OWN_COMMENTS, grantType: PermissionGrantType.GROUP, groupId: allUsersGroupId },
+        { permission: ProjectPermission.DELETE_OWN_COMMENTS, grantType: PermissionGrantType.GROUP, groupId: allUsersGroupId },
+        { permission: ProjectPermission.CREATE_ATTACHMENTS, grantType: PermissionGrantType.GROUP, groupId: allUsersGroupId },
+        { permission: ProjectPermission.DELETE_OWN_ATTACHMENTS, grantType: PermissionGrantType.GROUP, groupId: allUsersGroupId },
+      );
+    }
+    if (devRoleId) {
+      targetGrants.push(
+        { permission: ProjectPermission.ADD_COMMENTS, grantType: PermissionGrantType.ROLE, roleId: devRoleId },
+        { permission: ProjectPermission.CREATE_ATTACHMENTS, grantType: PermissionGrantType.ROLE, roleId: devRoleId },
+      );
+    }
+    if (adminRoleId) {
+      targetGrants.push(
+        { permission: ProjectPermission.ADD_COMMENTS, grantType: PermissionGrantType.ROLE, roleId: adminRoleId },
+        { permission: ProjectPermission.EDIT_ALL_COMMENTS, grantType: PermissionGrantType.ROLE, roleId: adminRoleId },
+        { permission: ProjectPermission.DELETE_ALL_COMMENTS, grantType: PermissionGrantType.ROLE, roleId: adminRoleId },
+        { permission: ProjectPermission.CREATE_ATTACHMENTS, grantType: PermissionGrantType.ROLE, roleId: adminRoleId },
+        { permission: ProjectPermission.DELETE_ALL_ATTACHMENTS, grantType: PermissionGrantType.ROLE, roleId: adminRoleId },
+      );
+    }
+    if (leadRoleId) {
+      targetGrants.push(
+        { permission: ProjectPermission.EDIT_ALL_COMMENTS, grantType: PermissionGrantType.ROLE, roleId: leadRoleId },
+        { permission: ProjectPermission.DELETE_ALL_COMMENTS, grantType: PermissionGrantType.ROLE, roleId: leadRoleId },
+        { permission: ProjectPermission.DELETE_ALL_ATTACHMENTS, grantType: PermissionGrantType.ROLE, roleId: leadRoleId },
+      );
+    }
+    if (viewerRoleId) {
+      targetGrants.push({ permission: ProjectPermission.ADD_COMMENTS, grantType: PermissionGrantType.ROLE, roleId: viewerRoleId });
+    }
+
+    // 5. Issue Deletion
+    if (adminRoleId) {
+      targetGrants.push({ permission: ProjectPermission.DELETE_ISSUES, grantType: PermissionGrantType.ROLE, roleId: adminRoleId });
+    }
+    if (leadRoleId) {
+      targetGrants.push({ permission: ProjectPermission.DELETE_ISSUES, grantType: PermissionGrantType.ROLE, roleId: leadRoleId });
+    }
+    targetGrants.push({ permission: ProjectPermission.DELETE_ISSUES, grantType: PermissionGrantType.REPORTER });
+
+    // Idempotent grant creation
+    const existingGrants = await this.grantRepository.find({ where: { schemeId: scheme.id } });
+    let createdCount = 0;
+    for (const tg of targetGrants) {
+      const exists = existingGrants.some(
+        (eg) =>
+          eg.permission === tg.permission &&
+          eg.grantType === tg.grantType &&
+          (eg.roleId || null) === (tg.roleId || null) &&
+          (eg.groupId || null) === (tg.groupId || null),
+      );
+      if (!exists) {
+        const grant = this.grantRepository.create({
           schemeId: scheme.id,
-          permission: perm,
-          grantType: PermissionGrantType.GROUP,
-          groupId: groups['all-users']?.id,
+          permission: tg.permission,
+          grantType: tg.grantType,
+          roleId: tg.roleId || null,
+          groupId: tg.groupId || null,
         });
-      }
-
-      // Developer & Lead mutating permissions
-      const devPermissions = [
-        ProjectPermission.EDIT_ISSUES,
-        ProjectPermission.ASSIGN_ISSUES,
-        ProjectPermission.ASSIGNABLE_USER,
-        ProjectPermission.TRANSITION_ISSUES,
-        ProjectPermission.MOVE_ISSUES,
-        ProjectPermission.LOG_WORK,
-        ProjectPermission.EDIT_OWN_WORKLOGS,
-        ProjectPermission.DELETE_OWN_WORKLOGS,
-        ProjectPermission.EDIT_OWN_COMMENTS,
-        ProjectPermission.DELETE_OWN_COMMENTS,
-        ProjectPermission.DELETE_OWN_ATTACHMENTS,
-      ];
-      for (const perm of devPermissions) {
-        grantsToCreate.push(
-          { schemeId: scheme.id, permission: perm, grantType: PermissionGrantType.ROLE, roleId: roles['Developers']?.id },
-          { schemeId: scheme.id, permission: perm, grantType: PermissionGrantType.ROLE, roleId: roles['Administrators']?.id },
-          { schemeId: scheme.id, permission: perm, grantType: PermissionGrantType.ROLE, roleId: roles['Project Lead']?.id },
-        );
-      }
-
-      // Close Issues permission
-      grantsToCreate.push(
-        { schemeId: scheme.id, permission: ProjectPermission.CLOSE_ISSUES, grantType: PermissionGrantType.ROLE, roleId: roles['Administrators']?.id },
-        { schemeId: scheme.id, permission: ProjectPermission.CLOSE_ISSUES, grantType: PermissionGrantType.ROLE, roleId: roles['Project Lead']?.id },
-      );
-
-      for (const grantData of grantsToCreate) {
-        const grant = this.grantRepository.create(grantData);
         await this.grantRepository.save(grant);
+        existingGrants.push(grant);
+        createdCount++;
       }
+    }
 
-      this.logger.log(`Created ${grantsToCreate.length} permission grants for ${schemeName}`);
-    } else if (!scheme.isDefault) {
-      scheme.isDefault = true;
-      scheme = await this.schemeRepository.save(scheme);
-      this.logger.log(`Marked permission scheme as default: ${scheme.name}`);
+    if (createdCount > 0) {
+      this.logger.log(`Synchronized ${createdCount} new permission grants for ${scheme.name}`);
+      if (this.redisService) {
+        await this.redisService.delPattern('rbac:*');
+      }
     }
 
     return scheme;

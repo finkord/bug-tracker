@@ -342,6 +342,7 @@ export class SeedService {
     // 2. Create Global Project Roles
     const rawRoles = [
       { name: 'Administrator', description: 'Project administrators with permission to configure workflows, components, and project settings', isDefault: true },
+      { name: 'Project Lead', description: 'Sprint planning, backlog management, roadmap governance, and ticket assignments', isDefault: true },
       { name: 'Developer', description: 'Core contributors with permission to create, transition, log work, and edit sprint issues', isDefault: true },
       { name: 'Member', description: 'Project collaborators with issue creation and comment capabilities', isDefault: true },
       { name: 'Viewer', description: 'Read-only observers able to browse projects, view roadmaps, and search issues', isDefault: true },
@@ -349,17 +350,29 @@ export class SeedService {
 
     const rolesMap: Record<string, ProjectRole> = {};
     for (const r of rawRoles) {
-      const role = this.projectRoleRepository.create(r);
-      rolesMap[r.name] = await this.projectRoleRepository.save(role);
+      let role = await this.projectRoleRepository.findOne({ where: { name: r.name } });
+      if (!role) {
+        role = this.projectRoleRepository.create(r);
+        role = await this.projectRoleRepository.save(role);
+      }
+      rolesMap[r.name] = role;
     }
 
-    // 3. Create Default Software Permission Scheme
-    const defaultScheme = this.schemeRepository.create({
-      name: 'Default Software Permission Scheme',
-      description: 'Standard enterprise permission blueprint for agile engineering teams with role-decoupled access control.',
-      isDefault: true,
-    });
-    const savedScheme = await this.schemeRepository.save(defaultScheme);
+    // 3. Create Default Agile Collaborative Scheme
+    let defaultScheme = await this.schemeRepository.findOne({ where: { isDefault: true } });
+    if (!defaultScheme) {
+      defaultScheme = this.schemeRepository.create({
+        name: 'Default Agile Collaborative Scheme',
+        description: 'Standard enterprise agile collaborative permission matrix for engineering teams with role-decoupled access control.',
+        isDefault: true,
+      });
+      defaultScheme = await this.schemeRepository.save(defaultScheme);
+    } else if (defaultScheme.name !== 'Default Agile Collaborative Scheme') {
+      defaultScheme.name = 'Default Agile Collaborative Scheme';
+      defaultScheme.description = 'Standard enterprise agile collaborative permission matrix for engineering teams with role-decoupled access control.';
+      defaultScheme = await this.schemeRepository.save(defaultScheme);
+    }
+    const savedScheme = defaultScheme;
 
     // 4. Create Standard Grants
     const rawGrants: Array<{
@@ -369,51 +382,80 @@ export class SeedService {
       groupName?: string;
     }> = [
       // Project operations
-      { permission: ProjectPermission.BROWSE_PROJECTS, grantType: PermissionGrantType.ROLE, roleName: 'Viewer' },
-      { permission: ProjectPermission.BROWSE_PROJECTS, grantType: PermissionGrantType.ROLE, roleName: 'Member' },
-      { permission: ProjectPermission.BROWSE_PROJECTS, grantType: PermissionGrantType.ROLE, roleName: 'Developer' },
-      { permission: ProjectPermission.BROWSE_PROJECTS, grantType: PermissionGrantType.ROLE, roleName: 'Administrator' },
-      { permission: ProjectPermission.BROWSE_PROJECTS, grantType: PermissionGrantType.GROUP, groupName: 'all-users' },
       { permission: ProjectPermission.ADMINISTER_PROJECTS, grantType: PermissionGrantType.ROLE, roleName: 'Administrator' },
+      { permission: ProjectPermission.ADMINISTER_PROJECTS, grantType: PermissionGrantType.ROLE, roleName: 'Project Lead' },
       { permission: ProjectPermission.ADMINISTER_PROJECTS, grantType: PermissionGrantType.LEAD },
-      { permission: ProjectPermission.VIEW_ROADMAP, grantType: PermissionGrantType.ROLE, roleName: 'Viewer' },
+      { permission: ProjectPermission.VIEW_ROADMAP, grantType: PermissionGrantType.GROUP, groupName: 'all-users' },
+      { permission: ProjectPermission.VIEW_ROADMAP, grantType: PermissionGrantType.ROLE, roleName: 'Administrator' },
       { permission: ProjectPermission.VIEW_ROADMAP, grantType: PermissionGrantType.ROLE, roleName: 'Developer' },
+      { permission: ProjectPermission.VIEW_ROADMAP, grantType: PermissionGrantType.ROLE, roleName: 'Viewer' },
+      { permission: ProjectPermission.BROWSE_PROJECTS, grantType: PermissionGrantType.GROUP, groupName: 'all-users' },
+      { permission: ProjectPermission.BROWSE_PROJECTS, grantType: PermissionGrantType.ROLE, roleName: 'Administrator' },
+      { permission: ProjectPermission.BROWSE_PROJECTS, grantType: PermissionGrantType.ROLE, roleName: 'Developer' },
+      { permission: ProjectPermission.BROWSE_PROJECTS, grantType: PermissionGrantType.ROLE, roleName: 'Viewer' },
+      { permission: ProjectPermission.CREATE_ISSUES, grantType: PermissionGrantType.GROUP, groupName: 'all-users' },
+      { permission: ProjectPermission.CREATE_ISSUES, grantType: PermissionGrantType.ROLE, roleName: 'Administrator' },
+      { permission: ProjectPermission.CREATE_ISSUES, grantType: PermissionGrantType.ROLE, roleName: 'Developer' },
 
       // Issue operations
-      { permission: ProjectPermission.CREATE_ISSUES, grantType: PermissionGrantType.ROLE, roleName: 'Member' },
-      { permission: ProjectPermission.CREATE_ISSUES, grantType: PermissionGrantType.ROLE, roleName: 'Developer' },
-      { permission: ProjectPermission.CREATE_ISSUES, grantType: PermissionGrantType.ROLE, roleName: 'Administrator' },
-      { permission: ProjectPermission.CREATE_ISSUES, grantType: PermissionGrantType.GROUP, groupName: 'all-users' },
       { permission: ProjectPermission.EDIT_ISSUES, grantType: PermissionGrantType.ROLE, roleName: 'Developer' },
       { permission: ProjectPermission.EDIT_ISSUES, grantType: PermissionGrantType.ROLE, roleName: 'Administrator' },
+      { permission: ProjectPermission.EDIT_ISSUES, grantType: PermissionGrantType.ROLE, roleName: 'Project Lead' },
       { permission: ProjectPermission.EDIT_ISSUES, grantType: PermissionGrantType.REPORTER },
       { permission: ProjectPermission.EDIT_ISSUES, grantType: PermissionGrantType.ASSIGNEE },
-      { permission: ProjectPermission.TRANSITION_ISSUES, grantType: PermissionGrantType.ROLE, roleName: 'Developer' },
-      { permission: ProjectPermission.TRANSITION_ISSUES, grantType: PermissionGrantType.ROLE, roleName: 'Administrator' },
-      { permission: ProjectPermission.TRANSITION_ISSUES, grantType: PermissionGrantType.ASSIGNEE },
       { permission: ProjectPermission.ASSIGN_ISSUES, grantType: PermissionGrantType.ROLE, roleName: 'Developer' },
       { permission: ProjectPermission.ASSIGN_ISSUES, grantType: PermissionGrantType.ROLE, roleName: 'Administrator' },
+      { permission: ProjectPermission.ASSIGN_ISSUES, grantType: PermissionGrantType.ROLE, roleName: 'Project Lead' },
       { permission: ProjectPermission.ASSIGNABLE_USER, grantType: PermissionGrantType.ROLE, roleName: 'Developer' },
       { permission: ProjectPermission.ASSIGNABLE_USER, grantType: PermissionGrantType.ROLE, roleName: 'Administrator' },
-      { permission: ProjectPermission.DELETE_ISSUES, grantType: PermissionGrantType.ROLE, roleName: 'Administrator' },
-
-      // Comments & Worklogs
-      { permission: ProjectPermission.ADD_COMMENTS, grantType: PermissionGrantType.ROLE, roleName: 'Member' },
-      { permission: ProjectPermission.ADD_COMMENTS, grantType: PermissionGrantType.ROLE, roleName: 'Developer' },
-      { permission: ProjectPermission.ADD_COMMENTS, grantType: PermissionGrantType.ROLE, roleName: 'Administrator' },
-      { permission: ProjectPermission.EDIT_OWN_COMMENTS, grantType: PermissionGrantType.REPORTER },
-      { permission: ProjectPermission.EDIT_OWN_COMMENTS, grantType: PermissionGrantType.ROLE, roleName: 'Developer' },
-      { permission: ProjectPermission.DELETE_OWN_COMMENTS, grantType: PermissionGrantType.ROLE, roleName: 'Developer' },
+      { permission: ProjectPermission.ASSIGNABLE_USER, grantType: PermissionGrantType.ROLE, roleName: 'Project Lead' },
+      { permission: ProjectPermission.TRANSITION_ISSUES, grantType: PermissionGrantType.ROLE, roleName: 'Developer' },
+      { permission: ProjectPermission.TRANSITION_ISSUES, grantType: PermissionGrantType.ROLE, roleName: 'Administrator' },
+      { permission: ProjectPermission.TRANSITION_ISSUES, grantType: PermissionGrantType.ROLE, roleName: 'Project Lead' },
+      { permission: ProjectPermission.TRANSITION_ISSUES, grantType: PermissionGrantType.ASSIGNEE },
+      { permission: ProjectPermission.MOVE_ISSUES, grantType: PermissionGrantType.ROLE, roleName: 'Developer' },
+      { permission: ProjectPermission.MOVE_ISSUES, grantType: PermissionGrantType.ROLE, roleName: 'Administrator' },
+      { permission: ProjectPermission.MOVE_ISSUES, grantType: PermissionGrantType.ROLE, roleName: 'Project Lead' },
       { permission: ProjectPermission.LOG_WORK, grantType: PermissionGrantType.ROLE, roleName: 'Developer' },
       { permission: ProjectPermission.LOG_WORK, grantType: PermissionGrantType.ROLE, roleName: 'Administrator' },
-      { permission: ProjectPermission.EDIT_OWN_WORKLOGS, grantType: PermissionGrantType.ASSIGNEE },
+      { permission: ProjectPermission.LOG_WORK, grantType: PermissionGrantType.ROLE, roleName: 'Project Lead' },
+      { permission: ProjectPermission.LOG_WORK, grantType: PermissionGrantType.ASSIGNEE },
+      { permission: ProjectPermission.EDIT_OWN_WORKLOGS, grantType: PermissionGrantType.GROUP, groupName: 'all-users' },
       { permission: ProjectPermission.EDIT_OWN_WORKLOGS, grantType: PermissionGrantType.ROLE, roleName: 'Developer' },
+      { permission: ProjectPermission.EDIT_OWN_WORKLOGS, grantType: PermissionGrantType.ROLE, roleName: 'Administrator' },
+      { permission: ProjectPermission.DELETE_OWN_WORKLOGS, grantType: PermissionGrantType.GROUP, groupName: 'all-users' },
+      { permission: ProjectPermission.DELETE_OWN_WORKLOGS, grantType: PermissionGrantType.ROLE, roleName: 'Developer' },
+      { permission: ProjectPermission.DELETE_OWN_WORKLOGS, grantType: PermissionGrantType.ROLE, roleName: 'Administrator' },
+      { permission: ProjectPermission.EDIT_ALL_WORKLOGS, grantType: PermissionGrantType.ROLE, roleName: 'Administrator' },
+      { permission: ProjectPermission.EDIT_ALL_WORKLOGS, grantType: PermissionGrantType.ROLE, roleName: 'Project Lead' },
+      { permission: ProjectPermission.DELETE_ALL_WORKLOGS, grantType: PermissionGrantType.ROLE, roleName: 'Administrator' },
+      { permission: ProjectPermission.DELETE_ALL_WORKLOGS, grantType: PermissionGrantType.ROLE, roleName: 'Project Lead' },
 
-      // Attachments
-      { permission: ProjectPermission.CREATE_ATTACHMENTS, grantType: PermissionGrantType.ROLE, roleName: 'Member' },
+      // Comments & Attachments
+      { permission: ProjectPermission.ADD_COMMENTS, grantType: PermissionGrantType.GROUP, groupName: 'all-users' },
+      { permission: ProjectPermission.ADD_COMMENTS, grantType: PermissionGrantType.ROLE, roleName: 'Developer' },
+      { permission: ProjectPermission.ADD_COMMENTS, grantType: PermissionGrantType.ROLE, roleName: 'Administrator' },
+      { permission: ProjectPermission.ADD_COMMENTS, grantType: PermissionGrantType.ROLE, roleName: 'Viewer' },
+      { permission: ProjectPermission.EDIT_OWN_COMMENTS, grantType: PermissionGrantType.GROUP, groupName: 'all-users' },
+      { permission: ProjectPermission.DELETE_OWN_COMMENTS, grantType: PermissionGrantType.GROUP, groupName: 'all-users' },
+      { permission: ProjectPermission.EDIT_ALL_COMMENTS, grantType: PermissionGrantType.ROLE, roleName: 'Administrator' },
+      { permission: ProjectPermission.EDIT_ALL_COMMENTS, grantType: PermissionGrantType.ROLE, roleName: 'Project Lead' },
+      { permission: ProjectPermission.DELETE_ALL_COMMENTS, grantType: PermissionGrantType.ROLE, roleName: 'Administrator' },
+      { permission: ProjectPermission.DELETE_ALL_COMMENTS, grantType: PermissionGrantType.ROLE, roleName: 'Project Lead' },
+      { permission: ProjectPermission.CREATE_ATTACHMENTS, grantType: PermissionGrantType.GROUP, groupName: 'all-users' },
       { permission: ProjectPermission.CREATE_ATTACHMENTS, grantType: PermissionGrantType.ROLE, roleName: 'Developer' },
       { permission: ProjectPermission.CREATE_ATTACHMENTS, grantType: PermissionGrantType.ROLE, roleName: 'Administrator' },
-      { permission: ProjectPermission.DELETE_OWN_ATTACHMENTS, grantType: PermissionGrantType.ROLE, roleName: 'Developer' },
+      { permission: ProjectPermission.DELETE_OWN_ATTACHMENTS, grantType: PermissionGrantType.GROUP, groupName: 'all-users' },
+      { permission: ProjectPermission.DELETE_ALL_ATTACHMENTS, grantType: PermissionGrantType.ROLE, roleName: 'Administrator' },
+      { permission: ProjectPermission.DELETE_ALL_ATTACHMENTS, grantType: PermissionGrantType.ROLE, roleName: 'Project Lead' },
+
+      // Lifecycle
+      { permission: ProjectPermission.CLOSE_ISSUES, grantType: PermissionGrantType.ROLE, roleName: 'Developer' },
+      { permission: ProjectPermission.CLOSE_ISSUES, grantType: PermissionGrantType.ROLE, roleName: 'Administrator' },
+      { permission: ProjectPermission.CLOSE_ISSUES, grantType: PermissionGrantType.ROLE, roleName: 'Project Lead' },
+      { permission: ProjectPermission.DELETE_ISSUES, grantType: PermissionGrantType.ROLE, roleName: 'Administrator' },
+      { permission: ProjectPermission.DELETE_ISSUES, grantType: PermissionGrantType.ROLE, roleName: 'Project Lead' },
+      { permission: ProjectPermission.DELETE_ISSUES, grantType: PermissionGrantType.REPORTER },
     ];
 
     let grantsCount = 0;

@@ -22,10 +22,12 @@ export class ProjectPermissionGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const requiredPermission = this.reflector.getAllAndOverride<ProjectPermission>(
-      REQUIRE_PROJECT_PERMISSION_KEY,
-      [context.getHandler(), context.getClass()],
-    );
+    const requiredPermission = this.reflector.getAllAndOverride<
+      ProjectPermission | ProjectPermission[]
+    >(REQUIRE_PROJECT_PERMISSION_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
 
     if (!requiredPermission) {
       return true;
@@ -149,16 +151,27 @@ export class ProjectPermissionGuard implements CanActivate {
       );
     }
 
-    const hasAccess = await this.permissionEvaluator.hasPermission({
-      userId: user.id,
-      projectId,
-      permission: requiredPermission,
-      issueId,
-    });
+    const permissionsToCheck = Array.isArray(requiredPermission)
+      ? requiredPermission
+      : [requiredPermission];
+
+    let hasAccess = false;
+    for (const perm of permissionsToCheck) {
+      const allowed = await this.permissionEvaluator.hasPermission({
+        userId: user.id,
+        projectId,
+        permission: perm,
+        issueId,
+      });
+      if (allowed) {
+        hasAccess = true;
+        break;
+      }
+    }
 
     if (!hasAccess) {
       throw new ForbiddenException(
-        `You do not have the required permission (${requiredPermission}) to perform this action in this project.`,
+        `You do not have the required permission (${permissionsToCheck.join(' or ')}) to perform this action in this project.`,
       );
     }
 

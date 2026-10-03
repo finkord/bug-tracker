@@ -676,8 +676,9 @@ export class IssueCoreService {
 
   /**
    * Deletes an issue by ID and broadcasts event.
+   * Enforces project permissions and reporter grace period (24 hours on unstarted issues with zero worklogs).
    */
-  async remove(id: number): Promise<{ success: boolean; message: string }> {
+  async remove(id: number, user?: User): Promise<{ success: boolean; message: string }> {
     const issue = await this.issueRepository.findOne({
       where: { id },
       relations: { project: true },
@@ -685,6 +686,43 @@ export class IssueCoreService {
     if (!issue) {
       throw new NotFoundException(`Issue with ID #${id} not found`);
     }
+
+    if (user && user.systemRole !== SystemRole.ADMIN) {
+      const hasAdminPermission = await this.permissionEvaluator.hasPermission({
+        userId: user.id,
+        projectId: issue.projectId,
+        permission: ProjectPermission.ADMINISTER_PROJECTS,
+      });
+
+      if (!hasAdminPermission) {
+        const hasDeletePermission = await this.permissionEvaluator.hasPermission({
+          userId: user.id,
+          projectId: issue.projectId,
+          permission: ProjectPermission.DELETE_ISSUES,
+          issueId: issue.id,
+        });
+
+        if (!hasDeletePermission) {
+          throw new ForbiddenException('You do not have permission to delete this issue');
+        }
+
+        // If granted via REPORTER status, enforce grace period constraints
+        const isReporter = issue.reporterId === user.id;
+        if (isReporter) {
+          const isUnstarted = issue.status === IssueStatus.OPEN;
+          const hasZeroWorklogs = !issue.loggedHours || Number(issue.loggedHours) === 0;
+          const createdAtTime = new Date(issue.createdAt).getTime();
+          const isWithin24Hours = Date.now() - createdAtTime <= 24 * 60 * 60 * 1000;
+
+          if (!isUnstarted || !hasZeroWorklogs || !isWithin24Hours) {
+            throw new ForbiddenException(
+              'Reporters can only delete unstarted issues within 24 hours of creation and with 0 logged hours.',
+            );
+          }
+        }
+      }
+    }
+
     const key = `${issue.project?.key || 'ISSUE'}-${issue.issueNum}`;
     const projectId = issue.projectId;
     await this.issueRepository.remove(issue);

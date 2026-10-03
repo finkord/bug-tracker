@@ -21,6 +21,7 @@ import { ProjectPermission } from '../rbac/entities/permission-grant.entity.js';
 import { PermissionScheme } from '../rbac/entities/permission-scheme.entity.js';
 import { ProjectRole } from '../rbac/entities/project-role.entity.js';
 import { ProjectRoleActor, ProjectActorType } from '../rbac/entities/project-role-actor.entity.js';
+import { Group } from '../rbac/entities/group.entity.js';
 import { JqlParserService } from '../issues/services/jql-parser.service.js';
 import { SeaweedFsService, type UploadedFileInput } from '../storage/services/seaweedfs.service.js';
 
@@ -241,7 +242,25 @@ export class ProjectsService {
         await manager.save(ProjectRoleActor, actor);
       }
 
-      // 4. Invalidate permission cache
+      // 4. Resolve default Developers role and bind all-users group as ProjectRoleActor
+      const devRole = await manager.findOne(ProjectRole, {
+        where: [{ name: 'Developer' }, { name: 'Developers' }],
+      });
+      const allUsersGroup = await manager.findOne(Group, {
+        where: { name: 'all-users' },
+      });
+
+      if (devRole && allUsersGroup) {
+        const devActor = manager.create(ProjectRoleActor, {
+          projectId: savedProject.id,
+          roleId: devRole.id,
+          actorType: ProjectActorType.GROUP,
+          groupId: allUsersGroup.id,
+        });
+        await manager.save(ProjectRoleActor, devActor);
+      }
+
+      // 5. Invalidate permission cache
       await this.permissionEvaluator.invalidatePermissions(savedProject.id, leadUser.id);
 
       return savedProject;

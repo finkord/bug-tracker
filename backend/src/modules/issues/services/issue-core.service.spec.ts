@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { IssueCoreService } from './issue-core.service.js';
 import { Issue, IssueStatus, IssuePriority, IssueType } from '../entities/issue.entity.js';
 import { User, SystemRole } from '../../users/entities/user.entity.js';
 import { Project } from '../../projects/entities/project.entity.js';
+import { ProjectPermission } from '../../rbac/entities/permission-grant.entity.js';
 
 describe('IssueCoreService', () => {
   let service: IssueCoreService;
@@ -13,6 +14,7 @@ describe('IssueCoreService', () => {
   let mockSprintRepo: any;
   let mockIssueLinksService: any;
   let mockEventsGateway: any;
+  let mockPermissionEvaluator: any;
 
   const mockUser: User = {
     id: 1,
@@ -84,7 +86,7 @@ describe('IssueCoreService', () => {
       parse: vi.fn(),
       applyToQueryBuilder: vi.fn().mockReturnValue(false),
     };
-    const mockPermissionEvaluator = {
+    mockPermissionEvaluator = {
       getAccessibleProjectIds: vi.fn().mockResolvedValue('ALL'),
       hasPermission: vi.fn().mockResolvedValue(true),
     };
@@ -478,6 +480,61 @@ describe('IssueCoreService', () => {
       expect(result.success).toBe(true);
       expect(mockIssueRepo.remove).toHaveBeenCalled();
       expect(mockEventsGateway.broadcastIssueDeleted).toHaveBeenCalledWith(10, 1);
+    });
+
+    it('should allow reporter to delete unstarted issue with zero worklogs within 24h', async () => {
+      const reporterUser = { id: 2, systemRole: SystemRole.USER } as User;
+      const recentIssue = {
+        ...mockIssue,
+        reporterId: 2,
+        status: IssueStatus.OPEN,
+        loggedHours: 0,
+        createdAt: new Date(),
+      };
+      mockIssueRepo.findOne.mockResolvedValue(recentIssue);
+      mockPermissionEvaluator.hasPermission.mockImplementation(async ({ permission }: any) => {
+        return permission === ProjectPermission.DELETE_ISSUES;
+      });
+
+      const result = await service.remove(10, reporterUser);
+
+      expect(result.success).toBe(true);
+      expect(mockIssueRepo.remove).toHaveBeenCalled();
+    });
+
+    it('should reject reporter deletion if issue was created more than 24 hours ago', async () => {
+      const reporterUser = { id: 2, systemRole: SystemRole.USER } as User;
+      const oldDate = new Date(Date.now() - 25 * 60 * 60 * 1000);
+      const oldIssue = {
+        ...mockIssue,
+        reporterId: 2,
+        status: IssueStatus.OPEN,
+        loggedHours: 0,
+        createdAt: oldDate,
+      };
+      mockIssueRepo.findOne.mockResolvedValue(oldIssue);
+      mockPermissionEvaluator.hasPermission.mockImplementation(async ({ permission }: any) => {
+        return permission === ProjectPermission.DELETE_ISSUES;
+      });
+
+      await expect(service.remove(10, reporterUser)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should reject reporter deletion if issue has logged work', async () => {
+      const reporterUser = { id: 2, systemRole: SystemRole.USER } as User;
+      const workedIssue = {
+        ...mockIssue,
+        reporterId: 2,
+        status: IssueStatus.OPEN,
+        loggedHours: 2.5,
+        createdAt: new Date(),
+      };
+      mockIssueRepo.findOne.mockResolvedValue(workedIssue);
+      mockPermissionEvaluator.hasPermission.mockImplementation(async ({ permission }: any) => {
+        return permission === ProjectPermission.DELETE_ISSUES;
+      });
+
+      await expect(service.remove(10, reporterUser)).rejects.toThrow(ForbiddenException);
     });
   });
 

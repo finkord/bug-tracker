@@ -105,8 +105,8 @@ export class IssuesService {
   /**
    * Deletes an issue by ID.
    */
-  async remove(id: number): Promise<{ success: boolean; message: string }> {
-    return this.issueCoreService.remove(id);
+  async remove(id: number, user?: User): Promise<{ success: boolean; message: string }> {
+    return this.issueCoreService.remove(id, user);
   }
 
   /**
@@ -203,6 +203,20 @@ export class IssuesService {
    */
   async addComment(issueId: number, text: string, author: User): Promise<CommentItemDto> {
     return this.issueCommentsService.addComment(issueId, text, author);
+  }
+
+  /**
+   * Updates an issue comment.
+   */
+  async updateComment(issueId: number, commentId: number, text: string, user: User): Promise<CommentItemDto> {
+    return this.issueCommentsService.updateComment(issueId, commentId, text, user);
+  }
+
+  /**
+   * Deletes an issue comment.
+   */
+  async deleteComment(issueId: number, commentId: number, user: User): Promise<{ success: boolean; message: string }> {
+    return this.issueCommentsService.deleteComment(issueId, commentId, user);
   }
 
   /**

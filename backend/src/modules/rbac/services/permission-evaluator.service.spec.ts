@@ -201,6 +201,27 @@ describe('PermissionEvaluatorService', () => {
       expect(actualResult).toBe(true);
     });
 
+    it('should grant permission when user is assignee on issue and ASSIGNEE grant exists', async () => {
+      // Arrange
+      const mockAssigneeGrant: PermissionGrant = {
+        id: 12,
+        schemeId: 5,
+        permission: ProjectPermission.TRANSITION_ISSUES,
+        grantType: PermissionGrantType.ASSIGNEE,
+      } as PermissionGrant;
+      mockGrantRepo.find.mockResolvedValue([mockAssigneeGrant]);
+      const inputContext: EvaluationContext = {
+        userId: 30,
+        projectId: 100,
+        permission: ProjectPermission.TRANSITION_ISSUES,
+        issueId: 500,
+      };
+      // Act
+      const actualResult = await service.hasPermission(inputContext);
+      // Assert
+      expect(actualResult).toBe(true);
+    });
+
     it('should grant permission when user has project role mapped to grant', async () => {
       // Arrange
       const targetRoleId = 7;

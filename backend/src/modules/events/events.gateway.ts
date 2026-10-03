@@ -349,6 +349,18 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
+  broadcastCommentUpdated(payload: { issueId: number; comment: unknown }): void {
+    if (this.server) {
+      this.server.to(`issue_${payload.issueId}`).emit('comment:updated', payload);
+    }
+  }
+
+  broadcastCommentDeleted(payload: { issueId: number; commentId: number }): void {
+    if (this.server) {
+      this.server.to(`issue_${payload.issueId}`).emit('comment:deleted', payload);
+    }
+  }
+
   broadcastAttachmentUploaded(payload: { issueId: number; attachment: unknown }): void {
     if (this.server) {
       this.server.to(`issue_${payload.issueId}`).emit('attachment:uploaded', payload);

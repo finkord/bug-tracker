@@ -146,7 +146,7 @@ export class IssuesController {
   async updateStatus(
     @Param('id', ParseIntPipe) id: number,
     @Body('status') status: IssueStatus,
-    @CurrentUser() user: User,
+    @CurrentUser() _user: User,
   ) {
     return this.issuesService.updateStatus(id, status);
   }
@@ -205,8 +205,8 @@ export class IssuesController {
   @ApiOperation({
     summary: 'Delete an issue',
   })
-  async remove(@Param('id', ParseIntPipe) id: number) {
-    return this.issuesService.remove(id);
+  async remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: User) {
+    return this.issuesService.remove(id, user);
   }
 
   @Post(':id/comments')
@@ -221,6 +221,35 @@ export class IssuesController {
     @CurrentUser() user: User,
   ) {
     return this.issuesService.addComment(id, text, user);
+  }
+
+  @Patch(':id/comments/:commentId')
+  @RequireProjectPermission(ProjectPermission.EDIT_OWN_COMMENTS, ProjectPermission.EDIT_ALL_COMMENTS)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Update an existing comment on an issue',
+  })
+  async updateComment(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('commentId', ParseIntPipe) commentId: number,
+    @Body('text') text: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.issuesService.updateComment(id, commentId, text, user);
+  }
+
+  @Delete(':id/comments/:commentId')
+  @RequireProjectPermission(ProjectPermission.DELETE_OWN_COMMENTS, ProjectPermission.DELETE_ALL_COMMENTS)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Delete a comment from an issue',
+  })
+  async deleteComment(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('commentId', ParseIntPipe) commentId: number,
+    @CurrentUser() user: User,
+  ) {
+    return this.issuesService.deleteComment(id, commentId, user);
   }
 
   @Post(':id/worklogs')
