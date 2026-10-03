@@ -29,7 +29,7 @@ import {
   Box,
   Milestone,
 } from 'lucide-react';
-import { Dropdown } from '../ui';
+import { Dropdown, PriorityBadge } from '../ui';
 import { useIssueSelectionStore } from '../../store/useIssueSelectionStore';
 
 interface IssueCardProps {
@@ -246,54 +246,7 @@ const IssueCardComponent: React.FC<IssueCardProps> = ({
 
   // Priority indicator renderer
   const renderPriorityBadge = (priority: IssuePriority, isCompact = false) => {
-    switch (priority) {
-      case 'CRITICAL':
-        return (
-          <span
-            title="Critical Priority"
-            className={`inline-flex items-center gap-1 font-bold uppercase tracking-wider rounded-full bg-[var(--md-sys-color-priority-critical-container)] text-[var(--md-sys-color-priority-on-critical-container)] ${
-              isCompact ? 'p-1 text-[9px]' : 'px-2 py-0.5 text-[10px]'
-            }`}
-          >
-            <Flame className="w-3 h-3 text-[var(--md-sys-color-priority-critical)]" />
-            {!isCompact && 'Crit'}
-          </span>
-        );
-      case 'HIGH':
-        return (
-          <span
-            title="High Priority"
-            className={`inline-flex items-center gap-1 font-bold uppercase tracking-wider rounded-full bg-[var(--md-sys-color-priority-high-container)] text-[var(--md-sys-color-priority-on-high-container)] ${
-              isCompact ? 'p-1 text-[9px]' : 'px-2 py-0.5 text-[10px]'
-            }`}
-          >
-            <AlertCircle className="w-3 h-3 text-[var(--md-sys-color-priority-high)]" />
-            {!isCompact && 'High'}
-          </span>
-        );
-      case 'MEDIUM':
-        return (
-          <span
-            title="Medium Priority"
-            className={`inline-flex items-center gap-1 font-semibold uppercase tracking-wider rounded-full bg-[var(--md-sys-color-priority-medium-container)] text-[var(--md-sys-color-priority-on-medium-container)] ${
-              isCompact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-0.5 text-[10px]'
-            }`}
-          >
-            Med
-          </span>
-        );
-      case 'LOW':
-        return (
-          <span
-            title="Low Priority"
-            className={`inline-flex items-center gap-1 font-semibold uppercase tracking-wider rounded-full bg-[var(--md-sys-color-priority-low-container)] text-[var(--md-sys-color-priority-on-low-container)] ${
-              isCompact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-0.5 text-[10px]'
-            }`}
-          >
-            Low
-          </span>
-        );
-    }
+    return <PriorityBadge priority={priority} size={isCompact ? 'xs' : 'sm'} />;
   };
 
   // Time tracking ratio

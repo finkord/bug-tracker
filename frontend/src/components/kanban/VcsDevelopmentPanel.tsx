@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { GitBranch, GitPullRequest, Copy, Check, ExternalLink, Loader2 } from 'lucide-react';
+import { GitBranch, GitPullRequest, Copy, Check, ExternalLink, Loader2, ArrowRight } from 'lucide-react';
 import { issuesApi } from '../../api/modules/issues.api.js';
 import type { VcsPullRequestItem } from '../../api/types/issues.types.js';
 import { useAuthStore } from '../../store/useAuthStore.js';
@@ -8,12 +8,16 @@ interface VcsDevelopmentPanelProps {
   issueId: number;
   issueKey: string;
   issueTitle: string;
+  compact?: boolean;
+  onViewDetails?: () => void;
 }
 
 export const VcsDevelopmentPanel: React.FC<VcsDevelopmentPanelProps> = ({
   issueId,
   issueKey,
   issueTitle,
+  compact = false,
+  onViewDetails,
 }) => {
   const { user } = useAuthStore();
   const [pullRequests, setPullRequests] = useState<VcsPullRequestItem[]>([]);
@@ -84,9 +88,86 @@ export const VcsDevelopmentPanel: React.FC<VcsDevelopmentPanelProps> = ({
     }
   };
 
+  if (compact) {
+    return (
+      <div
+        className="rounded-2xl p-3.5 border transition-colors shadow-xs"
+        style={{
+          backgroundColor: 'var(--md-sys-color-surface-container-low)',
+          borderColor: 'var(--md-sys-color-outline-variant)',
+        }}
+      >
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1.5">
+            <GitBranch
+              className="w-3.5 h-3.5"
+              style={{ color: 'var(--md-sys-color-primary)' }}
+            />
+            <h4
+              className="text-xs font-semibold uppercase tracking-wider"
+              style={{ color: 'var(--md-sys-color-on-surface-variant)' }}
+            >
+              Development
+            </h4>
+          </div>
+          <button
+            type="button"
+            onClick={handleCopyBranch}
+            className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded-lg transition-colors cursor-pointer"
+            style={{
+              backgroundColor: hasCopied
+                ? 'var(--md-sys-color-primary-container)'
+                : 'var(--md-sys-color-surface-container-highest)',
+              color: hasCopied
+                ? 'var(--md-sys-color-on-primary-container)'
+                : 'var(--md-sys-color-on-surface)',
+            }}
+            title="Copy branch creation command to clipboard"
+          >
+            {hasCopied ? (
+              <>
+                <Check className="w-3 h-3 text-[var(--md-sys-color-primary)]" />
+                <span>Copied</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-3 h-3" />
+                <span>Branch</span>
+              </>
+            )}
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between text-xs pt-1">
+          <span
+            className="px-2 py-0.5 rounded-md font-medium text-[11px]"
+            style={{
+              backgroundColor: 'var(--md-sys-color-surface-container)',
+              color: 'var(--md-sys-color-on-surface)',
+            }}
+          >
+            {isLoading ? 'Loading...' : `${pullRequests.length} PR${pullRequests.length === 1 ? '' : 's'} linked`}
+          </span>
+
+          {onViewDetails && (
+            <button
+              type="button"
+              onClick={onViewDetails}
+              className="text-[11px] font-medium flex items-center gap-1 hover:underline cursor-pointer"
+              style={{ color: 'var(--md-sys-color-primary)' }}
+            >
+              <span>View details</span>
+              <ArrowRight className="w-3 h-3" />
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
-      className="rounded-xl p-4 border transition-colors"
+      className="rounded-2xl p-4 border transition-colors shadow-xs"
       style={{
         backgroundColor: 'var(--md-sys-color-surface-container-low)',
         borderColor: 'var(--md-sys-color-outline-variant)',

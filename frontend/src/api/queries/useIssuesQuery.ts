@@ -134,6 +134,40 @@ export function useAddIssueCommentMutation() {
   });
 }
 
+export function useUpdateIssueCommentMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      issueId,
+      commentId,
+      text,
+    }: {
+      issueId: number;
+      commentId: number;
+      text: string;
+    }) => api.updateIssueComment(issueId, commentId, text),
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: issueKeys.detail(vars.issueId) });
+    },
+  });
+}
+
+export function useDeleteIssueCommentMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      issueId,
+      commentId,
+    }: {
+      issueId: number;
+      commentId: number;
+    }) => api.deleteIssueComment(issueId, commentId),
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: issueKeys.detail(vars.issueId) });
+    },
+  });
+}
+
 export function useIssueAttachmentsQuery(issueId?: number) {
   return useQuery({
     queryKey: issueKeys.attachments(issueId!),

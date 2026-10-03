@@ -4,7 +4,7 @@ import type { SprintDefinition } from '../../types/agile';
 import { useTicketDragStore } from '../../store/useTicketDragStore';
 import { Avatar } from '../common/Avatar';
 import { IssueContextMenu } from '../common/IssueContextMenu';
-import { Badge, Dropdown, Tooltip } from '../ui';
+import { StatusBadge, PriorityBadge, Dropdown, Tooltip } from '../ui';
 import {
   GripVertical,
   Bug,
@@ -193,44 +193,6 @@ const AgileIssueRowComponent: React.FC<AgileIssueRowProps> = ({
     }
   };
 
-  const renderPriorityIcon = (priority: IssuePriority) => {
-    switch (priority) {
-      case 'CRITICAL':
-        return (
-          <span title="Critical" className="inline-flex items-center">
-            <Flame className="w-3.5 h-3.5 text-[var(--md-sys-color-priority-critical)]" />
-          </span>
-        );
-      case 'HIGH':
-        return (
-          <span title="High" className="inline-flex items-center">
-            <AlertCircle className="w-3.5 h-3.5 text-[var(--md-sys-color-priority-high)]" />
-          </span>
-        );
-      case 'MEDIUM':
-        return <span className="w-2 h-2 rounded-full bg-[var(--md-sys-color-priority-medium)]" title="Medium" />;
-      case 'LOW':
-        return <span className="w-2 h-2 rounded-full bg-[var(--md-sys-color-priority-low)]" title="Low" />;
-    }
-  };
-
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'OPEN':
-        return 'open' as const;
-      case 'IN_PROGRESS':
-        return 'in-progress' as const;
-      case 'REVIEW':
-        return 'review' as const;
-      case 'RESOLVED':
-        return 'resolved' as const;
-      case 'CLOSED':
-        return 'closed' as const;
-      default:
-        return 'neutral' as const;
-    }
-  };
-
   // Build quick move dropdown options
   const dropdownItems: Array<{ label: React.ReactNode; onClick: () => void }> = [];
   dropdownItems.push({
@@ -320,13 +282,11 @@ const AgileIssueRowComponent: React.FC<AgileIssueRowProps> = ({
       {/* Right: Status, Priority, Estimate, Assignee, Actions */}
       <div className="flex items-center gap-2 shrink-0">
         {/* Status Badge */}
-        <Badge variant={getStatusBadgeVariant(issue.status)} size="sm" className="hidden sm:inline-flex">
-          {issue.status.replace('_', ' ')}
-        </Badge>
+        <StatusBadge status={issue.status} size="xs" className="hidden sm:inline-flex" />
 
-        {/* Priority Icon */}
-        <div className="shrink-0 flex items-center justify-center w-5 h-5">
-          {renderPriorityIcon(issue.priority)}
+        {/* Priority Badge */}
+        <div className="shrink-0 flex items-center justify-center">
+          <PriorityBadge priority={issue.priority} size="xs" showLabel={false} />
         </div>
 
         {/* Estimate Chip */}

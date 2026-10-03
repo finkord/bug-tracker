@@ -90,6 +90,17 @@ export const issuesApi = {
       body: JSON.stringify({ text }),
     }),
 
+  updateIssueComment: (issueId: number, commentId: number, text: string) =>
+    request<IssueComment>(`/issues/${issueId}/comments/${commentId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ text }),
+    }),
+
+  deleteIssueComment: (issueId: number, commentId: number) =>
+    request<{ success: boolean }>(`/issues/${issueId}/comments/${commentId}`, {
+      method: 'DELETE',
+    }),
+
   uploadAttachment: async (issueId: number, file: File): Promise<AttachmentItem> => {
     const formData = new FormData();
     formData.append('file', file);

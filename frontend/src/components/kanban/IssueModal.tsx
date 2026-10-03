@@ -20,7 +20,7 @@ import {
   Clock,
   Tag,
 } from 'lucide-react';
-import { Modal, Button, Input, SelectField } from '../ui';
+import { Modal, Button, Input, SelectField, UserPicker } from '../ui';
 import { MarkdownContent } from '../common/MarkdownContent';
 
 interface IssueModalProps {
@@ -265,21 +265,21 @@ export const IssueModal: React.FC<IssueModalProps> = ({
         </div>
 
         {/* Assignee */}
-        <SelectField
-          label="Assignee"
-          value={String(assigneeId)}
-          onValueChange={(val) => setAssigneeId(val === '' ? '' : Number(val))}
-          options={[
-            { value: '', label: 'Unassigned' },
-            ...(user ? [{ value: String(user.id), label: `${user.fullName} (Assign to Me)` }] : []),
-            ...assignees
-              .filter((a) => a.id !== user?.id)
-              .map((a) => ({
-                value: String(a.id),
-                label: `${a.fullName} (${a.email})`,
-              })),
-          ]}
-        />
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider block">
+            Assignee
+          </label>
+          <UserPicker
+            value={assigneeId === '' ? null : Number(assigneeId)}
+            onChange={(val) => setAssigneeId(val ?? '')}
+            users={assignees}
+            currentUserId={user?.id}
+            placeholder="Unassigned"
+            showAssignToMe
+            size="md"
+            className="w-full"
+          />
+        </div>
 
         {/* Grid row: Estimates & Relational Sprint */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

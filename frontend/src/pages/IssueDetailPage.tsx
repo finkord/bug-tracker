@@ -23,7 +23,7 @@ import { VcsDevelopmentPanel } from '../components/kanban/VcsDevelopmentPanel';
 import {
   IssueDetailHeader,
   IssueDetailDescription,
-  IssueCommentsSection,
+  IssueActivityTabs,
   IssueAttachmentsSection,
   IssueSidebarDetails,
   IssueTimeTrackingCard,
@@ -52,6 +52,15 @@ export const IssueDetailPage: React.FC = () => {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [activeViewers, setActiveViewers] = useState<{ id: number; fullName: string; avatarUrl?: string }[]>([]);
+  const [activeActivityTab, setActiveActivityTab] = useState<'comments' | 'history' | 'worklogs' | 'development'>('comments');
+
+  const handleSwitchActivityTab = (tab: 'comments' | 'history' | 'worklogs' | 'development') => {
+    setActiveActivityTab(tab);
+    const el = document.getElementById('activity-tabs-section');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  };
 
   const statusMutation = useUpdateIssueStatusMutation();
   const sprintMutation = useUpdateIssueSprintMutation();
@@ -281,23 +290,28 @@ export const IssueDetailPage: React.FC = () => {
             onLinksChanged={() => fetchIssue()}
           />
 
-          <IssueCommentsSection
-            issueId={issue.id}
-            comments={issue.comments || []}
-            onAddComment={handleAddComment}
-            onUploadCommentScreenshot={handleUploadScreenshot}
-          />
-
           <IssueAttachmentsSection
             attachments={issue.attachments || []}
             currentUser={user}
             onUpload={handleUploadAttachment}
             onDelete={handleDeleteAttachment}
           />
+
+          <div id="activity-tabs-section">
+            <IssueActivityTabs
+              issue={issue}
+              currentUser={user}
+              activeTab={activeActivityTab}
+              onTabChange={setActiveActivityTab}
+              onAddComment={handleAddComment}
+              onUploadCommentScreenshot={handleUploadScreenshot}
+              onOpenLogWorkModal={() => setLogWorkOpen(true)}
+            />
+          </div>
         </div>
 
         {/* Right Column: Attributes & Time Tracking */}
-        <div className="lg:col-span-4 xl:col-span-4 2xl:col-span-3 space-y-5 lg:sticky lg:top-6">
+        <div className="lg:col-span-4 xl:col-span-4 2xl:col-span-3 space-y-4 lg:sticky lg:top-6">
           <IssueSidebarDetails
             issue={issue}
             currentUser={user}
@@ -310,12 +324,15 @@ export const IssueDetailPage: React.FC = () => {
           <IssueTimeTrackingCard
             issue={issue}
             onOpenLogWorkModal={() => setLogWorkOpen(true)}
+            onViewWorklogsTab={() => handleSwitchActivityTab('worklogs')}
           />
 
           <VcsDevelopmentPanel
             issueId={issue.id}
             issueKey={issue.key}
             issueTitle={issue.title}
+            compact
+            onViewDetails={() => handleSwitchActivityTab('development')}
           />
         </div>
       </div>
