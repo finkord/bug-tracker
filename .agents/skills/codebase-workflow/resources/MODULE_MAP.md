@@ -48,36 +48,63 @@
 | `entities/user.entity.ts`            | TypeORM User entity (main auth table)    |
 | `entities/saved-filter.entity.ts`    | User-saved advanced search filters       |
 
-### `projects` — Project Workspaces
+### `projects` — Project Workspaces & Taxonomies
 
-| File                                    | Purpose                                   |
-|-----------------------------------------|-------------------------------------------|
-| `projects.module.ts`                    | Module definition                         |
-| `projects.controller.ts`               | Project CRUD endpoints                   |
-| `projects.service.ts`                  | Project business logic                   |
-| `entities/project.entity.ts`           | TypeORM Project entity                   |
+| File                                           | Purpose                                            |
+|------------------------------------------------|----------------------------------------------------|
+| `projects.module.ts`                           | Module definition                                  |
+| `projects.controller.ts`                       | Project CRUD, quick filters, components, versions  |
+| `projects.service.ts`                          | Project business logic                             |
+| `entities/project.entity.ts`                   | TypeORM Project entity                             |
+| `entities/quick-filter.entity.ts`              | Configurable board quick filters (JQL criteria)    |
+| `entities/project-component.entity.ts`         | Project components and component leads             |
+| `entities/project-version.entity.ts`           | Project release versions and milestones            |
 
-### `issues` — Bug/Issue FSM Lifecycle
+### `issues` — Bug/Issue FSM Lifecycle & Hierarchy
 
-| File                                      | Purpose                                       |
-|-------------------------------------------|-----------------------------------------------|
-| `issues.module.ts`                        | Module definition                             |
-| `issues.controller.ts`                    | Issue CRUD + FSM transition endpoints         |
-| `issues.service.ts`                       | Issue domain logic, status transitions        |
-| `entities/issue.entity.ts`               | TypeORM Issue entity (status FSM)            |
-| `entities/comment.entity.ts`             | Issue comments                               |
-| `entities/attachment.entity.ts`          | File attachments (SeaweedFS references)      |
-| `entities/worklog.entity.ts`             | Time tracking worklogs                       |
-| `entities/issue-link.entity.ts`          | Issue-to-issue links (blocks/duplicates/etc) |
+| File                                           | Purpose                                            |
+|------------------------------------------------|----------------------------------------------------|
+| `issues.module.ts`                             | Module definition                                  |
+| `issues.controller.ts`                         | Issue CRUD, bulk actions, subtasks, FSM endpoints  |
+| `issues.service.ts`                            | Issue domain logic & orchestration                 |
+| `services/issue-core.service.ts`               | Core lifecycle, subtasks hierarchy, bulk updates   |
+| `services/issue-comments.service.ts`           | Comment threads, @mention regex parsing            |
+| `services/issue-worklogs.service.ts`           | Atomic effort logging, SQL statistics              |
+| `entities/issue.entity.ts`                     | TypeORM Issue entity (FSM, parentId for subtasks)  |
+| `entities/issue-history.entity.ts`             | Audit change history on field updates              |
+| `entities/comment.entity.ts`                   | Issue comments                                     |
+| `entities/attachment.entity.ts`                | File attachments (SeaweedFS S3 references)         |
+| `entities/worklog.entity.ts`                   | Time tracking worklogs                             |
+| `entities/issue-link.entity.ts`                | Issue-to-issue links (blocks/duplicates/etc)       |
 
-### `sprints` — Sprint & Backlog Management
+### `sprints` — Sprint, Backlog & Capacity Management
 
-| File                                    | Purpose                                   |
-|-----------------------------------------|-------------------------------------------|
-| `sprints.module.ts`                     | Module definition                         |
-| `sprints.controller.ts`                | Sprint CRUD + issue assignment endpoints  |
-| `sprints.service.ts`                   | Sprint business logic                     |
-| `entities/sprint.entity.ts`            | TypeORM Sprint entity                     |
+| File                                           | Purpose                                            |
+|------------------------------------------------|----------------------------------------------------|
+| `sprints.module.ts`                            | Module definition                                  |
+| `sprints.controller.ts`                        | Sprint CRUD, start, complete/rollover, burndown    |
+| `sprints.service.ts`                           | Sprint lifecycle, capacity & burndown calculation  |
+| `entities/sprint.entity.ts`                    | TypeORM Sprint entity (teamId scoped)              |
+| `entities/sprint-snapshot.entity.ts`           | Daily burndown snapshots of remaining work         |
+
+### `teams` — Scrum Engineering Teams
+
+| File                                           | Purpose                                            |
+|------------------------------------------------|----------------------------------------------------|
+| `teams.module.ts`                              | Module definition                                  |
+| `teams.controller.ts`                          | Team CRUD, member rosters, capacity endpoints      |
+| `teams.service.ts`                             | Team management & sprint capacity calculations     |
+| `entities/team.entity.ts`                      | TypeORM Team entity                                |
+| `entities/team-member.entity.ts`               | Team member with Scrum roles & weekly capacity     |
+
+### `webhooks` — Project Outbound Webhooks
+
+| File                                           | Purpose                                            |
+|------------------------------------------------|----------------------------------------------------|
+| `webhooks.module.ts`                           | Module definition                                  |
+| `webhooks.controller.ts`                       | Webhook registration & delivery logs               |
+| `webhooks.service.ts`                          | Event dispatching to external HTTP listeners       |
+| `entities/project-webhook.entity.ts`           | Outbound webhook configurations                    |
 
 ### `rbac` — Role-Based Access Control
 

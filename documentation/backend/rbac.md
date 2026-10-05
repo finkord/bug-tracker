@@ -63,11 +63,24 @@ Layer 2: Project-Scoped Roles (ProjectRoleActor)
 
 ### Permission Schemes & Grants
 * **PermissionScheme**: Defines reusable permission sets assigned to projects.
-* **PermissionGrant**: Maps a granular action (`CREATE_ISSUES`, `EDIT_ISSUES`, `ASSIGN_ISSUES`, `DELETE_ISSUES`, `CLOSE_ISSUES`, `ADMINISTER_PROJECTS`, `BROWSE_PROJECTS`) to:
-  * A Project Role (e.g. `Developer`),
-  * A User Group (e.g. `Engineering-CORE`),
-  * The Project Lead, or
-  * The Current Assignee.
+* **PermissionGrant**: Maps a granular action (`CREATE_ISSUES`, `EDIT_ISSUES`, `ASSIGN_ISSUES`, `DELETE_ISSUES`, `CLOSE_ISSUES`, `ADMINISTER_PROJECTS`, `BROWSE_PROJECTS`, `LOG_WORK`, `MANAGE_ATTACHMENTS`) to:
+  * A Project Role (e.g. `Administrators`, `Developers`, `Viewers`),
+  * A User Group (e.g. `all-users`, `Engineering-CORE`),
+  * The Project Lead,
+  * The Current Assignee, or
+  * The Reporter.
+
+### Default Agile Collaborative Scheme & Auto-Binding
+* **Modernized Agile Defaults**: Unlike restrictive legacy permission setups, BugTracker's default system scheme grants:
+  * `Developers` and `all-users`: Full issue creation, assignment, transition, and worklog tracking.
+  * `Current Assignee`: Unconditional rights to edit, reassign, transition, log work, and resolve their tickets.
+  * `Reporter`: Explicit rights to comment, update descriptions, and close tickets they opened.
+* **Reporter 24-Hour Grace Period for Deletion**:
+  * In the Agile Collaborative Scheme, reporters are empowered to delete accidental tickets within a 24-hour grace window from creation, provided the ticket remains in initial `OPEN` state with 0 logged work hours.
+  * Project Administrators and Project Leads retain unconditional deletion rights at all times.
+* **Automatic Workspace Auto-Binding**:
+  * Upon new project space creation, the creating user is immediately enrolled as an actor in the project's `Administrators` role.
+  * The `all-users` system group is bound to `Developers` by default, eliminating mystery 403 permission deadlocks while permitting administrators to tighten access in Project Settings -> Access & Permissions.
 
 ### Single-Pass RBAC Evaluation & Redis Caching
 * **Single-Pass SQL Optimization**: `PermissionEvaluatorService.getEffectivePermissions(userId, projectId)` queries all effective permissions in a single SQL query joining `projects`, `permission_schemes`, `permission_grants`, `project_role_actors`, and `user_group_memberships`. This completely eliminates the previous 100+ sequential N+1 query loop.

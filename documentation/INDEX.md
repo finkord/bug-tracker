@@ -12,7 +12,7 @@ Welcome to the central documentation hub for **BugTracker**. This directory serv
 | Domain / Keyword | Target Subsystem | Primary Code Path | Documentation Path |
 |---|---|---|---|
 | **System Architecture** | Infrastructure, Ports, Stack | [`backend/src/main.ts`](../backend/src/main.ts) | [`architecture/system-overview.md`](architecture/system-overview.md) |
-| **Database Schema** | 19 Entities, Relations, ERD | [`backend/src/**/*.entity.ts`](../backend/src) | [`architecture/database-schema.md`](architecture/database-schema.md) |
+| **Database Schema** | 29 Entities, Relations, ERD | [`backend/src/**/*.entity.ts`](../backend/src) | [`architecture/database-schema.md`](architecture/database-schema.md) |
 | **Auth & Security** | JWT, Argon2id, 2FA, Captcha, Lockout | [`backend/src/modules/auth/`](../backend/src/modules/auth) | [`backend/auth.md`](backend/auth.md) |
 | **User Profiles** | Avatar, Settings, Saved Filters | [`backend/src/modules/users/`](../backend/src/modules/users) | [`backend/users.md`](backend/users.md) |
 | **Projects & Teams** | Spaces, Keys, Leads | [`backend/src/modules/projects/`](../backend/src/modules/projects) | [`backend/projects.md`](backend/projects.md) |

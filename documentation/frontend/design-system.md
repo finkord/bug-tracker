@@ -52,3 +52,35 @@ In adherence to WCAG 2.1 AA / AAA standards and M3 tonal palettes:
 ```
 * **Continuous Border Curves**: Rounded corners on the floating main canvas (`rounded-xl sm:rounded-2xl md:rounded-3xl`) soften the viewport and provide clear visual focus.
 * **Micro-Interactions**: Hover transitions use subtle `duration-150` or `duration-200` ease curves for buttons, list rows, and Kanban cards.
+
+---
+
+## 4. Canonical Reusable UI Primitives
+
+To eliminate fragmented duplicate styles and ensure unified Material 3 token consumption:
+
+* **`UserPicker`** ([`frontend/src/components/common/UserPicker.tsx`](../../frontend/src/components/common/UserPicker.tsx)):
+  - Canonical user selector supporting avatar rendering, search filtering, and single or multi-select modes.
+* **`StatusBadge`** ([`frontend/src/components/common/StatusBadge.tsx`](../../frontend/src/components/common/StatusBadge.tsx)):
+  - Uniform issue status indicators (`OPEN`, `IN_PROGRESS`, `RESOLVED`, `CLOSED`) with semantic M3 tonal containers.
+* **`PriorityBadge`** ([`frontend/src/components/common/PriorityBadge.tsx`](../../frontend/src/components/common/PriorityBadge.tsx)):
+  - Crisp priority representations (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`) with unified iconography and sizing variants (`sm`, `md`).
+* **`EmptyState`** ([`frontend/src/components/common/EmptyState.tsx`](../../frontend/src/components/common/EmptyState.tsx)):
+  - Zero-data presentation with icon container, headline, description, and primary action button.
+* **`ConfirmDialog`** ([`frontend/src/components/common/ConfirmDialog.tsx`](../../frontend/src/components/common/ConfirmDialog.tsx)):
+  - Accessible modal dialog for confirmations, destructive operations, and sprint rollovers.
+* **`SearchInput`** ([`frontend/src/components/common/SearchInput.tsx`](../../frontend/src/components/common/SearchInput.tsx)):
+  - Search input with clear button, debounce hooks, and keyboard shortcut hint badges.
+
+---
+
+## 5. Keyboard Velocity & Ergonomics
+
+The interface is engineered for power users, matching modern issue tracker ergonomics:
+
+* **Global `C` Shortcut**: Triggers quick ticket creation modal from anywhere in the app with auto-focus on the title input.
+* **`Cmd+Enter` / `Ctrl+Enter`**: Submits creation and editing forms without reaching for the mouse.
+* **`J` / `K` Navigation**: Moves selection focus sequentially up and down cards on the Kanban board and rows in the Backlog.
+* **Multi-Select & Bulk Actions**:
+  - `Shift+Click` and `X` toggle multi-issue selection in Backlog and Kanban.
+  - Floating M3 Bulk Action Bar enables batch status transitions, reassignments, sprint moves, and deletions in a single atomic action.
