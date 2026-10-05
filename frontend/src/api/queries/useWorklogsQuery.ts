@@ -8,8 +8,14 @@ export const worklogKeys = {
   mine: (page?: number, limit?: number) =>
     [...worklogKeys.all, 'mine', { page, limit }] as const,
   stats: () => [...worklogKeys.all, 'stats'] as const,
-  matrix: (startDate?: string, endDate?: string, projectId?: number, userId?: number) =>
-    [...worklogKeys.all, 'matrix', { startDate, endDate, projectId, userId }] as const,
+  matrix: (
+    startDate?: string,
+    endDate?: string,
+    projectId?: number,
+    userId?: number,
+    groupBy?: 'user' | 'issue',
+  ) =>
+    [...worklogKeys.all, 'matrix', { startDate, endDate, projectId, userId, groupBy }] as const,
 };
 
 export function useIssueWorklogsQuery(issueId?: number) {
@@ -39,10 +45,11 @@ export function useTeamTimesheetMatrixQuery(
   endDate?: string,
   projectId?: number,
   userId?: number,
+  groupBy?: 'user' | 'issue',
 ) {
   return useQuery({
-    queryKey: worklogKeys.matrix(startDate, endDate, projectId, userId),
-    queryFn: () => api.getTeamTimesheetMatrix(startDate, endDate, projectId, userId),
+    queryKey: worklogKeys.matrix(startDate, endDate, projectId, userId, groupBy),
+    queryFn: () => api.getTeamTimesheetMatrix(startDate, endDate, projectId, userId, groupBy),
   });
 }
 

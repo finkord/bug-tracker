@@ -46,22 +46,22 @@ export const SprintAnalyticsModal: React.FC<SprintAnalyticsModalProps> = ({
     isOpen && sprint.id ? sprint.id : undefined,
   );
 
-  // Metric computations
-  const totalScopeHours = sprintIssues.reduce((acc, i) => acc + (i.estimatedHours || 0), 0);
+  // Server-driven metric bindings
+  const totalScopeHours = burndownData?.totalScopeHours ?? sprintIssues.reduce((acc, i) => acc + (i.estimatedHours || 0), 0);
   const totalLoggedHours = sprintIssues.reduce((acc, i) => acc + (i.loggedHours || 0), 0);
   const completedIssues = sprintIssues.filter((i) => i.status === 'RESOLVED' || i.status === 'CLOSED');
   const inProgressIssues = sprintIssues.filter((i) => i.status === 'IN_PROGRESS' || i.status === 'REVIEW');
-  const completedHours = completedIssues.reduce((acc, i) => acc + (i.estimatedHours || 0), 0);
-  const remainingHours = Math.max(0, totalScopeHours - completedHours);
+  const completedHours = burndownData?.completedHours ?? completedIssues.reduce((acc, i) => acc + (i.estimatedHours || 0), 0);
+  const remainingHours = burndownData?.remainingHours ?? Math.max(0, totalScopeHours - completedHours);
   const completionRate = totalScopeHours > 0 ? Math.round((completedHours / totalScopeHours) * 100) : 0;
 
   const hasLiveSnapshots = Boolean(burndownData?.points && burndownData.points.length > 0);
 
   // Generate burndown points from live daily snapshots or fallback projection
   const burndownPoints = useMemo(() => {
-    if (hasLiveSnapshots && burndownData) {
+    if (hasLiveSnapshots && burndownData?.points) {
       return burndownData.points.map((p, idx) => {
-        let dayLabel = `Day ${idx + 1}`;
+        let dayLabel = p.dayLabel || `Day ${idx + 1}`;
         try {
           const d = new Date(p.date);
           if (!isNaN(d.getTime())) {
@@ -70,8 +70,8 @@ export const SprintAnalyticsModal: React.FC<SprintAnalyticsModalProps> = ({
         } catch {}
         return {
           day: dayLabel,
-          idealHours: p.idealRemainingHours,
-          actualHours: p.actualRemainingHours,
+          idealHours: p.idealHours ?? p.idealRemainingHours ?? 0,
+          actualHours: p.remainingHours ?? p.actualRemainingHours ?? null,
         };
       });
     }

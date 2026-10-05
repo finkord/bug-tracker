@@ -19,7 +19,7 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiOkResponse } from '@nestjs/swagger';
 import { IssuesService } from './issues.service.js';
 import { SeaweedFsService, type UploadedFileInput } from './services/seaweedfs.service.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
@@ -37,7 +37,12 @@ import { ProjectPermissionGuard } from '../rbac/guards/project-permission.guard.
 import { RequireProjectPermission } from '../rbac/decorators/require-permission.decorator.js';
 import { ProjectPermission } from '../rbac/entities/permission-grant.entity.js';
 import { PermissionEvaluatorService } from '../rbac/services/permission-evaluator.service.js';
-import type { PaginatedIssuesResponseDto } from './dto/issue-response.dto.js';
+import { ValidateJqlDto, JqlValidationResponseDto } from './dto/validate-jql.dto.js';
+import {
+  TimesheetMatrixResponseDto,
+  WorklogStatsResponseDto,
+  type PaginatedIssuesResponseDto,
+} from './dto/issue-response.dto.js';
 
 @ApiTags('Issues & Kanban')
 @ApiBearerAuth('JWT-auth')
@@ -61,6 +66,16 @@ export class IssuesController {
     return this.issuesService.findAll(query, user);
   }
 
+  @Post('jql/validate')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Validate JQL query syntax and extract AST clause count and ordering',
+  })
+  @ApiOkResponse({ type: JqlValidationResponseDto })
+  async validateJql(@Body() dto: ValidateJqlDto): Promise<JqlValidationResponseDto> {
+    return this.issuesService.validateJql(dto.jql);
+  }
+
   @Get('worklogs/me')
   @ApiOperation({
     summary: 'Get worklogs logged by the current authenticated user with server-side pagination',
@@ -75,22 +90,25 @@ export class IssuesController {
 
   @Get('worklogs/matrix')
   @ApiOperation({
-    summary: 'Get team timesheet matrix with daily hours per worker',
+    summary: 'Get team timesheet matrix with daily hours per worker or grouped by issue',
   })
+  @ApiOkResponse({ type: TimesheetMatrixResponseDto })
   async getTimesheetMatrix(
     @CurrentUser() user: User,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
     @Query('projectId') projectId?: number,
     @Query('userId') userId?: number,
+    @Query('groupBy') groupBy?: 'user' | 'issue',
   ) {
-    return this.issuesService.getTeamTimesheetMatrix(user, startDate, endDate, projectId, userId);
+    return this.issuesService.getTeamTimesheetMatrix(user, startDate, endDate, projectId, userId, groupBy);
   }
 
   @Get('worklogs/stats')
   @ApiOperation({
     summary: 'Get aggregated time tracking statistics across projects and users',
   })
+  @ApiOkResponse({ type: WorklogStatsResponseDto })
   async getWorklogStats(@CurrentUser() user: User) {
     return this.issuesService.getWorklogStats(user);
   }

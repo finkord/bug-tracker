@@ -386,6 +386,10 @@ describe('IssueWorklogService', () => {
       expect(matrix.grandTotal).toBe(6);
       expect(matrix.members[0].totalPeriodHours).toBe(6);
       expect(matrix.members[0].dailyHours['2026-09-28']).toBe(6);
+      expect(matrix.issues).toHaveLength(1);
+      expect(matrix.issues![0].issueKey).toBe('TEST-5');
+      expect(matrix.issues![0].totalHours).toBe(6);
+      expect(matrix.issues![0].members[1].totalHours).toBe(6);
     });
   });
 });

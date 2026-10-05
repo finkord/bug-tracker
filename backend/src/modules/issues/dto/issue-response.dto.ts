@@ -1,3 +1,4 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IssuePriority, IssueStatus, IssueType } from '../entities/issue.entity.js';
 import { IssueLinkType } from '../entities/issue-link.entity.js';
 
@@ -139,54 +140,162 @@ export interface IssueDetailDto extends IssueSummaryDto {
   subtasks?: IssueSummaryDto[];
 }
 
-export interface TimesheetMemberWorklogDto {
+export class TimesheetMemberWorklogDto {
+  @ApiProperty({ example: 1 })
   id: number;
+
+  @ApiPropertyOptional({ example: 42 })
   issueId?: number;
+
+  @ApiPropertyOptional({ example: 'BT-42' })
   issueKey?: string;
+
+  @ApiPropertyOptional({ example: 'Implement auth token rotation' })
   issueTitle?: string;
+
+  @ApiProperty({ example: 2.5 })
   timeSpentHours: number;
+
+  @ApiPropertyOptional({ example: 'Worked on unit tests' })
   description?: string;
 }
 
-export interface TimesheetMemberDto {
+export class TimesheetMemberDto {
+  @ApiProperty({ example: 1 })
   userId: number;
+
+  @ApiProperty({ example: 'Alice Developer' })
   fullName: string;
+
+  @ApiProperty({ example: 'alice@example.com' })
   email: string;
+
+  @ApiProperty({ example: 'USER' })
   systemRole: string;
+
+  @ApiPropertyOptional({ type: String, example: null, nullable: true })
   avatarUrl: string | null;
+
+  @ApiProperty({ example: { '2026-09-24': 4 }, type: 'object', additionalProperties: { type: 'number' } })
   dailyHours: Record<string, number>;
+
+  @ApiPropertyOptional({ type: () => Object })
   dailyWorklogs?: Record<string, TimesheetMemberWorklogDto[]>;
+
+  @ApiProperty({ example: 20 })
   totalPeriodHours: number;
 }
 
-export interface TimesheetMatrixResponseDto {
-  startDate: string;
-  endDate: string;
-  days: string[];
-  members: TimesheetMemberDto[];
-  dailyTotals: Record<string, number>;
-  grandTotal: number;
-}
-
-export interface ProjectWorklogStatDto {
-  projectId: number;
-  projectName: string;
-  projectKey: string;
-  totalHours: number;
-}
-
-export interface UserWorklogStatDto {
+export class TimesheetIssueMemberDto {
+  @ApiProperty({ example: 1 })
   userId: number;
+
+  @ApiProperty({ example: 'Alice Developer' })
   fullName: string;
-  email: string;
+
+  @ApiPropertyOptional({ type: String, example: null, nullable: true })
   avatarUrl: string | null;
+
+  @ApiProperty({ example: { '2026-09-24': 4 }, type: 'object', additionalProperties: { type: 'number' } })
+  dailyHours: Record<string, number>;
+
+  @ApiProperty({ example: 8 })
+  totalHours: number;
+
+  @ApiProperty({ type: () => [TimesheetMemberWorklogDto] })
+  worklogs: TimesheetMemberWorklogDto[];
+}
+
+export class TimesheetIssueGroupDto {
+  @ApiProperty({ example: 42 })
+  issueId: number;
+
+  @ApiProperty({ example: 'BT-42' })
+  issueKey: string;
+
+  @ApiProperty({ example: 'Fix memory leak' })
+  issueTitle: string;
+
+  @ApiProperty({ example: 12 })
+  totalHours: number;
+
+  @ApiProperty({ example: { '2026-09-24': 4 }, type: 'object', additionalProperties: { type: 'number' } })
+  dailyHours: Record<string, number>;
+
+  @ApiProperty({ type: () => Object })
+  members: Record<number, TimesheetIssueMemberDto>;
+}
+
+export class TimesheetMatrixResponseDto {
+  @ApiProperty({ example: '2026-09-20' })
+  startDate: string;
+
+  @ApiProperty({ example: '2026-09-27' })
+  endDate: string;
+
+  @ApiProperty({ example: ['2026-09-20', '2026-09-21'] })
+  days: string[];
+
+  @ApiProperty({ type: () => [TimesheetMemberDto] })
+  members: TimesheetMemberDto[];
+
+  @ApiPropertyOptional({ type: () => [TimesheetIssueGroupDto] })
+  issues?: TimesheetIssueGroupDto[];
+
+  @ApiProperty({ example: { '2026-09-20': 8 }, type: 'object', additionalProperties: { type: 'number' } })
+  dailyTotals: Record<string, number>;
+
+  @ApiProperty({ example: 40 })
+  grandTotal: number;
+
+  @ApiPropertyOptional({ enum: ['user', 'issue'] })
+  groupBy?: 'user' | 'issue';
+}
+
+export class ProjectWorklogStatDto {
+  @ApiProperty({ example: 1 })
+  projectId: number;
+
+  @ApiProperty({ example: 'Core Platform' })
+  projectName: string;
+
+  @ApiProperty({ example: 'CORE' })
+  projectKey: string;
+
+  @ApiProperty({ example: 45.5 })
   totalHours: number;
 }
 
-export interface WorklogStatsResponseDto {
+export class UserWorklogStatDto {
+  @ApiProperty({ example: 1 })
+  userId: number;
+
+  @ApiProperty({ example: 'Alice Developer' })
+  fullName: string;
+
+  @ApiProperty({ example: 'alice@example.com' })
+  email: string;
+
+  @ApiPropertyOptional({ type: String, example: null, nullable: true })
+  avatarUrl: string | null;
+
+  @ApiProperty({ example: 38 })
+  totalHours: number;
+}
+
+export class WorklogStatsResponseDto {
+  @ApiProperty({ example: 120.5 })
   totalHoursLogged: number;
+
+  @ApiProperty({ example: 7.5 })
   hoursLoggedToday: number;
+
+  @ApiProperty({ example: 35 })
   hoursLoggedThisWeek: number;
+
+  @ApiProperty({ type: () => [ProjectWorklogStatDto] })
   byProject: ProjectWorklogStatDto[];
+
+  @ApiProperty({ type: () => [UserWorklogStatDto] })
   byUser: UserWorklogStatDto[];
 }

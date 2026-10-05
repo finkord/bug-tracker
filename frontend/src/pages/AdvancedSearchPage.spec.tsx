@@ -23,6 +23,7 @@ vi.mock('../api/queries', () => ({
   useDeleteSavedFilterMutation: () => ({ mutateAsync: mockDeleteFilterMutation }),
   useUpdateIssueStatusMutation: () => ({ mutateAsync: mockUpdateIssueStatusMutation }),
   useAssignIssueToMeMutation: () => ({ mutateAsync: vi.fn() }),
+  useValidateJqlQuery: () => ({ data: { isValid: true }, isLoading: false }),
 }));
 
 vi.mock('../components/kanban/IssueDetailsModal', () => ({

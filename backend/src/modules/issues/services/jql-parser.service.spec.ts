@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { BadRequestException } from '@nestjs/common';
-import { JqlParserService, JqlToken } from './jql-parser.service.js';
+import { JqlParserService } from './jql-parser.service.js';
 
 describe('JqlParserService', () => {
   let service: JqlParserService;
@@ -141,4 +141,28 @@ describe('JqlParserService', () => {
       expect(mockQb.andWhere).toHaveBeenCalledWith('issue.assigneeId IS NULL');
     });
   });
+
+  describe('validate', () => {
+    it('should return isValid: true and condition count for valid query', () => {
+      const res = service.validate('project = "CORE" AND status = "OPEN" ORDER BY priority DESC');
+      expect(res.isValid).toBe(true);
+      expect(res.conditionsCount).toBe(2);
+      expect(res.orderBy).toEqual({ field: 'priority', direction: 'DESC' });
+      expect(res.errorMessage).toBeUndefined();
+    });
+
+    it('should return isValid: true for empty query', () => {
+      const res = service.validate('');
+      expect(res.isValid).toBe(true);
+      expect(res.conditionsCount).toBe(0);
+    });
+
+    it('should return isValid: false with errorMessage for syntax errors', () => {
+      const res = service.validate('status === "INVALID"');
+      expect(res.isValid).toBe(false);
+      expect(res.conditionsCount).toBe(0);
+      expect(res.errorMessage).toBeDefined();
+    });
+  });
 });
+

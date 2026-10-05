@@ -33,12 +33,19 @@ export const worklogsApi = {
 
   getWorklogStats: () => request<WorklogStats>('/issues/worklogs/stats'),
 
-  getTeamTimesheetMatrix: (startDate?: string, endDate?: string, projectId?: number, userId?: number) => {
+  getTeamTimesheetMatrix: (
+    startDate?: string,
+    endDate?: string,
+    projectId?: number,
+    userId?: number,
+    groupBy?: 'user' | 'issue',
+  ) => {
     const params = new URLSearchParams();
     if (startDate) params.append('startDate', startDate);
     if (endDate) params.append('endDate', endDate);
     if (projectId) params.append('projectId', String(projectId));
     if (userId) params.append('userId', String(userId));
+    if (groupBy) params.append('groupBy', groupBy);
     const query = params.toString() ? `?${params.toString()}` : '';
     return request<TeamTimesheetMatrix>(`/issues/worklogs/matrix${query}`);
   },

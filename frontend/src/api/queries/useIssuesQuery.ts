@@ -267,3 +267,13 @@ export function useIssueHistoryQuery(issueId?: number) {
   });
 }
 
+export function useValidateJqlQuery(jql: string, enabled = true) {
+  return useQuery({
+    queryKey: ['issues', 'jql', 'validate', jql],
+    queryFn: () => api.validateJql(jql),
+    enabled: enabled && typeof jql === 'string',
+    staleTime: 60_000,
+  });
+}
+
+

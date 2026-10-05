@@ -10,7 +10,7 @@ import {
   useDeleteSavedFilterMutation,
   useUpdateIssueStatusMutation,
 } from '../api/queries';
-import type { IssueItem, IssueStatus } from '../api/client';
+import type { IssueStatus } from '../api/client';
 import { SearchToolbar } from '../components/search/SearchToolbar';
 import { BasicFilterBar } from '../components/search/BasicFilterBar';
 import { JqlEditorBar } from '../components/search/JqlEditorBar';
@@ -25,7 +25,7 @@ import type {
   BasicFilterCriteria,
   SavedFilterPreset,
 } from '../types/search';
-import { buildJqlFromFilters } from '../utils/jqlParser';
+import { buildJqlFromFilters } from '../utils/jqlBuilder';
 
 export const AdvancedSearchPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();

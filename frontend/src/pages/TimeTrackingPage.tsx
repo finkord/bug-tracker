@@ -111,7 +111,7 @@ export const TimeTrackingPage: React.FC = () => {
     data: matrix = null,
     isLoading: matrixLoading,
     refetch: refetchMatrix,
-  } = useTeamTimesheetMatrixQuery(dateRange.startDate, dateRange.endDate);
+  } = useTeamTimesheetMatrixQuery(dateRange.startDate, dateRange.endDate, undefined, undefined, groupBy);
 
   const [myLogsPage, setMyLogsPage] = useState<number>(1);
   const [myLogsLimit, setMyLogsLimit] = useState<number>(20);

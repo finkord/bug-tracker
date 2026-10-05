@@ -16,6 +16,7 @@ import type {
   WorklogStatsResponseDto,
   TimesheetMemberDto,
   TimesheetMemberWorklogDto,
+  TimesheetIssueGroupDto,
 } from '../dto/issue-response.dto.js';
 
 /**
@@ -213,6 +214,7 @@ export class IssueWorklogService {
     endDate?: string,
     projectId?: number,
     userId?: number,
+    groupBy: 'user' | 'issue' = 'user',
   ): Promise<TimesheetMatrixResponseDto> {
     const { startStr, endStr, days } = this.calculateDateRange(startDate, endDate);
     const accessibleProjectIds = await this.permissionEvaluator.getAccessibleProjectIds(user.id);
@@ -223,8 +225,10 @@ export class IssueWorklogService {
         endDate: endStr,
         days,
         members: [],
+        issues: [],
         dailyTotals: {},
         grandTotal: 0,
+        groupBy,
       };
     }
 
@@ -235,8 +239,10 @@ export class IssueWorklogService {
           endDate: endStr,
           days,
           members: [],
+          issues: [],
           dailyTotals: {},
           grandTotal: 0,
+          groupBy,
         };
       }
     }
@@ -352,13 +358,69 @@ export class IssueWorklogService {
       };
     });
 
+    const issueMap: Record<string, TimesheetIssueGroupDto> = {};
+    for (const log of logs) {
+      const issueId = log.issueId || 0;
+      const issueKey = log.issue
+        ? `${log.issue.project?.key || 'ISSUE'}-${log.issue.issueNum}`
+        : `ISSUE-${issueId || 'UNKNOWN'}`;
+      const issueTitle = log.issue?.title || issueKey;
+      const hours = log.timeSpentHours || 0;
+      const date = log.dateLogged;
+      const u = log.user;
+
+      if (!issueMap[issueKey]) {
+        issueMap[issueKey] = {
+          issueId,
+          issueKey,
+          issueTitle,
+          totalHours: 0,
+          dailyHours: {},
+          members: {},
+        };
+      }
+
+      issueMap[issueKey].totalHours = Number((issueMap[issueKey].totalHours + hours).toFixed(2));
+      issueMap[issueKey].dailyHours[date] = Number(((issueMap[issueKey].dailyHours[date] || 0) + hours).toFixed(2));
+
+      if (u) {
+        if (!issueMap[issueKey].members[u.id]) {
+          issueMap[issueKey].members[u.id] = {
+            userId: u.id,
+            fullName: u.fullName,
+            avatarUrl: u.avatarUrl || null,
+            dailyHours: {},
+            totalHours: 0,
+            worklogs: [],
+          };
+        }
+        const memberEntry = issueMap[issueKey].members[u.id];
+        memberEntry.totalHours = Number((memberEntry.totalHours + hours).toFixed(2));
+        memberEntry.dailyHours[date] = Number(((memberEntry.dailyHours[date] || 0) + hours).toFixed(2));
+        memberEntry.worklogs.push({
+          id: log.id,
+          issueId: log.issueId,
+          issueKey,
+          issueTitle: log.issue?.title,
+          timeSpentHours: log.timeSpentHours,
+          description: log.description || undefined,
+        });
+      }
+    }
+
+    const issues: TimesheetIssueGroupDto[] = Object.values(issueMap).sort(
+      (a, b) => b.totalHours - a.totalHours,
+    );
+
     return {
       startDate: startStr,
       endDate: endStr,
       days,
       members,
+      issues,
       dailyTotals,
       grandTotal: Number(grandTotal.toFixed(2)),
+      groupBy,
     };
   }
 

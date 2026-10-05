@@ -1,7 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
-import { parseJql } from '../../utils/jqlParser';
+import { useValidateJqlQuery } from '../../api/queries';
 
 interface JqlEditorBarProps {
   jqlQuery: string;
@@ -26,7 +26,23 @@ export const JqlEditorBar: React.FC<JqlEditorBarProps> = ({
   onClear,
   onSwitchToBasic,
 }) => {
-  const parsed = useMemo(() => parseJql(jqlQuery), [jqlQuery]);
+  const [debouncedQuery, setDebouncedQuery] = useState(jqlQuery);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(jqlQuery);
+    }, 250);
+    return () => clearTimeout(handler);
+  }, [jqlQuery]);
+
+  const { data: validationData, isLoading: isValidating } = useValidateJqlQuery(
+    debouncedQuery,
+    Boolean(debouncedQuery.trim()),
+  );
+
+  const isQueryEmpty = !jqlQuery.trim();
+  const isSyntaxValid = isQueryEmpty || (validationData?.isValid ?? true);
+  const errorMessage = validationData?.errorMessage;
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
@@ -42,19 +58,21 @@ export const JqlEditorBar: React.FC<JqlEditorBarProps> = ({
           <span className="text-xs font-bold uppercase tracking-wider text-[var(--md-sys-color-primary)]">
             JQL Query
           </span>
-          {jqlQuery.trim() ? (
-            parsed.isValid ? (
-              <Badge variant="success" className="rounded-full text-[11px] px-2.5 py-0.5">
-                Valid Syntax
-              </Badge>
-            ) : (
-              <Badge variant="error" className="rounded-full text-[11px] px-2.5 py-0.5">
-                Invalid Syntax
-              </Badge>
-            )
-          ) : (
+          {isQueryEmpty ? (
             <Badge variant="neutral" className="rounded-full text-[11px] px-2.5 py-0.5">
               Empty (All Issues)
+            </Badge>
+          ) : isValidating && debouncedQuery !== jqlQuery ? (
+            <Badge variant="neutral" className="rounded-full text-[11px] px-2.5 py-0.5 animate-pulse">
+              Validating...
+            </Badge>
+          ) : isSyntaxValid ? (
+            <Badge variant="success" className="rounded-full text-[11px] px-2.5 py-0.5">
+              Valid Syntax
+            </Badge>
+          ) : (
+            <Badge variant="error" className="rounded-full text-[11px] px-2.5 py-0.5">
+              Invalid Syntax
             </Badge>
           )}
         </div>
@@ -78,19 +96,19 @@ export const JqlEditorBar: React.FC<JqlEditorBarProps> = ({
           placeholder='e.g. project = "PROJ" AND status != "DONE" AND assignee = currentUser() ORDER BY priority DESC'
           rows={3}
           className={`w-full font-mono text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] placeholder-[var(--md-sys-color-on-surface-variant)]/60 focus:outline-none focus:ring-2 focus:ring-[var(--md-sys-color-primary)]/40 transition resize-y ${
-            !parsed.isValid && jqlQuery.trim()
+            !isSyntaxValid && !isQueryEmpty
               ? 'border-[var(--md-sys-color-error)] focus:border-[var(--md-sys-color-error)]'
               : 'border-[var(--md-sys-color-outline-variant)]/50 focus:border-[var(--md-sys-color-primary)]'
           }`}
         />
       </div>
 
-      {!parsed.isValid && parsed.errorMessage && (
+      {!isSyntaxValid && errorMessage && (
         <div className="text-xs text-[var(--md-sys-color-error)] font-medium flex items-center gap-1.5 px-1">
           <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
-          <span>{parsed.errorMessage}</span>
+          <span>{errorMessage}</span>
         </div>
       )}
 
@@ -120,7 +138,7 @@ export const JqlEditorBar: React.FC<JqlEditorBarProps> = ({
             variant="filled"
             size="sm"
             onClick={onSearch}
-            disabled={!parsed.isValid && jqlQuery.trim().length > 0}
+            disabled={!isSyntaxValid && !isQueryEmpty}
           >
             Run Query
           </Button>

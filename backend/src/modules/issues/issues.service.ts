@@ -15,6 +15,8 @@ import { IssueCommentsService } from './services/issue-comments.service.js';
 import { IssueAttachmentsService } from './services/issue-attachments.service.js';
 import { EventsGateway } from '../events/events.gateway.js';
 import { Attachment } from './entities/attachment.entity.js';
+import { JqlParserService } from './services/jql-parser.service.js';
+import type { JqlValidationResponseDto } from './dto/validate-jql.dto.js';
 import type {
   IssueDetailDto,
   WorklogItemDto,
@@ -38,7 +40,15 @@ export class IssuesService {
     private readonly issueCommentsService: IssueCommentsService,
     private readonly issueAttachmentsService: IssueAttachmentsService,
     private readonly eventsGateway: EventsGateway,
+    private readonly jqlParserService: JqlParserService,
   ) {}
+
+  /**
+   * Validates JQL syntax and returns parsed clauses/ordering information.
+   */
+  validateJql(jql: string): JqlValidationResponseDto {
+    return this.jqlParserService.validate(jql);
+  }
 
   /**
    * Retrieves list of issues with multi-criteria filtering.
@@ -188,8 +198,9 @@ export class IssuesService {
     endDate?: string,
     projectId?: number,
     userId?: number,
+    groupBy?: 'user' | 'issue',
   ): Promise<TimesheetMatrixResponseDto> {
-    return this.issueWorklogService.getTeamTimesheetMatrix(user, startDate, endDate, projectId, userId);
+    return this.issueWorklogService.getTeamTimesheetMatrix(user, startDate, endDate, projectId, userId, groupBy);
   }
 
   /**

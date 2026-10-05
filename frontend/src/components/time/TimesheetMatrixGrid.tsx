@@ -54,85 +54,10 @@ export const TimesheetMatrixGrid: React.FC<TimesheetMatrixGridProps> = ({
     return { dayName, dayNum, isWeekend, isToday };
   };
 
-  // Grouping by Issue transformation (Unconditionally called hook)
+  // Server-aggregated Grouping by Issue data
   const issueGroupingData = useMemo(() => {
-    if (!matrix || !matrix.members || groupBy !== 'issue') return [];
-
-    const issueMap: Record<
-      string,
-      {
-        issueId: number;
-        issueKey: string;
-        issueTitle: string;
-        totalHours: number;
-        dailyHours: Record<string, number>;
-        members: Record<
-          number,
-          {
-            userId: number;
-            fullName: string;
-            avatarUrl: string | null;
-            dailyHours: Record<string, number>;
-            totalHours: number;
-            worklogs: WorklogCellEntry[];
-          }
-        >;
-      }
-    > = {};
-
-    matrix.members.forEach((member) => {
-      if (!member.dailyWorklogs) return;
-
-      Object.entries(member.dailyWorklogs).forEach(([day, logs]) => {
-        logs.forEach((log) => {
-          const key = log.issueKey || `ISSUE-${log.issueId || 'UNKNOWN'}`;
-          if (!issueMap[key]) {
-            issueMap[key] = {
-              issueId: log.issueId || 0,
-              issueKey: key,
-              issueTitle: log.issueTitle || key,
-              totalHours: 0,
-              dailyHours: {},
-              members: {},
-            };
-          }
-
-          issueMap[key].totalHours += log.timeSpentHours;
-          issueMap[key].dailyHours[day] = (issueMap[key].dailyHours[day] || 0) + log.timeSpentHours;
-
-          if (!issueMap[key].members[member.userId]) {
-            issueMap[key].members[member.userId] = {
-              userId: member.userId,
-              fullName: member.fullName,
-              avatarUrl: member.avatarUrl,
-              dailyHours: {},
-              totalHours: 0,
-              worklogs: [],
-            };
-          }
-
-          issueMap[key].members[member.userId].totalHours += log.timeSpentHours;
-          issueMap[key].members[member.userId].dailyHours[day] =
-            (issueMap[key].members[member.userId].dailyHours[day] || 0) + log.timeSpentHours;
-          issueMap[key].members[member.userId].worklogs.push({
-            id: log.id,
-            issueId: log.issueId,
-            issueKey: log.issueKey,
-            issueTitle: log.issueTitle,
-            timeSpentHours: log.timeSpentHours,
-            description: log.description,
-            dateLogged: day,
-            user: {
-              id: member.userId,
-              fullName: member.fullName,
-              avatarUrl: member.avatarUrl,
-            },
-          });
-        });
-      });
-    });
-
-    return Object.values(issueMap).sort((a, b) => b.totalHours - a.totalHours);
+    if (!matrix || groupBy !== 'issue') return [];
+    return matrix.issues || [];
   }, [matrix, groupBy]);
 
   // Filtered members list

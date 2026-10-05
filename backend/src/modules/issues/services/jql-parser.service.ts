@@ -20,6 +20,33 @@ export interface JqlAst {
 @Injectable()
 export class JqlParserService {
   /**
+   * Validates a JQL string safely without throwing exceptions.
+   * Returns validation status, error messages, and parsed ordering/condition count.
+   */
+  validate(jqlString: string): {
+    isValid: boolean;
+    errorMessage?: string;
+    conditionsCount: number;
+    orderBy?: JqlAst['orderBy'];
+  } {
+    try {
+      const ast = this.parse(jqlString);
+      return {
+        isValid: true,
+        conditionsCount: ast.conditions.length,
+        orderBy: ast.orderBy,
+      };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Invalid JQL syntax';
+      return {
+        isValid: false,
+        errorMessage: message.replace(/^JQL parse failure:\s*/i, ''),
+        conditionsCount: 0,
+      };
+    }
+  }
+
+  /**
    * Parses a Jira-compatible JQL query string into structured AST.
    */
   parse(jqlString: string): JqlAst {
@@ -91,8 +118,8 @@ export class JqlParserService {
           continue;
         }
 
-        // Standard comparison operators: =, !=, ~, !~
-        const opMatch = trimmed.match(/^([a-zA-Z0-9_]+)\s*(=|!=|~|!~)\s*(.+)$/);
+        // Standard comparison operators: =, !=, ~, !~ (ensure not matched on == or ===)
+        const opMatch = trimmed.match(/^([a-zA-Z0-9_]+)\s*(!=|!~|=|~)(?!=)\s*(.+)$/);
         if (opMatch) {
           const field = this.normalizeField(opMatch[1]);
           const op = opMatch[2] as '=' | '!=' | '~' | '!~';

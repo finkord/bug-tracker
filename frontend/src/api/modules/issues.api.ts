@@ -14,6 +14,7 @@ import type {
   BulkOperationResultDto,
   IssueHistoryItem,
   VcsPullRequestItem,
+  JqlValidationResult,
 } from '../types/issues.types.js';
 import type { AuthTokens } from '../types/auth.types.js';
 
@@ -176,4 +177,10 @@ export const issuesApi = {
 
   getPullRequests: (issueId: number) =>
     request<VcsPullRequestItem[]>(`/issues/${issueId}/vcs/pull-requests`),
+
+  validateJql: (jql: string) =>
+    request<JqlValidationResult>('/issues/jql/validate', {
+      method: 'POST',
+      body: JSON.stringify({ jql }),
+    }),
 };
