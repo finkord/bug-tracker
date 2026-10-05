@@ -36,6 +36,13 @@ vi.mock('../store', () => ({
   }),
 }));
 
+vi.mock('../api/modules/issues.api', () => ({
+  issuesApi: {
+    getPullRequests: vi.fn().mockResolvedValue([]),
+    createPullRequest: vi.fn().mockResolvedValue({}),
+  },
+}));
+
 vi.mock('../api/queries', () => ({
   useIssueDetailQuery: () => mockUseIssueDetailQuery(),
   useCreateIssueMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),

@@ -21,6 +21,8 @@ export class IssueCommentsService {
     private readonly issueRepository: Repository<Issue>,
     @InjectRepository(Comment)
     private readonly commentRepository: Repository<Comment>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
     private readonly eventsGateway: EventsGateway,
     private readonly notificationsService: NotificationsService,
     @Optional()
@@ -31,10 +33,14 @@ export class IssueCommentsService {
    * Adds a discussion comment to an issue and broadcasts realtime socket event.
    */
   async addComment(issueId: number, text: string, author: User): Promise<CommentItemDto> {
-    const issue = await this.issueRepository.findOne({ where: { id: issueId } });
+    const issue = await this.issueRepository.findOne({
+      where: { id: issueId },
+      relations: { project: true },
+    });
     if (!issue) {
       throw new NotFoundException(`Issue #${issueId} not found`);
     }
+    const issueKey = issue.project?.key ? `${issue.project.key}-${issue.issueNum}` : `ISSUE-${issue.issueNum}`;
     const comment = this.commentRepository.create({
       issueId,
       issue,
@@ -57,23 +63,78 @@ export class IssueCommentsService {
     };
     this.eventsGateway.broadcastCommentAdded({ issueId, comment: commentPayload });
 
-    // Trigger notification to assignee or reporter
-    const notifyTargetUserId =
-      issue.assigneeId && issue.assigneeId !== author.id
-        ? issue.assigneeId
-        : issue.reporterId && issue.reporterId !== author.id
-          ? issue.reporterId
-          : null;
+    const notifiedUserIds = new Set<number>();
+    notifiedUserIds.add(author.id);
 
-    if (notifyTargetUserId) {
-      await this.notificationsService.createNotification({
-        userId: notifyTargetUserId,
-        actorId: author.id,
-        issueId: issue.id,
-        type: NotificationType.COMMENT_ADDED,
-        title: `New comment on ${issue.title}`,
-        message: `${author.fullName}: "${text.slice(0, 100)}${text.length > 100 ? '...' : ''}"`,
+    // Parse user mentions: @username, @first.last, etc.
+    const mentionRegex = /@([a-zA-Z0-9._-]+)/g;
+    const mentionedHandles = new Set<string>();
+    let match: RegExpExecArray | null;
+    while ((match = mentionRegex.exec(text)) !== null) {
+      if (match[1]) {
+        mentionedHandles.add(match[1].toLowerCase());
+      }
+    }
+
+    if (mentionedHandles.size > 0 && this.notificationsService) {
+      const handles = Array.from(mentionedHandles);
+      const qb = this.userRepository.createQueryBuilder('u');
+      qb.where('u.id != :authorId', { authorId: author.id });
+
+      const conditions: string[] = [];
+      const params: Record<string, any> = {};
+      handles.forEach((h, idx) => {
+        conditions.push(`LOWER(u.email) LIKE :emailPrefix${idx}`);
+        params[`emailPrefix${idx}`] = `${h}@%`;
+
+        conditions.push(`LOWER(u.email) = :emailExact${idx}`);
+        params[`emailExact${idx}`] = h;
+
+        conditions.push(`LOWER(REPLACE(u.fullName, ' ', '.')) = :nameDot${idx}`);
+        params[`nameDot${idx}`] = h;
+
+        conditions.push(`LOWER(REPLACE(u.fullName, ' ', '')) = :nameClean${idx}`);
+        params[`nameClean${idx}`] = h;
       });
+
+      qb.andWhere(`(${conditions.join(' OR ')})`, params);
+      const matchedUsers = await qb.take(50).getMany();
+
+      for (const u of matchedUsers) {
+        if (!notifiedUserIds.has(u.id)) {
+          notifiedUserIds.add(u.id);
+          await this.notificationsService.createNotification({
+            userId: u.id,
+            actorId: author.id,
+            issueId: issue.id,
+            type: NotificationType.MENTIONED,
+            title: `Mentioned in [${issueKey}] ${issue.title}`,
+            message: `${author.fullName} mentioned you in a comment: "${text.slice(0, 100)}${text.length > 100 ? '...' : ''}"`,
+          });
+        }
+      }
+    }
+
+    // Trigger notification to assignee or reporter if not author and not already notified via mention
+    if (this.notificationsService) {
+      const targets = new Set<number>();
+      if (issue.assigneeId && !notifiedUserIds.has(issue.assigneeId)) {
+        targets.add(issue.assigneeId);
+      }
+      if (issue.reporterId && !notifiedUserIds.has(issue.reporterId)) {
+        targets.add(issue.reporterId);
+      }
+
+      for (const targetUserId of targets) {
+        await this.notificationsService.createNotification({
+          userId: targetUserId,
+          actorId: author.id,
+          issueId: issue.id,
+          type: NotificationType.COMMENT_ADDED,
+          title: `New comment on [${issueKey}] ${issue.title}`,
+          message: `${author.fullName}: "${text.slice(0, 100)}${text.length > 100 ? '...' : ''}"`,
+        });
+      }
     }
 
     return commentPayload;

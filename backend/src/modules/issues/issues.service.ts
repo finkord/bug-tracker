@@ -85,8 +85,8 @@ export class IssuesService {
   /**
    * Updates relational sprint assignment.
    */
-  async updateSprint(id: number, sprintId: number | null): Promise<IssueDetailDto> {
-    return this.issueCoreService.updateSprint(id, sprintId);
+  async updateSprint(id: number, sprintId: number | null, user?: User): Promise<IssueDetailDto> {
+    return this.issueCoreService.updateSprint(id, sprintId, user);
   }
 
   /**

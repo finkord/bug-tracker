@@ -13,8 +13,11 @@ import { Issue } from '../../issues/entities/issue.entity.js';
 export enum NotificationType {
   MENTIONED = 'MENTIONED',
   ASSIGNED = 'ASSIGNED',
+  UNASSIGNED = 'UNASSIGNED',
   STATUS_CHANGED = 'STATUS_CHANGED',
   COMMENT_ADDED = 'COMMENT_ADDED',
+  PRIORITY_CHANGED = 'PRIORITY_CHANGED',
+  SPRINT_ASSIGNED = 'SPRINT_ASSIGNED',
 }
 
 @Entity('notifications')

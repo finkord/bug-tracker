@@ -96,4 +96,22 @@ describe('NotificationBell Component', () => {
       expect(notificationsApi.markAsRead).toHaveBeenCalledWith([1]);
     });
   });
+
+  it('toggles sound alerts and persists preference in localStorage', async () => {
+    renderComponent();
+
+    const bellBtn = screen.getByLabelText('Notifications Inbox');
+    fireEvent.click(bellBtn);
+
+    const soundBtn = await screen.findByLabelText('Mute sound alerts');
+    fireEvent.click(soundBtn);
+
+    expect(localStorage.getItem('bugtracker_sound_alerts_enabled')).toBe('false');
+    expect(await screen.findByLabelText('Enable sound alerts')).toBeInTheDocument();
+
+    const enableSoundBtn = screen.getByLabelText('Enable sound alerts');
+    fireEvent.click(enableSoundBtn);
+
+    expect(localStorage.getItem('bugtracker_sound_alerts_enabled')).toBe('true');
+  });
 });

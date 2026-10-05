@@ -123,7 +123,11 @@ class RealtimeSocketService {
   onNotificationNew(callback: (notification: any) => void) {
     const s = this.getSocket();
     s.on('notification:new', callback);
-    return () => { s.off('notification:new', callback); };
+    s.on('notification:received', callback);
+    return () => {
+      s.off('notification:new', callback);
+      s.off('notification:received', callback);
+    };
   }
 }
 

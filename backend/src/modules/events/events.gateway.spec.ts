@@ -153,6 +153,7 @@ describe('EventsGateway', () => {
         id: 'sock-5',
         handshake: { auth: { token: 'Bearer valid.jwt.token' }, headers: {} },
         disconnect: vi.fn(),
+        join: vi.fn(),
         data: {},
       };
       mockJwtService.verifyAsync.mockResolvedValue({
@@ -166,6 +167,7 @@ describe('EventsGateway', () => {
 
       expect(client.disconnect).not.toHaveBeenCalled();
       expect(client.data.user).toEqual(mockUser);
+      expect(client.join).toHaveBeenCalledWith('user_42');
     });
 
     it('should authenticate client when valid token provided via cookie header', async () => {
@@ -176,6 +178,7 @@ describe('EventsGateway', () => {
           headers: { cookie: 'other=123; accessToken=cookie.jwt.token; other2=456' },
         },
         disconnect: vi.fn(),
+        join: vi.fn(),
         data: {},
       };
       mockJwtService.verifyAsync.mockResolvedValue({
@@ -189,6 +192,7 @@ describe('EventsGateway', () => {
 
       expect(client.disconnect).not.toHaveBeenCalled();
       expect(client.data.user).toEqual(mockUser);
+      expect(client.join).toHaveBeenCalledWith('user_42');
       expect(mockRedisService.set).toHaveBeenCalled();
     });
   });

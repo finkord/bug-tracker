@@ -167,7 +167,8 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       // Attach authenticated user to socket data context
       client.data.user = user;
-      this.logger.log(`Authenticated user ${user.id} (${user.email}) connected: ${client.id}`);
+      await client.join?.(`user_${user.id}`);
+      this.logger.log(`Authenticated user ${user.id} (${user.email}) connected: ${client.id} and joined room user_${user.id}`);
     } catch (error) {
       this.logger.error(`Error during WebSocket connection authentication: ${error}`);
       client.disconnect(true);

@@ -4,6 +4,7 @@ import { IssueCommentsService } from './issue-comments.service.js';
 import { Issue } from '../entities/issue.entity.js';
 import { Comment } from '../entities/comment.entity.js';
 import { User, SystemRole } from '../../users/entities/user.entity.js';
+import { NotificationType } from '../../notifications/entities/notification.entity.js';
 
 describe('IssueCommentsService', () => {
   let service: IssueCommentsService;
@@ -49,9 +50,21 @@ describe('IssueCommentsService', () => {
       hasPermission: vi.fn().mockResolvedValue(true),
     };
 
+    const mockUserQueryBuilder = {
+      where: vi.fn().mockReturnThis(),
+      andWhere: vi.fn().mockReturnThis(),
+      take: vi.fn().mockReturnThis(),
+      getMany: vi.fn().mockResolvedValue([]),
+    };
+    const mockUserRepo = {
+      findOne: vi.fn(),
+      createQueryBuilder: vi.fn(() => mockUserQueryBuilder),
+    };
+
     service = new IssueCommentsService(
       mockIssueRepo,
       mockCommentRepo,
+      mockUserRepo as any,
       mockEventsGateway,
       mockNotificationsService,
       mockPermissionEvaluator as any,
@@ -78,6 +91,36 @@ describe('IssueCommentsService', () => {
           userId: 2,
           actorId: 1,
           issueId: 10,
+        }),
+      );
+    });
+
+    it('should parse @username mentions and dispatch MENTIONED notification', async () => {
+      // Arrange
+      const mentionedUser = {
+        id: 99,
+        email: 'colleague@test.com',
+        fullName: 'Colleague Dev',
+      };
+      const mockUserQueryBuilder = {
+        where: vi.fn().mockReturnThis(),
+        andWhere: vi.fn().mockReturnThis(),
+        take: vi.fn().mockReturnThis(),
+        getMany: vi.fn().mockResolvedValue([mentionedUser]),
+      };
+      (service as any).userRepository = {
+        createQueryBuilder: vi.fn(() => mockUserQueryBuilder),
+      };
+
+      // Act
+      await service.addComment(10, 'Hey @colleague please check this out', mockUser);
+
+      // Assert
+      expect(mockNotificationsService.createNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 99,
+          actorId: 1,
+          type: NotificationType.MENTIONED,
         }),
       );
     });

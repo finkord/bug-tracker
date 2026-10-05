@@ -5,6 +5,7 @@ import { Issue, IssueStatus, IssuePriority, IssueType } from '../entities/issue.
 import { User, SystemRole } from '../../users/entities/user.entity.js';
 import { Project } from '../../projects/entities/project.entity.js';
 import { ProjectPermission } from '../../rbac/entities/permission-grant.entity.js';
+import { NotificationType } from '../../notifications/entities/notification.entity.js';
 
 describe('IssueCoreService', () => {
   let service: IssueCoreService;
@@ -15,6 +16,7 @@ describe('IssueCoreService', () => {
   let mockIssueLinksService: any;
   let mockEventsGateway: any;
   let mockPermissionEvaluator: any;
+  let mockNotificationsService: any;
 
   const mockUser: User = {
     id: 1,
@@ -125,6 +127,10 @@ describe('IssueCoreService', () => {
       }),
     };
 
+    mockNotificationsService = {
+      createNotification: vi.fn().mockResolvedValue({ id: 1 }),
+    };
+
     service = new IssueCoreService(
       mockIssueRepo,
       mockHistoryRepo as any,
@@ -138,7 +144,7 @@ describe('IssueCoreService', () => {
       mockJqlParser as any,
       mockPermissionEvaluator as any,
       mockConfigService as any,
-      undefined,
+      mockNotificationsService as any,
       mockWebhooksService as any,
     );
   });
@@ -354,6 +360,36 @@ describe('IssueCoreService', () => {
       expect(mockIssueRepo.update).toHaveBeenCalledWith(10, { status: IssueStatus.RESOLVED });
       expect(mockEventsGateway.broadcastIssueUpdated).toHaveBeenCalled();
       expect(result).toBeDefined();
+    });
+
+    it('should notify both assignee and reporter on status change', async () => {
+      const issueWithBoth = {
+        ...mockIssue,
+        id: 10,
+        issueNum: 1,
+        assigneeId: 2,
+        reporterId: 3,
+        title: 'Important Feature',
+        project: { key: 'TEST' },
+      };
+      mockIssueRepo.findOne.mockResolvedValue(issueWithBoth);
+
+      await service.updateStatus(10, IssueStatus.RESOLVED, mockUser);
+
+      expect(mockNotificationsService.createNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 2,
+          type: NotificationType.STATUS_CHANGED,
+          title: 'Status Changed: [TEST-1] Important Feature',
+        }),
+      );
+      expect(mockNotificationsService.createNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 3,
+          type: NotificationType.STATUS_CHANGED,
+          title: 'Status Changed: [TEST-1] Important Feature',
+        }),
+      );
     });
 
     it('should auto-transition parent to RESOLVED when all sibling subtasks reach completion', async () => {
@@ -692,6 +728,30 @@ describe('IssueCoreService', () => {
       );
       expect(mockEventsGateway.broadcastIssueUpdated).toHaveBeenCalled();
       expect(result.id).toBe(10);
+    });
+
+    it('should notify assignee and reporter when priority is escalated to CRITICAL', async () => {
+      const issueWithPriority = {
+        ...mockIssue,
+        id: 10,
+        issueNum: 1,
+        priority: IssuePriority.LOW,
+        assigneeId: 2,
+        reporterId: 3,
+        title: 'Production Outage',
+        project: { key: 'TEST' },
+      };
+      mockIssueRepo.findOne.mockResolvedValue(issueWithPriority);
+
+      await service.update(10, { priority: IssuePriority.CRITICAL } as any, mockUser);
+
+      expect(mockNotificationsService.createNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 2,
+          type: NotificationType.PRIORITY_CHANGED,
+          title: 'Priority Escalated: [TEST-1] Production Outage',
+        }),
+      );
     });
   });
 });

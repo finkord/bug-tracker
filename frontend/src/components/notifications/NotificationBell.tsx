@@ -1,18 +1,101 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Check, Clock, CheckCheck, MessageSquare, ArrowRight, UserCheck, Tag, X } from 'lucide-react';
+import {
+  Bell,
+  Check,
+  Clock,
+  CheckCheck,
+  MessageSquare,
+  ArrowRight,
+  UserCheck,
+  UserMinus,
+  Tag,
+  Flame,
+  Zap,
+  Volume2,
+  VolumeX,
+  X,
+} from 'lucide-react';
 import { notificationsApi } from '../../api/modules/notifications.api.js';
 import { realtimeSocket } from '../../api/socket.js';
 import type { NotificationItem, NotificationType } from '../../api/types/notifications.types.js';
+
+/**
+ * Synthesizes a two-tone alert chime via Web Audio API without external audio asset downloads.
+ * Tone 1: 587.33 Hz (D5) for 80ms
+ * Tone 2: 880.00 Hz (A5) for 150ms with exponential gain decay
+ */
+export function playNotificationChime(): void {
+  try {
+    const isSoundEnabled = localStorage.getItem('bugtracker_sound_alerts_enabled');
+    if (isSoundEnabled === 'false') return;
+
+    const AudioContextClass =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextClass) return;
+
+    const ctx = new AudioContextClass();
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+
+    const now = ctx.currentTime;
+
+    // Tone 1: 587.33 Hz (D5) for 80ms
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(587.33, now);
+    gain1.gain.setValueAtTime(0.12, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.08);
+
+    // Tone 2: 880.00 Hz (A5) for 150ms starting at now + 0.08
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(880.00, now + 0.08);
+    gain2.gain.setValueAtTime(0.12, now + 0.08);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.23);
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(now + 0.08);
+    osc2.stop(now + 0.23);
+
+    setTimeout(() => {
+      ctx.close().catch(() => {});
+    }, 300);
+  } catch {
+    // Graceful fallback if AudioContext is blocked or unsupported
+  }
+}
 
 export const NotificationBell: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [filter, setFilter] = useState<'all' | 'unread'>('unread');
   const [focusedIndex, setFocusedIndex] = useState<number>(0);
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
+    return localStorage.getItem('bugtracker_sound_alerts_enabled') !== 'false';
+  });
   const dropdownRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+
+  const toggleSound = () => {
+    setSoundEnabled((prev) => {
+      const next = !prev;
+      localStorage.setItem('bugtracker_sound_alerts_enabled', String(next));
+      if (next) {
+        playNotificationChime();
+      }
+      return next;
+    });
+  };
 
   // 1. Fetch unread count
   const { data: countData } = useQuery({
@@ -32,10 +115,11 @@ export const NotificationBell: React.FC = () => {
 
   const notifications = notificationsData?.items ?? [];
 
-  // 3. Realtime socket listener
+  // 3. Realtime socket listener with audio chime
   useEffect(() => {
     const unsubscribe = realtimeSocket.onNotificationNew(() => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      playNotificationChime();
     });
     return () => {
       unsubscribe();
@@ -150,10 +234,16 @@ export const NotificationBell: React.FC = () => {
     switch (type) {
       case 'ASSIGNED':
         return <UserCheck className="w-4 h-4 text-[var(--md-sys-color-primary)]" />;
+      case 'UNASSIGNED':
+        return <UserMinus className="w-4 h-4 text-[var(--md-sys-color-outline)]" />;
       case 'COMMENT_ADDED':
         return <MessageSquare className="w-4 h-4 text-[var(--md-sys-color-tertiary)]" />;
       case 'STATUS_CHANGED':
         return <ArrowRight className="w-4 h-4 text-[var(--md-sys-color-secondary)]" />;
+      case 'PRIORITY_CHANGED':
+        return <Flame className="w-4 h-4 text-[var(--md-sys-color-error)]" />;
+      case 'SPRINT_ASSIGNED':
+        return <Zap className="w-4 h-4 text-[var(--md-sys-color-primary)]" />;
       case 'MENTIONED':
       default:
         return <Tag className="w-4 h-4 text-[var(--md-sys-color-primary)]" />;
@@ -185,9 +275,17 @@ export const NotificationBell: React.FC = () => {
       >
         <Bell className="w-4 h-4" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[var(--md-sys-color-error)] text-[var(--md-sys-color-on-error)] text-[10px] font-bold flex items-center justify-center border-2 border-[var(--md-sys-color-surface)] shadow-xs animate-pulse">
-            {unreadCount > 99 ? '99+' : unreadCount}
-          </span>
+          <>
+            {/* Unread indicator red dot */}
+            <span
+              className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-[var(--md-sys-color-error)] ring-2 ring-[var(--md-sys-color-surface)] animate-ping"
+              aria-hidden="true"
+            />
+            {/* Badge counter */}
+            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[var(--md-sys-color-error)] text-[var(--md-sys-color-on-error)] text-[10px] font-bold flex items-center justify-center border-2 border-[var(--md-sys-color-surface)] shadow-xs animate-in zoom-in-75 duration-200">
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          </>
         )}
       </button>
 
@@ -208,6 +306,21 @@ export const NotificationBell: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-1">
+              {/* Sound alert toggle button */}
+              <button
+                type="button"
+                onClick={toggleSound}
+                className={`w-7 h-7 rounded-md flex items-center justify-center cursor-pointer transition-colors ${
+                  soundEnabled
+                    ? 'text-[var(--md-sys-color-primary)] hover:bg-[var(--md-sys-color-surface-container-highest)]'
+                    : 'text-[var(--md-sys-color-outline)] hover:bg-[var(--md-sys-color-surface-container-highest)]'
+                }`}
+                title={soundEnabled ? 'Mute sound alerts' : 'Enable sound alerts'}
+                aria-label={soundEnabled ? 'Mute sound alerts' : 'Enable sound alerts'}
+              >
+                {soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+              </button>
+
               {unreadCount > 0 && (
                 <button
                   type="button"

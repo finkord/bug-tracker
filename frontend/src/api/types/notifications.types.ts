@@ -1,8 +1,11 @@
 export type NotificationType =
   | 'MENTIONED'
   | 'ASSIGNED'
+  | 'UNASSIGNED'
   | 'STATUS_CHANGED'
-  | 'COMMENT_ADDED';
+  | 'COMMENT_ADDED'
+  | 'PRIORITY_CHANGED'
+  | 'SPRINT_ASSIGNED';
 
 export interface NotificationItem {
   id: number;

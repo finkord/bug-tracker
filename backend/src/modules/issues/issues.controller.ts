@@ -178,8 +178,9 @@ export class IssuesController {
   async updateSprint(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateIssueSprintDto,
+    @CurrentUser() user: User,
   ) {
-    return this.issuesService.updateSprint(id, dto.sprintId ?? null);
+    return this.issuesService.updateSprint(id, dto.sprintId ?? null, user);
   }
 
   @Patch(':id')

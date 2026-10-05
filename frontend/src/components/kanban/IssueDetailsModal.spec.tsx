@@ -44,6 +44,13 @@ const mockUpdateStatusMutation = {
   isPending: false,
 };
 
+vi.mock('../../api/modules/issues.api', () => ({
+  issuesApi: {
+    getPullRequests: vi.fn().mockResolvedValue([]),
+    createPullRequest: vi.fn().mockResolvedValue({}),
+  },
+}));
+
 vi.mock('../../api/queries', () => ({
   useIssueDetailQuery: () => ({
     data: mockIssue,

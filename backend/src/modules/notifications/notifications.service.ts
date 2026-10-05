@@ -37,6 +37,7 @@ export class NotificationsService {
 
     try {
       this.eventsGateway.server?.to(`user_${dto.userId}`).emit('notification:received', saved);
+      this.eventsGateway.server?.to(`user_${dto.userId}`).emit('notification:new', saved);
     } catch (err) {
       this.logger.warn(`Failed to broadcast real-time notification to user ${dto.userId}: ${err}`);
     }

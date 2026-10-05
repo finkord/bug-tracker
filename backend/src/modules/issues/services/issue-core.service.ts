@@ -2,12 +2,12 @@ import { Injectable, NotFoundException, BadRequestException, ForbiddenException,
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
-import { Issue, IssueStatus, IssueType } from '../entities/issue.entity.js';
+import { Issue, IssueStatus, IssueType, IssuePriority } from '../entities/issue.entity.js';
 import { IssueHistory } from '../entities/issue-history.entity.js';
 import { Project } from '../../projects/entities/project.entity.js';
 import { User, SystemRole } from '../../users/entities/user.entity.js';
 import { Attachment } from '../entities/attachment.entity.js';
-import { Sprint } from '../../sprints/entities/sprint.entity.js';
+import { Sprint, SprintStatus } from '../../sprints/entities/sprint.entity.js';
 import { ProjectComponent } from '../../projects/entities/project-component.entity.js';
 import { EventsGateway } from '../../events/events.gateway.js';
 import { CreateIssueDto } from '../dto/create-issue.dto.js';
@@ -486,7 +486,10 @@ export class IssueCoreService {
    * Updates issue status and broadcasts change.
    */
   async updateStatus(id: number, status: IssueStatus, user?: User): Promise<IssueDetailDto> {
-    const issue = await this.issueRepository.findOne({ where: { id } });
+    const issue = await this.issueRepository.findOne({
+      where: { id },
+      relations: { project: true },
+    });
     if (!issue) {
       throw new NotFoundException(`Issue with ID #${id} not found`);
     }
@@ -495,20 +498,22 @@ export class IssueCoreService {
     await this.logHistory(id, 'status', previousStatus, status, user?.id);
 
     if (user && this.notificationsService) {
-      const targetUserId =
-        issue.assigneeId && issue.assigneeId !== user.id
-          ? issue.assigneeId
-          : issue.reporterId && issue.reporterId !== user.id
-            ? issue.reporterId
-            : null;
+      const issueKey = issue.project?.key ? `${issue.project.key}-${issue.issueNum}` : `ISSUE-${issue.issueNum}`;
+      const targets = new Set<number>();
+      if (issue.assigneeId && issue.assigneeId !== user.id) {
+        targets.add(issue.assigneeId);
+      }
+      if (issue.reporterId && issue.reporterId !== user.id) {
+        targets.add(issue.reporterId);
+      }
 
-      if (targetUserId) {
+      for (const targetUserId of targets) {
         await this.notificationsService.createNotification({
           userId: targetUserId,
           actorId: user.id,
           issueId: id,
           type: NotificationType.STATUS_CHANGED,
-          title: `Status changed: ${issue.title}`,
+          title: `Status Changed: [${issueKey}] ${issue.title}`,
           message: `${user.fullName} updated status to ${status}`,
         });
       }
@@ -559,13 +564,17 @@ export class IssueCoreService {
   /**
    * Updates relational sprint assignment.
    */
-  async updateSprint(id: number, sprintId: number | null): Promise<IssueDetailDto> {
-    const issue = await this.issueRepository.findOne({ where: { id } });
+  async updateSprint(id: number, sprintId: number | null, user?: User): Promise<IssueDetailDto> {
+    const issue = await this.issueRepository.findOne({
+      where: { id },
+      relations: { project: true },
+    });
     if (!issue) {
       throw new NotFoundException(`Issue with ID #${id} not found`);
     }
+    let sprint: Sprint | null = null;
     if (sprintId) {
-      const sprint = await this.sprintRepository.findOne({
+      sprint = await this.sprintRepository.findOne({
         where: { id: sprintId, projectId: issue.projectId },
       });
       if (!sprint) {
@@ -576,6 +585,25 @@ export class IssueCoreService {
       issue.sprintId = null;
     }
     await this.issueRepository.save(issue);
+
+    if (
+      sprint &&
+      sprint.status === SprintStatus.ACTIVE &&
+      issue.assigneeId &&
+      issue.assigneeId !== user?.id &&
+      this.notificationsService
+    ) {
+      const issueKey = issue.project?.key ? `${issue.project.key}-${issue.issueNum}` : `ISSUE-${issue.issueNum}`;
+      await this.notificationsService.createNotification({
+        userId: issue.assigneeId,
+        actorId: user?.id,
+        issueId: issue.id,
+        type: NotificationType.SPRINT_ASSIGNED,
+        title: `Sprint Assignment: [${issueKey}] ${issue.title}`,
+        message: `Issue assigned to active sprint "${sprint.name}"`,
+      });
+    }
+
     const updated = await this.findById(id);
     await this.eventsGateway.broadcastIssueUpdated(updated);
     return updated;
@@ -587,11 +615,13 @@ export class IssueCoreService {
   async update(id: number, dto: UpdateIssueDto, user?: User): Promise<IssueDetailDto> {
     const issue = await this.issueRepository.findOne({
       where: { id },
-      relations: { sprint: true, component: true, assignee: true, reporter: true },
+      relations: { sprint: true, component: true, assignee: true, reporter: true, project: true },
     });
     if (!issue) {
       throw new NotFoundException(`Issue with ID #${id} not found`);
     }
+    const issueKey = issue.project?.key ? `${issue.project.key}-${issue.issueNum}` : `ISSUE-${issue.issueNum}`;
+
     if (dto.title && dto.title.trim() !== issue.title) {
       await this.logHistory(id, 'title', issue.title, dto.title.trim(), user?.id);
       issue.title = dto.title.trim();
@@ -605,8 +635,33 @@ export class IssueCoreService {
       issue.issueType = dto.issueType;
     }
     if (dto.priority && dto.priority !== issue.priority) {
+      const oldPriority = issue.priority;
       await this.logHistory(id, 'priority', issue.priority, dto.priority, user?.id);
       issue.priority = dto.priority;
+
+      if (
+        (dto.priority === IssuePriority.HIGH || dto.priority === IssuePriority.CRITICAL) &&
+        user &&
+        this.notificationsService
+      ) {
+        const targets = new Set<number>();
+        if (issue.assigneeId && issue.assigneeId !== user.id) {
+          targets.add(issue.assigneeId);
+        }
+        if (issue.reporterId && issue.reporterId !== user.id) {
+          targets.add(issue.reporterId);
+        }
+        for (const targetId of targets) {
+          await this.notificationsService.createNotification({
+            userId: targetId,
+            actorId: user.id,
+            issueId: issue.id,
+            type: NotificationType.PRIORITY_CHANGED,
+            title: `Priority Escalated: [${issueKey}] ${issue.title}`,
+            message: `${user.fullName} escalated priority from ${oldPriority} to ${dto.priority}`,
+          });
+        }
+      }
     }
     if (dto.estimatedHours !== undefined && dto.estimatedHours !== issue.estimatedHours) {
       await this.logHistory(id, 'estimatedHours', issue.estimatedHours, dto.estimatedHours, user?.id);
@@ -624,6 +679,22 @@ export class IssueCoreService {
         await this.logHistory(id, 'sprint', prevSprint, sprint.name, user?.id);
         issue.sprintId = sprint.id;
         issue.sprint = sprint;
+
+        if (
+          sprint.status === SprintStatus.ACTIVE &&
+          issue.assigneeId &&
+          issue.assigneeId !== user?.id &&
+          this.notificationsService
+        ) {
+          await this.notificationsService.createNotification({
+            userId: issue.assigneeId,
+            actorId: user?.id,
+            issueId: issue.id,
+            type: NotificationType.SPRINT_ASSIGNED,
+            title: `Sprint Assignment: [${issueKey}] ${issue.title}`,
+            message: `Issue assigned to active sprint "${sprint.name}"`,
+          });
+        }
       } else {
         await this.logHistory(id, 'sprint', prevSprint, 'Backlog', user?.id);
         issue.sprintId = null;
@@ -631,6 +702,7 @@ export class IssueCoreService {
       }
     }
     if (dto.assigneeId !== undefined && dto.assigneeId !== issue.assigneeId) {
+      const oldAssigneeId = issue.assigneeId;
       let assigneeUser: User | null = null;
       if (dto.assigneeId) {
         assigneeUser = await this.userRepository.findOne({ where: { id: dto.assigneeId } });
@@ -644,15 +716,27 @@ export class IssueCoreService {
       issue.assigneeId = assigneeUser ? assigneeUser.id : null;
       issue.assignee = assigneeUser;
 
-      if (dto.assigneeId && dto.assigneeId !== user?.id && this.notificationsService) {
-        await this.notificationsService.createNotification({
-          userId: dto.assigneeId,
-          actorId: user?.id,
-          issueId: issue.id,
-          type: NotificationType.ASSIGNED,
-          title: `Assigned: ${issue.title}`,
-          message: `You were assigned to this issue by ${user?.fullName || 'a team member'}`,
-        });
+      if (this.notificationsService) {
+        if (dto.assigneeId && dto.assigneeId !== user?.id) {
+          await this.notificationsService.createNotification({
+            userId: dto.assigneeId,
+            actorId: user?.id,
+            issueId: issue.id,
+            type: NotificationType.ASSIGNED,
+            title: `Assigned: [${issueKey}] ${issue.title}`,
+            message: `You were assigned to [${issueKey}] by ${user?.fullName || 'a team member'}`,
+          });
+        }
+        if (oldAssigneeId && oldAssigneeId !== user?.id && oldAssigneeId !== dto.assigneeId) {
+          await this.notificationsService.createNotification({
+            userId: oldAssigneeId,
+            actorId: user?.id,
+            issueId: issue.id,
+            type: NotificationType.UNASSIGNED,
+            title: `Unassigned: [${issueKey}] ${issue.title}`,
+            message: `You were unassigned from [${issueKey}] by ${user?.fullName || 'a team member'}`,
+          });
+        }
       }
     }
     if (dto.reporterId !== undefined && dto.reporterId !== issue.reporterId) {
