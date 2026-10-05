@@ -1,3 +1,5 @@
+import type { components } from './api.generated.js';
+
 export interface ProjectItem {
   id: number;
   name: string;
@@ -20,13 +22,15 @@ export interface ProjectItem {
   updatedAt: string;
 }
 
-export interface CreateProjectPayload {
-  name: string;
-  key: string;
-  description?: string;
-  avatarUrl?: string | null;
+export type CreateProjectPayload = Omit<components['schemas']['CreateProjectDto'], 'wipLimits' | 'avatarUrl'> & {
   wipLimits?: Record<string, number> | null;
-}
+  avatarUrl?: string | null;
+};
+
+export type UpdateProjectPayload = Omit<components['schemas']['UpdateProjectDto'], 'wipLimits' | 'avatarUrl'> & {
+  wipLimits?: Record<string, number> | null;
+  avatarUrl?: string | null;
+};
 
 export interface ProjectQuickFilterItem {
   id: number;
@@ -39,19 +43,9 @@ export interface ProjectQuickFilterItem {
   updatedAt: string;
 }
 
-export interface CreateQuickFilterPayload {
-  name: string;
-  jqlQuery: string;
-  description?: string;
-  position?: number;
-}
+export type CreateQuickFilterPayload = components['schemas']['CreateQuickFilterDto'];
 
-export interface UpdateQuickFilterPayload {
-  name?: string;
-  jqlQuery?: string;
-  description?: string;
-  position?: number;
-}
+export type UpdateQuickFilterPayload = components['schemas']['UpdateQuickFilterDto'];
 
 export interface ProjectComponentItem {
   id: number;
@@ -69,11 +63,8 @@ export interface ProjectComponentItem {
   updatedAt: string;
 }
 
-export interface CreateComponentPayload {
-  name: string;
-  description?: string;
-  leadId?: number;
-}
+export type CreateComponentPayload = components['schemas']['CreateComponentDto'];
+
 
 export type ProjectVersionStatus = 'UNRELEASED' | 'RELEASED' | 'ARCHIVED';
 
@@ -109,6 +100,7 @@ export interface UpdateProjectVersionPayload {
 
 export interface ReleaseVersionPayload {
   moveUnresolvedIssuesToVersionId?: number;
+  releaseDate?: string;
 }
 
 export interface ReleaseNotesResponse {

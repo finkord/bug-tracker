@@ -9,7 +9,9 @@
     "lint": "oxlint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "api:generate": "openapi-typescript ../swagger.json -o src/api/types/api.generated.ts",
+    "api:sync": "curl -s http://localhost:3000/api/docs-json > ../swagger.json && npm run api:generate"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.23",
@@ -33,6 +35,7 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
+    "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@types/canvas-confetti": "^1.9.0",
@@ -41,6 +44,7 @@
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
     "jsdom": "^30.1.1",
+    "openapi-typescript": "^7.13.0",
     "oxlint": "^1.81.0",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",

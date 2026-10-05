@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, type CreateProjectPayload } from '../client';
+import { api, type CreateProjectPayload, type UpdateProjectPayload } from '../client';
 
 export const projectKeys = {
   all: ['projects'] as const,
@@ -49,8 +49,8 @@ export function useUpdateProjectMutation() {
       payload,
     }: {
       id: number;
-      data?: Partial<CreateProjectPayload> & { leadId?: number };
-      payload?: Partial<CreateProjectPayload> & { leadId?: number };
+      data?: UpdateProjectPayload;
+      payload?: UpdateProjectPayload;
     }) => api.updateProject(id, (data || payload)!),
     onSuccess: (updated) => {
       queryClient.invalidateQueries({ queryKey: projectKeys.lists() });

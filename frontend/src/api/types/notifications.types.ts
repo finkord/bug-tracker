@@ -1,3 +1,5 @@
+import type { components } from './api.generated.js';
+
 export type NotificationType =
   | 'MENTIONED'
   | 'ASSIGNED'
@@ -43,3 +45,7 @@ export interface PaginatedNotificationsResponse {
   limit: number;
   totalPages: number;
 }
+
+export type MarkNotificationsReadPayload = components['schemas']['MarkNotificationsReadDto'];
+export type SnoozeNotificationPayload = components['schemas']['SnoozeNotificationDto'];
+

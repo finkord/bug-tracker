@@ -2,6 +2,7 @@ import { request } from '../http.js';
 import type {
   ProjectItem,
   CreateProjectPayload,
+  UpdateProjectPayload,
   ProjectQuickFilterItem,
   CreateQuickFilterPayload,
   UpdateQuickFilterPayload,
@@ -20,7 +21,7 @@ export const projectsApi = {
       body: JSON.stringify(payload),
     }),
 
-  updateProject: (id: number, payload: Partial<CreateProjectPayload>) =>
+  updateProject: (id: number, payload: UpdateProjectPayload) =>
     request<ProjectItem>(`/projects/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(payload),

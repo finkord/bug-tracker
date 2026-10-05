@@ -1,3 +1,5 @@
+import type { components } from './api.generated.js';
+
 export type SprintStatus = 'ACTIVE' | 'PLANNED' | 'COMPLETED';
 
 export interface SprintItem {
@@ -19,93 +21,42 @@ export interface SprintItem {
   updatedAt: string;
 }
 
-export interface CreateSprintPayload {
-  name: string;
+export type CreateSprintPayload = Omit<components['schemas']['CreateSprintDto'], 'teamId' | 'goal' | 'startDate' | 'endDate' | 'capacityHours'> & {
+  teamId?: number | null;
   goal?: string | null;
   startDate?: string | null;
   endDate?: string | null;
-  status?: SprintStatus;
-  teamId?: number | null;
   capacityHours?: number | null;
-}
+  status?: SprintStatus;
+};
 
-export interface UpdateSprintPayload {
-  name?: string;
+export type UpdateSprintPayload = Omit<components['schemas']['UpdateSprintDto'], 'teamId' | 'goal' | 'startDate' | 'endDate' | 'capacityHours'> & {
+  teamId?: number | null;
   goal?: string | null;
   startDate?: string | null;
   endDate?: string | null;
-  status?: SprintStatus;
-  teamId?: number | null;
   capacityHours?: number | null;
-}
+  status?: SprintStatus;
+};
 
-export interface CompleteSprintPayload {
+export type CompleteSprintPayload = Omit<components['schemas']['CompleteSprintDto'], 'transferSprintId'> & {
   transferSprintId?: number | null;
-}
+};
 
-export interface SprintBurndownPoint {
-  date: string;
-  idealRemainingHours: number;
-  actualRemainingHours: number | null;
-  completedHours: number;
-  scopeHours: number;
-}
+export type SprintBurndownPoint = components['schemas']['SprintBurndownPointDto'] & {
+  idealRemainingHours?: number;
+  actualRemainingHours?: number | null;
+  scopeHours?: number;
+};
 
-export interface SprintBurndownResponse {
-  sprintId: number;
-  sprintName: string;
-  startDate: string | null;
-  endDate: string | null;
-  totalCapacityHours: number;
+export type SprintBurndownResponse = Omit<components['schemas']['SprintBurndownResponseDto'], 'points'> & {
+  totalCapacityHours?: number;
   points: SprintBurndownPoint[];
-}
+};
 
-export interface CfdDataPoint {
-  date: string;
-  dayLabel: string;
-  open: number;
-  inProgress: number;
-  review: number;
-  resolved: number;
-  closed: number;
-  total: number;
-}
-
-export interface CycleTimeItem {
-  issueId: number;
-  key: string;
-  title: string;
-  issueType: string;
-  priority: string;
-  cycleTimeDays: number;
-  leadTimeDays: number;
-  completedAt: string | null;
-}
-
-export interface CycleTimeSummary {
-  averageCycleTimeDays: number;
-  p50CycleTimeDays: number;
-  p85CycleTimeDays: number;
-  p95CycleTimeDays: number;
-  averageLeadTimeDays: number;
-  items: CycleTimeItem[];
-}
-
-export interface SprintVelocityItem {
-  sprintId: number;
-  sprintName: string;
-  status: string;
-  committedHours: number;
-  completedHours: number;
-  completedIssues: number;
-  totalIssues: number;
-}
-
-export interface SprintFlowMetricsResponse {
-  sprintId: number;
-  sprintName: string;
-  cfd: CfdDataPoint[];
-  cycleTime: CycleTimeSummary;
-  velocity: SprintVelocityItem[];
-}
+export type CfdDataPoint = components['schemas']['CfdDataPointDto'];
+export type CycleTimeItem = components['schemas']['CycleTimeItemDto'];
+export type CycleTimeSummary = components['schemas']['CycleTimeSummaryDto'];
+export type SprintVelocityItem = components['schemas']['SprintVelocityItemDto'];
+export type SprintFlowMetricsResponse = components['schemas']['SprintFlowMetricsResponseDto'];
 

@@ -231,7 +231,7 @@ export const IssueActivityTabs: React.FC<IssueActivityTabsProps> = ({
           ) : (
             <div className="space-y-3">
               {comments.map((comment) => {
-                const isAuthor = currentUser?.id === comment.authorId;
+                const isAuthor = currentUser?.id === comment.author?.id;
                 const canModify = isAuthor || currentUser?.systemRole === 'ADMIN';
                 const isEditing = editingCommentId === comment.id;
 
@@ -502,7 +502,7 @@ export const IssueActivityTabs: React.FC<IssueActivityTabsProps> = ({
           ) : (
             <div className="space-y-2.5">
               {worklogs.map((w) => {
-                const isAuthor = currentUser?.id === w.userId;
+                const isAuthor = currentUser?.id === w.user?.id;
                 const canDelete = isAuthor || currentUser?.systemRole === 'ADMIN';
 
                 return (

@@ -10,10 +10,10 @@ export class SprintBurndownPointDto {
   @ApiProperty({ example: 40 })
   idealHours: number;
 
-  @ApiPropertyOptional({ example: 38 })
+  @ApiPropertyOptional({ type: Number, nullable: true, example: 38 })
   remainingHours: number | null;
 
-  @ApiPropertyOptional({ example: 2 })
+  @ApiPropertyOptional({ type: Number, nullable: true, example: 2 })
   completedHours: number | null;
 
   @ApiProperty({ example: 40 })
@@ -30,10 +30,10 @@ export class SprintBurndownResponseDto {
   @ApiProperty({ example: 'Sprint 1 - Core Architecture' })
   sprintName: string;
 
-  @ApiPropertyOptional({ example: '2026-01-01' })
+  @ApiPropertyOptional({ type: String, nullable: true, example: '2026-01-01' })
   startDate: string | null;
 
-  @ApiPropertyOptional({ example: '2026-01-14' })
+  @ApiPropertyOptional({ type: String, nullable: true, example: '2026-01-14' })
   endDate: string | null;
 
   @ApiProperty({ example: 40 })

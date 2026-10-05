@@ -1,4 +1,6 @@
-export type SystemRole = 'ADMIN' | 'USER';
+import type { components } from './api.generated.js';
+
+export type SystemRole = components['schemas']['UpdateUserRoleDto']['role'];
 
 export interface UserPreferences {
   theme?: 'light' | 'dark';
@@ -72,21 +74,22 @@ export interface AssigneeUser {
   jobTitle?: string | null;
 }
 
-export interface RegisterPayload {
+export type RegisterPayload = Partial<components['schemas']['RegisterDto']> & {
   email: string;
-  password?: string;
   fullName: string;
   jobTitle?: string;
-  captchaToken?: string;
-}
+};
 
-export interface LoginPayload {
+export type LoginPayload = Partial<components['schemas']['LoginDto']> & {
   email: string;
-  password?: string;
-}
+};
 
-export interface ResetPasswordPayload {
-  token: string;
-  newPassword?: string;
+export type ResetPasswordPayload = components['schemas']['ResetPasswordDto'] & {
   password?: string;
-}
+};
+
+export type Verify2faPayload = components['schemas']['Verify2faDto'];
+export type Enable2faPayload = components['schemas']['Enable2faDto'];
+export type ForgotPasswordPayload = components['schemas']['ForgotPasswordDto'];
+export type SetPasswordPayload = components['schemas']['SetPasswordDto'];
+

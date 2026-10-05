@@ -1,12 +1,8 @@
+import type { components } from './api.generated.js';
 import type { UserProfile } from './auth.types.js';
 import type { ProjectItem } from './projects.types.js';
 
-export type TeamMemberRole =
-  | 'SCRUM_MASTER'
-  | 'PRODUCT_OWNER'
-  | 'DEVELOPER'
-  | 'QA_ENGINEER'
-  | 'DESIGNER';
+export type TeamMemberRole = components['schemas']['AddTeamMemberDto']['role'];
 
 export interface TeamMemberItem {
   id: number;
@@ -33,34 +29,16 @@ export interface TeamItem {
   updatedAt: string;
 }
 
-export interface CreateTeamPayload {
-  name: string;
-  description?: string;
-  projectId: number;
-  leadId?: number;
-  avatarUrl?: string;
-  sprintCapacityHours?: number;
-}
+export type CreateTeamPayload = components['schemas']['CreateTeamDto'];
 
-export interface UpdateTeamPayload {
-  name?: string;
-  description?: string;
-  projectId?: number;
+export type UpdateTeamPayload = Omit<components['schemas']['UpdateTeamDto'], 'leadId' | 'avatarUrl'> & {
   leadId?: number | null;
   avatarUrl?: string | null;
-  sprintCapacityHours?: number;
-}
+};
 
-export interface AddTeamMemberPayload {
-  userId: number;
-  role: TeamMemberRole;
-  weeklyCapacityHours?: number;
-}
+export type AddTeamMemberPayload = components['schemas']['AddTeamMemberDto'];
 
-export interface UpdateTeamMemberPayload {
-  role?: TeamMemberRole;
-  weeklyCapacityHours?: number;
-}
+export type UpdateTeamMemberPayload = components['schemas']['UpdateTeamMemberDto'];
 
 export interface TeamCapacityMemberBreakdown {
   id: number;

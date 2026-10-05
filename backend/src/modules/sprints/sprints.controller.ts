@@ -12,10 +12,12 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiOkResponse } from '@nestjs/swagger';
 import { SprintsService } from './sprints.service.js';
 import { CreateSprintDto } from './dto/create-sprint.dto.js';
 import { UpdateSprintDto, CompleteSprintDto } from './dto/update-sprint.dto.js';
+import { SprintBurndownResponseDto } from './dto/burndown.dto.js';
+import { SprintFlowMetricsResponseDto } from './dto/flow-metrics.dto.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { ProjectPermissionGuard } from '../rbac/guards/project-permission.guard.js';
 import { RequireProjectPermission } from '../rbac/decorators/require-permission.decorator.js';
@@ -90,6 +92,7 @@ export class SprintsController {
   @Get(':id/burndown')
   @RequireProjectPermission(ProjectPermission.BROWSE_PROJECTS)
   @ApiOperation({ summary: 'Get daily burndown trajectory and historical snapshots for a sprint' })
+  @ApiOkResponse({ type: SprintBurndownResponseDto })
   async getSprintBurndown(
     @Param('projectId', ParseIntPipe) _projectId: number,
     @Param('id', ParseIntPipe) id: number,
@@ -100,6 +103,7 @@ export class SprintsController {
   @Get(':id/flow-metrics')
   @RequireProjectPermission(ProjectPermission.BROWSE_PROJECTS)
   @ApiOperation({ summary: 'Get CFD cumulative flow, cycle time control stats, and historical velocity' })
+  @ApiOkResponse({ type: SprintFlowMetricsResponseDto })
   async getSprintFlowMetrics(
     @Param('projectId', ParseIntPipe) _projectId: number,
     @Param('id', ParseIntPipe) id: number,

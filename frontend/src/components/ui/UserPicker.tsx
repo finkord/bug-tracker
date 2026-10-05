@@ -133,7 +133,14 @@ export const UserPicker: React.FC<UserPickerProps> = ({
                     className="shrink-0 inline-flex"
                     title={`View profile for ${selectedUser.fullName || selectedUser.email || 'User'}`}
                   >
-                    <UserProfilePopover user={selectedUser}>
+                    <UserProfilePopover user={{
+                      id: selectedUser.id,
+                      fullName: selectedUser.fullName || selectedUser.email || 'User',
+                      email: selectedUser.email || '',
+                      avatarUrl: selectedUser.avatarUrl,
+                      systemRole: selectedUser.systemRole,
+                      jobTitle: 'jobTitle' in selectedUser ? (selectedUser as { jobTitle?: string | null }).jobTitle : undefined,
+                    }}>
                       <span className="cursor-pointer inline-flex hover:opacity-80 transition-opacity">
                         <Avatar
                           name={selectedUser.fullName || selectedUser.email || 'User'}

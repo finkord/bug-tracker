@@ -1,3 +1,4 @@
+import type { components } from './api.generated.js';
 import type { SystemRole } from './auth.types.js';
 import type { IssuePriority, IssueStatus } from './issues.types.js';
 
@@ -49,30 +50,47 @@ export interface TeamTimesheetMemberWorklog {
   issueTitle?: string;
   timeSpentHours: number;
   description?: string;
-}
-
-export interface TeamTimesheetMatrix {
-  startDate: string;
-  endDate: string;
-  days: string[];
-  members: Array<{
-    userId: number;
+  dateLogged?: string;
+  user?: {
+    id?: number;
     fullName: string;
-    email: string;
-    systemRole: SystemRole;
-    avatarUrl: string | null;
-    dailyHours: Record<string, number>;
-    dailyWorklogs?: Record<string, TeamTimesheetMemberWorklog[]>;
-    totalPeriodHours: number;
-  }>;
-  dailyTotals: Record<string, number>;
-  grandTotal: number;
+    avatarUrl?: string | null;
+  };
 }
 
-export interface WorklogStats {
-  totalHoursLogged: number;
-  hoursLoggedToday: number;
-  hoursLoggedThisWeek: number;
-  byProject: Array<{ projectId: number; projectName: string; projectKey: string; totalHours: number }>;
-  byUser: Array<{ userId: number; fullName: string; email: string; avatarUrl: string | null; totalHours: number }>;
+export interface TeamTimesheetIssueMember {
+  userId: number;
+  fullName: string;
+  avatarUrl: string | null;
+  dailyHours: Record<string, number>;
+  totalHours: number;
+  worklogs: TeamTimesheetMemberWorklog[];
 }
+
+export interface TeamTimesheetIssueGroup {
+  issueId: number;
+  issueKey: string;
+  issueTitle: string;
+  totalHours: number;
+  dailyHours: Record<string, number>;
+  members: Record<number, TeamTimesheetIssueMember>;
+}
+
+export type TeamTimesheetMember = Omit<components['schemas']['TimesheetMemberDto'], 'dailyWorklogs' | 'dailyHours' | 'avatarUrl'> & {
+  systemRole?: SystemRole;
+  avatarUrl?: string | null;
+  dailyHours: Record<string, number>;
+  dailyWorklogs?: Record<string, TeamTimesheetMemberWorklog[]>;
+};
+
+export type TeamTimesheetMatrix = Omit<components['schemas']['TimesheetMatrixResponseDto'], 'members' | 'issues' | 'dailyTotals'> & {
+  members: TeamTimesheetMember[];
+  issues?: TeamTimesheetIssueGroup[];
+  dailyTotals: Record<string, number>;
+};
+
+export type WorklogStats = components['schemas']['WorklogStatsResponseDto'];
+export type LogWorkPayload = components['schemas']['LogWorkDto'];
+export type CreateSavedFilterPayload = components['schemas']['CreateSavedFilterDto'];
+export type UpdateSavedFilterPayload = components['schemas']['UpdateSavedFilterDto'];
+

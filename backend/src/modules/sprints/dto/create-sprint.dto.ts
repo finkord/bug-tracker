@@ -46,6 +46,8 @@ export class CreateSprintDto {
   status?: SprintStatus;
 
   @ApiPropertyOptional({
+    type: Number,
+    nullable: true,
     example: 1,
     description: 'Associated Scrum team ID',
   })
@@ -53,6 +55,8 @@ export class CreateSprintDto {
   teamId?: number | null;
 
   @ApiPropertyOptional({
+    type: Number,
+    nullable: true,
     example: 80,
     description: 'Sprint capacity in hours',
   })

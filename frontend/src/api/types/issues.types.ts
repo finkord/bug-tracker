@@ -1,9 +1,10 @@
+import type { components } from './api.generated.js';
 import type { SystemRole } from './auth.types.js';
 
-export type IssueType = 'BUG' | 'TASK' | 'FEATURE' | 'IMPROVEMENT' | 'SUBTASK';
-export type IssueStatus = 'OPEN' | 'IN_PROGRESS' | 'REVIEW' | 'RESOLVED' | 'CLOSED';
-export type IssuePriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
-export type IssueLinkType = 'BLOCKS' | 'IS_BLOCKED_BY' | 'DUPLICATES' | 'RELATES_TO';
+export type IssueType = components['schemas']['CreateIssueDto']['issueType'] | 'EPIC';
+export type IssueStatus = NonNullable<components['schemas']['BulkUpdateIssuesDto']['status']>;
+export type IssuePriority = components['schemas']['CreateIssueDto']['priority'];
+export type IssueLinkType = components['schemas']['CreateIssueLinkDto']['linkType'];
 
 export interface IssueComment {
   id: number;
@@ -192,3 +193,7 @@ export interface VcsPullRequestItem {
   createdAt: string;
   updatedAt: string;
 }
+
+export type JqlValidationResult = components['schemas']['JqlValidationResponseDto'];
+export type ValidateJqlPayload = components['schemas']['ValidateJqlDto'];
+

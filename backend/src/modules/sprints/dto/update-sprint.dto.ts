@@ -6,6 +6,8 @@ export class UpdateSprintDto extends PartialType(CreateSprintDto) {}
 
 export class CompleteSprintDto {
   @ApiPropertyOptional({
+    type: Number,
+    nullable: true,
     example: 2,
     description: 'Target sprint ID to transfer incomplete issues to (null for Backlog)',
   })

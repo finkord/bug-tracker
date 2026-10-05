@@ -23,7 +23,8 @@
     "init:system": "tsx src/database/init-system.ts",
     "init:system:prod": "node dist/database/init-system.js",
     "seed": "tsx src/database/init-system.ts",
-    "seed:demo": "tsx src/database/seed.ts"
+    "seed:demo": "tsx src/database/seed.ts",
+    "swagger:export": "tsx src/scripts/export-swagger.ts"
   },
   "dependencies": {
     "@nestjs-modules/mailer": "^2.3.7",

@@ -120,7 +120,7 @@ export const ProjectVersionsTab: React.FC<ProjectVersionsTabProps> = ({ projectI
         );
       case 'ARCHIVED':
         return (
-          <Badge variant="outline" className="text-[10px] rounded-full px-2 py-0.5">
+          <Badge variant="neutral" className="text-[10px] rounded-full px-2 py-0.5">
             Archived
           </Badge>
         );
