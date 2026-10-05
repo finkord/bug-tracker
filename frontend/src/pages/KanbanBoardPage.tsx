@@ -30,7 +30,7 @@ import { KanbanFlatBoard } from '../components/kanban/KanbanFlatBoard';
 import { KanbanSwimlaneBoard } from '../components/kanban/KanbanSwimlaneBoard';
 import { KanbanMobileView } from '../components/kanban/KanbanMobileView';
 import { KanbanBoardSettingsModal } from '../components/kanban/KanbanBoardSettingsModal';
-import { SaveFilterModal } from '../components/kanban/SaveFilterModal';
+import { SaveFilterModal } from '../components/search/SaveFilterModal';
 import { FloatingBulkActionBar } from '../components/common/FloatingBulkActionBar';
 import { CompleteSprintModal } from '../components/agile/CompleteSprintModal';
 import { SprintAnalyticsModal } from '../components/kanban/SprintAnalyticsModal';
@@ -492,7 +492,8 @@ export const KanbanBoardPage: React.FC = () => {
     setIsSaveFilterModalOpen(true);
   };
 
-  const handleConfirmSaveFilter = async (filterName: string) => {
+  const handleConfirmSaveFilter = async (payload: { name: string } | string) => {
+    const filterName = typeof payload === 'string' ? payload : payload.name;
     try {
       const criteria = {
         issueType: filterType !== 'ALL' ? filterType : undefined,

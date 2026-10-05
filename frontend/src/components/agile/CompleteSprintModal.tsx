@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import type { IssueItem } from '../../api/client';
 import type { SprintDefinition } from '../../types/agile';
 import {
-  Modal,
-  Button,
+  FormModal,
   Select,
   SelectTrigger,
   SelectValue,
@@ -58,11 +57,15 @@ export const CompleteSprintModal: React.FC<CompleteSprintModalProps> = ({
   };
 
   return (
-    <Modal
+    <FormModal
       isOpen={isOpen}
       onClose={onClose}
       title={`Complete ${sprint.name}`}
       size="md"
+      onSubmit={handleComplete}
+      isSubmitting={isSubmitting}
+      submitLabel="Complete Sprint"
+      submitIcon={<CheckCircle2 className="w-3.5 h-3.5" />}
     >
       <div className="space-y-4 text-[var(--md-sys-color-on-surface)]">
         {/* Completed vs Incomplete stats box */}
@@ -113,24 +116,7 @@ export const CompleteSprintModal: React.FC<CompleteSprintModalProps> = ({
             </Select>
           </div>
         )}
-
-        {/* Modal Actions */}
-        <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[var(--md-sys-color-outline-variant)]">
-          <Button variant="ghost" size="sm" onClick={onClose} disabled={isSubmitting}>
-            Cancel
-          </Button>
-
-          <Button
-            variant="filled"
-            size="sm"
-            onClick={handleComplete}
-            isLoading={isSubmitting}
-            leftIcon={<CheckCircle2 className="w-3.5 h-3.5" />}
-          >
-            Complete Sprint
-          </Button>
-        </div>
       </div>
-    </Modal>
+    </FormModal>
   );
 };

@@ -13,3 +13,4 @@ export * from './UserPicker';
 export * from './EmptyState';
 export * from './ConfirmDialog';
 export * from './SearchInput';
+export * from './FormModal';

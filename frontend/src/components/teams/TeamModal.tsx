@@ -5,10 +5,10 @@ import {
   useUpdateTeamMutation,
   useUploadTeamAvatarMutation,
 } from '../../api/queries';
-import { Button, Input, Modal, UserPicker } from '../ui';
+import { Button, Input, FormModal, UserPicker } from '../ui';
 import { TeamAvatar } from './TeamAvatar';
 import { TEAM_PRESET_ICONS, TEAM_PRESET_COLORS } from './team-presets.js';
-import { Upload, Sparkles, AlertCircle, X } from 'lucide-react';
+import { Upload, Sparkles, X } from 'lucide-react';
 
 interface TeamModalProps {
   isOpen: boolean;
@@ -161,20 +161,19 @@ export const TeamModal: React.FC<TeamModalProps> = ({
   };
 
   return (
-    <Modal
+    <FormModal
       isOpen={isOpen}
       onClose={onClose}
       title={isEditing ? 'Edit Scrum Team' : 'Create Scrum Team'}
       description="Configure team identity, team lead, and sprint capacity."
       size="md"
+      onSubmit={handleSubmit}
+      error={error}
+      isSubmitting={loading}
+      submitLabel={isEditing ? 'Save Changes' : 'Create Team'}
+      submittingLabel="Saving..."
+      submitVariant="filled"
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {error && (
-          <div className="p-3 rounded-xl bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] text-xs flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
 
         {/* Visual Identity Section */}
         <div className="p-3.5 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/50 space-y-3">
@@ -367,16 +366,6 @@ export const TeamModal: React.FC<TeamModalProps> = ({
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex items-center justify-end gap-2 pt-3 border-t border-[var(--md-sys-color-outline-variant)]/30">
-          <Button type="button" variant="ghost" size="sm" onClick={onClose} disabled={loading}>
-            Cancel
-          </Button>
-          <Button type="submit" variant="primary" size="sm" disabled={loading}>
-            {loading ? 'Saving...' : isEditing ? 'Save Changes' : 'Create Team'}
-          </Button>
-        </div>
-      </form>
-    </Modal>
+    </FormModal>
   );
 };

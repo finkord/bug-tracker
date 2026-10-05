@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { SavedFilterPreset } from '../../types/search';
-import { Modal, Button, Input, ConfirmDialog } from '../ui';
+import { FormModal, Button, Input, ConfirmDialog } from '../ui';
 import { Star, Trash2 } from 'lucide-react';
 
 interface EditFilterModalProps {
@@ -73,8 +73,28 @@ export const EditFilterModal: React.FC<EditFilterModalProps> = ({
 
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} title="Edit Saved Filter" size="md">
-      <form onSubmit={handleSubmit} className="space-y-4 pt-1">
+      <FormModal
+        isOpen={isOpen}
+        onClose={onClose}
+        title="Edit Saved Filter"
+        size="md"
+        onSubmit={handleSubmit}
+        error={error}
+        submitLabel="Save Changes"
+        extraFooter={
+          onDelete && (
+            <Button
+              variant="danger-tonal"
+              size="sm"
+              type="button"
+              leftIcon={<Trash2 className="w-3.5 h-3.5" />}
+              onClick={handleDelete}
+            >
+              Delete
+            </Button>
+          )
+        }
+      >
         <div>
           <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface)] mb-1.5">
             Filter Name <span className="text-[var(--md-sys-color-error)]">*</span>
@@ -88,9 +108,6 @@ export const EditFilterModal: React.FC<EditFilterModalProps> = ({
             placeholder="Filter title..."
             autoFocus
           />
-          {error && (
-            <p className="text-xs text-[var(--md-sys-color-error)] mt-1 font-medium">{error}</p>
-          )}
         </div>
 
         <div>
@@ -137,42 +154,17 @@ export const EditFilterModal: React.FC<EditFilterModalProps> = ({
             <span>Starred / Quick-Access Filter</span>
           </div>
         </label>
+      </FormModal>
 
-        <div className="flex items-center justify-between pt-4 border-t border-[var(--md-sys-color-outline-variant)]">
-          <div>
-            {onDelete && (
-              <Button
-                variant="danger-tonal"
-                size="sm"
-                type="button"
-                leftIcon={<Trash2 className="w-3.5 h-3.5" />}
-                onClick={handleDelete}
-              >
-                Delete
-              </Button>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" type="button" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button variant="filled" type="submit">
-              Save Changes
-            </Button>
-          </div>
-        </div>
-      </form>
-    </Modal>
-
-    <ConfirmDialog
-      isOpen={showDeleteConfirm}
-      onClose={() => setShowDeleteConfirm(false)}
-      onConfirm={confirmDelete}
-      title="Delete Saved Filter"
-      description={`Are you sure you want to delete filter "${filter.name}"? This action cannot be undone.`}
-      confirmLabel="Delete Filter"
-      variant="danger"
-    />
-  </>
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={confirmDelete}
+        title="Delete Saved Filter"
+        description={`Are you sure you want to delete filter "${filter.name}"? This action cannot be undone.`}
+        confirmLabel="Delete Filter"
+        variant="danger"
+      />
+    </>
   );
 };

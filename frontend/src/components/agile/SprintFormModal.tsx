@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { SprintDefinition } from '../../types/agile';
 import { useTeamsQuery } from '../../api/queries/useTeamsQuery.js';
 import { Calendar, Sparkles, Play } from 'lucide-react';
-import { Button, Input, Modal, Tabs, TabsList, TabsTrigger } from '../ui';
+import { Button, Input, FormModal, Tabs, TabsList, TabsTrigger } from '../ui';
 
 interface SprintFormModalProps {
   isOpen: boolean;
@@ -41,7 +41,7 @@ export const SprintFormModal: React.FC<SprintFormModalProps> = ({
       if (editingSprint) {
         setName(editingSprint.name);
         setGoal(editingSprint.goal || '');
-        setTeamId(editingSprint.teamId);
+        setTeamId(editingSprint.teamId ?? undefined);
         setCapacityHours(
           editingSprint.capacityHours ?? editingSprint.team?.sprintCapacityHours ?? '',
         );
@@ -128,13 +128,22 @@ export const SprintFormModal: React.FC<SprintFormModalProps> = ({
       : 'Create New Sprint';
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={modalTitle} size="md">
-      <form onSubmit={handleSubmit} className="space-y-4 text-[var(--md-sys-color-on-surface)]">
-        {error && (
-          <div className="p-3 rounded-xl bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] text-xs font-semibold">
-            {error}
-          </div>
-        )}
+    <FormModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={modalTitle}
+      size="md"
+      onSubmit={handleSubmit}
+      error={error}
+      submitLabel={mode === 'start' ? 'Start Sprint' : mode === 'edit' ? 'Save Changes' : 'Create Sprint'}
+      submitIcon={
+        mode === 'start' ? (
+          <Play className="w-3.5 h-3.5 fill-current" />
+        ) : (
+          <Sparkles className="w-3.5 h-3.5" />
+        )
+      }
+    >
 
         {/* Sprint Name Input */}
         <Input
@@ -246,28 +255,6 @@ export const SprintFormModal: React.FC<SprintFormModalProps> = ({
           </div>
         </div>
 
-        {/* Modal Actions */}
-        <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[var(--md-sys-color-outline-variant)]">
-          <Button variant="ghost" size="sm" type="button" onClick={onClose}>
-            Cancel
-          </Button>
-
-          <Button
-            variant="filled"
-            size="sm"
-            type="submit"
-            leftIcon={
-              mode === 'start' ? (
-                <Play className="w-3.5 h-3.5 fill-current" />
-              ) : (
-                <Sparkles className="w-3.5 h-3.5" />
-              )
-            }
-          >
-            {mode === 'start' ? 'Start Sprint' : mode === 'edit' ? 'Save Changes' : 'Create Sprint'}
-          </Button>
-        </div>
-      </form>
-    </Modal>
+    </FormModal>
   );
 };
