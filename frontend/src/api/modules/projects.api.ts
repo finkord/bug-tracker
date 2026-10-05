@@ -1,4 +1,4 @@
-import { request } from '../http.js';
+import { request, uploadFile } from '../http.js';
 import type {
   ProjectItem,
   CreateProjectPayload,
@@ -120,34 +120,12 @@ export const projectsApi = {
       `/projects/${projectId}/versions/${versionId}/release-notes`,
     ),
 
-  uploadProjectAvatar: async (
-    projectId: number,
-    file: File,
-  ): Promise<{ message: string; avatarUrl: string }> => {
-    const formData = new FormData();
-    formData.append('avatar', file);
-
-    const token = localStorage.getItem('accessToken');
-    const headers: Record<string, string> = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    const { API_BASE_URL } = await import('../http.js');
-    const res = await fetch(`${API_BASE_URL}/projects/${projectId}/avatar/upload`, {
-      method: 'POST',
-      credentials: 'include',
-      headers,
-      body: formData,
-    });
-
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.message || 'Failed to upload project avatar');
-    }
-
-    return res.json();
-  },
+  uploadProjectAvatar: (projectId: number, file: File) =>
+    uploadFile<{ message: string; avatarUrl: string }>(
+      `/projects/${projectId}/avatar/upload`,
+      file,
+      'avatar',
+    ),
 
   updateProjectAvatar: (projectId: number, avatarUrl: string) =>
     request<{ message: string; avatarUrl: string }>(`/projects/${projectId}/avatar`, {

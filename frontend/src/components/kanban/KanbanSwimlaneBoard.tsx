@@ -1,9 +1,8 @@
 import React, { useState, useMemo, useRef } from 'react';
 import type { IssueItem, IssueStatus, IssuePriority, AssigneeUser } from '../../api/client';
-import type { KanbanSettings } from '../../types/kanban';
-import { KANBAN_COLUMNS } from '../../types/kanban';
-import { useTicketDragStore } from '../../store/useTicketDragStore';
-import { IssueCard } from './IssueCard';
+import type { KanbanSettings } from '../../types/kanban.js';
+import { KANBAN_COLUMNS } from '../../types/kanban.js';
+import { IssueCard } from './IssueCard.js';
 import { Avatar } from '../common/Avatar';
 import { Badge } from '../ui';
 import {
@@ -227,19 +226,12 @@ export const KanbanSwimlaneBoard: React.FC<KanbanSwimlaneBoardProps> = ({
     swimlaneGroups.every((g) => Boolean(collapsedLanes[g.key]));
 
   const cellCounters = useRef<Record<string, number>>({});
-  const isStoreDragging = useTicketDragStore((s) => s.isDragging);
-  const hoverTarget = useTicketDragStore((s) => s.hoverTarget);
 
   const isCellTargeted = (
-    laneAssigneeId: number | null,
-    colStatus: IssueStatus,
+    _laneAssigneeId: number | null,
+    _colStatus: IssueStatus,
     cellKey: string,
-  ) =>
-    dragOverTarget === cellKey ||
-    (isStoreDragging &&
-      hoverTarget?.type === 'cell' &&
-      hoverTarget.status === colStatus &&
-      hoverTarget.assigneeId === laneAssigneeId);
+  ) => dragOverTarget === cellKey;
 
   // Drag and Drop handlers
   const handleDragEnter = (e: React.DragEvent, targetKey: string) => {

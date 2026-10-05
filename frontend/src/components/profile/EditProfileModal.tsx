@@ -1,8 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../../store';
 import { api, usersApi } from '../../api/client';
-import { User, Briefcase, UploadCloud, Trash2 } from 'lucide-react';
-import { FormModal } from '../ui';
+import { User, Briefcase } from 'lucide-react';
+import { FormModal, AvatarPicker } from '../ui';
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -12,7 +12,6 @@ interface EditProfileModalProps {
 
 /**
  * Material 3 Modal for updating profile details (Full Name, Job Title, Avatar) with native SeaweedFS storage.
- * Only accepts direct image file uploads from the device.
  */
 export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   isOpen,
@@ -23,40 +22,12 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
 
   const [fullName, setFullName] = useState(user?.fullName || '');
   const [jobTitle, setJobTitle] = useState(user?.jobTitle || '');
-  const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || '');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [filePreview, setFilePreview] = useState<string | null>(null);
   const [isAvatarRemoved, setIsAvatarRemoved] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!user) return null;
-
-  const handleFileSelect = (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      setError('Please choose an image file (PNG, JPEG, WEBP, GIF, SVG)');
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setError('File size must not exceed 5MB');
-      return;
-    }
-    setError(null);
-    setSelectedFile(file);
-    setIsAvatarRemoved(false);
-    const reader = new FileReader();
-    reader.onload = (e) => setFilePreview(e.target?.result as string);
-    reader.readAsDataURL(file);
-  };
-
-  const handleRemoveAvatar = () => {
-    setSelectedFile(null);
-    setFilePreview(null);
-    setAvatarUrl('');
-    setIsAvatarRemoved(true);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
@@ -134,76 +105,21 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
         </div>
       </div>
 
-      <div>
-        <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] mb-2">
-          Profile Photo (Images only)
-        </label>
-
-        {/* Hidden file input */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) handleFileSelect(file);
-          }}
-        />
-
-        {filePreview || (avatarUrl && !isAvatarRemoved) ? (
-          <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/40">
-            <div className="flex items-center gap-3">
-              <img
-                src={filePreview || avatarUrl}
-                alt="Profile avatar preview"
-                className="w-12 h-12 rounded-xl object-cover border border-[var(--md-sys-color-outline-variant)]/40 shadow-xs"
-              />
-              <div>
-                <p className="text-xs font-semibold text-[var(--md-sys-color-on-surface)] truncate max-w-[200px]">
-                  {selectedFile ? selectedFile.name : 'Current Profile Photo'}
-                </p>
-                <p className="text-[10px] text-[var(--md-sys-color-on-surface-variant)]">
-                  {selectedFile
-                    ? `${(Number(selectedFile.size) / 1024).toFixed(1)} KB (SeaweedFS storage)`
-                    : 'Stored in SeaweedFS'}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="px-2.5 py-1.5 rounded-xl text-xs font-medium text-[var(--md-sys-color-primary)] hover:bg-[var(--md-sys-color-primary-container)]/20 transition-colors cursor-pointer"
-              >
-                Change
-              </button>
-              <button
-                type="button"
-                onClick={handleRemoveAvatar}
-                className="p-1.5 rounded-xl text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/30 transition-colors cursor-pointer"
-                title="Remove avatar"
-                aria-label="Remove avatar"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div
-            onClick={() => fileInputRef.current?.click()}
-            className="flex flex-col items-center justify-center gap-2 p-5 rounded-2xl border-2 border-dashed border-[var(--md-sys-color-outline-variant)] hover:border-[var(--md-sys-color-primary)] hover:bg-[var(--md-sys-color-surface-container)] cursor-pointer transition-all text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] text-center select-none"
-          >
-            <div className="w-10 h-10 rounded-full bg-[var(--md-sys-color-surface-container-high)] flex items-center justify-center">
-              <UploadCloud className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-xs font-semibold block">Click to upload photo</span>
-              <span className="text-[11px] opacity-70 block mt-0.5">PNG, JPEG, WEBP, GIF, SVG up to 5MB</span>
-            </div>
-          </div>
-        )}
-      </div>
+      <AvatarPicker
+        name={fullName || user.fullName}
+        initialAvatarUrl={user.avatarUrl}
+        allowPresets={false}
+        onChange={(val) => {
+          if (val.mode === 'upload' && val.file) {
+            setSelectedFile(val.file);
+            setIsAvatarRemoved(false);
+          } else if (val.mode === 'default' && !val.previewUrl) {
+            setSelectedFile(null);
+            setIsAvatarRemoved(true);
+          }
+        }}
+        onError={setError}
+      />
     </FormModal>
   );
 };

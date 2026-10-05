@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useProjectsQuery, useCreateProjectMutation } from '../api/queries';
 import { CreateProjectSchema } from '../schemas';
-import { Button, Input, Modal, Badge } from '../components/ui';
-import { ProjectAvatar } from '../components/projects/ProjectAvatar';
+import { Button, Input, Modal, Badge, EntityAvatar } from '../components/ui/index.js';
 import {
   FolderGit2,
   Plus,
@@ -153,7 +152,7 @@ export const ProjectsPage: React.FC = () => {
               <div className="p-5 space-y-3">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2.5">
-                    <ProjectAvatar
+                    <EntityAvatar
                       name={project.name}
                       projectKey={project.key}
                       avatarUrl={project.avatarUrl}

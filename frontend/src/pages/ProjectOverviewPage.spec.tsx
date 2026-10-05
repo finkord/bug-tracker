@@ -72,6 +72,17 @@ vi.mock('../api/queries', () => ({
   useReleaseProjectVersionMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useIssueHistoryQuery: () => ({ data: [], isLoading: false }),
   useAssignIssueToMeMutation: () => ({ mutateAsync: vi.fn() }),
+  useUpdateIssueSprintMutation: () => ({ mutateAsync: vi.fn() }),
+  useDeleteAttachmentMutation: () => ({ mutateAsync: vi.fn() }),
+  useUserDetailQuery: () => ({ data: null, isLoading: false }),
+  useUpdateIssueCommentMutation: () => ({ mutateAsync: vi.fn() }),
+  useDeleteIssueCommentMutation: () => ({ mutateAsync: vi.fn() }),
+  useDeleteWorklogMutation: () => ({ mutateAsync: vi.fn() }),
+  issueKeys: {
+    lists: () => ['issues', 'list'],
+    details: () => ['issues', 'detail'],
+    detail: (id: any) => ['issues', 'detail', id],
+  },
 }));
 
 vi.mock('../store', () => ({

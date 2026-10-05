@@ -116,6 +116,7 @@ export interface IssueItem {
   subtasksCount?: number;
   parent?: IssueItem | null;
   subtasks?: IssueItem[];
+  order?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -135,7 +136,11 @@ export interface CreateIssuePayload {
   affectsVersionId?: number | null;
   labels?: string[];
   parentId?: number | null;
+  order?: number;
 }
+
+export type WorkflowTransitionItem = components['schemas']['WorkflowTransitionDto'];
+export type ReorderIssuePayload = components['schemas']['ReorderIssueDto'];
 
 export interface BulkUpdateIssuesDto {
   issueIds: number[];

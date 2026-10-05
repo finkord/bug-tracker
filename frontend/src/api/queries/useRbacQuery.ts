@@ -1,51 +1,66 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../client';
-import { projectKeys } from './useProjectsQuery';
-import { userKeys } from './useUsersQuery';
+import { queryOptions, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '../client.js';
+import { projectKeys } from './useProjectsQuery.js';
+import { userKeys } from './useUsersQuery.js';
 
-export const rbacKeys = {
+export const rbacQueries = {
   all: ['rbac'] as const,
-  groups: () => [...rbacKeys.all, 'groups'] as const,
-  roles: () => [...rbacKeys.all, 'roles'] as const,
-  permissionSchemes: () => [...rbacKeys.all, 'permission-schemes'] as const,
-  permissionScheme: (id: number) => [...rbacKeys.permissionSchemes(), id] as const,
-  securitySchemes: () => [...rbacKeys.all, 'security-schemes'] as const,
+  groups: () =>
+    queryOptions({
+      queryKey: [...rbacQueries.all, 'groups'] as const,
+      queryFn: () => api.getGroups(),
+    }),
+  roles: () =>
+    queryOptions({
+      queryKey: [...rbacQueries.all, 'roles'] as const,
+      queryFn: () => api.getProjectRoles(),
+    }),
+  permissionSchemes: () =>
+    queryOptions({
+      queryKey: [...rbacQueries.all, 'permission-schemes'] as const,
+      queryFn: () => api.getPermissionSchemes(),
+    }),
+  permissionScheme: (id: number) =>
+    queryOptions({
+      queryKey: [...rbacQueries.permissionSchemes().queryKey, id] as const,
+      queryFn: () => api.getPermissionScheme(id),
+      enabled: typeof id === 'number' && !isNaN(id),
+    }),
+  securitySchemes: () =>
+    queryOptions({
+      queryKey: [...rbacQueries.all, 'security-schemes'] as const,
+      queryFn: () => api.getSecuritySchemes(),
+    }),
+};
+
+// Aliased for full backwards compatibility
+export const rbacKeys = {
+  all: rbacQueries.all,
+  groups: () => rbacQueries.groups().queryKey,
+  roles: () => rbacQueries.roles().queryKey,
+  permissionSchemes: () => rbacQueries.permissionSchemes().queryKey,
+  permissionScheme: (id: number) => rbacQueries.permissionScheme(id).queryKey,
+  securitySchemes: () => rbacQueries.securitySchemes().queryKey,
 };
 
 export function useGroupsQuery() {
-  return useQuery({
-    queryKey: rbacKeys.groups(),
-    queryFn: () => api.getGroups(),
-  });
+  return useQuery(rbacQueries.groups());
 }
 
 export function useProjectRolesQuery() {
-  return useQuery({
-    queryKey: rbacKeys.roles(),
-    queryFn: () => api.getProjectRoles(),
-  });
+  return useQuery(rbacQueries.roles());
 }
 
 export function usePermissionSchemesQuery() {
-  return useQuery({
-    queryKey: rbacKeys.permissionSchemes(),
-    queryFn: () => api.getPermissionSchemes(),
-  });
+  return useQuery(rbacQueries.permissionSchemes());
 }
 
 export function usePermissionSchemeQuery(id?: number) {
-  return useQuery({
-    queryKey: rbacKeys.permissionScheme(id!),
-    queryFn: () => api.getPermissionScheme(id!),
-    enabled: typeof id === 'number' && !isNaN(id),
-  });
+  return useQuery(rbacQueries.permissionScheme(id!));
 }
 
 export function useSecuritySchemesQuery() {
-  return useQuery({
-    queryKey: rbacKeys.securitySchemes(),
-    queryFn: () => api.getSecuritySchemes(),
-  });
+  return useQuery(rbacQueries.securitySchemes());
 }
 
 export function useCreateGroupMutation() {
@@ -53,7 +68,7 @@ export function useCreateGroupMutation() {
   return useMutation({
     mutationFn: (payload: { name: string; description?: string }) => api.createGroup(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: rbacKeys.groups() });
+      queryClient.invalidateQueries({ queryKey: rbacQueries.groups().queryKey });
     },
   });
 }
@@ -64,7 +79,7 @@ export function useAddUserToGroupMutation() {
     mutationFn: ({ groupId, userId }: { groupId: number; userId: number }) =>
       api.addUserToGroup(groupId, userId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: rbacKeys.groups() });
+      queryClient.invalidateQueries({ queryKey: rbacQueries.groups().queryKey });
       queryClient.invalidateQueries({ queryKey: userKeys.lists() });
     },
   });
@@ -76,7 +91,7 @@ export function useRemoveUserFromGroupMutation() {
     mutationFn: ({ groupId, userId }: { groupId: number; userId: number }) =>
       api.removeUserFromGroup(groupId, userId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: rbacKeys.groups() });
+      queryClient.invalidateQueries({ queryKey: rbacQueries.groups().queryKey });
       queryClient.invalidateQueries({ queryKey: userKeys.lists() });
     },
   });
@@ -88,7 +103,7 @@ export function useCreateProjectRoleMutation() {
     mutationFn: (payload: { name: string; description?: string; isDefault?: boolean }) =>
       api.createProjectRole(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: rbacKeys.roles() });
+      queryClient.invalidateQueries({ queryKey: rbacQueries.roles().queryKey });
     },
   });
 }
@@ -99,7 +114,7 @@ export function useCreatePermissionSchemeMutation() {
     mutationFn: (payload: { name: string; description?: string }) =>
       api.createPermissionScheme(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: rbacKeys.permissionSchemes() });
+      queryClient.invalidateQueries({ queryKey: rbacQueries.permissionSchemes().queryKey });
     },
   });
 }
@@ -120,8 +135,8 @@ export function useAddPermissionGrantMutation() {
       };
     }) => api.addPermissionGrant(schemeId, payload),
     onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({ queryKey: rbacKeys.permissionScheme(vars.schemeId) });
-      queryClient.invalidateQueries({ queryKey: rbacKeys.permissionSchemes() });
+      queryClient.invalidateQueries({ queryKey: rbacQueries.permissionScheme(vars.schemeId).queryKey });
+      queryClient.invalidateQueries({ queryKey: rbacQueries.permissionSchemes().queryKey });
     },
   });
 }
@@ -132,8 +147,8 @@ export function useRemovePermissionGrantMutation() {
     mutationFn: ({ schemeId, grantId }: { schemeId: number; grantId: number }) =>
       api.removePermissionGrant(schemeId, grantId),
     onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({ queryKey: rbacKeys.permissionScheme(vars.schemeId) });
-      queryClient.invalidateQueries({ queryKey: rbacKeys.permissionSchemes() });
+      queryClient.invalidateQueries({ queryKey: rbacQueries.permissionScheme(vars.schemeId).queryKey });
+      queryClient.invalidateQueries({ queryKey: rbacQueries.permissionSchemes().queryKey });
     },
   });
 }

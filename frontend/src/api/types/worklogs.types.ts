@@ -91,6 +91,8 @@ export type TeamTimesheetMatrix = Omit<components['schemas']['TimesheetMatrixRes
 
 export type WorklogStats = components['schemas']['WorklogStatsResponseDto'];
 export type LogWorkPayload = components['schemas']['LogWorkDto'];
-export type CreateSavedFilterPayload = components['schemas']['CreateSavedFilterDto'];
+export type CreateSavedFilterPayload = Omit<components['schemas']['CreateSavedFilterDto'], 'isFavorite'> & {
+  isFavorite?: boolean;
+};
 export type UpdateSavedFilterPayload = components['schemas']['UpdateSavedFilterDto'];
 

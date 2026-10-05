@@ -1,8 +1,7 @@
-import React, { useRef, useState } from 'react';
-import type { IssueItem, IssueType, IssuePriority, IssueStatus } from '../../api/client';
-import type { SprintDefinition } from '../../types/agile';
-import { useTicketDragStore } from '../../store/useTicketDragStore';
-import { Avatar } from '../common/Avatar';
+import React, { useState } from 'react';
+import type { IssueItem, IssueType, IssuePriority, IssueStatus } from '../../api/client.js';
+import type { SprintDefinition } from '../../types/agile.js';
+import { Avatar } from '../common/Avatar.js';
 import { IssueContextMenu } from '../common/IssueContextMenu';
 import { StatusBadge, PriorityBadge, Dropdown, Tooltip } from '../ui';
 import {
@@ -32,6 +31,7 @@ interface AgileIssueRowProps {
   onAssignToMe?: (issueId: number) => void;
   currentUserId?: number;
   orderedIds?: number[];
+  isDragging?: boolean;
 }
 
 const AgileIssueRowComponent: React.FC<AgileIssueRowProps> = ({
@@ -43,19 +43,14 @@ const AgileIssueRowComponent: React.FC<AgileIssueRowProps> = ({
   onAssignToMe,
   currentUserId,
   orderedIds,
+  isDragging = false,
 }) => {
-  const isBeingDragged = useTicketDragStore(
-    (s) => s.isDragging && s.activeDrag?.issue.id === issue.id,
-  );
-  const startDrag = useTicketDragStore((s) => s.startDrag);
+  const isBeingDragged = isDragging;
 
   const { selectedIds, toggleSelection, rangeSelect } = useIssueSelectionStore();
   const isSelected = selectedIds.has(issue.id);
   const hasAnySelection = selectedIds.size > 0;
 
-  const rowRef = useRef<HTMLDivElement | null>(null);
-  const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
-  const hasDraggedRef = useRef(false);
   const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
 
   const handleContextMenu = (e: React.MouseEvent) => {
@@ -68,59 +63,6 @@ const AgileIssueRowComponent: React.FC<AgileIssueRowProps> = ({
     setContextMenuPos({ x: e.clientX, y: e.clientY });
   };
 
-  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.button !== 0) return;
-    const target = e.target as HTMLElement;
-    if (target.closest('button') || target.closest('[role="menu"]') || target.closest('a')) {
-      return;
-    }
-
-    pointerStartRef.current = { x: e.clientX, y: e.clientY };
-    hasDraggedRef.current = false;
-
-    const handleWindowPointerMove = (moveEvt: PointerEvent) => {
-      if (!pointerStartRef.current) return;
-      const dx = moveEvt.clientX - pointerStartRef.current.x;
-      const dy = moveEvt.clientY - pointerStartRef.current.y;
-      if (Math.hypot(dx, dy) > 4) {
-        hasDraggedRef.current = true;
-        window.removeEventListener('pointermove', handleWindowPointerMove);
-        window.removeEventListener('pointerup', handleWindowPointerUp);
-
-        if (rowRef.current) {
-          const rect = rowRef.current.getBoundingClientRect();
-          startDrag({
-            issue,
-            variant: 'row',
-            initialPointer: { x: moveEvt.clientX, y: moveEvt.clientY },
-            offset: { x: moveEvt.clientX - rect.left, y: moveEvt.clientY - rect.top },
-            dimensions: { width: rect.width, height: rect.height },
-            onDrop: (dropTarget) => {
-              if (dropTarget.type === 'sprint') {
-                if (issue.sprintId !== dropTarget.sprintId) {
-                  onMoveToSprint(issue.id, dropTarget.sprintId);
-                }
-              } else if (dropTarget.type === 'backlog') {
-                if (issue.sprintId) {
-                  onMoveToSprint(issue.id, null);
-                }
-              }
-            },
-          });
-        }
-      }
-    };
-
-    const handleWindowPointerUp = () => {
-      pointerStartRef.current = null;
-      window.removeEventListener('pointermove', handleWindowPointerMove);
-      window.removeEventListener('pointerup', handleWindowPointerUp);
-    };
-
-    window.addEventListener('pointermove', handleWindowPointerMove);
-    window.addEventListener('pointerup', handleWindowPointerUp);
-  };
-
   const handleCheckboxClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (e.shiftKey) {
@@ -131,7 +73,6 @@ const AgileIssueRowComponent: React.FC<AgileIssueRowProps> = ({
   };
 
   const handleClick = (e: React.MouseEvent) => {
-    if (hasDraggedRef.current) return;
     if (e.shiftKey && orderedIds) {
       rangeSelect(issue.id, orderedIds);
       return;
@@ -244,8 +185,6 @@ const AgileIssueRowComponent: React.FC<AgileIssueRowProps> = ({
 
   return (
     <div
-      ref={rowRef}
-      onPointerDown={handlePointerDown}
       onClick={handleClick}
       onContextMenu={handleContextMenu}
       className={`group relative flex items-center justify-between gap-3 px-3 py-2.5 rounded-2xl bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container)] dark:hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-outline-variant)]/80 transition-colors duration-150 cursor-grab active:cursor-grabbing select-none shadow-2xs ${

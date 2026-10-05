@@ -14,3 +14,6 @@ export * from './EmptyState';
 export * from './ConfirmDialog';
 export * from './SearchInput';
 export * from './FormModal';
+export * from './DataTable';
+export * from './EntityAvatar';
+export * from './AvatarPicker';

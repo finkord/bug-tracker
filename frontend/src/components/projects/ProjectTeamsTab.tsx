@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import type { TeamItem, UserProfile } from '../../api/client';
 import { useTeamsQuery, useDeleteTeamMutation } from '../../api/queries';
-import { Button, ConfirmDialog } from '../ui';
-import { Avatar } from '../common/Avatar';
-import { TeamAvatar } from '../teams/TeamAvatar';
+import { Button, ConfirmDialog, EntityAvatar } from '../ui/index.js';
+import { Avatar } from '../common/Avatar.js';
 import { TeamModal } from '../teams/TeamModal';
 import { TeamRosterModal } from '../teams/TeamRosterModal';
 import {
@@ -108,7 +107,7 @@ export const ProjectTeamsTab: React.FC<ProjectTeamsTabProps> = ({
                 {/* Team Card Header */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <TeamAvatar
+                    <EntityAvatar
                       name={team.name}
                       avatarUrl={team.avatarUrl}
                       size="md"

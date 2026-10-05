@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import type { ColumnDef } from '@tanstack/react-table';
 import { api, type SystemRole, type UserProfile } from '../../api/client.js';
 import {
   useUsersQuery,
@@ -15,7 +16,6 @@ import {
   Button,
   Badge,
   Card,
-  Modal,
   Input,
   Select,
   SelectTrigger,
@@ -24,15 +24,15 @@ import {
   SelectItem,
   SearchInput,
   ConfirmDialog,
+  FormModal,
+  DataTable,
 } from '../ui/index.js';
 import {
-  Search,
   Lock,
   Unlock,
   RotateCcw,
   CheckCircle,
   AlertTriangle,
-  Loader2,
   Users,
   Shield,
   Trash2,
@@ -190,6 +190,228 @@ export const AdminUsersTab: React.FC = () => {
     }
   };
 
+  const columns = useMemo<ColumnDef<UserProfile>[]>(() => [
+    {
+      id: 'identity',
+      header: 'User Identity',
+      cell: ({ row }) => {
+        const u = row.original;
+        return (
+          <div className="flex items-center gap-3">
+            <Avatar
+              name={u.fullName}
+              avatarUrl={u.avatarUrl || undefined}
+              size="sm"
+            />
+            <div>
+              <div className="font-bold text-[var(--md-sys-color-on-surface)] text-xs">
+                {u.fullName}
+              </div>
+              <div className="text-[var(--md-sys-color-on-surface-variant)] text-[11px] font-mono">
+                {u.email}
+              </div>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      id: 'jobTitle',
+      header: 'Discipline / Job Title',
+      cell: ({ row }) => {
+        const u = row.original;
+        return (
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] font-medium text-[var(--md-sys-color-on-surface)]">
+              {u.jobTitle || 'Software Engineer'}
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleOpenEditJob(u)}
+              className="h-6 w-6 p-0 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)]"
+              title="Edit Job Title"
+            >
+              <Briefcase className="w-3 h-3" />
+            </Button>
+          </div>
+        );
+      },
+    },
+    {
+      id: 'role',
+      header: 'System Authority',
+      cell: ({ row }) => {
+        const u = row.original;
+        const isRoot = Boolean(
+          u.isRoot ||
+          u.email.toLowerCase() === 'admin@bugtracker.local' ||
+          (import.meta.env.VITE_INITIAL_ADMIN_EMAIL &&
+            u.email.toLowerCase() === import.meta.env.VITE_INITIAL_ADMIN_EMAIL.toLowerCase()),
+        );
+
+        return isRoot ? (
+          <div title="Root Administrator accounts cannot be demoted">
+            <Badge variant="primary" size="sm">
+              <Lock className="w-3 h-3 mr-1" />
+              Root Admin
+            </Badge>
+          </div>
+        ) : (
+          <div className="w-28">
+            <Select
+              value={u.systemRole}
+              onValueChange={(val) => handleRoleChange(u.id, val as SystemRole)}
+            >
+              <SelectTrigger className="h-7 text-xs font-medium rounded-lg">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ADMIN">Admin</SelectItem>
+                <SelectItem value="USER">User</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        );
+      },
+    },
+    {
+      id: 'status',
+      header: 'Account Status',
+      cell: ({ row }) => {
+        const u = row.original;
+        return (
+          <div className="flex items-center gap-2">
+            {u.isBlocked ? (
+              <Badge variant="error" size="sm">Blocked</Badge>
+            ) : u.isActivated ? (
+              <Badge variant="success" size="sm">Active</Badge>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <Badge variant="warning" size="sm">Pending</Badge>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleActivateUser(u.id)}
+                  className="h-6 px-1.5 text-[10px] text-[var(--md-sys-color-primary)] font-bold"
+                  title="Manually activate user without token"
+                >
+                  Activate
+                </Button>
+              </div>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      id: '2fa',
+      header: '2FA Security',
+      cell: ({ row }) => {
+        const u = row.original;
+        return (
+          <div className="flex items-center gap-1.5">
+            {u.twoFactorEnabled ? (
+              <Badge variant="primary" size="sm">2FA Active</Badge>
+            ) : (
+              <Badge variant="neutral" size="sm">Disabled</Badge>
+            )}
+            {u.twoFactorEnabled && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleReset2Fa(u.id)}
+                className="h-6 px-1.5 text-[10px] text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-error)]"
+                title="Reset 2FA for locked out user"
+              >
+                Reset
+              </Button>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      id: 'actions',
+      header: () => <div className="text-right">Administrative Actions</div>,
+      cell: ({ row }) => {
+        const u = row.original;
+        const isRoot = Boolean(
+          u.isRoot ||
+          u.email.toLowerCase() === 'admin@bugtracker.local' ||
+          (import.meta.env.VITE_INITIAL_ADMIN_EMAIL &&
+            u.email.toLowerCase() === import.meta.env.VITE_INITIAL_ADMIN_EMAIL.toLowerCase()),
+        );
+
+        return (
+          <div className="flex items-center justify-end space-x-1 whitespace-nowrap">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleSendResetPassword(u.email)}
+              className="h-7 px-2 text-xs text-[var(--md-sys-color-on-surface-variant)]"
+              title="Dispatch password reset email"
+            >
+              <RotateCcw className="w-3.5 h-3.5 mr-1" />
+              Reset Pwd
+            </Button>
+
+            {isRoot ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled
+                className="h-7 px-2 text-xs opacity-40 cursor-not-allowed text-[var(--md-sys-color-on-surface-variant)]"
+                title="Root administrator accounts cannot be blocked or deleted"
+              >
+                <Lock className="w-3.5 h-3.5 mr-1" />
+                Protected
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant={u.isBlocked ? 'outline' : 'ghost'}
+                  size="sm"
+                  onClick={() => handleToggleBlock(u.id, u.isBlocked)}
+                  className={`h-7 px-2 text-xs ${
+                    u.isBlocked
+                      ? 'text-[var(--md-sys-color-success)]'
+                      : 'text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]'
+                  }`}
+                >
+                  {u.isBlocked ? (
+                    <>
+                      <Unlock className="w-3.5 h-3.5 mr-1" />
+                      Unblock
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-3.5 h-3.5 mr-1" />
+                      Block
+                    </>
+                  )}
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setUserToDelete(u);
+                    setDeleteModalOpen(true);
+                  }}
+                  className="h-7 w-7 p-0 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]"
+                  title="Permanently Delete User"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              </>
+            )}
+          </div>
+        );
+      },
+    },
+  ], [handleRoleChange, handleActivateUser, handleReset2Fa, handleToggleBlock]);
+
   return (
     <div className="space-y-6 w-full animate-in fade-in duration-200">
       {/* System Stats KPI Cards */}
@@ -346,265 +568,20 @@ export const AdminUsersTab: React.FC = () => {
       </Card>
 
       {/* Users Table */}
-      <Card
-        variant="filled"
-        padding="none"
-        rounded="3xl"
-        className="bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 overflow-hidden shadow-xs"
-      >
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface-variant)] font-bold uppercase tracking-wider text-[10px] border-b border-[var(--md-sys-color-outline-variant)]/20">
-              <tr>
-                <th className="py-3 px-4">User Identity</th>
-                <th className="py-3 px-4">Discipline / Job Title</th>
-                <th className="py-3 px-4">System Authority</th>
-                <th className="py-3 px-4">Account Status</th>
-                <th className="py-3 px-4">2FA Security</th>
-                <th className="py-3 px-4 text-right">Administrative Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)]/10">
-              {loading ? (
-                <tr>
-                  <td colSpan={6} className="py-16 text-center text-[var(--md-sys-color-on-surface-variant)]">
-                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-[var(--md-sys-color-primary)] mb-2" />
-                    Loading user identities...
-                  </td>
-                </tr>
-              ) : users.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="py-16 text-center text-[var(--md-sys-color-on-surface-variant)]">
-                    <Users className="w-8 h-8 mx-auto opacity-30 mb-2" />
-                    No users found matching current filters.
-                  </td>
-                </tr>
-              ) : (
-                users.map((u) => {
-                  const isRoot = Boolean(
-                    u.isRoot ||
-                    u.email.toLowerCase() === 'admin@bugtracker.local' ||
-                    (import.meta.env.VITE_INITIAL_ADMIN_EMAIL &&
-                      u.email.toLowerCase() === import.meta.env.VITE_INITIAL_ADMIN_EMAIL.toLowerCase()),
-                  );
-
-                  return (
-                    <tr
-                      key={u.id}
-                      className="hover:bg-[var(--md-sys-color-surface-container)]/50 transition-colors"
-                    >
-                      {/* Identity */}
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-3">
-                          <Avatar
-                            name={u.fullName}
-                            avatarUrl={u.avatarUrl || undefined}
-                            size="sm"
-                          />
-                          <div>
-                            <div className="font-bold text-[var(--md-sys-color-on-surface)] text-xs">
-                              {u.fullName}
-                            </div>
-                            <div className="text-[var(--md-sys-color-on-surface-variant)] text-[11px] font-mono">
-                              {u.email}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Job Title / Discipline */}
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[11px] font-medium text-[var(--md-sys-color-on-surface)]">
-                            {u.jobTitle || 'Software Engineer'}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleOpenEditJob(u)}
-                            className="h-6 w-6 p-0 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)]"
-                            title="Edit Job Title"
-                          >
-                            <Briefcase className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      </td>
-
-                      {/* Role */}
-                      <td className="py-3 px-4">
-                        {isRoot ? (
-                          <div title="Root Administrator accounts cannot be demoted">
-                            <Badge variant="primary" size="sm">
-                              <Lock className="w-3 h-3 mr-1" />
-                              Root Admin
-                            </Badge>
-                          </div>
-                        ) : (
-                          <div className="w-28">
-                            <Select
-                              value={u.systemRole}
-                              onValueChange={(val) => handleRoleChange(u.id, val as SystemRole)}
-                            >
-                              <SelectTrigger className="h-7 text-xs font-medium rounded-lg">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="ADMIN">Admin</SelectItem>
-                                <SelectItem value="USER">User</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        )}
-                      </td>
-
-                      {/* Status */}
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          {u.isBlocked ? (
-                            <Badge variant="error" size="sm">Blocked</Badge>
-                          ) : u.isActivated ? (
-                            <Badge variant="success" size="sm">Active</Badge>
-                          ) : (
-                            <div className="flex items-center gap-1.5">
-                              <Badge variant="warning" size="sm">Pending</Badge>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleActivateUser(u.id)}
-                                className="h-6 px-1.5 text-[10px] text-[var(--md-sys-color-primary)] font-bold"
-                                title="Manually activate user without token"
-                              >
-                                Activate
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* 2FA */}
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-1.5">
-                          {u.twoFactorEnabled ? (
-                            <Badge variant="primary" size="sm">2FA Active</Badge>
-                          ) : (
-                            <Badge variant="neutral" size="sm">Disabled</Badge>
-                          )}
-                          {u.twoFactorEnabled && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleReset2Fa(u.id)}
-                              className="h-6 px-1.5 text-[10px] text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-error)]"
-                              title="Reset 2FA for locked out user"
-                            >
-                              Reset
-                            </Button>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* Actions */}
-                      <td className="py-3 px-4 text-right space-x-1 whitespace-nowrap">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleSendResetPassword(u.email)}
-                          className="h-7 px-2 text-xs text-[var(--md-sys-color-on-surface-variant)]"
-                          title="Dispatch password reset email"
-                        >
-                          <RotateCcw className="w-3.5 h-3.5 mr-1" />
-                          Reset Pwd
-                        </Button>
-
-                        {isRoot ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            disabled
-                            className="h-7 px-2 text-xs opacity-40 cursor-not-allowed text-[var(--md-sys-color-on-surface-variant)]"
-                            title="Root administrator accounts cannot be blocked or deleted"
-                          >
-                            <Lock className="w-3.5 h-3.5 mr-1" />
-                            Protected
-                          </Button>
-                        ) : (
-                          <>
-                            <Button
-                              variant={u.isBlocked ? 'outline' : 'ghost'}
-                              size="sm"
-                              onClick={() => handleToggleBlock(u.id, u.isBlocked)}
-                              className={`h-7 px-2 text-xs ${
-                                u.isBlocked
-                                  ? 'text-[var(--md-sys-color-success)]'
-                                  : 'text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]'
-                              }`}
-                            >
-                              {u.isBlocked ? (
-                                <>
-                                  <Unlock className="w-3.5 h-3.5 mr-1" />
-                                  Unblock
-                                </>
-                              ) : (
-                                <>
-                                  <Lock className="w-3.5 h-3.5 mr-1" />
-                                  Block
-                                </>
-                              )}
-                            </Button>
-
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setUserToDelete(u);
-                                setDeleteModalOpen(true);
-                              }}
-                              className="h-7 w-7 p-0 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]"
-                              title="Permanently Delete User"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          </>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between p-4 border-t border-[var(--md-sys-color-outline-variant)]/20 text-xs text-[var(--md-sys-color-on-surface-variant)] bg-[var(--md-sys-color-surface-container)]/30">
-            <span>
-              Showing {users.length} of {totalUsers} accounts (Page {userPage} of {totalPages})
-            </span>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setUserPage((p) => Math.max(1, p - 1))}
-                disabled={userPage === 1}
-              >
-                Previous
-              </Button>
-              <span className="px-2 font-mono font-bold text-[var(--md-sys-color-on-surface)]">
-                {userPage} / {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setUserPage((p) => Math.min(totalPages, p + 1))}
-                disabled={userPage === totalPages}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        )}
-      </Card>
+      <DataTable
+        columns={columns}
+        data={users}
+        getRowId={(u) => String(u.id)}
+        page={userPage}
+        pageSize={limit}
+        total={totalUsers}
+        totalPages={totalPages}
+        onPageChange={setUserPage}
+        isLoading={loading}
+        loadingMessage="Loading user identities..."
+        emptyTitle="No users found"
+        emptyDescription="No users found matching current filters."
+      />
 
       {/* Delete User Modal */}
       <ConfirmDialog
@@ -620,48 +597,28 @@ export const AdminUsersTab: React.FC = () => {
 
       {/* Edit Job Title Modal */}
       {jobTitleModalOpen && userToEditJob && (
-        <Modal
+        <FormModal
           isOpen={jobTitleModalOpen}
           onClose={() => setJobTitleModalOpen(false)}
           title="Update Coworker Job Title"
           description="Assign professional discipline label decoupled from system permissions"
           size="sm"
+          onSubmit={handleSaveJobTitle}
+          submitLabel="Save Title"
+          isSubmitting={roleMutation.isPending}
         >
-          <form onSubmit={handleSaveJobTitle} className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase mb-1">
-                Discipline / Job Title
-              </label>
-              <Input
-                value={newJobTitle}
-                onChange={(e) => setNewJobTitle(e.target.value)}
-                placeholder="e.g. Lead DevOps Architect, Staff QA Engineer"
-                required
-              />
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-4 border-t border-[var(--md-sys-color-outline-variant)]/20">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setJobTitleModalOpen(false)}
-                disabled={roleMutation.isPending}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                variant="filled"
-                size="sm"
-                disabled={roleMutation.isPending}
-                isLoading={roleMutation.isPending}
-              >
-                Save Title
-              </Button>
-            </div>
-          </form>
-        </Modal>
+          <div>
+            <label className="block text-xs font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase mb-1">
+              Discipline / Job Title
+            </label>
+            <Input
+              value={newJobTitle}
+              onChange={(e) => setNewJobTitle(e.target.value)}
+              placeholder="e.g. Lead DevOps Architect, Staff QA Engineer"
+              required
+            />
+          </div>
+        </FormModal>
       )}
     </div>
   );

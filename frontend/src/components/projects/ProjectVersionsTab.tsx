@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import type { ColumnDef } from '@tanstack/react-table';
 import type { ProjectVersionItem } from '../../api/client';
 import {
   useProjectVersionsQuery,
@@ -7,7 +8,7 @@ import {
   useReleaseProjectVersionMutation,
   useDeleteProjectVersionMutation,
 } from '../../api/queries';
-import { Button, Input, Modal, Badge, ConfirmDialog } from '../ui';
+import { Button, Input, Modal, Badge, ConfirmDialog, DataTable } from '../ui';
 import {
   Tag,
   Plus,
@@ -133,6 +134,96 @@ export const ProjectVersionsTab: React.FC<ProjectVersionsTabProps> = ({ projectI
     }
   };
 
+  const columns = useMemo<ColumnDef<ProjectVersionItem>[]>(() => [
+    {
+      id: 'name',
+      accessorKey: 'name',
+      header: 'Version',
+      cell: ({ row }) => (
+        <div className="font-mono font-bold text-[var(--md-sys-color-on-surface)] flex items-center gap-2">
+          <Tag className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)] shrink-0" />
+          <span>{row.original.name}</span>
+        </div>
+      ),
+    },
+    {
+      id: 'status',
+      accessorKey: 'status',
+      header: 'Status',
+      cell: ({ row }) => getStatusBadge(row.original.status),
+    },
+    {
+      id: 'description',
+      accessorKey: 'description',
+      header: 'Description',
+      cell: ({ row }) => (
+        <span className="text-[var(--md-sys-color-on-surface-variant)]">
+          {row.original.description || <span className="italic opacity-60">No description</span>}
+        </span>
+      ),
+    },
+    {
+      id: 'dates',
+      header: 'Timeline',
+      cell: ({ row }) => {
+        const ver = row.original;
+        return (
+          <div className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
+            {ver.startDate && <div>Start: {ver.startDate}</div>}
+            {ver.releaseDate && (
+              <div className="font-semibold text-[var(--md-sys-color-on-surface)]">
+                Release: {ver.releaseDate}
+              </div>
+            )}
+            {!ver.startDate && !ver.releaseDate && (
+              <span className="italic opacity-60">No dates set</span>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      id: 'actions',
+      header: () => <div className="text-right">Actions</div>,
+      cell: ({ row }) => {
+        const ver = row.original;
+        return (
+          <div className="flex items-center justify-end gap-1.5 whitespace-nowrap">
+            {ver.status !== 'RELEASED' && (
+              <Button
+                variant="ghost"
+                size="xs"
+                onClick={() => handleRelease(ver)}
+                leftIcon={<Rocket className="w-3 h-3 text-[var(--md-sys-color-success)]" />}
+                title="Mark this version as released"
+              >
+                Release
+              </Button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => handleArchive(ver)}
+              className="p-1.5 rounded-lg text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] transition cursor-pointer"
+              title={ver.status === 'ARCHIVED' ? 'Unarchive' : 'Archive version'}
+            >
+              <Archive className="w-3.5 h-3.5" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleDelete(ver)}
+              className="p-1.5 rounded-lg text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/30 transition cursor-pointer"
+              title="Delete version"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        );
+      },
+    },
+  ], [handleRelease, handleArchive]);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -157,120 +248,16 @@ export const ProjectVersionsTab: React.FC<ProjectVersionsTabProps> = ({ projectI
         </Button>
       </div>
 
-      {/* List */}
-      {isLoading ? (
-        <div className="space-y-2">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="h-16 rounded-2xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/40 animate-pulse"
-            />
-          ))}
-        </div>
-      ) : versions.length === 0 ? (
-        <div className="p-10 rounded-2xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/50 text-center space-y-3">
-          <div className="inline-flex p-3 rounded-full bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-primary)]">
-            <Tag className="w-6 h-6" />
-          </div>
-          <div className="max-w-md mx-auto space-y-1">
-            <h3 className="text-sm font-bold text-[var(--md-sys-color-on-surface)]">
-              No versions created yet
-            </h3>
-            <p className="text-xs text-[var(--md-sys-color-on-surface-variant)]">
-              Create release milestones (e.g. v1.0.0, 2026.Q4) to bundle issues and target deployment dates.
-            </p>
-          </div>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => setModalOpen(true)}
-            leftIcon={<Plus className="w-4 h-4" />}
-          >
-            Create First Version
-          </Button>
-        </div>
-      ) : (
-        <div className="overflow-x-auto rounded-2xl border border-[var(--md-sys-color-outline-variant)]/50 bg-[var(--md-sys-color-surface-container-low)]">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="border-b border-[var(--md-sys-color-outline-variant)]/40 bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface-variant)] font-bold select-none">
-                <th className="py-2.5 px-4 w-40">Version</th>
-                <th className="py-2.5 px-3 w-28">Status</th>
-                <th className="py-2.5 px-4">Description</th>
-                <th className="py-2.5 px-4 w-44">Timeline</th>
-                <th className="py-2.5 px-3 text-right w-44"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)]/20">
-              {versions.map((ver) => (
-                <tr key={ver.id} className="hover:bg-[var(--md-sys-color-surface-container)]/40 transition">
-                  {/* Name */}
-                  <td className="py-3 px-4 font-mono font-bold text-[var(--md-sys-color-on-surface)] flex items-center gap-2">
-                    <Tag className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)] shrink-0" />
-                    <span>{ver.name}</span>
-                  </td>
-
-                  {/* Status */}
-                  <td className="py-3 px-3">{getStatusBadge(ver.status)}</td>
-
-                  {/* Description */}
-                  <td className="py-3 px-4 text-[var(--md-sys-color-on-surface-variant)]">
-                    {ver.description || <span className="italic opacity-60">No description</span>}
-                  </td>
-
-                  {/* Dates */}
-                  <td className="py-3 px-4 text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
-                    {ver.startDate && <div>Start: {ver.startDate}</div>}
-                    {ver.releaseDate && (
-                      <div className="font-semibold text-[var(--md-sys-color-on-surface)]">
-                        Release: {ver.releaseDate}
-                      </div>
-                    )}
-                    {!ver.startDate && !ver.releaseDate && (
-                      <span className="italic opacity-60">No dates set</span>
-                    )}
-                  </td>
-
-                  {/* Actions */}
-                  <td className="py-3 px-3 text-right">
-                    <div className="flex items-center justify-end gap-1.5">
-                      {ver.status !== 'RELEASED' && (
-                        <Button
-                          variant="ghost"
-                          size="xs"
-                          onClick={() => handleRelease(ver)}
-                          leftIcon={<Rocket className="w-3 h-3 text-[var(--md-sys-color-success)]" />}
-                          title="Mark this version as released"
-                        >
-                          Release
-                        </Button>
-                      )}
-
-                      <button
-                        type="button"
-                        onClick={() => handleArchive(ver)}
-                        className="p-1.5 rounded-lg text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] transition cursor-pointer"
-                        title={ver.status === 'ARCHIVED' ? 'Unarchive' : 'Archive version'}
-                      >
-                        <Archive className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(ver)}
-                        className="p-1.5 rounded-lg text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/30 transition cursor-pointer"
-                        title="Delete version"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      {/* Table */}
+      <DataTable
+        columns={columns}
+        data={versions}
+        getRowId={(ver) => String(ver.id)}
+        isLoading={isLoading}
+        loadingMessage="Loading versions..."
+        emptyTitle="No versions created yet"
+        emptyDescription="Create release milestones (e.g. v1.0.0, 2026.Q4) to bundle issues and target deployment dates."
+      />
 
       {/* New Version Modal */}
       <Modal

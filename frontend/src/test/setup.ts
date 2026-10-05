@@ -15,10 +15,11 @@ HTMLElement.prototype.getBoundingClientRect = function () {
     bottom: 500,
     right: 1000,
     x: 0,
-    y: 0,
     toJSON: () => '',
   };
 };
+
+HTMLElement.prototype.scrollIntoView = function () {};
 
 global.ResizeObserver = class ResizeObserver {
   observe() {}

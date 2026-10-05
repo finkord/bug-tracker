@@ -1,10 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import type { ColumnDef } from '@tanstack/react-table';
 import type { WorklogItem, IssueItem, IssueStatus } from '../../api/client';
 import { IssueContextMenu } from '../common/IssueContextMenu';
 import { useAssignIssueToMeMutation, useUpdateIssueStatusMutation } from '../../api/queries';
 import { useAuth } from '../../store';
-import { Button, SearchInput, EmptyState, ConfirmDialog } from '../ui';
+import { Button, SearchInput, ConfirmDialog, DataTable } from '../ui';
+import { formatFullDate } from '../../utils/date';
 import {
   Clock,
   Calendar,
@@ -12,11 +14,7 @@ import {
   PlusCircle,
   FileText,
   ExternalLink,
-  Inbox,
-  Loader2,
   Trash2,
-  ChevronLeft,
-  ChevronRight,
 } from 'lucide-react';
 
 interface MyWorklogsTableProps {
@@ -103,7 +101,7 @@ export const MyWorklogsTable: React.FC<MyWorklogsTableProps> = ({
     issueKey?: string;
   } | null>(null);
 
-  // Filter and sort worklogs locally for client-level fast query/sort
+  // Filter and sort worklogs locally for quick interaction
   const filteredWorklogs = useMemo(() => {
     let result = [...worklogs];
 
@@ -114,7 +112,7 @@ export const MyWorklogsTable: React.FC<MyWorklogsTableProps> = ({
           log.issue?.key.toLowerCase().includes(q) ||
           log.issue?.title.toLowerCase().includes(q) ||
           (log.description && log.description.toLowerCase().includes(q)) ||
-          log.dateLogged.includes(q)
+          log.dateLogged.includes(q),
       );
     }
 
@@ -136,8 +134,108 @@ export const MyWorklogsTable: React.FC<MyWorklogsTableProps> = ({
     return set.size;
   }, [filteredWorklogs]);
 
-  const fromRecord = total > 0 ? (page - 1) * limit + 1 : 0;
-  const toRecord = total > 0 ? Math.min(page * limit, total) : 0;
+  const columns = useMemo<ColumnDef<WorklogItem>[]>(() => [
+    {
+      id: 'dateLogged',
+      accessorKey: 'dateLogged',
+      header: 'Date',
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2 font-semibold text-[var(--md-sys-color-on-surface)] whitespace-nowrap">
+          <Calendar className="w-3.5 h-3.5 text-[var(--md-sys-color-on-surface-variant)]" />
+          <span>{formatFullDate(row.original.dateLogged)}</span>
+        </div>
+      ),
+    },
+    {
+      id: 'timeSpentHours',
+      accessorKey: 'timeSpentHours',
+      header: 'Hours',
+      cell: ({ row }) => (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-black text-xs bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] shadow-2xs whitespace-nowrap">
+          <Clock className="w-3.5 h-3.5" />
+          <span>{row.original.timeSpentHours}h</span>
+        </span>
+      ),
+    },
+    {
+      id: 'ticket',
+      header: 'Ticket',
+      cell: ({ row }) => {
+        const issue = row.original.issue;
+        if (!issue) {
+          return <span className="text-[var(--md-sys-color-on-surface-variant)] italic">Unassigned Issue</span>;
+        }
+        return (
+          <div className="flex items-center gap-2">
+            <Link
+              to={`/issues/${issue.key}`}
+              state={{ from: '/time-tracking', label: 'Back to Time Tracking' }}
+              className="font-mono font-bold text-[var(--md-sys-color-primary)] hover:underline shrink-0"
+            >
+              {issue.key}
+            </Link>
+            <span className="text-[var(--md-sys-color-on-surface)] font-medium truncate max-w-xs">
+              {issue.title}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      id: 'description',
+      header: 'Description',
+      cell: ({ row }) =>
+        row.original.description ? (
+          <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] line-clamp-2 max-w-md">
+            {row.original.description}
+          </p>
+        ) : (
+          <span className="text-[var(--md-sys-color-on-surface-variant)] italic opacity-60">
+            No narrative description provided
+          </span>
+        ),
+    },
+    {
+      id: 'actions',
+      header: () => <div className="text-right">Actions</div>,
+      cell: ({ row }) => (
+        <div className="flex items-center justify-end gap-1.5 whitespace-nowrap">
+          {onDeleteWorklog && row.original.issue && (
+            <Button
+              variant="ghost"
+              size="xs"
+              onClick={() => {
+                setWorklogToDelete({
+                  issueId: row.original.issue!.id,
+                  worklogId: row.original.id,
+                  hours: row.original.timeSpentHours,
+                  issueKey: row.original.issue?.key,
+                });
+              }}
+              className="text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/30"
+              title="Delete worklog"
+              aria-label={`Delete worklog of ${row.original.timeSpentHours} hours`}
+            >
+              <Trash2 className="w-3 h-3" />
+            </Button>
+          )}
+
+          {row.original.issue && (
+            <Link to={`/issues/${row.original.issue.key}`}>
+              <Button
+                variant="ghost"
+                size="xs"
+                rightIcon={<ExternalLink className="w-3 h-3" />}
+                aria-label={`View ticket ${row.original.issue.key}`}
+              >
+                View Ticket
+              </Button>
+            </Link>
+          )}
+        </div>
+      ),
+    },
+  ], [onDeleteWorklog]);
 
   return (
     <div className="space-y-4">
@@ -219,284 +317,32 @@ export const MyWorklogsTable: React.FC<MyWorklogsTableProps> = ({
         </div>
       </div>
 
-      {/* Loading state */}
-      {loading ? (
-        <div className="p-12 text-center rounded-2xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]">
-          <Loader2 className="w-8 h-8 animate-spin text-[var(--md-sys-color-primary)] mx-auto mb-2" />
-          <p className="text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)]">
-            Loading worklog records...
-          </p>
-        </div>
-      ) : filteredWorklogs.length === 0 ? (
-        <EmptyState
-          icon={<Inbox className="w-10 h-10" />}
-          title="No worklogs found"
-          description={
-            searchQuery
-              ? `No worklog records matching "${searchQuery}"`
-              : 'You have not logged any time yet. Click "Log Time" to record your first entry.'
+      {/* Data Table */}
+      <DataTable
+        columns={columns}
+        data={filteredWorklogs}
+        getRowId={(row) => String(row.id)}
+        page={page}
+        pageSize={limit}
+        total={total}
+        totalPages={totalPages}
+        onPageChange={onPageChange}
+        onPageSizeChange={onLimitChange}
+        pageSizeOptions={[10, 20, 50]}
+        isLoading={loading}
+        loadingMessage="Loading worklog records..."
+        emptyTitle="No worklogs found"
+        emptyDescription={
+          searchQuery
+            ? `No worklog records matching "${searchQuery}"`
+            : 'You have not logged any time yet. Click "Log Time" to record your first entry.'
+        }
+        onRowContextMenu={(e, row) => {
+          if (row.issue) {
+            handleContextMenu(e, row.issue);
           }
-          action={
-            !searchQuery && onOpenLogModal
-              ? {
-                  label: 'Log Time',
-                  onClick: onOpenLogModal,
-                }
-              : undefined
-          }
-        />
-      ) : (
-        <div className="rounded-2xl border border-[var(--md-sys-color-outline-variant)] bg-[var(--md-sys-color-surface)] overflow-hidden shadow-2xs">
-          {/* Desktop Table View */}
-          <div className="hidden sm:block overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="border-b border-[var(--md-sys-color-outline-variant)] bg-[var(--md-sys-color-surface-container-low)] text-[var(--md-sys-color-on-surface-variant)] font-bold">
-                  <th className="py-3 px-4">Date</th>
-                  <th className="py-3 px-4">Hours</th>
-                  <th className="py-3 px-4">Ticket</th>
-                  <th className="py-3 px-4">Description</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)]/40">
-                {filteredWorklogs.map((log) => {
-                  const dateObj = new Date(log.dateLogged);
-                  const formattedDate = dateObj.toLocaleDateString(undefined, {
-                    weekday: 'short',
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                  });
-
-                  return (
-                    <tr
-                      key={log.id}
-                      onContextMenu={(e) => {
-                        if (log.issue) {
-                          handleContextMenu(e, log.issue);
-                        }
-                      }}
-                      className="hover:bg-[var(--md-sys-color-surface-container-highest)]/30 transition-colors"
-                    >
-                      {/* Date */}
-                      <td className="py-3.5 px-4 font-semibold text-[var(--md-sys-color-on-surface)] whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-3.5 h-3.5 text-[var(--md-sys-color-on-surface-variant)]" />
-                          <span>{formattedDate}</span>
-                        </div>
-                      </td>
-
-                      {/* Hours */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-black text-xs bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] shadow-2xs">
-                          <Clock className="w-3.5 h-3.5" />
-                          <span>{log.timeSpentHours}h</span>
-                        </span>
-                      </td>
-
-                      {/* Ticket */}
-                      <td className="py-3.5 px-4">
-                        {log.issue ? (
-                          <div className="flex items-center gap-2">
-                            <Link
-                              to={`/issues/${log.issue.key}`}
-                              state={{ from: '/time-tracking', label: 'Back to Time Tracking' }}
-                              className="font-mono font-bold text-[var(--md-sys-color-primary)] hover:underline shrink-0"
-                            >
-                              {log.issue.key}
-                            </Link>
-                            <span className="text-[var(--md-sys-color-on-surface)] font-medium truncate max-w-xs">
-                              {log.issue.title}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-[var(--md-sys-color-on-surface-variant)] italic">
-                            Unassigned Issue
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Description */}
-                      <td className="py-3.5 px-4 max-w-md">
-                        {log.description ? (
-                          <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] line-clamp-2">
-                            {log.description}
-                          </p>
-                        ) : (
-                          <span className="text-[var(--md-sys-color-on-surface-variant)] italic opacity-60">
-                            No narrative description provided
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Action */}
-                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1.5">
-                          {onDeleteWorklog && log.issue && (
-                            <Button
-                              variant="ghost"
-                              size="xs"
-                              onClick={() => {
-                                setWorklogToDelete({
-                                  issueId: log.issue!.id,
-                                  worklogId: log.id,
-                                  hours: log.timeSpentHours,
-                                  issueKey: log.issue?.key,
-                                });
-                              }}
-                              className="text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/30"
-                              title="Delete worklog"
-                              aria-label={`Delete worklog of ${log.timeSpentHours} hours`}
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          )}
-
-                          {log.issue && (
-                            <Link to={`/issues/${log.issue.key}`}>
-                              <Button
-                                variant="ghost"
-                                size="xs"
-                                rightIcon={<ExternalLink className="w-3 h-3" />}
-                                aria-label={`View ticket ${log.issue.key}`}
-                              >
-                                View Ticket
-                              </Button>
-                            </Link>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile Card List View */}
-          <div className="sm:hidden divide-y divide-[var(--md-sys-color-outline-variant)]">
-            {filteredWorklogs.map((log) => {
-              const dateObj = new Date(log.dateLogged);
-              const formattedDate = dateObj.toLocaleDateString(undefined, {
-                weekday: 'short',
-                month: 'short',
-                day: 'numeric',
-              });
-
-              return (
-                <div key={log.id} className="p-3.5 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)]">
-                      <Calendar className="w-3.5 h-3.5" />
-                      <span className="font-semibold text-[var(--md-sys-color-on-surface)]">
-                        {formattedDate}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-black bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)]">
-                        <Clock className="w-3 h-3" />
-                        {log.timeSpentHours}h
-                      </span>
-
-                      {onDeleteWorklog && log.issue && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setWorklogToDelete({
-                              issueId: log.issue!.id,
-                              worklogId: log.id,
-                              hours: log.timeSpentHours,
-                              issueKey: log.issue?.key,
-                            });
-                          }}
-                          className="p-1 rounded-md text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/30 transition-colors"
-                          aria-label="Delete worklog"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {log.issue && (
-                    <Link
-                      to={`/issues/${log.issue.key}`}
-                      className="block p-2 rounded-xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)] hover:bg-[var(--md-sys-color-surface-container)] transition-colors"
-                    >
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <span className="px-1.5 py-0.5 rounded-md text-[10px] font-black bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)]">
-                          {log.issue.key}
-                        </span>
-                        <span className="text-xs font-semibold text-[var(--md-sys-color-on-surface)] truncate">
-                          {log.issue.title}
-                        </span>
-                      </div>
-                    </Link>
-                  )}
-
-                  {log.description && (
-                    <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] bg-[var(--md-sys-color-surface-container-lowest)] p-2 rounded-lg border border-[var(--md-sys-color-outline-variant)]/60">
-                      {log.description}
-                    </p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Server-Side Pagination Footer */}
-          {onPageChange && totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--md-sys-color-outline-variant)] bg-[var(--md-sys-color-surface-container-low)] text-xs text-[var(--md-sys-color-on-surface-variant)] flex-wrap gap-2">
-              <div className="flex items-center gap-2">
-                <span>
-                  Showing <strong className="text-[var(--md-sys-color-on-surface)]">{fromRecord}</strong> to{' '}
-                  <strong className="text-[var(--md-sys-color-on-surface)]">{toRecord}</strong> of{' '}
-                  <strong className="text-[var(--md-sys-color-on-surface)]">{total}</strong> worklogs
-                </span>
-                {onLimitChange && (
-                  <select
-                    value={limit}
-                    onChange={(e) => onLimitChange(Number(e.target.value))}
-                    aria-label="Rows per page"
-                    className="ml-2 px-2 py-1 rounded-lg bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] focus:outline-none"
-                  >
-                    <option value={10}>10 / page</option>
-                    <option value={20}>20 / page</option>
-                    <option value={50}>50 / page</option>
-                  </select>
-                )}
-              </div>
-
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="xs"
-                  disabled={page <= 1}
-                  onClick={() => onPageChange(page - 1)}
-                  leftIcon={<ChevronLeft className="w-3.5 h-3.5" />}
-                  aria-label="Previous page"
-                >
-                  Prev
-                </Button>
-                <span className="px-2 font-semibold text-[var(--md-sys-color-on-surface)]">
-                  Page {page} of {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="xs"
-                  disabled={page >= totalPages}
-                  onClick={() => onPageChange(page + 1)}
-                  rightIcon={<ChevronRight className="w-3.5 h-3.5" />}
-                  aria-label="Next page"
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+        }}
+      />
 
       {/* Right-Click Context Menu */}
       {contextMenuPos && contextMenuIssue && (

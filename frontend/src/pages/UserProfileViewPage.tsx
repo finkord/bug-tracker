@@ -19,7 +19,6 @@ import {
   AlertCircle,
   FolderGit2,
 } from 'lucide-react';
-import type { IssueStatus } from '../api/types/index.js';
 
 export const UserProfileViewPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();

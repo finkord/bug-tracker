@@ -59,6 +59,9 @@ vi.mock('../../api/queries', () => ({
   }),
   useUpdateIssueMutation: () => mockUpdateIssueMutation,
   useUpdateIssueStatusMutation: () => mockUpdateStatusMutation,
+  useUpdateIssueSprintMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useAssignIssueToMeMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useDeleteAttachmentMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useCreateIssueMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useAddIssueCommentMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useDeleteIssueMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
@@ -70,10 +73,19 @@ vi.mock('../../api/queries', () => ({
       ],
     },
   }),
+  useProjectSprintsQuery: () => ({ data: [] }),
   useProjectComponentsQuery: () => ({ data: [], isLoading: false }),
   useProjectVersionsQuery: () => ({ data: [], isLoading: false }),
   useIssueHistoryQuery: () => ({ data: [], isLoading: false }),
   useUserDetailQuery: () => ({ data: null, isLoading: false }),
+  useUpdateIssueCommentMutation: () => ({ mutateAsync: vi.fn() }),
+  useDeleteIssueCommentMutation: () => ({ mutateAsync: vi.fn() }),
+  useDeleteWorklogMutation: () => ({ mutateAsync: vi.fn() }),
+  issueKeys: {
+    lists: () => ['issues', 'list'],
+    details: () => ['issues', 'detail'],
+    detail: (id: any) => ['issues', 'detail', id],
+  },
 }));
 
 vi.mock('../../store', () => ({

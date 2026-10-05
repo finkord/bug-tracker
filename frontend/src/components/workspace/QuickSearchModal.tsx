@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
+import { Command } from 'cmdk';
 import { useNavigate } from 'react-router-dom';
 import {
   Search,
@@ -40,7 +41,7 @@ interface PaletteItem {
   priority?: IssuePriority;
   status?: IssueStatus;
   key?: string;
-  section?: string;
+  section: string;
   onExecute: () => void;
 }
 
@@ -88,7 +89,6 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { openCreateIssue, openShortcuts } = useModalStore();
@@ -121,7 +121,6 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
   const handleClose = () => {
     setQuery('');
     setDebouncedQuery('');
-    setActiveIndex(0);
     onClose();
   };
 
@@ -130,8 +129,8 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
     const list: PaletteItem[] = [];
     const q = debouncedQuery.toLowerCase();
 
-    // 1. Actions
-    const staticActions: PaletteItem[] = [
+    // Static actions
+    const staticActions: Omit<PaletteItem, 'section'>[] = [
       {
         id: 'action-create-issue',
         type: 'action',
@@ -182,8 +181,8 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
       },
     ];
 
-    // 2. Navigation
-    const staticNav: PaletteItem[] = [
+    // Static navigation
+    const staticNav: Omit<PaletteItem, 'section'>[] = [
       {
         id: 'nav-board',
         type: 'navigation',
@@ -247,7 +246,6 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
     ];
 
     if (!q) {
-      // 1. Recently viewed issues (if any)
       if (recentIssues && recentIssues.length > 0) {
         recentIssues.forEach((issue) => {
           list.push({
@@ -268,7 +266,6 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
         });
       }
 
-      // 2. Actions & Navigation
       staticActions.forEach((act) => list.push({ ...act, section: 'Quick Actions' }));
       staticNav.forEach((nav) => list.push({ ...nav, section: 'Navigation' }));
 
@@ -289,13 +286,9 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
         });
       }
     } else {
-      // Filter recent issues first
       if (recentIssues && recentIssues.length > 0) {
         recentIssues.forEach((issue) => {
-          if (
-            issue.title.toLowerCase().includes(q) ||
-            issue.key.toLowerCase().includes(q)
-          ) {
+          if (issue.title.toLowerCase().includes(q) || issue.key.toLowerCase().includes(q)) {
             list.push({
               id: `recent-${issue.id}`,
               type: 'issue',
@@ -315,7 +308,6 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
         });
       }
 
-      // Filter actions and navigation by query
       staticActions.forEach((act) => {
         if (act.label.toLowerCase().includes(q)) {
           list.push({ ...act, section: 'Actions' });
@@ -327,7 +319,6 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
         }
       });
 
-      // Filter projects
       if (projectsData) {
         projectsData.forEach((p) => {
           if (p.name.toLowerCase().includes(q) || p.key.toLowerCase().includes(q)) {
@@ -347,7 +338,6 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
         });
       }
 
-      // Add matching issues from backend
       if (issuesData?.items) {
         const existingIds = new Set(list.map((item) => item.issueId).filter(Boolean));
         issuesData.items.forEach((issue) => {
@@ -383,38 +373,21 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
     toggleSidebar,
     navigate,
     onSelectIssue,
-    handleClose,
     user,
+    handleClose,
   ]);
 
-  const safeActiveIndex = items.length > 0 ? Math.min(activeIndex, items.length - 1) : 0;
-
-  const handleQueryChange = (val: string) => {
-    setQuery(val);
-    setActiveIndex(0);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      if (items.length > 0) {
-        setActiveIndex((prev) => (prev + 1) % items.length);
+  // Group items by section
+  const groupedSections = useMemo(() => {
+    const groups: { [section: string]: PaletteItem[] } = {};
+    items.forEach((item) => {
+      if (!groups[item.section]) {
+        groups[item.section] = [];
       }
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      if (items.length > 0) {
-        setActiveIndex((prev) => (prev - 1 + items.length) % items.length);
-      }
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      if (items.length > 0 && items[safeActiveIndex]) {
-        items[safeActiveIndex].onExecute();
-      } else if (query.trim()) {
-        navigate(`/search?search=${encodeURIComponent(query.trim())}`);
-        handleClose();
-      }
-    }
-  };
+      groups[item.section].push(item);
+    });
+    return groups;
+  }, [items]);
 
   const handleOpenFullSearch = () => {
     if (query.trim()) {
@@ -430,62 +403,52 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs transition-opacity duration-150 animate-in fade-in" />
         <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-20 p-4 pointer-events-none">
-          <Dialog.Content
-            onKeyDown={handleKeyDown}
-            className="w-full max-w-xl pointer-events-auto bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]/30 rounded-2xl shadow-2xl overflow-hidden focus:outline-none flex flex-col animate-in fade-in zoom-in-95 duration-150"
-          >
-            {/* Top search input row */}
-            <div className="flex items-center gap-3 px-4 py-3.5 border-b border-[var(--md-sys-color-outline-variant)]/20 bg-[var(--md-sys-color-surface-container-highest)]/40">
-              <Search className="w-5 h-5 text-[var(--md-sys-color-primary)] shrink-0" />
-              <input
-                ref={inputRef}
-                type="text"
-                value={query}
-                onChange={(e) => handleQueryChange(e.target.value)}
-                placeholder="Search issues by key, title, or run a command..."
-                className="flex-1 bg-transparent border-none text-sm text-[var(--md-sys-color-on-surface)] placeholder:text-[var(--md-sys-color-on-surface-variant)]/60 focus:outline-none"
-              />
-              {isIssuesLoading ? (
-                <Loader2 className="w-4 h-4 text-[var(--md-sys-color-primary)] animate-spin shrink-0" />
-              ) : (
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface-variant)] border border-[var(--md-sys-color-outline-variant)]/30 shrink-0">
-                  Esc
-                </span>
-              )}
-            </div>
+          <Dialog.Content className="w-full max-w-xl pointer-events-auto bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]/30 rounded-2xl shadow-2xl overflow-hidden focus:outline-none flex flex-col animate-in fade-in zoom-in-95 duration-150">
+            <Command shouldFilter={false} className="w-full flex flex-col">
+              {/* Top search input row */}
+              <div className="flex items-center gap-3 px-4 py-3.5 border-b border-[var(--md-sys-color-outline-variant)]/20 bg-[var(--md-sys-color-surface-container-highest)]/40">
+                <Search className="w-5 h-5 text-[var(--md-sys-color-primary)] shrink-0" />
+                <Command.Input
+                  ref={inputRef}
+                  value={query}
+                  onValueChange={setQuery}
+                  placeholder="Search issues by key, title, or run a command..."
+                  className="flex-1 bg-transparent border-none text-sm text-[var(--md-sys-color-on-surface)] placeholder:text-[var(--md-sys-color-on-surface-variant)]/60 focus:outline-none"
+                />
+                {isIssuesLoading ? (
+                  <Loader2 className="w-4 h-4 text-[var(--md-sys-color-primary)] animate-spin shrink-0" />
+                ) : (
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface-variant)] border border-[var(--md-sys-color-outline-variant)]/30 shrink-0">
+                    Esc
+                  </span>
+                )}
+              </div>
 
-            {/* Results or Action List */}
-            <div className="max-h-[380px] overflow-y-auto divide-y divide-[var(--md-sys-color-outline-variant)]/10">
-              {debouncedQuery && items.length === 0 && !isIssuesLoading ? (
-                <div className="py-8 px-4 text-center text-xs text-[var(--md-sys-color-on-surface-variant)]">
+              {/* cmdk List */}
+              <Command.List className="max-h-[380px] overflow-y-auto divide-y divide-[var(--md-sys-color-outline-variant)]/10">
+                <Command.Empty className="py-8 px-4 text-center text-xs text-[var(--md-sys-color-on-surface-variant)]">
                   <p className="font-semibold text-[var(--md-sys-color-on-surface)]">No results found</p>
-                  <p className="mt-1 opacity-70">No issues, commands, or projects match &quot;{debouncedQuery}&quot;.</p>
-                </div>
-              ) : (
-                items.map((item, idx) => {
-                  const isSelected = idx === safeActiveIndex;
-                  const showSectionHeader = Boolean(
-                    item.section && (idx === 0 || items[idx - 1].section !== item.section),
-                  );
+                  <p className="mt-1 opacity-70">
+                    No issues, commands, or projects match &quot;{debouncedQuery}&quot;.
+                  </p>
+                </Command.Empty>
 
-                  return (
-                    <React.Fragment key={item.id}>
-                      {showSectionHeader && (
-                        <div className="px-4 py-1.5 bg-[var(--md-sys-color-surface-container)]/70 text-[10px] uppercase font-bold tracking-wider text-[var(--md-sys-color-primary)] flex items-center gap-1.5 select-none border-t first:border-t-0 border-[var(--md-sys-color-outline-variant)]/20">
-                          {item.section === 'Recently Viewed' ? (
-                            <History className="w-3 h-3" />
-                          ) : null}
-                          <span>{item.section}</span>
-                        </div>
-                      )}
-                      <div
-                        onClick={item.onExecute}
-                        onMouseEnter={() => setActiveIndex(idx)}
-                        className={`flex items-center justify-between gap-3 px-4 py-2.5 cursor-pointer transition-colors ${
-                          isSelected
-                            ? 'bg-[var(--md-sys-color-primary-container)]/30 text-[var(--md-sys-color-on-surface)]'
-                            : 'hover:bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface-variant)]'
-                        }`}
+                {Object.entries(groupedSections).map(([section, sectionItems]) => (
+                  <Command.Group
+                    key={section}
+                    heading={
+                      <div className="px-4 py-1.5 bg-[var(--md-sys-color-surface-container)]/70 text-[10px] uppercase font-bold tracking-wider text-[var(--md-sys-color-primary)] flex items-center gap-1.5 select-none border-t first:border-t-0 border-[var(--md-sys-color-outline-variant)]/20">
+                        {section === 'Recently Viewed' && <History className="w-3 h-3" />}
+                        <span>{section}</span>
+                      </div>
+                    }
+                  >
+                    {sectionItems.map((item) => (
+                      <Command.Item
+                        key={item.id}
+                        value={item.id}
+                        onSelect={item.onExecute}
+                        className="flex items-center justify-between gap-3 px-4 py-2.5 cursor-pointer transition-colors aria-selected:bg-[var(--md-sys-color-primary-container)]/30 aria-selected:text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface-variant)]"
                       >
                         <div className="flex items-center gap-2.5 min-w-0 flex-1">
                           {item.type === 'issue' && item.key ? (
@@ -527,51 +490,49 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
                             </kbd>
                           )}
 
-                          {isSelected && (
-                            <CornerDownLeft className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)] shrink-0" />
-                          )}
+                          <CornerDownLeft className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)] shrink-0 opacity-0 group-hover:opacity-100" />
                         </div>
-                      </div>
-                    </React.Fragment>
-                  );
-                })
-              )}
-            </div>
+                      </Command.Item>
+                    ))}
+                  </Command.Group>
+                ))}
+              </Command.List>
 
-            {/* Footer with keyboard hints and full search navigation */}
-            <div className="px-4 py-2.5 bg-[var(--md-sys-color-surface-container)] border-t border-[var(--md-sys-color-outline-variant)]/20 flex items-center justify-between text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
-              <div className="flex items-center gap-3">
-                <span className="flex items-center gap-1">
-                  <kbd className="px-1 py-0.5 rounded bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/30 font-mono text-[10px]">
-                    ↑
-                  </kbd>
-                  <kbd className="px-1 py-0.5 rounded bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/30 font-mono text-[10px]">
-                    ↓
-                  </kbd>
-                  <span>navigate</span>
-                </span>
-                <span className="flex items-center gap-1">
-                  <kbd className="px-1 py-0.5 rounded bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/30 font-mono text-[10px]">
-                    ↵
-                  </kbd>
-                  <span>execute</span>
-                </span>
-                <span className="flex items-center gap-1">
-                  <kbd className="px-1 py-0.5 rounded bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/30 font-mono text-[10px]">
-                    Cmd+K
-                  </kbd>
-                </span>
+              {/* Footer with keyboard hints and full search navigation */}
+              <div className="px-4 py-2.5 bg-[var(--md-sys-color-surface-container)] border-t border-[var(--md-sys-color-outline-variant)]/20 flex items-center justify-between text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
+                <div className="flex items-center gap-3">
+                  <span className="flex items-center gap-1">
+                    <kbd className="px-1 py-0.5 rounded bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/30 font-mono text-[10px]">
+                      ↑
+                    </kbd>
+                    <kbd className="px-1 py-0.5 rounded bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/30 font-mono text-[10px]">
+                      ↓
+                    </kbd>
+                    <span>navigate</span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <kbd className="px-1 py-0.5 rounded bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/30 font-mono text-[10px]">
+                      ↵
+                    </kbd>
+                    <span>execute</span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <kbd className="px-1 py-0.5 rounded bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/30 font-mono text-[10px]">
+                      Cmd+K
+                    </kbd>
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleOpenFullSearch}
+                  className="flex items-center gap-1 font-semibold text-[var(--md-sys-color-primary)] hover:underline cursor-pointer"
+                >
+                  <span>Full Search</span>
+                  <ArrowRight className="w-3 h-3" />
+                </button>
               </div>
-
-              <button
-                type="button"
-                onClick={handleOpenFullSearch}
-                className="flex items-center gap-1 font-semibold text-[var(--md-sys-color-primary)] hover:underline cursor-pointer"
-              >
-                <span>Full Search</span>
-                <ArrowRight className="w-3 h-3" />
-              </button>
-            </div>
+            </Command>
           </Dialog.Content>
         </div>
       </Dialog.Portal>

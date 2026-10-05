@@ -2,18 +2,16 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './api/queryClient';
-import { useAuth, useSidebar } from './store';
-import { useDragAutoScroll } from './hooks/useDragAutoScroll';
-import { useGlobalKeyboardShortcuts } from './hooks/useGlobalKeyboardShortcuts';
-import { useScrollRestoration } from './hooks/useScrollRestoration';
-import { SessionExpiredModal } from './components/common/SessionExpiredModal';
-import { WorkspaceHeader } from './components/workspace/WorkspaceHeader';
-import { Sidebar } from './components/common/Sidebar';
-import { Footer } from './components/common/Footer';
-import { ProtectedRoute, AdminRoute, PublicOnlyRoute } from './components/common/ProtectedRoute';
-import { PageSkeletonLoader } from './components/common/PageSkeletonLoader';
-import { TicketDragOverlay } from './components/common/TicketDragOverlay';
-import { KeyboardShortcutsModal } from './components/common/KeyboardShortcutsModal';
+import { useAuth, useSidebar } from './store/index.js';
+import { useGlobalKeyboardShortcuts } from './hooks/useGlobalKeyboardShortcuts.js';
+import { useScrollRestoration } from './hooks/useScrollRestoration.js';
+import { SessionExpiredModal } from './components/common/SessionExpiredModal.js';
+import { WorkspaceHeader } from './components/workspace/WorkspaceHeader.js';
+import { Sidebar } from './components/common/Sidebar.js';
+import { Footer } from './components/common/Footer.js';
+import { ProtectedRoute, AdminRoute, PublicOnlyRoute } from './components/common/ProtectedRoute.js';
+import { PageSkeletonLoader } from './components/common/PageSkeletonLoader.js';
+import { KeyboardShortcutsModal } from './components/common/KeyboardShortcutsModal.js';
 import { Menu, Shield } from 'lucide-react';
 
 const HomePage = React.lazy(() =>
@@ -82,7 +80,6 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { toggleMobile, collapsed, collapseMode } = useSidebar();
   const isZeroPxSidebar = collapsed && collapseMode === 'hidden';
 
-  useDragAutoScroll();
   useGlobalKeyboardShortcuts(Boolean(user));
   useScrollRestoration('main-content');
 
@@ -138,7 +135,6 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           {!user && <Footer />}
         </main>
       </div>
-      <TicketDragOverlay />
       <KeyboardShortcutsModal />
     </div>
   );

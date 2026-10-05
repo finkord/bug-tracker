@@ -1,4 +1,4 @@
-import { request, API_BASE_URL } from '../http.js';
+import { request, uploadFile } from '../http.js';
 import type {
   IssueItem,
   CreateIssuePayload,
@@ -15,8 +15,9 @@ import type {
   IssueHistoryItem,
   VcsPullRequestItem,
   JqlValidationResult,
+  WorkflowTransitionItem,
+  ReorderIssuePayload,
 } from '../types/issues.types.js';
-import type { AuthTokens } from '../types/auth.types.js';
 
 export const issuesApi = {
   getIssues: (params: GetIssuesParams = {}) => {
@@ -102,50 +103,8 @@ export const issuesApi = {
       method: 'DELETE',
     }),
 
-  uploadAttachment: async (issueId: number, file: File): Promise<AttachmentItem> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    let token = localStorage.getItem('accessToken');
-
-    let res = await fetch(`${API_BASE_URL}/issues/${issueId}/attachments`, {
-      method: 'POST',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-      body: formData,
-    });
-
-    if (res.status === 401) {
-      const refreshToken = localStorage.getItem('refreshToken');
-      if (refreshToken) {
-        try {
-          const refreshRes = await fetch(`${API_BASE_URL}/auth/refresh`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refreshToken }),
-          });
-          if (refreshRes.ok) {
-            const data: AuthTokens = await refreshRes.json();
-            localStorage.setItem('accessToken', data.accessToken);
-            localStorage.setItem('refreshToken', data.refreshToken);
-            token = data.accessToken;
-
-            res = await fetch(`${API_BASE_URL}/issues/${issueId}/attachments`, {
-              method: 'POST',
-              headers: { Authorization: `Bearer ${token}` },
-              body: formData,
-            });
-          }
-        } catch {
-          // Fall through
-        }
-      }
-    }
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ message: 'Failed to upload attachment' }));
-      throw new Error(err.message || 'Failed to upload attachment');
-    }
-    return res.json();
-  },
+  uploadAttachment: (issueId: number, file: File) =>
+    uploadFile<AttachmentItem>(`/issues/${issueId}/attachments`, file, 'file'),
 
   deleteAttachment: (issueId: number, attachmentId: number) =>
     request<{ message: string }>(`/issues/${issueId}/attachments/${attachmentId}`, {
@@ -182,5 +141,14 @@ export const issuesApi = {
     request<JqlValidationResult>('/issues/jql/validate', {
       method: 'POST',
       body: JSON.stringify({ jql }),
+    }),
+
+  getTransitions: (issueId: number) =>
+    request<WorkflowTransitionItem[]>(`/issues/${issueId}/transitions`),
+
+  reorderIssue: (issueId: number, payload: ReorderIssuePayload) =>
+    request<IssueItem>(`/issues/${issueId}/reorder`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
     }),
 };

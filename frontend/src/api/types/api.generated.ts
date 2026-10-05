@@ -1323,6 +1323,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/issues/{id}/transitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get available workflow transitions for an issue based on current status */
+        get: operations["IssuesController_getTransitions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/issues/{id}/status": {
         parameters: {
             query?: never;
@@ -1338,6 +1355,23 @@ export interface paths {
         head?: never;
         /** Transition issue FSM status (To Do, In Progress, Review, Resolved, Closed) */
         patch: operations["IssuesController_updateStatus"];
+        trace?: never;
+    };
+    "/api/v1/issues/{id}/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update issue display rank / board column order */
+        patch: operations["IssuesController_reorderIssue"];
         trace?: never;
     };
     "/api/v1/issues/{id}/assign-me": {
@@ -2449,6 +2483,11 @@ export interface components {
              */
             estimatedHours?: number;
             /**
+             * @description Numeric rank ordering on board or sprint
+             * @example 1000
+             */
+            order?: number;
+            /**
              * @description Sprint ID or null for Backlog
              * @example 1
              */
@@ -2529,6 +2568,36 @@ export interface components {
              */
             issueIds: string[];
         };
+        WorkflowTransitionDto: {
+            /**
+             * @description Transition machine identifier
+             * @example start_progress
+             */
+            id: string;
+            /**
+             * @description Human-readable action name
+             * @example Start Progress
+             */
+            name: string;
+            /**
+             * @description Target FSM status
+             * @example IN_PROGRESS
+             * @enum {string}
+             */
+            toStatus: "OPEN" | "IN_PROGRESS" | "REVIEW" | "RESOLVED" | "CLOSED";
+        };
+        ReorderIssueDto: {
+            /**
+             * @description New numeric order rank for board column or backlog positioning
+             * @example 1000.5
+             */
+            order: number;
+            /**
+             * @description Optional target status if card moved across board columns
+             * @enum {string}
+             */
+            status?: "OPEN" | "IN_PROGRESS" | "REVIEW" | "RESOLVED" | "CLOSED";
+        };
         UpdateIssueSprintDto: {
             /**
              * @description Target sprint ID or null for Backlog
@@ -2567,6 +2636,11 @@ export interface components {
              * @example 4.5
              */
             estimatedHours?: number;
+            /**
+             * @description Numeric rank ordering on board or sprint
+             * @example 1000
+             */
+            order?: number;
             /**
              * @description Sprint ID or null for Backlog
              * @example 1
@@ -4866,6 +4940,27 @@ export interface operations {
             };
         };
     };
+    IssuesController_getTransitions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowTransitionDto"][];
+                };
+            };
+        };
+    };
     IssuesController_updateStatus: {
         parameters: {
             query?: never;
@@ -4876,6 +4971,29 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    IssuesController_reorderIssue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReorderIssueDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {

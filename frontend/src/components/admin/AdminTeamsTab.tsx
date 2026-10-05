@@ -16,6 +16,7 @@ import {
   Button,
   Badge,
   Modal,
+  ConfirmDialog,
   SearchInput,
 } from '../ui/index.js';
 import {
@@ -26,7 +27,6 @@ import {
   FolderGit2,
   UserCheck,
   Clock,
-  Search,
   CheckCircle,
   AlertTriangle,
   UserPlus,
@@ -813,44 +813,22 @@ export const AdminTeamsTab: React.FC = () => {
       </Modal>
 
       {/* Delete Confirmation Modal */}
-      <Modal
+      <ConfirmDialog
         isOpen={deleteModalOpen}
         onClose={() => {
           setDeleteModalOpen(false);
           setTeamToDelete(null);
         }}
+        onConfirm={handleDeleteTeam}
         title="Delete Scrum Team"
-        description="Are you sure you want to remove this team? All member assignments will be revoked."
-      >
-        <div className="space-y-4 pt-2">
-          <p className="text-xs text-[var(--md-sys-color-on-surface-variant)]">
-            This action cannot be undone. Team <strong>{teamToDelete?.name}</strong> will be
-            permanently unlinked.
-          </p>
-
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-[var(--md-sys-color-outline-variant)]/20">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setDeleteModalOpen(false);
-                setTeamToDelete(null);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="filled"
-              size="sm"
-              isLoading={deleteTeamMutation.isPending}
-              onClick={handleDeleteTeam}
-              className="bg-[var(--md-sys-color-error)] text-[var(--md-sys-color-on-error)] hover:opacity-90"
-            >
-              Delete Team
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        description={
+          teamToDelete
+            ? `Are you sure you want to remove team "${teamToDelete.name}"? All member assignments will be revoked. This action cannot be undone.`
+            : 'Are you sure you want to remove this team?'
+        }
+        confirmLabel="Delete Team"
+        isLoading={deleteTeamMutation.isPending}
+      />
     </div>
   );
 };

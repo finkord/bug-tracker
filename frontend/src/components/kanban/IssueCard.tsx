@@ -1,12 +1,11 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import type {
   IssueItem,
   IssueStatus,
   IssuePriority,
   IssueType,
-} from '../../api/client';
-import { useTicketDragStore } from '../../store/useTicketDragStore';
-import { Avatar } from '../common/Avatar';
+} from '../../api/client.js';
+import { Avatar } from '../common/Avatar.js';
 import { UserProfilePopover } from '../common/UserProfilePopover';
 import { IssueContextMenu } from '../common/IssueContextMenu';
 import type { CardDensity } from '../../types/kanban';
@@ -15,8 +14,6 @@ import {
   CheckSquare,
   Sparkles,
   Zap,
-  Flame,
-  AlertCircle,
   MessageSquare,
   Clock,
   UserPlus,
@@ -32,7 +29,7 @@ import {
 import { Dropdown, PriorityBadge } from '../ui';
 import { useIssueSelectionStore } from '../../store/useIssueSelectionStore';
 
-interface IssueCardProps {
+export interface IssueCardProps {
   issue: IssueItem;
   onClick: (issue: IssueItem) => void;
   onStatusChange?: (issueId: number, nextStatus: IssueStatus) => void;
@@ -59,21 +56,16 @@ const IssueCardComponent: React.FC<IssueCardProps> = ({
   onAssignToMe,
   currentUserId,
   density = 'comfortable',
+  isDragging = false,
   isFocused = false,
   orderedIds,
 }) => {
-  const isBeingDragged = useTicketDragStore(
-    (s) => s.isDragging && s.activeDrag?.issue.id === issue.id,
-  );
-  const startDrag = useTicketDragStore((s) => s.startDrag);
+  const isBeingDragged = isDragging;
 
   const { selectedIds, toggleSelection, rangeSelect } = useIssueSelectionStore();
   const isSelected = selectedIds.has(issue.id);
   const hasAnySelection = selectedIds.size > 0;
 
-  const cardRef = useRef<HTMLDivElement | null>(null);
-  const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
-  const hasDraggedRef = useRef(false);
   const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
 
   const handleContextMenu = (e: React.MouseEvent) => {
@@ -86,59 +78,6 @@ const IssueCardComponent: React.FC<IssueCardProps> = ({
     setContextMenuPos({ x: e.clientX, y: e.clientY });
   };
 
-  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.button !== 0) return;
-    const target = e.target as HTMLElement;
-    if (target.closest('button') || target.closest('[role="menu"]') || target.closest('a')) {
-      return;
-    }
-
-    pointerStartRef.current = { x: e.clientX, y: e.clientY };
-    hasDraggedRef.current = false;
-
-    const handleWindowPointerMove = (moveEvt: PointerEvent) => {
-      if (!pointerStartRef.current) return;
-      const dx = moveEvt.clientX - pointerStartRef.current.x;
-      const dy = moveEvt.clientY - pointerStartRef.current.y;
-      if (Math.hypot(dx, dy) > 4) {
-        hasDraggedRef.current = true;
-        window.removeEventListener('pointermove', handleWindowPointerMove);
-        window.removeEventListener('pointerup', handleWindowPointerUp);
-
-        if (cardRef.current) {
-          const rect = cardRef.current.getBoundingClientRect();
-          startDrag({
-            issue,
-            variant: 'card',
-            initialPointer: { x: moveEvt.clientX, y: moveEvt.clientY },
-            offset: { x: moveEvt.clientX - rect.left, y: moveEvt.clientY - rect.top },
-            dimensions: { width: rect.width, height: rect.height },
-            onDrop: (dropTarget) => {
-              if (dropTarget.type === 'column') {
-                if (issue.status !== dropTarget.status) {
-                  onStatusChange?.(issue.id, dropTarget.status);
-                }
-              } else if (dropTarget.type === 'cell') {
-                if (issue.status !== dropTarget.status) {
-                  onStatusChange?.(issue.id, dropTarget.status);
-                }
-              }
-            },
-          });
-        }
-      }
-    };
-
-    const handleWindowPointerUp = () => {
-      pointerStartRef.current = null;
-      window.removeEventListener('pointermove', handleWindowPointerMove);
-      window.removeEventListener('pointerup', handleWindowPointerUp);
-    };
-
-    window.addEventListener('pointermove', handleWindowPointerMove);
-    window.addEventListener('pointerup', handleWindowPointerUp);
-  };
-
   const handleCheckboxClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (e.shiftKey) {
@@ -149,7 +88,6 @@ const IssueCardComponent: React.FC<IssueCardProps> = ({
   };
 
   const handleClick = (e: React.MouseEvent) => {
-    if (hasDraggedRef.current) return;
     if (e.shiftKey && orderedIds) {
       rangeSelect(issue.id, orderedIds);
       return;
@@ -271,8 +209,6 @@ const IssueCardComponent: React.FC<IssueCardProps> = ({
   if (density === 'minimal') {
     return (
       <div
-        ref={cardRef}
-        onPointerDown={handlePointerDown}
         onClick={handleClick}
         onContextMenu={handleContextMenu}
         className={`group relative bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container)] dark:hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-outline-variant)]/80 rounded-xl p-2 shadow-2xs hover:shadow-xs transition-colors duration-150 cursor-grab active:cursor-grabbing select-none flex items-center justify-between gap-2 ${
@@ -336,8 +272,6 @@ const IssueCardComponent: React.FC<IssueCardProps> = ({
   if (density === 'compact') {
     return (
       <div
-        ref={cardRef}
-        onPointerDown={handlePointerDown}
         onClick={handleClick}
         onContextMenu={handleContextMenu}
         className={`group relative bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container)] dark:hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-outline-variant)]/80 rounded-2xl p-2.5 shadow-2xs hover:shadow-xs transition-colors duration-150 cursor-grab active:cursor-grabbing select-none ${
@@ -487,8 +421,6 @@ const IssueCardComponent: React.FC<IssueCardProps> = ({
   // Render Comfortable Density Card (Default Rich Mode)
   return (
     <div
-      ref={cardRef}
-      onPointerDown={handlePointerDown}
       onClick={handleClick}
       onContextMenu={handleContextMenu}
       className={`group relative bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container)] dark:hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-outline-variant)]/80 rounded-2xl p-3.5 shadow-2xs hover:shadow-xs transition-colors duration-150 cursor-grab active:cursor-grabbing select-none ${

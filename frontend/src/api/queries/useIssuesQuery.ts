@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { queryOptions, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   api,
   type IssueStatus,
@@ -7,32 +7,75 @@ import {
   type GetIssuesParams,
   type BulkUpdateIssuesDto,
   type BulkDeleteIssuesDto,
-} from '../client';
+} from '../client.js';
 
-export const issueKeys = {
+export const issueQueries = {
   all: ['issues'] as const,
-  lists: () => [...issueKeys.all, 'list'] as const,
-  list: (filters?: Record<string, unknown> | object) => [...issueKeys.lists(), filters ?? {}] as const,
-  details: () => [...issueKeys.all, 'detail'] as const,
-  detail: (keyOrId: string | number) => [...issueKeys.details(), String(keyOrId)] as const,
-  attachments: (issueId: number) => [...issueKeys.detail(issueId), 'attachments'] as const,
-  links: (issueId: number) => [...issueKeys.detail(issueId), 'links'] as const,
-  history: (issueId: number) => [...issueKeys.detail(issueId), 'history'] as const,
+  lists: () => [...issueQueries.all, 'list'] as const,
+  list: (filters?: GetIssuesParams | Record<string, unknown>) =>
+    queryOptions({
+      queryKey: [...issueQueries.lists(), filters ?? {}] as const,
+      queryFn: () => api.getIssues(filters as GetIssuesParams),
+    }),
+  details: () => [...issueQueries.all, 'detail'] as const,
+  detail: (keyOrId: string | number) =>
+    queryOptions({
+      queryKey: [...issueQueries.details(), String(keyOrId)] as const,
+      queryFn: () => api.getIssue(keyOrId),
+      enabled: keyOrId !== undefined && keyOrId !== '',
+    }),
+  attachments: (issueId: number) =>
+    queryOptions({
+      queryKey: [...issueQueries.detail(issueId).queryKey, 'attachments'] as const,
+      queryFn: () => api.getAttachments(issueId),
+      enabled: typeof issueId === 'number' && !isNaN(issueId),
+    }),
+  links: (issueId: number) =>
+    queryOptions({
+      queryKey: [...issueQueries.detail(issueId).queryKey, 'links'] as const,
+      queryFn: () => api.getIssueLinks(issueId),
+      enabled: typeof issueId === 'number' && !isNaN(issueId),
+    }),
+  history: (issueId: number) =>
+    queryOptions({
+      queryKey: [...issueQueries.detail(issueId).queryKey, 'history'] as const,
+      queryFn: () => api.getIssueHistory(issueId),
+      enabled: typeof issueId === 'number' && !isNaN(issueId),
+    }),
+  transitions: (issueId: number) =>
+    queryOptions({
+      queryKey: [...issueQueries.detail(issueId).queryKey, 'transitions'] as const,
+      queryFn: () => api.getTransitions(issueId),
+      enabled: typeof issueId === 'number' && !isNaN(issueId),
+    }),
+  validateJql: (jql: string, enabled = true) =>
+    queryOptions({
+      queryKey: ['issues', 'jql', 'validate', jql] as const,
+      queryFn: () => api.validateJql(jql),
+      enabled: enabled && typeof jql === 'string',
+      staleTime: 60_000,
+    }),
+};
+
+// Aliased for full backwards compatibility
+export const issueKeys = {
+  all: issueQueries.all,
+  lists: issueQueries.lists,
+  list: (filters?: Record<string, unknown> | object) => issueQueries.list(filters as any).queryKey,
+  details: issueQueries.details,
+  detail: (keyOrId: string | number) => issueQueries.detail(keyOrId).queryKey,
+  attachments: (issueId: number) => issueQueries.attachments(issueId).queryKey,
+  links: (issueId: number) => issueQueries.links(issueId).queryKey,
+  history: (issueId: number) => issueQueries.history(issueId).queryKey,
+  transitions: (issueId: number) => issueQueries.transitions(issueId).queryKey,
 };
 
 export function useIssuesQuery(filters?: GetIssuesParams) {
-  return useQuery({
-    queryKey: issueKeys.list(filters),
-    queryFn: () => api.getIssues(filters),
-  });
+  return useQuery(issueQueries.list(filters));
 }
 
 export function useIssueDetailQuery(keyOrId?: string | number) {
-  return useQuery({
-    queryKey: issueKeys.detail(keyOrId!),
-    queryFn: () => api.getIssue(keyOrId!),
-    enabled: keyOrId !== undefined && keyOrId !== '',
-  });
+  return useQuery(issueQueries.detail(keyOrId!));
 }
 
 export function useCreateIssueMutation() {
@@ -40,7 +83,7 @@ export function useCreateIssueMutation() {
   return useMutation({
     mutationFn: (data: CreateIssuePayload) => api.createIssue(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: issueKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: issueQueries.lists() });
     },
   });
 }
@@ -52,12 +95,39 @@ export function useUpdateIssueStatusMutation() {
       api.updateIssueStatus(issueId, status),
     onSuccess: (updatedIssue) => {
       if (updatedIssue.key) {
-        queryClient.setQueryData(issueKeys.detail(updatedIssue.key), updatedIssue);
+        queryClient.setQueryData(issueQueries.detail(updatedIssue.key).queryKey, updatedIssue);
       }
-      queryClient.setQueryData(issueKeys.detail(String(updatedIssue.id)), updatedIssue);
-      queryClient.setQueryData(issueKeys.detail(updatedIssue.id), updatedIssue);
-      queryClient.invalidateQueries({ queryKey: issueKeys.details() });
-      queryClient.invalidateQueries({ queryKey: issueKeys.lists() });
+      queryClient.setQueryData(issueQueries.detail(String(updatedIssue.id)).queryKey, updatedIssue);
+      queryClient.setQueryData(issueQueries.detail(updatedIssue.id).queryKey, updatedIssue);
+      queryClient.invalidateQueries({ queryKey: issueQueries.details() });
+      queryClient.invalidateQueries({ queryKey: issueQueries.lists() });
+    },
+  });
+}
+
+export function useIssueTransitionsQuery(issueId?: number) {
+  return useQuery(issueQueries.transitions(issueId!));
+}
+
+export function useReorderIssueMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      issueId,
+      order,
+      status,
+    }: {
+      issueId: number;
+      order: number;
+      status?: IssueStatus;
+    }) => api.reorderIssue(issueId, { order, status }),
+    onSuccess: (updatedIssue) => {
+      if (updatedIssue.key) {
+        queryClient.setQueryData(issueQueries.detail(updatedIssue.key).queryKey, updatedIssue);
+      }
+      queryClient.setQueryData(issueQueries.detail(String(updatedIssue.id)).queryKey, updatedIssue);
+      queryClient.setQueryData(issueQueries.detail(updatedIssue.id).queryKey, updatedIssue);
+      queryClient.invalidateQueries({ queryKey: issueQueries.lists() });
     },
   });
 }
@@ -69,12 +139,12 @@ export function useUpdateIssueMutation() {
       api.updateIssue(id, data),
     onSuccess: (updatedIssue) => {
       if (updatedIssue.key) {
-        queryClient.setQueryData(issueKeys.detail(updatedIssue.key), updatedIssue);
+        queryClient.setQueryData(issueQueries.detail(updatedIssue.key).queryKey, updatedIssue);
       }
-      queryClient.setQueryData(issueKeys.detail(String(updatedIssue.id)), updatedIssue);
-      queryClient.setQueryData(issueKeys.detail(updatedIssue.id), updatedIssue);
-      queryClient.invalidateQueries({ queryKey: issueKeys.details() });
-      queryClient.invalidateQueries({ queryKey: issueKeys.lists() });
+      queryClient.setQueryData(issueQueries.detail(String(updatedIssue.id)).queryKey, updatedIssue);
+      queryClient.setQueryData(issueQueries.detail(updatedIssue.id).queryKey, updatedIssue);
+      queryClient.invalidateQueries({ queryKey: issueQueries.details() });
+      queryClient.invalidateQueries({ queryKey: issueQueries.lists() });
     },
   });
 }
@@ -84,7 +154,7 @@ export function useDeleteIssueMutation() {
   return useMutation({
     mutationFn: (issueId: number) => api.deleteIssue(issueId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: issueKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: issueQueries.lists() });
     },
   });
 }
@@ -95,12 +165,12 @@ export function useAssignIssueToMeMutation() {
     mutationFn: (id: number) => api.assignIssueToMe(id),
     onSuccess: (updatedIssue) => {
       if (updatedIssue.key) {
-        queryClient.setQueryData(issueKeys.detail(updatedIssue.key), updatedIssue);
+        queryClient.setQueryData(issueQueries.detail(updatedIssue.key).queryKey, updatedIssue);
       }
-      queryClient.setQueryData(issueKeys.detail(String(updatedIssue.id)), updatedIssue);
-      queryClient.setQueryData(issueKeys.detail(updatedIssue.id), updatedIssue);
-      queryClient.invalidateQueries({ queryKey: issueKeys.details() });
-      queryClient.invalidateQueries({ queryKey: issueKeys.lists() });
+      queryClient.setQueryData(issueQueries.detail(String(updatedIssue.id)).queryKey, updatedIssue);
+      queryClient.setQueryData(issueQueries.detail(updatedIssue.id).queryKey, updatedIssue);
+      queryClient.invalidateQueries({ queryKey: issueQueries.details() });
+      queryClient.invalidateQueries({ queryKey: issueQueries.lists() });
     },
   });
 }
@@ -112,12 +182,12 @@ export function useUpdateIssueSprintMutation() {
       api.updateIssueSprint(id, sprintId),
     onSuccess: (updatedIssue) => {
       if (updatedIssue.key) {
-        queryClient.setQueryData(issueKeys.detail(updatedIssue.key), updatedIssue);
+        queryClient.setQueryData(issueQueries.detail(updatedIssue.key).queryKey, updatedIssue);
       }
-      queryClient.setQueryData(issueKeys.detail(String(updatedIssue.id)), updatedIssue);
-      queryClient.setQueryData(issueKeys.detail(updatedIssue.id), updatedIssue);
-      queryClient.invalidateQueries({ queryKey: issueKeys.details() });
-      queryClient.invalidateQueries({ queryKey: issueKeys.lists() });
+      queryClient.setQueryData(issueQueries.detail(String(updatedIssue.id)).queryKey, updatedIssue);
+      queryClient.setQueryData(issueQueries.detail(updatedIssue.id).queryKey, updatedIssue);
+      queryClient.invalidateQueries({ queryKey: issueQueries.details() });
+      queryClient.invalidateQueries({ queryKey: issueQueries.lists() });
     },
   });
 }
@@ -128,8 +198,8 @@ export function useAddIssueCommentMutation() {
     mutationFn: ({ issueId, text }: { issueId: number; text: string }) =>
       api.addIssueComment(issueId, text),
     onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({ queryKey: issueKeys.detail(vars.issueId) });
-      queryClient.invalidateQueries({ queryKey: issueKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: issueQueries.detail(vars.issueId).queryKey });
+      queryClient.invalidateQueries({ queryKey: issueQueries.lists() });
     },
   });
 }
@@ -147,7 +217,7 @@ export function useUpdateIssueCommentMutation() {
       text: string;
     }) => api.updateIssueComment(issueId, commentId, text),
     onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({ queryKey: issueKeys.detail(vars.issueId) });
+      queryClient.invalidateQueries({ queryKey: issueQueries.detail(vars.issueId).queryKey });
     },
   });
 }
@@ -163,17 +233,13 @@ export function useDeleteIssueCommentMutation() {
       commentId: number;
     }) => api.deleteIssueComment(issueId, commentId),
     onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({ queryKey: issueKeys.detail(vars.issueId) });
+      queryClient.invalidateQueries({ queryKey: issueQueries.detail(vars.issueId).queryKey });
     },
   });
 }
 
 export function useIssueAttachmentsQuery(issueId?: number) {
-  return useQuery({
-    queryKey: issueKeys.attachments(issueId!),
-    queryFn: () => api.getAttachments(issueId!),
-    enabled: typeof issueId === 'number' && !isNaN(issueId),
-  });
+  return useQuery(issueQueries.attachments(issueId!));
 }
 
 export function useUploadAttachmentMutation() {
@@ -182,8 +248,8 @@ export function useUploadAttachmentMutation() {
     mutationFn: ({ issueId, file }: { issueId: number; file: File }) =>
       api.uploadAttachment(issueId, file),
     onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({ queryKey: issueKeys.attachments(vars.issueId) });
-      queryClient.invalidateQueries({ queryKey: issueKeys.detail(vars.issueId) });
+      queryClient.invalidateQueries({ queryKey: issueQueries.attachments(vars.issueId).queryKey });
+      queryClient.invalidateQueries({ queryKey: issueQueries.detail(vars.issueId).queryKey });
     },
   });
 }
@@ -194,18 +260,14 @@ export function useDeleteAttachmentMutation() {
     mutationFn: ({ issueId, attachmentId }: { issueId: number; attachmentId: number }) =>
       api.deleteAttachment(issueId, attachmentId),
     onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({ queryKey: issueKeys.attachments(vars.issueId) });
-      queryClient.invalidateQueries({ queryKey: issueKeys.detail(vars.issueId) });
+      queryClient.invalidateQueries({ queryKey: issueQueries.attachments(vars.issueId).queryKey });
+      queryClient.invalidateQueries({ queryKey: issueQueries.detail(vars.issueId).queryKey });
     },
   });
 }
 
 export function useIssueLinksQuery(issueId?: number) {
-  return useQuery({
-    queryKey: issueKeys.links(issueId!),
-    queryFn: () => api.getIssueLinks(issueId!),
-    enabled: typeof issueId === 'number' && !isNaN(issueId),
-  });
+  return useQuery(issueQueries.links(issueId!));
 }
 
 export function useCreateIssueLinkMutation() {
@@ -221,8 +283,8 @@ export function useCreateIssueLinkMutation() {
       linkType: IssueLinkType;
     }) => api.createIssueLink(issueId, { targetIssueKeyOrId, linkType }),
     onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({ queryKey: issueKeys.links(vars.issueId) });
-      queryClient.invalidateQueries({ queryKey: issueKeys.detail(vars.issueId) });
+      queryClient.invalidateQueries({ queryKey: issueQueries.links(vars.issueId).queryKey });
+      queryClient.invalidateQueries({ queryKey: issueQueries.detail(vars.issueId).queryKey });
     },
   });
 }
@@ -233,8 +295,8 @@ export function useDeleteIssueLinkMutation() {
     mutationFn: ({ linkId }: { issueId: number; linkId: number }) =>
       api.deleteIssueLink(linkId),
     onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({ queryKey: issueKeys.links(vars.issueId) });
-      queryClient.invalidateQueries({ queryKey: issueKeys.detail(vars.issueId) });
+      queryClient.invalidateQueries({ queryKey: issueQueries.links(vars.issueId).queryKey });
+      queryClient.invalidateQueries({ queryKey: issueQueries.detail(vars.issueId).queryKey });
     },
   });
 }
@@ -244,7 +306,7 @@ export function useBulkUpdateIssuesMutation() {
   return useMutation({
     mutationFn: (payload: BulkUpdateIssuesDto) => api.bulkUpdateIssues(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: issueKeys.all });
+      queryClient.invalidateQueries({ queryKey: issueQueries.all });
     },
   });
 }
@@ -254,26 +316,15 @@ export function useBulkDeleteIssuesMutation() {
   return useMutation({
     mutationFn: (payload: BulkDeleteIssuesDto) => api.bulkDeleteIssues(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: issueKeys.all });
+      queryClient.invalidateQueries({ queryKey: issueQueries.all });
     },
   });
 }
 
 export function useIssueHistoryQuery(issueId?: number) {
-  return useQuery({
-    queryKey: issueKeys.history(issueId!),
-    queryFn: () => api.getIssueHistory(issueId!),
-    enabled: typeof issueId === 'number' && !isNaN(issueId),
-  });
+  return useQuery(issueQueries.history(issueId!));
 }
 
 export function useValidateJqlQuery(jql: string, enabled = true) {
-  return useQuery({
-    queryKey: ['issues', 'jql', 'validate', jql],
-    queryFn: () => api.validateJql(jql),
-    enabled: enabled && typeof jql === 'string',
-    staleTime: 60_000,
-  });
+  return useQuery(issueQueries.validateJql(jql, enabled));
 }
-
-

@@ -6,9 +6,8 @@ import {
   useRemoveTeamMemberMutation,
   useTeamCapacityQuery,
 } from '../../api/queries';
-import { Button, Input, Modal } from '../ui';
-import { Avatar } from '../common/Avatar';
-import { TeamAvatar } from './TeamAvatar';
+import { Button, Input, Modal, EntityAvatar } from '../ui/index.js';
+import { Avatar } from '../common/Avatar.js';
 import {
   UserPlus,
   Trash2,
@@ -144,7 +143,7 @@ export const TeamRosterModal: React.FC<TeamRosterModalProps> = ({
         <div className="p-3.5 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/50 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-primary)]">
-              <TeamAvatar name={team.name} avatarUrl={team.avatarUrl} size="sm" />
+              <EntityAvatar name={team.name} avatarUrl={team.avatarUrl} size="sm" />
             </div>
             <div>
               <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)]">

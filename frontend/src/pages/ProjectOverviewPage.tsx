@@ -11,8 +11,7 @@ import { IssueDetailsModal } from '../components/kanban/IssueDetailsModal';
 import { IssueContextMenu } from '../components/common/IssueContextMenu';
 import { ProjectReleasesModal } from '../components/releases/ProjectReleasesModal';
 import { Avatar } from '../components/common/Avatar';
-import { ProjectAvatar } from '../components/projects/ProjectAvatar';
-import { Badge } from '../components/ui';
+import { Badge, EntityAvatar } from '../components/ui/index.js';
 import { useAuth } from '../store';
 import type { IssueItem, IssuePriority, IssueStatus, SprintItem } from '../api/client';
 import {
@@ -168,15 +167,13 @@ export const ProjectOverviewPage: React.FC = () => {
     );
   }
 
-  const projectInitial = project?.name ? project.name.charAt(0).toUpperCase() : 'P';
-
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-5 flex-1 flex flex-col min-w-0 space-y-6 animate-in fade-in duration-200">
       {/* ─── Hero Header Card ─── */}
       <div className="p-5 sm:p-6 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/25 shadow-2xs space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-start gap-3.5 min-w-0 flex-1">
-            <ProjectAvatar
+            <EntityAvatar
               name={project?.name || ''}
               projectKey={project?.key}
               avatarUrl={project?.avatarUrl}

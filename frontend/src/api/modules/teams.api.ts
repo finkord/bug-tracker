@@ -1,4 +1,4 @@
-import { request, API_BASE_URL } from '../http.js';
+import { request, uploadFile } from '../http.js';
 import type {
   TeamItem,
   TeamMemberItem,
@@ -69,30 +69,8 @@ export const teamsApi = {
     );
   },
 
-  uploadTeamAvatar: async (teamId: number, file: File): Promise<{ message: string; avatarUrl: string }> => {
-    const formData = new FormData();
-    formData.append('avatar', file);
-
-    const token = localStorage.getItem('accessToken');
-    const headers: Record<string, string> = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    const res = await fetch(`${API_BASE_URL}/teams/${teamId}/avatar/upload`, {
-      method: 'POST',
-      credentials: 'include',
-      headers,
-      body: formData,
-    });
-
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.message || 'Failed to upload team avatar');
-    }
-
-    return res.json();
-  },
+  uploadTeamAvatar: (teamId: number, file: File) =>
+    uploadFile<{ message: string; avatarUrl: string }>(`/teams/${teamId}/avatar/upload`, file, 'avatar'),
 
   updateTeamAvatar: (teamId: number, avatarUrl: string) => {
     return request<{ message: string; avatarUrl: string }>(`/teams/${teamId}/avatar`, {

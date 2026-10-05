@@ -1,8 +1,7 @@
 import React, { useState, useRef } from 'react';
-import type { IssueItem } from '../../api/client';
-import type { SprintDefinition } from '../../types/agile';
-import { useTicketDragStore } from '../../store/useTicketDragStore';
-import { AgileIssueRow } from './AgileIssueRow';
+import type { IssueItem } from '../../api/client.js';
+import type { SprintDefinition } from '../../types/agile.js';
+import { AgileIssueRow } from './AgileIssueRow.js';
 import { Badge, Button, Dropdown } from '../ui';
 import {
   ChevronDown,
@@ -124,10 +123,7 @@ export const SprintContainer: React.FC<SprintContainerProps> = ({
     },
   ];
 
-  const isPointerTargeted = useTicketDragStore(
-    (s) => s.isDragging && s.hoverTarget?.type === 'sprint' && s.hoverTarget.sprintId === sprint.id,
-  );
-  const isHighlighted = isDragOver || isPointerTargeted;
+  const isHighlighted = isDragOver;
 
   return (
     <div

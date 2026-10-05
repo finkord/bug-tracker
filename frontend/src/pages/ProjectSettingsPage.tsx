@@ -16,9 +16,8 @@ import {
   useProjectComponentsQuery,
   useProjectVersionsQuery,
 } from '../api/queries';
-import { Badge } from '../components/ui';
-import { BackButton } from '../components/common/BackButton';
-import { ProjectAvatar } from '../components/projects/ProjectAvatar';
+import { Badge, EntityAvatar } from '../components/ui/index.js';
+import { BackButton } from '../components/common/BackButton.js';
 import { ProjectGeneralTab } from '../components/projects/ProjectGeneralTab';
 import { ProjectTeamsTab } from '../components/projects/ProjectTeamsTab';
 import { ProjectComponentsTab } from '../components/projects/ProjectComponentsTab';
@@ -140,7 +139,7 @@ export const ProjectSettingsPage: React.FC = () => {
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <ProjectAvatar
+            <EntityAvatar
               name={project.name}
               projectKey={project.key}
               avatarUrl={project.avatarUrl}

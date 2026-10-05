@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
-import type { UserProfile } from '../../api/client';
+import React, { useState, useMemo } from 'react';
+import type { ColumnDef } from '@tanstack/react-table';
+import type { UserProfile, ProjectComponentItem } from '../../api/client';
 import {
   useProjectComponentsQuery,
   useCreateProjectComponentMutation,
   useDeleteProjectComponentMutation,
 } from '../../api/queries';
-import { Button, Input, Modal, ConfirmDialog, UserPicker } from '../ui';
+import { Button, Input, Modal, ConfirmDialog, UserPicker, DataTable } from '../ui';
 import { Avatar } from '../common/Avatar';
 import {
-  Layers,
   Plus,
   Trash2,
   AlertCircle,
@@ -86,6 +86,67 @@ export const ProjectComponentsTab: React.FC<ProjectComponentsTabProps> = ({
     }
   };
 
+  const columns = useMemo<ColumnDef<ProjectComponentItem>[]>(() => [
+    {
+      id: 'name',
+      accessorKey: 'name',
+      header: 'Name',
+      cell: ({ row }) => (
+        <div className="font-bold text-[var(--md-sys-color-on-surface)] flex items-center gap-2">
+          <FolderTree className="w-4 h-4 text-[var(--md-sys-color-primary)] shrink-0" />
+          <span>{row.original.name}</span>
+        </div>
+      ),
+    },
+    {
+      id: 'description',
+      accessorKey: 'description',
+      header: 'Description',
+      cell: ({ row }) => (
+        <span className="text-[var(--md-sys-color-on-surface-variant)]">
+          {row.original.description || <span className="italic opacity-60">No description</span>}
+        </span>
+      ),
+    },
+    {
+      id: 'lead',
+      header: 'Component Lead',
+      cell: ({ row }) =>
+        row.original.lead ? (
+          <div className="flex items-center gap-1.5">
+            <Avatar
+              name={row.original.lead.fullName || 'Lead'}
+              avatarUrl={row.original.lead.avatarUrl}
+              size="xs"
+            />
+            <span className="font-semibold text-[var(--md-sys-color-on-surface)] truncate">
+              {row.original.lead.fullName}
+            </span>
+          </div>
+        ) : (
+          <span className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]/70 italic">
+            Unassigned
+          </span>
+        ),
+    },
+    {
+      id: 'actions',
+      header: () => <div className="text-right"></div>,
+      cell: ({ row }) => (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => handleDelete(row.original.id, row.original.name)}
+            className="p-1.5 rounded-lg text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/30 transition cursor-pointer"
+            title="Delete component"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      ),
+    },
+  ], []);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -110,93 +171,16 @@ export const ProjectComponentsTab: React.FC<ProjectComponentsTabProps> = ({
         </Button>
       </div>
 
-      {/* Table / List */}
-      {isLoading ? (
-        <div className="space-y-2">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="h-14 rounded-2xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/40 animate-pulse"
-            />
-          ))}
-        </div>
-      ) : components.length === 0 ? (
-        <div className="p-10 rounded-2xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/50 text-center space-y-3">
-          <div className="inline-flex p-3 rounded-full bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-primary)]">
-            <Layers className="w-6 h-6" />
-          </div>
-          <div className="max-w-md mx-auto space-y-1">
-            <h3 className="text-sm font-bold text-[var(--md-sys-color-on-surface)]">
-              No components configured
-            </h3>
-            <p className="text-xs text-[var(--md-sys-color-on-surface-variant)]">
-              Create components to group issues by architectural subsystem or area of responsibility.
-            </p>
-          </div>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => setModalOpen(true)}
-            leftIcon={<Plus className="w-4 h-4" />}
-          >
-            Create Component
-          </Button>
-        </div>
-      ) : (
-        <div className="overflow-x-auto rounded-2xl border border-[var(--md-sys-color-outline-variant)]/50 bg-[var(--md-sys-color-surface-container-low)]">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="border-b border-[var(--md-sys-color-outline-variant)]/40 bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface-variant)] font-bold select-none">
-                <th className="py-2.5 px-4 w-44">Name</th>
-                <th className="py-2.5 px-4">Description</th>
-                <th className="py-2.5 px-4 w-48">Component Lead</th>
-                <th className="py-2.5 px-3 w-16 text-right"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)]/20">
-              {components.map((comp) => (
-                <tr key={comp.id} className="hover:bg-[var(--md-sys-color-surface-container)]/40 transition">
-                  <td className="py-3 px-4 font-bold text-[var(--md-sys-color-on-surface)] flex items-center gap-2">
-                    <FolderTree className="w-4 h-4 text-[var(--md-sys-color-primary)] shrink-0" />
-                    <span>{comp.name}</span>
-                  </td>
-                  <td className="py-3 px-4 text-[var(--md-sys-color-on-surface-variant)]">
-                    {comp.description || <span className="italic opacity-60">No description</span>}
-                  </td>
-                  <td className="py-3 px-4">
-                    {comp.lead ? (
-                      <div className="flex items-center gap-1.5">
-                        <Avatar
-                          name={comp.lead.fullName || 'Lead'}
-                          avatarUrl={comp.lead.avatarUrl}
-                          size="xs"
-                        />
-                        <span className="font-semibold text-[var(--md-sys-color-on-surface)] truncate">
-                          {comp.lead.fullName}
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]/70 italic">
-                        Unassigned
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-3 px-3 text-right">
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(comp.id, comp.name)}
-                      className="p-1.5 rounded-lg text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/30 transition cursor-pointer"
-                      title="Delete component"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      {/* Table */}
+      <DataTable
+        columns={columns}
+        data={components}
+        getRowId={(comp) => String(comp.id)}
+        isLoading={isLoading}
+        loadingMessage="Loading components..."
+        emptyTitle="No components configured"
+        emptyDescription="Create components to group issues by architectural subsystem or area of responsibility."
+      />
 
       {/* Add Component Modal */}
       <Modal

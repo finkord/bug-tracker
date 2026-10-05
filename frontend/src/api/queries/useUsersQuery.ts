@@ -1,19 +1,77 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, type SystemRole } from '../client';
-import { rbacKeys } from './useRbacQuery';
+import { queryOptions, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  api,
+  type SystemRole,
+  type CreateSavedFilterPayload,
+  type UpdateSavedFilterPayload,
+} from '../client.js';
+import { rbacKeys } from './useRbacQuery.js';
 
-export const userKeys = {
+export const userQueries = {
   all: ['users'] as const,
-  lists: () => [...userKeys.all, 'list'] as const,
-  list: (params?: Record<string, unknown>) => [...userKeys.lists(), params ?? {}] as const,
-  assignees: (params?: Record<string, unknown>) => [...userKeys.all, 'assignees', params ?? {}] as const,
-  profile: () => [...userKeys.all, 'profile'] as const,
-  detail: (id: number) => [...userKeys.all, 'detail', id] as const,
-  stats: () => [...userKeys.all, 'admin-stats'] as const,
-  auditLogs: (page?: number, limit?: number) =>
-    [...userKeys.all, 'audit-logs', { page, limit }] as const,
-  savedFilters: () => [...userKeys.all, 'saved-filters'] as const,
-  preferences: () => [...userKeys.all, 'preferences'] as const,
+  lists: () => [...userQueries.all, 'list'] as const,
+  list: (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    role?: string;
+    isBlocked?: boolean;
+    isActivated?: boolean;
+  }) =>
+    queryOptions({
+      queryKey: [...userQueries.lists(), params ?? {}] as const,
+      queryFn: () => api.getUsers(params),
+    }),
+  assignees: (params?: { search?: string; page?: number; limit?: number }) =>
+    queryOptions({
+      queryKey: [...userQueries.all, 'assignees', params ?? {}] as const,
+      queryFn: () => api.getAssignees(params),
+    }),
+  profile: () =>
+    queryOptions({
+      queryKey: [...userQueries.all, 'profile'] as const,
+      queryFn: () => api.getProfile(),
+    }),
+  detail: (id: number) =>
+    queryOptions({
+      queryKey: [...userQueries.all, 'detail', id] as const,
+      queryFn: () => api.getUserById(id),
+      enabled: typeof id === 'number' && !Number.isNaN(id) && id > 0,
+    }),
+  stats: () =>
+    queryOptions({
+      queryKey: [...userQueries.all, 'admin-stats'] as const,
+      queryFn: () => api.getAdminStats(),
+    }),
+  auditLogs: (page = 1, limit = 50) =>
+    queryOptions({
+      queryKey: [...userQueries.all, 'audit-logs', { page, limit }] as const,
+      queryFn: () => api.getLoginAuditLogs(page, limit),
+    }),
+  savedFilters: () =>
+    queryOptions({
+      queryKey: [...userQueries.all, 'saved-filters'] as const,
+      queryFn: () => api.getSavedFilters(),
+    }),
+  preferences: () =>
+    queryOptions({
+      queryKey: [...userQueries.all, 'preferences'] as const,
+      queryFn: () => api.getPreferences(),
+    }),
+};
+
+// Aliased for full backwards compatibility
+export const userKeys = {
+  all: userQueries.all,
+  lists: userQueries.lists,
+  list: (params?: Record<string, unknown>) => userQueries.list(params as any).queryKey,
+  assignees: (params?: Record<string, unknown>) => userQueries.assignees(params as any).queryKey,
+  profile: () => userQueries.profile().queryKey,
+  detail: (id: number) => userQueries.detail(id).queryKey,
+  stats: () => userQueries.stats().queryKey,
+  auditLogs: (page?: number, limit?: number) => userQueries.auditLogs(page, limit).queryKey,
+  savedFilters: () => userQueries.savedFilters().queryKey,
+  preferences: () => userQueries.preferences().queryKey,
 };
 
 export function useUsersQuery(params?: {
@@ -24,66 +82,39 @@ export function useUsersQuery(params?: {
   isBlocked?: boolean;
   isActivated?: boolean;
 }) {
-  return useQuery({
-    queryKey: userKeys.list(params),
-    queryFn: () => api.getUsers(params),
-  });
+  return useQuery(userQueries.list(params));
 }
 
 export function useAssigneesQuery(params?: { search?: string; page?: number; limit?: number }) {
-  return useQuery({
-    queryKey: userKeys.assignees(params),
-    queryFn: () => api.getAssignees(params),
-  });
+  return useQuery(userQueries.assignees(params));
 }
 
 export function useProfileQuery() {
-  return useQuery({
-    queryKey: userKeys.profile(),
-    queryFn: () => api.getProfile(),
-  });
+  return useQuery(userQueries.profile());
 }
 
 export function useUserDetailQuery(id?: number) {
-  return useQuery({
-    queryKey: userKeys.detail(id || 0),
-    queryFn: () => api.getUserById(id!),
-    enabled: typeof id === 'number' && !Number.isNaN(id) && id > 0,
-  });
+  return useQuery(userQueries.detail(id || 0));
 }
 
 export function useAdminStatsQuery() {
-  return useQuery({
-    queryKey: userKeys.stats(),
-    queryFn: () => api.getAdminStats(),
-  });
+  return useQuery(userQueries.stats());
 }
 
 export function useLoginAuditLogsQuery(page = 1, limit = 50) {
-  return useQuery({
-    queryKey: userKeys.auditLogs(page, limit),
-    queryFn: () => api.getLoginAuditLogs(page, limit),
-  });
+  return useQuery(userQueries.auditLogs(page, limit));
 }
 
 export function useSavedFiltersQuery() {
-  return useQuery({
-    queryKey: userKeys.savedFilters(),
-    queryFn: () => api.getSavedFilters(),
-  });
+  return useQuery(userQueries.savedFilters());
 }
 
 export function useCreateSavedFilterMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: {
-      name: string;
-      criteria: string;
-      description?: string;
-      isFavorite?: boolean;
-    }) => api.createSavedFilter(payload),
+    mutationFn: (payload: CreateSavedFilterPayload) => api.createSavedFilter(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userKeys.savedFilters() });
+      queryClient.invalidateQueries({ queryKey: userQueries.savedFilters().queryKey });
     },
   });
 }
@@ -96,13 +127,9 @@ export function useUpdateSavedFilterMutation() {
       ...payload
     }: {
       id: number;
-      name?: string;
-      criteria?: string;
-      description?: string;
-      isFavorite?: boolean;
-    }) => api.updateSavedFilter(id, payload),
+    } & UpdateSavedFilterPayload) => api.updateSavedFilter(id, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userKeys.savedFilters() });
+      queryClient.invalidateQueries({ queryKey: userQueries.savedFilters().queryKey });
     },
   });
 }
@@ -112,7 +139,7 @@ export function useDeleteSavedFilterMutation() {
   return useMutation({
     mutationFn: (id: number) => api.deleteSavedFilter(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userKeys.savedFilters() });
+      queryClient.invalidateQueries({ queryKey: userQueries.savedFilters().queryKey });
     },
   });
 }
@@ -123,7 +150,7 @@ export function useUpdateProfileMutation() {
     mutationFn: (payload: { fullName?: string; jobTitle?: string }) =>
       api.updateProfile(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userKeys.profile() });
+      queryClient.invalidateQueries({ queryKey: userQueries.profile().queryKey });
     },
   });
 }
@@ -133,7 +160,7 @@ export function useUpdateAvatarMutation() {
   return useMutation({
     mutationFn: (avatarUrl: string) => api.updateAvatar(avatarUrl),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userKeys.profile() });
+      queryClient.invalidateQueries({ queryKey: userQueries.profile().queryKey });
     },
   });
 }
@@ -151,7 +178,7 @@ export function useUpdateUserRoleMutation() {
       jobTitle?: string;
     }) => api.updateUserRole(id, role, jobTitle),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: userQueries.lists() });
       queryClient.invalidateQueries({ queryKey: rbacKeys.groups() });
     },
   });
@@ -162,8 +189,8 @@ export function useBlockUserMutation() {
   return useMutation({
     mutationFn: (id: number) => api.blockUser(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: userKeys.stats() });
+      queryClient.invalidateQueries({ queryKey: userQueries.lists() });
+      queryClient.invalidateQueries({ queryKey: userQueries.stats().queryKey });
     },
   });
 }
@@ -173,8 +200,8 @@ export function useUnblockUserMutation() {
   return useMutation({
     mutationFn: (id: number) => api.unblockUser(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: userKeys.stats() });
+      queryClient.invalidateQueries({ queryKey: userQueries.lists() });
+      queryClient.invalidateQueries({ queryKey: userQueries.stats().queryKey });
     },
   });
 }
@@ -184,8 +211,8 @@ export function useAdminActivateUserMutation() {
   return useMutation({
     mutationFn: (id: number) => api.adminActivateUser(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: userKeys.stats() });
+      queryClient.invalidateQueries({ queryKey: userQueries.lists() });
+      queryClient.invalidateQueries({ queryKey: userQueries.stats().queryKey });
     },
   });
 }
@@ -195,8 +222,8 @@ export function useAdminResetUser2FaMutation() {
   return useMutation({
     mutationFn: (id: number) => api.adminResetUser2Fa(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: userKeys.stats() });
+      queryClient.invalidateQueries({ queryKey: userQueries.lists() });
+      queryClient.invalidateQueries({ queryKey: userQueries.stats().queryKey });
     },
   });
 }
@@ -206,17 +233,14 @@ export function useDeleteUserMutation() {
   return useMutation({
     mutationFn: (id: number) => api.deleteUser(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: userKeys.stats() });
+      queryClient.invalidateQueries({ queryKey: userQueries.lists() });
+      queryClient.invalidateQueries({ queryKey: userQueries.stats().queryKey });
     },
   });
 }
 
 export function useUserPreferencesQuery() {
-  return useQuery({
-    queryKey: userKeys.preferences(),
-    queryFn: () => api.getPreferences(),
-  });
+  return useQuery(userQueries.preferences());
 }
 
 export function useUpdateUserPreferencesMutation() {
@@ -224,8 +248,8 @@ export function useUpdateUserPreferencesMutation() {
   return useMutation({
     mutationFn: (prefs: Record<string, unknown>) => api.updatePreferences(prefs),
     onSuccess: (updated) => {
-      queryClient.setQueryData(userKeys.preferences(), updated);
-      queryClient.invalidateQueries({ queryKey: userKeys.profile() });
+      queryClient.setQueryData(userQueries.preferences().queryKey, updated);
+      queryClient.invalidateQueries({ queryKey: userQueries.profile().queryKey });
     },
   });
 }
@@ -235,9 +259,8 @@ export function useUploadAvatarMutation() {
   return useMutation({
     mutationFn: (file: File) => api.uploadAvatar(file),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userKeys.profile() });
-      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: userQueries.profile().queryKey });
+      queryClient.invalidateQueries({ queryKey: userQueries.lists() });
     },
   });
 }
-

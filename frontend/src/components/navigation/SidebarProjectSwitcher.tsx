@@ -19,8 +19,8 @@ import {
 } from '../ui/Dropdown';
 import { Tooltip } from '../ui/Tooltip';
 import { useActiveProjectStore } from '../../store';
-import type { ProjectItem } from '../../api/client';
-import { ProjectAvatar } from '../projects/ProjectAvatar';
+import { EntityAvatar } from '../ui/index.js';
+import type { ProjectItem } from '../../api/types/index.js';
 
 interface SidebarProjectSwitcherProps {
   projects: ProjectItem[];
@@ -127,7 +127,7 @@ export const SidebarProjectSwitcher: React.FC<SidebarProjectSwitcherProps> = ({
                     onClick={() => handleSelectProject(matchingProject, 'board')}
                     className="flex items-center gap-2 min-w-0 flex-1 text-left cursor-pointer"
                   >
-                    <ProjectAvatar
+                    <EntityAvatar
                       name={rp.name}
                       projectKey={rp.key}
                       avatarUrl={matchingProject.avatarUrl}
@@ -182,7 +182,7 @@ export const SidebarProjectSwitcher: React.FC<SidebarProjectSwitcherProps> = ({
                 }`}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <ProjectAvatar
+                  <EntityAvatar
                     name={project.name}
                     projectKey={project.key}
                     avatarUrl={project.avatarUrl}
@@ -237,7 +237,7 @@ export const SidebarProjectSwitcher: React.FC<SidebarProjectSwitcherProps> = ({
                 className="w-7 h-7 rounded-lg bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] flex items-center justify-center transition-all cursor-pointer border border-[var(--md-sys-color-outline-variant)]/40 shadow-2xs overflow-hidden"
                 aria-label="Switch active project"
               >
-                <ProjectAvatar
+                <EntityAvatar
                   name={projectName}
                   projectKey={activeProject?.key}
                   avatarUrl={activeProject?.avatarUrl}
@@ -262,7 +262,7 @@ export const SidebarProjectSwitcher: React.FC<SidebarProjectSwitcherProps> = ({
             aria-label="Switch active project"
           >
             <div className="flex items-center gap-2 min-w-0 flex-1">
-              <ProjectAvatar
+              <EntityAvatar
                 name={projectName}
                 projectKey={activeProject?.key}
                 avatarUrl={activeProject?.avatarUrl}

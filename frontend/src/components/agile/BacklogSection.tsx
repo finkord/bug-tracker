@@ -1,8 +1,7 @@
 import React, { useState, useRef } from 'react';
-import type { IssueItem } from '../../api/client';
-import type { SprintDefinition } from '../../types/agile';
-import { useTicketDragStore } from '../../store/useTicketDragStore';
-import { AgileIssueRow } from './AgileIssueRow';
+import type { IssueItem } from '../../api/client.js';
+import type { SprintDefinition } from '../../types/agile.js';
+import { AgileIssueRow } from './AgileIssueRow.js';
 import { Badge } from '../ui';
 import { ChevronDown, ChevronRight, Inbox, Plus } from 'lucide-react';
 
@@ -63,10 +62,7 @@ export const BacklogSection: React.FC<BacklogSectionProps> = ({
 
   const totalEstimate = issues.reduce((acc, i) => acc + (i.estimatedHours || 0), 0);
 
-  const isPointerTargeted = useTicketDragStore(
-    (s) => s.isDragging && s.hoverTarget?.type === 'backlog',
-  );
-  const isHighlighted = isDragOver || isPointerTargeted;
+  const isHighlighted = isDragOver;
 
   return (
     <div
