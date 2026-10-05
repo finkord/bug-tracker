@@ -121,9 +121,23 @@
 
 ### `events` — WebSocket Real-Time Gateway
 
-| File                  | Purpose                                              |
-|-----------------------|------------------------------------------------------|
-| `events.module.ts`    | Module definition — Socket.IO gateway for Kanban     |
+| File                              | Purpose                                                      |
+|-----------------------------------|--------------------------------------------------------------|
+| `events.module.ts`                | Module definition — Socket.IO gateway setup                  |
+| `events.gateway.ts`               | Gateway implementation, JWT auth handshake, room isolation   |
+| `events.gateway.spec.ts`          | Unit test suite for gateway rooms & auth                     |
+| `adapters/redis-io.adapter.ts`    | Distributed Redis adapter for multi-instance horizontal sync |
+
+### `notifications` — In-App Notification Center & Triage
+
+| File                                           | Purpose                                                    |
+|------------------------------------------------|------------------------------------------------------------|
+| `notifications.module.ts`                      | Module definition, TypeOrmModule registration              |
+| `notifications.controller.ts`                  | Unread queries, pagination, batch mark-read, snooze        |
+| `notifications.service.ts`                     | Notification persistence & real-time socket dispatch       |
+| `notifications.service.spec.ts`                | Unit test suite for notification flows                     |
+| `entities/notification.entity.ts`              | TypeORM Notification entity (composite indexed)            |
+| `dto/notifications.dto.ts`                     | DTOs for create, query, mark-read, and snooze              |
 
 ---
 
@@ -176,6 +190,7 @@
 | `socket.ts`                        | Socket.IO client instance                             |
 | `modules/auth.api.ts`              | Auth API calls (login, register, 2FA, OAuth, etc.)    |
 | `modules/issues.api.ts`            | Issues CRUD + FSM transition calls                    |
+| `modules/notifications.api.ts`     | Notifications inbox, mark-read, snooze API calls      |
 | `modules/projects.api.ts`          | Projects CRUD                                         |
 | `modules/rbac.api.ts`              | RBAC permission / role management                     |
 | `modules/sprints.api.ts`           | Sprint management API                                 |
@@ -189,6 +204,7 @@
 | `queries/useWorklogsQuery.ts`      | TanStack Query hooks for worklogs                     |
 | `types/auth.types.ts`              | TypeScript types for auth API responses               |
 | `types/issues.types.ts`            | TypeScript types for issues                           |
+| `types/notifications.types.ts`     | TypeScript types for notifications                    |
 | `types/projects.types.ts`          | TypeScript types for projects                         |
 | `types/rbac.types.ts`              | TypeScript types for RBAC                             |
 | `types/sprints.types.ts`           | TypeScript types for sprints                          |
@@ -210,6 +226,7 @@
 | `ui/`              | Atomic M3 primitives: Button, Badge, Input, Modal, etc.  |
 | `navigation/`      | SuperSidebar, SidebarNavList, SidebarMobileDrawer, etc.  |
 | `auth/`            | Login form, Register form, 2FA modal components          |
+| `notifications/`   | NotificationBell, notification dropdown popover, audio alert |
 | `kanban/`          | Kanban board columns, drag-and-drop card components      |
 | `agile/`           | Sprint backlog, sprint planning components               |
 | `issue-detail/`    | Issue detail panel, comment thread, worklog form         |
@@ -242,8 +259,10 @@
 | `documentation/INDEX.md`                 | Central router for coding agents & fast lookup        |
 | `documentation/AGENTS.md`                | Agent rules & Doc-as-Code hygiene protocol            |
 | `documentation/architecture/`            | Modular monolith architecture, ERD & diagram renders  |
-| `documentation/backend/`                 | 10 Active backend module specifications               |
+| `documentation/backend/`                 | 11 Active backend module specifications               |
 | `documentation/backend/auth.md`          | Auth service deep technical specification             |
+| `documentation/backend/events.md`        | WebSocket real-time gateway & personal notifications  |
+| `documentation/backend/notifications.md` | In-app alerts, unread counts & real-time delivery     |
 | `documentation/backend/seeding.md`       | Database seeding & multi-team dataset docs            |
 | `documentation/frontend/`                | React 19 architecture, 19 views, M3 design system     |
 | `documentation/operations/commands.md`   | CLI command cheatsheet (Docker, dev, DB, prod)        |

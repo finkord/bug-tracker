@@ -21,6 +21,7 @@ Welcome to the central documentation hub for **BugTracker**. This directory serv
 | **RBAC & Permissions**| Schemes, Roles, Groups, Security | [`backend/src/modules/rbac/`](../backend/src/modules/rbac) | [`backend/rbac.md`](backend/rbac.md) |
 | **Forensic Audit** | LoginAuditLog, IP analysis | [`backend/src/modules/security-audit/`](../backend/src/modules/security-audit) | [`backend/security-audit.md`](backend/security-audit.md) |
 | **WebSockets** | Socket.IO, Real-Time Board | [`backend/src/modules/events/`](../backend/src/modules/events) | [`backend/events.md`](backend/events.md) |
+| **Notifications & Triage** | In-app alerts, unread counts, snooze | [`backend/src/modules/notifications/`](../backend/src/modules/notifications) | [`backend/notifications.md`](backend/notifications.md) |
 | **Admin Operations** | Health, Metrics, User Control | [`backend/src/modules/admin/`](../backend/src/modules/admin) | [`backend/admin.md`](backend/admin.md) |
 | **Database Seeding** | 5 Teams, 30 Engineers, 46 Issues | [`backend/src/database/seed.ts`](../backend/src/database/seed.ts) | [`backend/seeding.md`](backend/seeding.md) |
 | **Frontend Core** | React 19, Zustand, Query | [`frontend/src/App.tsx`](../frontend/src/App.tsx) | [`frontend/overview.md`](frontend/overview.md) |
@@ -52,7 +53,7 @@ documentation/
 │   ├── system-overview.md
 │   ├── database-schema.md
 │   └── diagrams/                    # Paired Mermaid (.mmd) and PNG (.png) diagrams
-├── backend/                         # 10 Domain-specific backend module docs
+├── backend/                         # 11 Domain-specific backend module docs
 │   ├── auth.md
 │   ├── users.md
 │   ├── projects.md
@@ -61,6 +62,7 @@ documentation/
 │   ├── rbac.md
 │   ├── security-audit.md
 │   ├── events.md
+│   ├── notifications.md
 │   ├── admin.md
 │   └── seeding.md
 ├── frontend/                        # Frontend SPA architecture and design system

@@ -38,6 +38,12 @@ Supported Priorities: `LOW`, `MEDIUM`, `HIGH`, `CRITICAL`.
    - Secure download URLs generated on demand.
 6. **Comments**:
    - Real-time discussion threads attached to issues.
+7. **Real-Time Notification & Mention Triggers**:
+   - Status transitions notify the assignee and reporter (`STATUS_CHANGED`).
+   - Assignment and unassignment notify affected engineers (`ASSIGNED`, `UNASSIGNED`).
+   - Priority escalations to `HIGH` or `CRITICAL` alert the assignee (`PRIORITY_CHANGED`).
+   - Moving tickets into active sprints notifies the assignee (`SPRINT_ASSIGNED`).
+   - Comment threads trigger notifications for reporter and assignee (`COMMENT_ADDED`), plus parse `@username` tokens to generate instant mention alerts (`MENTIONED`).
 
 ---
 

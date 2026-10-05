@@ -1,6 +1,6 @@
 # Real-Time WebSocket Gateway (`EventsModule`)
 
-The `EventsModule` provides enterprise-grade, distributed WebSocket real-time capabilities via Socket.IO, enabling live Kanban board updates, agile sprint synchronization, and secure collaborative issue viewing.
+The `EventsModule` provides enterprise-grade, distributed WebSocket real-time capabilities via Socket.IO, enabling live Kanban board updates, agile sprint synchronization, secure collaborative issue viewing, and instant in-app notification dispatches.
 
 ---
 
@@ -28,6 +28,11 @@ Anonymous connections are strictly rejected. Connection authentication in `handl
 
 ## 3. Room Subscriptions & RBAC Authorization
 
+### Personal Notification Room (`user_${userId}`)
+- **Handshake Auto-Join**: Upon successful JWT handshake verification, the socket automatically joins room `user_${userId}`.
+- **Purpose**: Direct delivery of targeted user notifications (mentions, assignments, status changes) without global emissions or polling.
+- Multi-tab and multi-device connections for the same user join the same room.
+
 ### Project Room (`join:project`)
 - Payload: `{ projectId: number }`
 - **Security Check**: Enforces `PermissionEvaluatorService.hasPermission({ userId, projectId, permission: ProjectPermission.BROWSE_PROJECTS })`.
@@ -42,8 +47,9 @@ Anonymous connections are strictly rejected. Connection authentication in `handl
 ---
 
 ## 4. Broadcast Events & Zero Global Leaks
-Every broadcast is strictly scoped to isolated project and issue rooms. Global emissions (`server.emit(...)`) are strictly prohibited to prevent data leaks.
+Every broadcast is strictly scoped to isolated project, issue, or personal user rooms. Global emissions (`server.emit(...)`) are strictly prohibited to prevent data leaks.
 
+### Project & Issue Scoped Events
 * `issue:created`: Emitted to `project_${projectId}`. If `securityLevelId` is set, sockets in the room are filtered so only authorized users receive the payload.
 * `issue:updated`: Emitted to `project_${projectId}` and `issue_${issueId}` with row-level security filtering.
 * `issue:deleted`: Emitted to `project_${projectId}` and `issue_${issueId}`.
@@ -51,10 +57,22 @@ Every broadcast is strictly scoped to isolated project and issue rooms. Global e
 * `comment:created`: Emitted to `issue_${issueId}`.
 * `attachment:uploaded`: Emitted to `issue_${issueId}`.
 
+### Personal Notification Events
+* `notification:received` / `notification:new`: Emitted directly to `user_${recipientId}`.
+  * **Triggers**:
+    * `STATUS_CHANGED`: Ticket assigned to or reported by user changed status.
+    * `ASSIGNED`: User was assigned to a ticket.
+    * `UNASSIGNED`: User was unassigned from a ticket.
+    * `PRIORITY_CHANGED`: Ticket assigned to user escalated to `HIGH` or `CRITICAL`.
+    * `SPRINT_ASSIGNED`: Ticket assigned to user attached to an active sprint.
+    * `MENTIONED`: User was tagged with `@username` in an issue comment.
+    * `COMMENT_ADDED`: New comment posted on a ticket where user is reporter or assignee.
+
 ---
 
 ## 5. Key Source Files
 * Gateway: [`events.gateway.ts`](../../backend/src/modules/events/events.gateway.ts)
 * Unit Tests: [`events.gateway.spec.ts`](../../backend/src/modules/events/events.gateway.spec.ts)
 * Redis Adapter: [`redis-io.adapter.ts`](../../backend/src/modules/events/adapters/redis-io.adapter.ts)
+* Notifications Service: [`notifications.service.ts`](../../backend/src/modules/notifications/notifications.service.ts)
 * Module: [`events.module.ts`](../../backend/src/modules/events/events.module.ts)
