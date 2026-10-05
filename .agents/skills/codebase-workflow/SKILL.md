@@ -61,7 +61,7 @@ Entity → DTO → Service → Controller → E2E/Unit Test → Frontend API cli
 For frontend-only changes:
 
 ```
-API type → API module function → TanStack Query hook → Component/Page → Store slice (if needed)
+OpenAPI schema sync (`npm run api:sync`) → Derived domain type → API module function → TanStack Query hook → Component/Page → Store slice (if needed)
 ```
 
 ---
@@ -99,7 +99,7 @@ cd frontend && npm run build
 
 ```bash
 cd backend  && npx tsc --noEmit
-cd frontend && npx tsc --noEmit
+cd frontend && npx tsc -b
 ```
 
 ---

@@ -4,10 +4,12 @@ graph TB
         Router["App Router (19 Views)"]
         Stores["Zustand Stores (auth, ui, theme)"]
         Query["TanStack Query (Cache & Sync)"]
+        OpenAPI["Generated OpenAPI Types<br/>(openapi-typescript contract)"]
         WSClient["Socket.IO Client"]
         SPA --> Router
         Router --> Stores
         Router --> Query
+        Query --> OpenAPI
         SPA --> WSClient
     end
 
@@ -22,7 +24,7 @@ graph TB
     end
 
     subgraph GatewayTier["Level 3: API & Event Gateway (NestJS 12)"]
-        Main["Express API Gateway (Port 3000)<br/>Prefix: /api/v1"]
+        Main["Express API Gateway (Port 3000)<br/>Prefix: /api/v1 (Swagger /api/docs-json)"]
         Pipes["ValidationPipe (class-validator)"]
         Guards["JwtAuthGuard | RolesGuard | ThrottlerGuard"]
         EventsGW["EventsGateway (Socket.IO)<br/>Namespace: /events"]
@@ -33,7 +35,7 @@ graph TB
     subgraph CoreModules["Modular Monolith Core Domain"]
         AuthM["AuthModule & CaptchaModule<br/>(Argon2id, TOTP 2FA, OAuth2, Turnstile)"]
         UserM["UsersModule & AdminModule<br/>(Profiles, Saved Filters, Diagnostics)"]
-        IssueM["IssuesModule & SprintsModule<br/>(Tickets, FSM, Links, Worklogs)"]
+        IssueM["IssuesModule & SprintsModule<br/>(Tickets, FSM, JQL Validation, Worklogs)"]
         RbacM["RbacModule & SecurityAuditModule<br/>(Schemes, Roles, Audit Logs)"]
         ProjM["ProjectsModule<br/>(Keys, Team Spaces, Workflows)"]
     end

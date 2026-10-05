@@ -35,6 +35,11 @@ npm run build
 npm run lint
 ```
 
+### 5. Sync API Contract from Backend
+```bash
+npm run api:sync
+```
+
 ---
 
 ## Core Features

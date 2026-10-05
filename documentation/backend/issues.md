@@ -80,7 +80,8 @@ Supported Priorities: `LOW`, `MEDIUM`, `HIGH`, `CRITICAL`.
 | `DELETE` | `/:id/worklogs/:worklogId` | Delete a worklog entry (atomic transaction decrement) | JWT + `LOG_WORK` (Author/Admin) |
 | `GET` | `/worklogs/me` | Paginated personal worklogs (`page`, `limit`) | JWT (`JwtAuthGuard`) |
 | `GET` | `/worklogs/stats` | High-performance SQL-aggregated time metrics | JWT (`JwtAuthGuard`) |
-| `GET` | `/worklogs/matrix` | Team timesheet matrix (clamped to 62 days) | JWT (`JwtAuthGuard`) |
+| `GET` | `/worklogs/matrix` | Team timesheet matrix (clamped to 62 days, supports groupBy=user\|issue) | JWT (`JwtAuthGuard`) |
+| `POST` | `/jql/validate` | Server-side JQL syntax and AST validation | JWT (`JwtAuthGuard`) |
 | `POST` | `/:id/links` | Link this issue to another issue | JWT (`JwtAuthGuard`) |
 | `POST` | `/:id/attachments` | Upload an attachment file to S3 | JWT (`JwtAuthGuard`) |
 
@@ -94,6 +95,7 @@ Supported Priorities: `LOW`, `MEDIUM`, `HIGH`, `CRITICAL`.
   * Core & Lifecycle: [`issue-core.service.ts`](../../backend/src/modules/issues/services/issue-core.service.ts)
   * Comments & Mentions: [`issue-comments.service.ts`](../../backend/src/modules/issues/services/issue-comments.service.ts)
   * Worklogs: [`issue-worklogs.service.ts`](../../backend/src/modules/issues/services/issue-worklogs.service.ts)
+  * JQL Parser & Validator: [`jql-parser.service.ts`](../../backend/src/modules/issues/services/jql-parser.service.ts)
 * Entities:
   * [`Issue`](../../backend/src/modules/issues/entities/issue.entity.ts)
   * [`IssueHistory`](../../backend/src/modules/issues/entities/issue-history.entity.ts)

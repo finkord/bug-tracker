@@ -70,6 +70,8 @@
 | `services/issue-core.service.ts`               | Core lifecycle, subtasks hierarchy, bulk updates   |
 | `services/issue-comments.service.ts`           | Comment threads, @mention regex parsing            |
 | `services/issue-worklogs.service.ts`           | Atomic effort logging, SQL statistics              |
+| `services/jql-parser.service.ts`               | JQL AST parsing, syntax validation, query build    |
+| `dto/validate-jql.dto.ts`                      | DTOs for server-side JQL syntax validation         |
 | `entities/issue.entity.ts`                     | TypeORM Issue entity (FSM, parentId for subtasks)  |
 | `entities/issue-history.entity.ts`             | Audit change history on field updates              |
 | `entities/comment.entity.ts`                   | Issue comments                                     |
@@ -229,6 +231,8 @@
 | `queries/useSprintsQuery.ts`       | TanStack Query hooks for sprints                      |
 | `queries/useUsersQuery.ts`         | TanStack Query hooks for users                        |
 | `queries/useWorklogsQuery.ts`      | TanStack Query hooks for worklogs                     |
+| `types/api.generated.ts`           | Generated TypeScript schemas via openapi-typescript   |
+| `types/index.ts`                   | Common API type helpers (ApiSchema, ApiOperations)    |
 | `types/auth.types.ts`              | TypeScript types for auth API responses               |
 | `types/issues.types.ts`            | TypeScript types for issues                           |
 | `types/notifications.types.ts`     | TypeScript types for notifications                    |
@@ -250,7 +254,7 @@
 
 | Directory          | Purpose                                                  |
 |--------------------|----------------------------------------------------------|
-| `ui/`              | Atomic M3 primitives: Button, Badge, Input, Modal, etc.  |
+| `ui/`              | Atomic M3 primitives: Button, Badge, Input, Modal, FormModal, etc. |
 | `navigation/`      | SuperSidebar, SidebarNavList, SidebarMobileDrawer, etc.  |
 | `auth/`            | Login form, Register form, 2FA modal components          |
 | `notifications/`   | NotificationBell, notification dropdown popover, audio alert |

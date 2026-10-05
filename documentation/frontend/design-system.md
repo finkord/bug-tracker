@@ -59,17 +59,19 @@ In adherence to WCAG 2.1 AA / AAA standards and M3 tonal palettes:
 
 To eliminate fragmented duplicate styles and ensure unified Material 3 token consumption:
 
-* **`UserPicker`** ([`frontend/src/components/common/UserPicker.tsx`](../../frontend/src/components/common/UserPicker.tsx)):
+* **`FormModal`** ([`frontend/src/components/ui/FormModal.tsx`](../../frontend/src/components/ui/FormModal.tsx)):
+  - Canonical form modal wrapping Radix Dialog with pinned M3 action footer, native form submit handling, loading spinner, error alert banner (`role="alert"`), and extensible extraFooter slot.
+* **`UserPicker`** ([`frontend/src/components/ui/UserPicker.tsx`](../../frontend/src/components/ui/UserPicker.tsx)):
   - Canonical user selector supporting avatar rendering, search filtering, and single or multi-select modes.
-* **`StatusBadge`** ([`frontend/src/components/common/StatusBadge.tsx`](../../frontend/src/components/common/StatusBadge.tsx)):
+* **`StatusBadge`** ([`frontend/src/components/ui/StatusBadge.tsx`](../../frontend/src/components/ui/StatusBadge.tsx)):
   - Uniform issue status indicators (`OPEN`, `IN_PROGRESS`, `RESOLVED`, `CLOSED`) with semantic M3 tonal containers.
-* **`PriorityBadge`** ([`frontend/src/components/common/PriorityBadge.tsx`](../../frontend/src/components/common/PriorityBadge.tsx)):
+* **`PriorityBadge`** ([`frontend/src/components/ui/PriorityBadge.tsx`](../../frontend/src/components/ui/PriorityBadge.tsx)):
   - Crisp priority representations (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`) with unified iconography and sizing variants (`sm`, `md`).
-* **`EmptyState`** ([`frontend/src/components/common/EmptyState.tsx`](../../frontend/src/components/common/EmptyState.tsx)):
+* **`EmptyState`** ([`frontend/src/components/ui/EmptyState.tsx`](../../frontend/src/components/ui/EmptyState.tsx)):
   - Zero-data presentation with icon container, headline, description, and primary action button.
-* **`ConfirmDialog`** ([`frontend/src/components/common/ConfirmDialog.tsx`](../../frontend/src/components/common/ConfirmDialog.tsx)):
+* **`ConfirmDialog`** ([`frontend/src/components/ui/ConfirmDialog.tsx`](../../frontend/src/components/ui/ConfirmDialog.tsx)):
   - Accessible modal dialog for confirmations, destructive operations, and sprint rollovers.
-* **`SearchInput`** ([`frontend/src/components/common/SearchInput.tsx`](../../frontend/src/components/common/SearchInput.tsx)):
+* **`SearchInput`** ([`frontend/src/components/ui/SearchInput.tsx`](../../frontend/src/components/ui/SearchInput.tsx)):
   - Search input with clear button, debounce hooks, and keyboard shortcut hint badges.
 
 ---
