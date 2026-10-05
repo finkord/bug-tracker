@@ -108,9 +108,9 @@ erDiagram
 ### D. Issue Tracking, Hierarchy & Change Forensics (`modules/issues/`)
 10. **[`Issue`](../../backend/src/modules/issues/entities/issue.entity.ts)**:
     - Primary table: `issues`
-    - Attributes: `id` (int), `key` (UK, e.g. `CORE-101`), `title`, `description`, `type` (`BUG`, `TASK`, `STORY`, `EPIC`, `SUBTASK`), `status` (`OPEN`, `IN_PROGRESS`, `RESOLVED`, `CLOSED`), `priority` (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`), `projectId`, `parentId` (FK to `issues`, nullable for subtasks), `sprintId` (FK to `sprints`, nullable), `componentId` (FK to `project_components`, nullable), `reporterId`, `assigneeId`, `estimateHours`, `timeSpentHours`, `labels` (text array, nullable).
+    - Attributes: `id` (int), `key` (UK, e.g. `CORE-101`), `title`, `description`, `type` (`BUG`, `TASK`, `STORY`, `EPIC`, `SUBTASK`), `status` (`OPEN`, `IN_PROGRESS`, `REVIEW`, `RESOLVED`, `CLOSED`), `priority` (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`), `order` (float, indexed, board rank position), `projectId`, `parentId` (FK to `issues`, nullable for subtasks), `sprintId` (FK to `sprints`, nullable), `componentId` (FK to `project_components`, nullable), `reporterId`, `assigneeId`, `estimateHours`, `timeSpentHours`, `labels` (text array, nullable).
     - Indexes:
-      - B-Tree: `(projectId, status)`, `projectId`, `priority`, `assigneeId`, `reporterId`, `createdAt`, `sprintId`, `parentId`, `componentId`.
+      - B-Tree: `(projectId, status)`, `projectId`, `priority`, `assigneeId`, `reporterId`, `createdAt`, `sprintId`, `parentId`, `componentId`, `order`.
       - Unique B-Tree: `(projectId, issueNum)`.
       - GIN Index: `idx_issues_search_vector` on `to_tsvector('english', coalesce(title, '') || ' ' || coalesce(description, ''))`.
 11. **[`IssueHistory`](../../backend/src/modules/issues/entities/issue-history.entity.ts)**:

@@ -17,6 +17,6 @@ sequenceDiagram
     Admin->>Gateway: PATCH /api/v1/admin/users/:id/roles (Assigns CORE-Dev Role & Group)
     Gateway->>DB: INSERT UserGroup / ProjectRoleActor
     Gateway-->>Frontend: 200 OK (Roles updated)
-    Admin->>Kanban: Transitions ticket to "Pending Reporter"
+    Admin->>Kanban: Transitions ticket to "Review"
     Employee->>Frontend: Verifies access, leaves confirmation comment
-    Admin->>Kanban: Transitions ticket to "Resolved / Done"
+    Admin->>Kanban: Transitions ticket to "Resolved"

@@ -7,12 +7,21 @@ The `IssuesModule` is the core work-item engine of BugTracker, handling tickets,
 ## 1. Domain Capabilities
 
 ### Issue Lifecycles (FSM)
-Issues transition across discrete states:
+Issues transition across discrete states enforced by `WORKFLOW_TRANSITIONS`:
 ```
-[ OPEN ] ──► [ IN_PROGRESS ] ──► [ RESOLVED ] ──► [ CLOSED ]
-    ▲               │
-    └── Reopened ───┘
+[ OPEN ] <───────────────────────────┐
+  │   ▲                              │
+  ▼   │                              │
+[ IN_PROGRESS ] ──► [ REVIEW ] ──► [ RESOLVED ] ──► [ CLOSED ]
+  │                     │             │               ▲
+  └─────────────────────┴─────────────┴───────────────┘
 ```
+- `OPEN` -> `IN_PROGRESS`, `RESOLVED`, `CLOSED`
+- `IN_PROGRESS` -> `REVIEW`, `RESOLVED`, `OPEN`
+- `REVIEW` -> `RESOLVED`, `IN_PROGRESS`
+- `RESOLVED` -> `CLOSED`, `OPEN`, `IN_PROGRESS`
+- `CLOSED` -> `OPEN`
+
 Supported Issue Types: `BUG`, `TASK`, `STORY`, `EPIC`, `SUBTASK`.  
 Supported Priorities: `LOW`, `MEDIUM`, `HIGH`, `CRITICAL`.
 
@@ -74,6 +83,8 @@ Supported Priorities: `LOW`, `MEDIUM`, `HIGH`, `CRITICAL`.
 | `DELETE` | `/:id` | Delete an issue (enforces reporter 24h grace or admin rights) | Admin / Lead / Reporter |
 | `POST` | `/bulk` | Atomic bulk actions (status, assignee, sprint, delete) | JWT (`JwtAuthGuard`) |
 | `GET` | `/:id/subtasks` | Retrieve all child subtasks and completion counts | JWT (`JwtAuthGuard`) |
+| `GET` | `/:id/transitions` | Retrieve permitted FSM transitions for an issue | JWT (`JwtAuthGuard`) |
+| `PATCH` | `/:id/reorder` | Update fractional order rank of an issue for board column sorting | JWT + `EDIT_ISSUES` |
 | `GET` | `/:id/history` | Retrieve chronological audit history of field modifications | JWT (`JwtAuthGuard`) |
 | `POST` | `/:id/comments` | Add a comment to an issue | JWT (`JwtAuthGuard`) |
 | `POST` | `/:id/worklogs` | Log effort time against an issue (atomic transaction) | JWT + `LOG_WORK` |
@@ -96,6 +107,11 @@ Supported Priorities: `LOW`, `MEDIUM`, `HIGH`, `CRITICAL`.
   * Comments & Mentions: [`issue-comments.service.ts`](../../backend/src/modules/issues/services/issue-comments.service.ts)
   * Worklogs: [`issue-worklogs.service.ts`](../../backend/src/modules/issues/services/issue-worklogs.service.ts)
   * JQL Parser & Validator: [`jql-parser.service.ts`](../../backend/src/modules/issues/services/jql-parser.service.ts)
+* DTOs:
+  * [`workflow-transition.dto.ts`](../../backend/src/modules/issues/dto/workflow-transition.dto.ts)
+  * [`reorder-issue.dto.ts`](../../backend/src/modules/issues/dto/reorder-issue.dto.ts)
+  * [`create-issue.dto.ts`](../../backend/src/modules/issues/dto/create-issue.dto.ts)
+  * [`issue-response.dto.ts`](../../backend/src/modules/issues/dto/issue-response.dto.ts)
 * Entities:
   * [`Issue`](../../backend/src/modules/issues/entities/issue.entity.ts)
   * [`IssueHistory`](../../backend/src/modules/issues/entities/issue-history.entity.ts)

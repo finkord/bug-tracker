@@ -16,13 +16,17 @@ This document provides a comprehensive technical overview of the **BugTracker** 
 graph TB
     subgraph ClientTier["Presentation Tier (React 19 SPA)"]
         SPA["React 19 SPA Client<br/>(Tailwind v4 + M3 Expressive)"]
+        Primitives["Headless Primitives<br/>(DataTable, cmdk, @dnd-kit, EntityAvatar)"]
         Router["App Router (19 Views)"]
         Stores["Zustand Stores (auth, ui, theme)"]
-        Query["TanStack Query (Cache & Sync)"]
+        Query["TanStack Query (queryOptions factories)"]
+        OpenAPI["Generated OpenAPI Types<br/>(api.generated.ts contract)"]
         WSClient["Socket.IO Client"]
         SPA --> Router
+        SPA --> Primitives
         Router --> Stores
         Router --> Query
+        Query --> OpenAPI
         SPA --> WSClient
     end
 
@@ -48,7 +52,7 @@ graph TB
     subgraph CoreModules["Modular Monolith Core Domain"]
         AuthM["AuthModule & CaptchaModule<br/>(Argon2id, TOTP 2FA, OAuth2, Turnstile)"]
         UserM["UsersModule & AdminModule<br/>(Profiles, Saved Filters, Diagnostics)"]
-        IssueM["IssuesModule & SprintsModule<br/>(Tickets, FSM, Links, Worklogs)"]
+        IssueM["IssuesModule & SprintsModule<br/>(FSM Workflow, JQL Validation, Reordering, Worklogs)"]
         RbacM["RbacModule & SecurityAuditModule<br/>(Schemes, Roles, Audit Logs)"]
         ProjM["ProjectsModule<br/>(Keys, Team Spaces, Workflows)"]
     end

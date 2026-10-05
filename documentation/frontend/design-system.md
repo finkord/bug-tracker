@@ -59,12 +59,18 @@ In adherence to WCAG 2.1 AA / AAA standards and M3 tonal palettes:
 
 To eliminate fragmented duplicate styles and ensure unified Material 3 token consumption:
 
+* **`DataTable`** ([`frontend/src/components/ui/DataTable.tsx`](../../frontend/src/components/ui/DataTable.tsx)):
+  - Canonical headless data table powered by `@tanstack/react-table` (v8) and `@tanstack/react-virtual`. Provides server-side pagination, sorting, row selection, responsive density, empty states, and virtualized row scrolling for large datasets.
 * **`FormModal`** ([`frontend/src/components/ui/FormModal.tsx`](../../frontend/src/components/ui/FormModal.tsx)):
   - Canonical form modal wrapping Radix Dialog with pinned M3 action footer, native form submit handling, loading spinner, error alert banner (`role="alert"`), and extensible extraFooter slot.
+* **`EntityAvatar`** ([`frontend/src/components/ui/EntityAvatar.tsx`](../../frontend/src/components/ui/EntityAvatar.tsx)):
+  - Unified avatar primitive rendering project keys, team icons, and user profiles with automated fallback initial generation, color hashing, and S3 SeaweedFS image support.
+* **`AvatarPicker`** ([`frontend/src/components/ui/AvatarPicker.tsx`](../../frontend/src/components/ui/AvatarPicker.tsx)):
+  - Reusable avatar selection panel featuring preset icons/gradients and direct custom file upload to SeaweedFS with 5MB validation.
 * **`UserPicker`** ([`frontend/src/components/ui/UserPicker.tsx`](../../frontend/src/components/ui/UserPicker.tsx)):
   - Canonical user selector supporting avatar rendering, search filtering, and single or multi-select modes.
 * **`StatusBadge`** ([`frontend/src/components/ui/StatusBadge.tsx`](../../frontend/src/components/ui/StatusBadge.tsx)):
-  - Uniform issue status indicators (`OPEN`, `IN_PROGRESS`, `RESOLVED`, `CLOSED`) with semantic M3 tonal containers.
+  - Uniform issue status indicators (`OPEN`, `IN_PROGRESS`, `REVIEW`, `RESOLVED`, `CLOSED`) with semantic M3 tonal containers.
 * **`PriorityBadge`** ([`frontend/src/components/ui/PriorityBadge.tsx`](../../frontend/src/components/ui/PriorityBadge.tsx)):
   - Crisp priority representations (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`) with unified iconography and sizing variants (`sm`, `md`).
 * **`EmptyState`** ([`frontend/src/components/ui/EmptyState.tsx`](../../frontend/src/components/ui/EmptyState.tsx)):
@@ -80,9 +86,13 @@ To eliminate fragmented duplicate styles and ensure unified Material 3 token con
 
 The interface is engineered for power users, matching modern issue tracker ergonomics:
 
+* **Global `Cmd+K` / `Ctrl+K`**: Triggers headless `cmdk` quick command search ([`QuickSearchModal.tsx`](../../frontend/src/components/workspace/QuickSearchModal.tsx)) for instant jumping to projects, issues, filters, or settings.
 * **Global `C` Shortcut**: Triggers quick ticket creation modal from anywhere in the app with auto-focus on the title input.
 * **`Cmd+Enter` / `Ctrl+Enter`**: Submits creation and editing forms without reaching for the mouse.
 * **`J` / `K` Navigation**: Moves selection focus sequentially up and down cards on the Kanban board and rows in the Backlog.
 * **Multi-Select & Bulk Actions**:
   - `Shift+Click` and `X` toggle multi-issue selection in Backlog and Kanban.
   - Floating M3 Bulk Action Bar enables batch status transitions, reassignments, sprint moves, and deletions in a single atomic action.
+* **Headless Drag and Drop (`@dnd-kit`)**:
+  - Accessible pointer and keyboard reordering across columns with 5px distance activation thresholds.
+  - Visual FSM drop validation dims disallowed columns and displays warning indicators for illegal transitions.

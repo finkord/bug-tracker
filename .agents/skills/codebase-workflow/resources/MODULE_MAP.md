@@ -72,7 +72,9 @@
 | `services/issue-worklogs.service.ts`           | Atomic effort logging, SQL statistics              |
 | `services/jql-parser.service.ts`               | JQL AST parsing, syntax validation, query build    |
 | `dto/validate-jql.dto.ts`                      | DTOs for server-side JQL syntax validation         |
-| `entities/issue.entity.ts`                     | TypeORM Issue entity (FSM, parentId for subtasks)  |
+| `dto/workflow-transition.dto.ts`               | DTOs for issue state machine transitions query     |
+| `dto/reorder-issue.dto.ts`                     | DTOs for card rank positioning on board columns    |
+| `entities/issue.entity.ts`                     | TypeORM Issue entity (FSM, order rank, parentId)   |
 | `entities/issue-history.entity.ts`             | Audit change history on field updates              |
 | `entities/comment.entity.ts`                   | Issue comments                                     |
 | `entities/attachment.entity.ts`                | File attachments (SeaweedFS S3 references)         |
@@ -214,23 +216,25 @@
 | Path                               | Purpose                                               |
 |------------------------------------|-------------------------------------------------------|
 | `client.ts`                        | Axios instance with interceptors (cookie auth)        |
-| `http.ts`                          | Generic HTTP helpers                                  |
+| `http.ts`                          | HTTP helpers: `request` and unified `uploadFile<T>`   |
 | `queryClient.ts`                   | TanStack Query client configuration                   |
 | `socket.ts`                        | Socket.IO client instance                             |
 | `modules/auth.api.ts`              | Auth API calls (login, register, 2FA, OAuth, etc.)    |
-| `modules/issues.api.ts`            | Issues CRUD + FSM transition calls                    |
+| `modules/issues.api.ts`            | Issues CRUD, FSM transitions, card reorder API calls  |
 | `modules/notifications.api.ts`     | Notifications inbox, mark-read, snooze API calls      |
 | `modules/projects.api.ts`          | Projects CRUD                                         |
 | `modules/rbac.api.ts`              | RBAC permission / role management                     |
 | `modules/sprints.api.ts`           | Sprint management API                                 |
 | `modules/users.api.ts`             | User profile + admin user management                  |
 | `modules/worklogs.api.ts`          | Worklog / time tracking API                           |
-| `queries/useIssuesQuery.ts`        | TanStack Query hooks for issues                       |
-| `queries/useProjectsQuery.ts`      | TanStack Query hooks for projects                     |
-| `queries/useRbacQuery.ts`          | TanStack Query hooks for RBAC                         |
-| `queries/useSprintsQuery.ts`       | TanStack Query hooks for sprints                      |
-| `queries/useUsersQuery.ts`         | TanStack Query hooks for users                        |
-| `queries/useWorklogsQuery.ts`      | TanStack Query hooks for worklogs                     |
+| `queries/useIssuesQuery.ts`        | TanStack Query hooks & `issueQueries` factories       |
+| `queries/useProjectsQuery.ts`      | TanStack Query hooks & `projectQueries` factories     |
+| `queries/useRbacQuery.ts`          | TanStack Query hooks & `rbacQueries` factories        |
+| `queries/useSprintsQuery.ts`       | TanStack Query hooks & `sprintQueries` factories      |
+| `queries/useTeamsQuery.ts`         | TanStack Query hooks & `teamQueries` factories        |
+| `queries/useUsersQuery.ts`         | TanStack Query hooks & `userQueries` factories        |
+| `queries/useWebhooksQuery.ts`      | TanStack Query hooks & `webhookQueries` factories     |
+| `queries/useWorklogsQuery.ts`      | TanStack Query hooks & `worklogQueries` factories     |
 | `types/api.generated.ts`           | Generated TypeScript schemas via openapi-typescript   |
 | `types/index.ts`                   | Common API type helpers (ApiSchema, ApiOperations)    |
 | `types/auth.types.ts`              | TypeScript types for auth API responses               |
@@ -254,18 +258,19 @@
 
 | Directory          | Purpose                                                  |
 |--------------------|----------------------------------------------------------|
-| `ui/`              | Atomic M3 primitives: Button, Badge, Input, Modal, FormModal, etc. |
+| `ui/`              | Atomic M3 primitives: DataTable, FormModal, EntityAvatar, AvatarPicker, Button, Badge, Input, Modal, etc. |
 | `navigation/`      | SuperSidebar, SidebarNavList, SidebarMobileDrawer, etc.  |
 | `auth/`            | Login form, Register form, 2FA modal components          |
 | `notifications/`   | NotificationBell, notification dropdown popover, audio alert |
-| `kanban/`          | Kanban board columns, drag-and-drop card components      |
-| `agile/`           | Sprint backlog, sprint planning components               |
-| `issue-detail/`    | Issue detail panel, comment thread, worklog form         |
-| `admin/`           | Admin dashboard widgets, user management tables          |
-| `profile/`         | Profile card, 2FA setup wizard components               |
-| `time/`            | Time tracking calendar, timesheet grid                   |
-| `search/`          | Advanced search filters, saved filter management         |
-| `workspace/`       | Project cards, workspace overview widgets                |
+| `kanban/`          | Kanban board columns, DraggableKanbanCard (@dnd-kit), boards |
+| `kanban/analytics/`| Modular sprint charts: Burndown, CFD, CycleTime, Velocity, Summary |
+| `agile/`           | Sprint backlog, sprint planning, ActiveSprintBoard       |
+| `issue-detail/`    | Unified IssueDetailView, comment threads, worklog form   |
+| `admin/`           | Admin dashboard widgets, user management tables (DataTable)|
+| `profile/`         | Profile card, EditProfileModal (AvatarPicker), 2FA wizard |
+| `time/`            | Time tracking calendar, MyWorklogsTable (DataTable)       |
+| `search/`          | Advanced search filters, SearchResultsTable (DataTable)  |
+| `workspace/`       | Project cards, QuickSearchModal (cmdk headless menu)     |
 | `home/`            | Dashboard home widgets                                   |
 | `common/`          | ProtectedRoute, ErrorBoundary, Loading skeletons         |
 | `public/`          | Public-facing wrappers (unauthenticated layout)          |
@@ -274,10 +279,10 @@
 
 | Path          | Purpose                                                         |
 |---------------|-----------------------------------------------------------------|
-| `hooks/`      | Custom React hooks (e.g., `useAuth`, `useWebSocket`)            |
+| `hooks/`      | Custom React hooks (e.g., `useIssueModalUrl`, `useAuth`, `useWebSocket`) |
 | `schemas/`    | Zod validation schemas for form inputs                          |
 | `types/`      | Global TypeScript type declarations                             |
-| `utils/`      | Pure utility functions (date formatting, string helpers, etc.)  |
+| `utils/`      | Pure utilities: `date.ts`, `files.ts`, `workflowTransitions.ts` |
 | `assets/`     | Static assets (SVG icons, images)                               |
 | `test/`       | Frontend test utilities and mocks                               |
 

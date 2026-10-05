@@ -39,3 +39,12 @@ This document indexes all 19 lazy-loaded views configured in [`App.tsx`](../../f
 * **`PublicOnlyRoute`**: Redirects authenticated users to `/dashboard` if an active session already exists.
 * **`ProtectedRoute`**: Verifies authenticated user via `useAuth()`. Redirects unauthenticated guests to `/login`.
 * **`AdminRoute`**: Verifies both authenticated session AND `user.systemRole === 'ADMIN'`. Redirects unauthorized users.
+
+---
+
+## 3. URL Deep-Linking & Modal Single Source of Truth
+
+* **`?issue=KEY-123` Parameter**:
+  - The URL query parameter `?issue=KEY-123` serves as the single source of truth for opening issue details across Kanban boards, Backlogs, and Search pages.
+  - Managed by [`useIssueModalUrl.ts`](../../frontend/src/hooks/useIssueModalUrl.ts).
+  - Both modal dialogs and full-page `/issues/:key` render the unified [`IssueDetailView.tsx`](../../frontend/src/components/issue-detail/IssueDetailView.tsx) component, guaranteeing 100% feature parity between modal and page views.

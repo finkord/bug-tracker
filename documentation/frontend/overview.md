@@ -9,8 +9,12 @@ The BugTracker client is built as a Single Page Application (SPA) using React 19
 ### Core Libraries
 * **Framework**: React 19 + TypeScript (strict mode, zero `any` types).
 * **Build Tooling**: Vite 8 with ES module hot-reloading.
-* **Server State**: `@tanstack/react-query` v5 for asynchronous data fetching, automatic cache invalidation, and optimistic updates.
-* **Client State**: Zustand for lightweight reactive client-side store slices (`auth`, `ui`, `theme`).
+* **Headless UI Primitives**:
+  * Tables: `@tanstack/react-table` (v8) + `@tanstack/react-virtual` in [`DataTable.tsx`](../../frontend/src/components/ui/DataTable.tsx).
+  * Drag & Drop: `@dnd-kit/core`, `@dnd-kit/sortable`, and `@dnd-kit/utilities` with FSM validation.
+  * Command Search: `cmdk` in [`QuickSearchModal.tsx`](../../frontend/src/components/workspace/QuickSearchModal.tsx).
+* **Server State**: `@tanstack/react-query` v5 with standardized `queryOptions` factories and direct OpenAPI schemas (`api.generated.ts`).
+* **Client State**: Zustand for lightweight reactive client-side store slices (`auth`, `ui`, `theme`, `broadcast`).
 * **Icons**: `lucide-react` for consistent, crisp iconography.
 * **Real-time Client**: `socket.io-client` connected to the backend `/events` WebSocket namespace for live board synchronization and personal notifications.
 * **Audio Alerts**: Zero-dependency Web Audio API synthesizer generating clean two-tone chimes (587.33 Hz / 880.00 Hz) for incoming alerts, persisted via `localStorage` (`bugtracker_sound_alerts_enabled`).
@@ -21,21 +25,23 @@ The BugTracker client is built as a Single Page Application (SPA) using React 19
 
 ```
 frontend/src/
-├── api/                   # Typed API client functions (axios/fetch abstractions)
+├── api/                   # Typed API client functions and query factories
 │   ├── modules/           # Domain API modules (issues, projects, rbac, notifications)
-│   └── types/             # DTO response and request interfaces
+│   ├── queries/           # Standardized queryOptions factories and hooks
+│   └── types/             # Generated OpenAPI schemas (api.generated.ts)
 ├── components/            # Reusable UI components
-│   ├── common/            # Buttons, Modals, Inputs, Cards, Sidebar, Footer
+│   ├── ui/                # Atomic M3 primitives (DataTable, FormModal, EntityAvatar, AvatarPicker)
 │   ├── notifications/     # NotificationBell, notification popover inbox, sound alert
-│   ├── kanban/            # KanbanBoard, KanbanColumn, KanbanCard, drag-and-drop
-│   ├── agile/             # Backlog drawer, sprint planning, epic filtering
-│   ├── issue-detail/      # Issue modal, comment stream, worklog forms
-│   ├── workspace/         # WorkspaceHeader, ProjectSwitcher, quick search
+│   ├── kanban/            # KanbanFlatBoard, DraggableKanbanCard (@dnd-kit), analytics
+│   ├── agile/             # Backlog drawer, ActiveSprintBoard, sprint planning
+│   ├── issue-detail/      # Unified IssueDetailView, comment stream, worklog forms
+│   ├── workspace/         # WorkspaceHeader, ProjectSwitcher, QuickSearchModal (cmdk)
 │   └── public/            # Landing navbar, hero elements
-├── hooks/                 # Custom React hooks (useKanban, useDebounce, etc.)
+├── hooks/                 # Custom React hooks (useIssueModalUrl, useDebounce, etc.)
 ├── pages/                 # 19 Route views (lazy-loaded via React.lazy)
-├── store/                 # Zustand store slices (authStore, uiStore, themeStore)
+├── store/                 # Zustand store slices (authStore, sidebarStore, themeStore)
 ├── types/                 # Shared TypeScript interfaces & DTO models
+├── utils/                 # Utilities (date.ts, files.ts, workflowTransitions.ts)
 ├── index.css              # M3 Expressive design tokens (--md-sys-color-*)
 └── App.tsx                # App layout shell, super-sidebar & route definitions
 ```
