@@ -46,26 +46,25 @@ This rule guides end-to-end feature implementation connecting the NestJS backend
 
 ## Step 3: Frontend API Contract & Client Function
 
-1. **Mirror Types in `src/api/types/`**:
+1. **Auto-Generated Types from `api.generated.ts`**:
+   - FORBIDDEN: Writing handwritten duplicate interfaces for backend models or DTOs.
+   - MANDATORY: Sync types via `npm run api:sync` and import directly from `src/api/types/api.generated.ts`:
    ```typescript
-   // frontend/src/api/types/issues.types.ts
-   export interface IssueDto {
-     id: string;
-     key: string;
-     title: string;
-     status: 'OPEN' | 'IN_PROGRESS' | 'REVIEW' | 'RESOLVED' | 'CLOSED';
-     priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
-     assigneeId?: string;
-     projectId: string;
-     createdAt: string;
-   }
+   import type { components } from '../types/api.generated.js';
+
+   export type IssueResponseDto = components['schemas']['IssueResponseDto'];
+   export type CreateIssuePayload = components['schemas']['CreateIssueDto'];
    ```
-2. **Expose in `src/api/modules/`**:
+2. **Expose in `src/api/modules/` via `request` or `uploadFile`**:
    ```typescript
    // frontend/src/api/modules/issues.api.ts
+   import { request } from '../http.js';
+   import type { IssueResponseDto, CreateIssuePayload } from '../types/index.js';
+
    export const issuesApi = {
-     getById: (id: string) => apiClient.get<IssueDto>(`/issues/${id}`).then(res => res.data),
-     create: (dto: CreateIssueDto) => apiClient.post<IssueDto>('/issues', dto).then(res => res.data),
+     getById: (id: string) => request<IssueResponseDto>(`/issues/${id}`),
+     create: (dto: CreateIssuePayload) =>
+       request<IssueResponseDto>('/issues', { method: 'POST', body: JSON.stringify(dto) }),
    };
    ```
 

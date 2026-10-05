@@ -132,8 +132,22 @@ All frontend UI code MUST adhere strictly to Google Material Design 3 Expressive
 6. **Mobile Ergonomics:**
    - Mobile action buttons maintain consolidated `36×36px` (`w-9 h-9`) square bounds with synchronized `16×16px` (`w-4 h-4`) icon scales.
 
+## Mandatory Architecture & Component Invariants
+1. **Headless Data Tables (<DataTable>):**
+   - Strictly FORBIDDEN: Writing custom `<table>`, `<tbody>`, `<tr>`, or `<td>` elements with manual column sizing, custom pagination math, manual sorting handlers, or ad-hoc virtualizers.
+   - MANDATORY: Always use `<DataTable>` from `src/components/ui/DataTable.tsx` powered by `@tanstack/react-table` (v8) and `@tanstack/react-virtual`. Provide declarative `ColumnDef<T>[]` and let `<DataTable>` handle virtualization, sorting, pagination, and accessibility.
+2. **Headless Drag and Drop (@dnd-kit):**
+   - Strictly FORBIDDEN: Writing custom pointer/touch listeners, `requestAnimationFrame` drag loops, manual coordinate calculations, global drag stores, or custom floating ticket overlays.
+   - MANDATORY: Always use `@dnd-kit/core`, `@dnd-kit/sortable`, and `@dnd-kit/utilities`. All board drop zones and column movements must validate against backend FSM workflow transitions (`src/utils/workflowTransitions.ts`).
+3. **End-to-End Generated API Types (api.generated.ts):**
+   - Strictly FORBIDDEN: Manually writing handwritten TypeScript interfaces for backend entities, request bodies, or response DTOs in `src/api/types/` or component files.
+   - MANDATORY: Always import and bind directly to auto-generated OpenAPI types from `src/api/types/api.generated.ts` (`components['schemas']`, `paths`, `operations`). Run `npm run api:sync` whenever backend endpoints or DTOs are updated.
+4. **Atomic Form Modals (<FormModal>):**
+   - Strictly FORBIDDEN: Hand-crafting raw dialog shells, custom focus traps, or bespoke modal backdrops.
+   - MANDATORY: Always use `<FormModal>` from `src/components/ui/FormModal.tsx`.
+
 ## UI Primitives & Components
-- Import and compose primitives from `src/components/ui/`
+- Import and compose primitives from `src/components/ui/` (`<DataTable>`, `<FormModal>`, `<EntityAvatar>`, `<AvatarPicker>`, `<Button>`, `<Badge>`, `<Input>`, `<Card>`, etc.)
 - Follow accessibility patterns for focus rings, ARIA roles, and keyboard navigation
 - Use TailwindCSS classes paired strictly with `var(--md-sys-color-*)` tokens
 - Compose complex modals and views using dedicated atomic components

@@ -34,6 +34,10 @@ on the BugTracker codebase.
   - Never load entire database tables into Node.js heap memory to aggregate or iterate in JavaScript. Use database-level SQL aggregations (`SUM`, `COUNT`, `GROUP BY`).
   - No single-instance in-memory state (`Map`, local variables) for distributed features (tokens, rate limiting, WebSockets). Use Redis for horizontal multi-instance scaling.
   - Atomic database updates and transactions for concurrent writes (prevent lost updates and race conditions).
+- **Absolute Prohibition of Manual Tables, Custom Drag-and-Drop & Manual API Types**:
+  - **Tables**: FORBIDDEN to hand-craft HTML tables, custom pagination loops, column resizing, or manual virtualizers. MANDATORY: Always use `<DataTable>` from `src/components/ui/DataTable.tsx` (`@tanstack/react-table` + `@tanstack/react-virtual`).
+  - **Drag and Drop**: FORBIDDEN to create custom pointer/touch listeners, `requestAnimationFrame` drag loops, manual coordinate math, or custom drag overlays. MANDATORY: Always use `@dnd-kit/core`, `@dnd-kit/sortable`, and `@dnd-kit/utilities` validated against backend FSM workflow transitions (`src/utils/workflowTransitions.ts`).
+  - **API Contract & Typing**: FORBIDDEN to hand-write or manually duplicate backend DTOs/schemas into arbitrary frontend interfaces. MANDATORY: Always bind directly to auto-generated OpenAPI contracts in `src/api/types/api.generated.ts` (`components['schemas']`, `paths`, `operations`). Run `npm run api:sync` whenever backend DTOs change.
 - UI colours → **only** `var(--md-sys-color-*)` tokens from `src/index.css`. Never raw Tailwind palette classes.
 - Authorization → enforced at the **backend HTTP boundary** (guards on every mutating endpoint).
 - Never browse `node_modules/`, `dist/`, `.git/`, or `*.lock` files — they are quota sinks.

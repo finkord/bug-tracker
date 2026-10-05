@@ -17,6 +17,10 @@ import {
   Button,
   Card,
   Modal,
+  FormModal,
+  DataTable,
+  EntityAvatar,
+  AvatarPicker,
   Input,
   Badge,
   Tabs,
@@ -100,7 +104,64 @@ export const CreateItemModal: React.FC<Props> = ({ isOpen, onClose, onSubmit, is
 
 ---
 
-## 3. Recipe: Interactive Data Card (Kanban / Backlog Item)
+## 3. Recipe: Headless Data Table (<DataTable>)
+
+Strictly FORBIDDEN: Writing custom `<table>` markup, manual sorting handlers, pagination loops, or custom virtualizers.
+Always use `<DataTable>` with `@tanstack/react-table` column definitions:
+
+```tsx
+import React, { useMemo } from 'react';
+import type { ColumnDef } from '@tanstack/react-table';
+import { DataTable, StatusBadge, PriorityBadge } from '@/components/ui';
+import type { IssueResponseDto } from '@/api/types';
+
+interface Props {
+  issues: IssueResponseDto[];
+  isLoading?: boolean;
+}
+
+export const IssuesTable: React.FC<Props> = ({ issues, isLoading }) => {
+  const columns = useMemo<ColumnDef<IssueResponseDto>[]>(
+    () => [
+      {
+        accessorKey: 'key',
+        header: 'Key',
+        cell: (info) => <span className="font-semibold">{info.getValue<string>()}</span>,
+      },
+      {
+        accessorKey: 'title',
+        header: 'Title',
+        cell: (info) => <span className="truncate">{info.getValue<string>()}</span>,
+      },
+      {
+        accessorKey: 'status',
+        header: 'Status',
+        cell: (info) => <StatusBadge status={info.getValue<string>()} />,
+      },
+      {
+        accessorKey: 'priority',
+        header: 'Priority',
+        cell: (info) => <PriorityBadge priority={info.getValue<string>()} />,
+      },
+    ],
+    []
+  );
+
+  return (
+    <DataTable
+      columns={columns}
+      data={issues}
+      loading={isLoading}
+      enableVirtualization
+      estimatedRowHeight={48}
+    />
+  );
+};
+```
+
+---
+
+## 4. Recipe: Interactive Data Card (Kanban / Backlog Item)
 
 Use for list rows, kanban cards, and interactive tiles.
 
