@@ -156,6 +156,7 @@ describe('IssueCoreService', () => {
         loadRelationIdAndMap: vi.fn().mockReturnThis(),
         andWhere: vi.fn().mockReturnThis(),
         orderBy: vi.fn().mockReturnThis(),
+        addOrderBy: vi.fn().mockReturnThis(),
         skip: vi.fn().mockReturnThis(),
         take: vi.fn().mockReturnThis(),
         getManyAndCount: vi.fn().mockResolvedValue([[mockIssue], 1]),
@@ -181,6 +182,7 @@ describe('IssueCoreService', () => {
         loadRelationIdAndMap: vi.fn().mockReturnThis(),
         andWhere: vi.fn().mockReturnThis(),
         orderBy: vi.fn().mockReturnThis(),
+        addOrderBy: vi.fn().mockReturnThis(),
         skip: vi.fn().mockReturnThis(),
         take: vi.fn().mockReturnThis(),
         getManyAndCount: vi.fn().mockResolvedValue([[mockIssue], 1]),
@@ -497,6 +499,79 @@ describe('IssueCoreService', () => {
       await service.updateStatus(10, IssueStatus.RESOLVED, mockUser);
 
       expect(mockIssueRepo.update).not.toHaveBeenCalledWith(99, expect.anything());
+    });
+
+    it('should reject illegal workflow transition with BadRequestException', async () => {
+      mockIssueRepo.findOne.mockResolvedValue({
+        ...mockIssue,
+        status: IssueStatus.CLOSED,
+      });
+
+      await expect(
+        service.updateStatus(10, IssueStatus.REVIEW, mockUser),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should return without updating when transitioning to the same status', async () => {
+      mockIssueRepo.findOne.mockResolvedValue(mockIssue);
+      mockIssueRepo.update.mockClear();
+
+      const result = await service.updateStatus(10, IssueStatus.OPEN, mockUser);
+
+      expect(mockIssueRepo.update).not.toHaveBeenCalled();
+      expect(result).toBeDefined();
+    });
+  });
+
+  describe('getAvailableTransitions', () => {
+    it('should return available transitions for an open issue', async () => {
+      mockIssueRepo.findOne.mockResolvedValue({
+        id: 10,
+        status: IssueStatus.OPEN,
+      });
+
+      const transitions = await service.getAvailableTransitions(10, mockUser);
+
+      expect(transitions).toEqual([
+        { id: 'start_progress', name: 'Start Progress', toStatus: IssueStatus.IN_PROGRESS },
+        { id: 'resolve', name: 'Resolve Issue', toStatus: IssueStatus.RESOLVED },
+        { id: 'close', name: 'Close Issue', toStatus: IssueStatus.CLOSED },
+      ]);
+    });
+
+    it('should throw NotFoundException if issue does not exist', async () => {
+      mockIssueRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.getAvailableTransitions(999, mockUser)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('reorder', () => {
+    it('should update card rank order and broadcast update', async () => {
+      mockIssueRepo.findOne.mockResolvedValue(mockIssue);
+
+      const result = await service.reorder(10, 42.5);
+
+      expect(mockIssueRepo.update).toHaveBeenCalledWith(10, { order: 42.5 });
+      expect(mockEventsGateway.broadcastIssueUpdated).toHaveBeenCalled();
+      expect(result).toBeDefined();
+    });
+
+    it('should transition status if new status is specified', async () => {
+      mockIssueRepo.findOne.mockResolvedValue(mockIssue);
+
+      const result = await service.reorder(10, 100, IssueStatus.IN_PROGRESS, mockUser);
+
+      expect(mockIssueRepo.update).toHaveBeenCalledWith(10, { status: IssueStatus.IN_PROGRESS });
+      expect(mockIssueRepo.update).toHaveBeenCalledWith(10, { order: 100 });
+      expect(mockEventsGateway.broadcastIssueUpdated).toHaveBeenCalled();
+      expect(result).toBeDefined();
+    });
+
+    it('should throw NotFoundException if issue does not exist', async () => {
+      mockIssueRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.reorder(999, 100)).rejects.toThrow(NotFoundException);
     });
   });
 

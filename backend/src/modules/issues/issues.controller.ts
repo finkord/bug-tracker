@@ -38,6 +38,8 @@ import { RequireProjectPermission } from '../rbac/decorators/require-permission.
 import { ProjectPermission } from '../rbac/entities/permission-grant.entity.js';
 import { PermissionEvaluatorService } from '../rbac/services/permission-evaluator.service.js';
 import { ValidateJqlDto, JqlValidationResponseDto } from './dto/validate-jql.dto.js';
+import { WorkflowTransitionDto } from './dto/workflow-transition.dto.js';
+import { ReorderIssueDto } from './dto/reorder-issue.dto.js';
 import {
   TimesheetMatrixResponseDto,
   WorklogStatsResponseDto,
@@ -156,6 +158,19 @@ export class IssuesController {
     return this.issuesService.bulkDelete(dto, user);
   }
 
+  @Get(':id/transitions')
+  @RequireProjectPermission(ProjectPermission.BROWSE_PROJECTS)
+  @ApiOperation({
+    summary: 'Get available workflow transitions for an issue based on current status',
+  })
+  @ApiOkResponse({ type: [WorkflowTransitionDto] })
+  async getTransitions(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: User,
+  ) {
+    return this.issuesService.getAvailableTransitions(id, user);
+  }
+
   @Patch(':id/status')
   @RequireProjectPermission(ProjectPermission.TRANSITION_ISSUES)
   @HttpCode(HttpStatus.OK)
@@ -165,9 +180,23 @@ export class IssuesController {
   async updateStatus(
     @Param('id', ParseIntPipe) id: number,
     @Body('status') status: IssueStatus,
-    @CurrentUser() _user: User,
+    @CurrentUser() user: User,
   ) {
-    return this.issuesService.updateStatus(id, status);
+    return this.issuesService.updateStatus(id, status, user);
+  }
+
+  @Patch(':id/reorder')
+  @RequireProjectPermission(ProjectPermission.EDIT_ISSUES)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Update issue display rank / board column order',
+  })
+  async reorderIssue(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ReorderIssueDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.issuesService.reorder(id, dto.order, dto.status, user);
   }
 
   @Patch(':id/assign-me')

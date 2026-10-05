@@ -17,6 +17,7 @@ import { EventsGateway } from '../events/events.gateway.js';
 import { Attachment } from './entities/attachment.entity.js';
 import { JqlParserService } from './services/jql-parser.service.js';
 import type { JqlValidationResponseDto } from './dto/validate-jql.dto.js';
+import { WorkflowTransitionDto } from './dto/workflow-transition.dto.js';
 import type {
   IssueDetailDto,
   WorklogItemDto,
@@ -81,8 +82,22 @@ export class IssuesService {
   /**
    * Updates issue status.
    */
-  async updateStatus(id: number, status: IssueStatus): Promise<IssueDetailDto> {
-    return this.issueCoreService.updateStatus(id, status);
+  async updateStatus(id: number, status: IssueStatus, user?: User): Promise<IssueDetailDto> {
+    return this.issueCoreService.updateStatus(id, status, user);
+  }
+
+  /**
+   * Retrieves available workflow transitions for an issue based on current status.
+   */
+  async getAvailableTransitions(id: number, user?: User): Promise<WorkflowTransitionDto[]> {
+    return this.issueCoreService.getAvailableTransitions(id, user);
+  }
+
+  /**
+   * Reorders an issue's board position and optionally transitions status.
+   */
+  async reorder(id: number, order: number, status?: IssueStatus, user?: User): Promise<IssueDetailDto> {
+    return this.issueCoreService.reorder(id, order, status, user);
   }
 
   /**

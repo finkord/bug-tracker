@@ -24,6 +24,7 @@ export interface IssueSummaryDto {
   priority: IssuePriority;
   estimatedHours: number;
   loggedHours: number;
+  order?: number;
   sprintId: number | null;
   sprint?: {
     id: number;

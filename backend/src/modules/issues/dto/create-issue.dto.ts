@@ -34,6 +34,11 @@ export class CreateIssueDto {
   @Min(0)
   estimatedHours?: number;
 
+  @ApiPropertyOptional({ example: 1000.0, description: 'Numeric rank ordering on board or sprint' })
+  @IsOptional()
+  @IsNumber()
+  order?: number;
+
   @ApiPropertyOptional({ example: 1, description: 'Sprint ID or null for Backlog' })
   @IsOptional()
   @IsInt()

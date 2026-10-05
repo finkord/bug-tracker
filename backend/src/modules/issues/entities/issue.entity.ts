@@ -95,6 +95,11 @@ export class Issue {
   @Column({ name: 'logged_hours', type: 'float', default: 0 })
   loggedHours: number;
 
+  // Board display rank / ordering
+  @Index()
+  @Column({ type: 'float', default: 0 })
+  order: number;
+
   // Relational sprint foreign key and association
   @Index()
   @Column({ name: 'sprint_id', type: 'int', nullable: true })

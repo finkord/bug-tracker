@@ -21,6 +21,7 @@ import { ProjectPermission } from '../../rbac/entities/permission-grant.entity.j
 import { NotificationsService } from '../../notifications/notifications.service.js';
 import { NotificationType } from '../../notifications/entities/notification.entity.js';
 import { WebhooksService } from '../../webhooks/webhooks.service.js';
+import { WorkflowTransitionDto, WORKFLOW_TRANSITIONS } from '../dto/workflow-transition.dto.js';
 import type { IssueHistoryItemDto } from '../dto/issue-history.dto.js';
 import type {
   IssueSummaryDto,
@@ -232,16 +233,17 @@ export class IssueCoreService {
         const allowedSortCols: Record<string, string> = {
           createdAt: 'issue.createdAt',
           updatedAt: 'issue.updatedAt',
+          order: 'issue.order',
           priority: 'issue.priority',
           status: 'issue.status',
           title: 'issue.title',
           issueNum: 'issue.issueNum',
         };
-        const sortCol = allowedSortCols[query.sortBy] || 'issue.createdAt';
-        const sortDirection = (query.sortOrder || 'DESC').toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+        const sortCol = allowedSortCols[query.sortBy] || 'issue.order';
+        const sortDirection = (query.sortOrder || 'ASC').toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
         qb.orderBy(sortCol, sortDirection);
       } else {
-        qb.orderBy('issue.createdAt', 'DESC');
+        qb.orderBy('issue.order', 'ASC').addOrderBy('issue.createdAt', 'DESC');
       }
     }
 
@@ -454,6 +456,7 @@ export class IssueCoreService {
       reporterId: reporter.id,
       reporter,
       assigneeId,
+      order: dto.order ?? 0,
     });
 
     const saved = await this.issueRepository.save(issue);
@@ -484,6 +487,7 @@ export class IssueCoreService {
 
   /**
    * Updates issue status and broadcasts change.
+   * Enforces workflow transition rules (FSM).
    */
   async updateStatus(id: number, status: IssueStatus, user?: User): Promise<IssueDetailDto> {
     const issue = await this.issueRepository.findOne({
@@ -493,6 +497,21 @@ export class IssueCoreService {
     if (!issue) {
       throw new NotFoundException(`Issue with ID #${id} not found`);
     }
+
+    if (issue.status === status) {
+      return this.findById(id);
+    }
+
+    const allowedTransitions = WORKFLOW_TRANSITIONS[issue.status] || [];
+    const isTransitionAllowed = allowedTransitions.some((t) => t.toStatus === status);
+
+    if (!isTransitionAllowed) {
+      const allowedTargets = allowedTransitions.map((t) => t.toStatus).join(', ') || 'none';
+      throw new BadRequestException(
+        `Cannot transition issue from ${issue.status} to ${status}. Allowed target status(es): ${allowedTargets}`,
+      );
+    }
+
     const previousStatus = issue.status;
     await this.issueRepository.update(id, { status });
     await this.logHistory(id, 'status', previousStatus, status, user?.id);
@@ -540,6 +559,42 @@ export class IssueCoreService {
       });
     }
 
+    return updated;
+  }
+
+  /**
+   * Returns available workflow transitions for an issue based on its current status.
+   */
+  async getAvailableTransitions(id: number, _user?: User): Promise<WorkflowTransitionDto[]> {
+    const issue = await this.issueRepository.findOne({
+      where: { id },
+      select: { id: true, status: true },
+    });
+    if (!issue) {
+      throw new NotFoundException(`Issue with ID #${id} not found`);
+    }
+
+    return WORKFLOW_TRANSITIONS[issue.status] || [];
+  }
+
+  /**
+   * Updates issue board rank ordering and optionally transitions status.
+   */
+  async reorder(id: number, order: number, status?: IssueStatus, user?: User): Promise<IssueDetailDto> {
+    const issue = await this.issueRepository.findOne({
+      where: { id },
+    });
+    if (!issue) {
+      throw new NotFoundException(`Issue with ID #${id} not found`);
+    }
+
+    if (status && status !== issue.status) {
+      await this.updateStatus(id, status, user);
+    }
+
+    await this.issueRepository.update(id, { order });
+    const updated = await this.findById(id);
+    await this.eventsGateway.broadcastIssueUpdated(updated);
     return updated;
   }
 
@@ -777,6 +832,9 @@ export class IssueCoreService {
         await this.logHistory(id, 'labels', prevLabels || 'None', newLabels || 'None', user?.id);
         issue.labels = dto.labels;
       }
+    }
+    if (dto.order !== undefined && dto.order !== issue.order) {
+      issue.order = dto.order;
     }
 
     await this.issueRepository.save(issue);
@@ -1017,6 +1075,7 @@ export class IssueCoreService {
       priority: i.priority,
       estimatedHours: i.estimatedHours || 0,
       loggedHours: i.loggedHours || 0,
+      order: i.order ?? 0,
       sprintId: i.sprintId ?? null,
       sprint: i.sprint
         ? {
