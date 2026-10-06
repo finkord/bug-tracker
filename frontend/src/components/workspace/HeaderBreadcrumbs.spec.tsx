@@ -32,40 +32,18 @@ describe('HeaderBreadcrumbs Component', () => {
     vi.clearAllMocks();
   });
 
-  it('renders top-level page title when not on a project route', () => {
+  it('renders top-level standalone view without artificial category crumbs', () => {
     render(
-      <MemoryRouter initialEntries={['/my-issues']}>
+      <MemoryRouter initialEntries={['/dashboard']}>
         <HeaderBreadcrumbs />
       </MemoryRouter>,
     );
 
-    expect(screen.getByText('My Issues')).toBeInTheDocument();
+    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 
-  it('renders project breadcrumb path and view label on project route', () => {
-    render(
-      <MemoryRouter initialEntries={['/projects/PHX/board']}>
-        <HeaderBreadcrumbs />
-      </MemoryRouter>,
-    );
-
-    expect(screen.getByRole('link', { name: /^projects$/i })).toHaveAttribute('href', '/projects');
-    expect(screen.getByRole('link', { name: /phoenix engine/i })).toBeInTheDocument();
-    expect(screen.getByText('Kanban Board')).toBeInTheDocument();
-  });
-
-  it('renders project name as link to overview when on a subview route', () => {
-    render(
-      <MemoryRouter initialEntries={['/projects/PHX/board']}>
-        <HeaderBreadcrumbs />
-      </MemoryRouter>,
-    );
-
-    const projectLink = screen.getByRole('link', { name: /phoenix engine/i });
-    expect(projectLink).toHaveAttribute('href', '/projects/PHX');
-  });
-
-  it('renders project name as current page when on the project overview route', () => {
+  it('renders project breadcrumb path with Overview leaf on project home route', () => {
     render(
       <MemoryRouter initialEntries={['/projects/PHX']}>
         <HeaderBreadcrumbs />
@@ -73,7 +51,53 @@ describe('HeaderBreadcrumbs Component', () => {
     );
 
     expect(screen.getByRole('link', { name: /^projects$/i })).toHaveAttribute('href', '/projects');
-    expect(screen.getByText('Phoenix Engine')).toBeInTheDocument();
-    expect(screen.queryByText('Kanban Board')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /phoenix engine/i })).toHaveAttribute('href', '/projects/PHX');
+    expect(screen.getByText('Overview')).toBeInTheDocument();
+  });
+
+  it('renders project breadcrumb path and view label on subview route', () => {
+    render(
+      <MemoryRouter initialEntries={['/projects/PHX/board']}>
+        <HeaderBreadcrumbs />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('link', { name: /^projects$/i })).toHaveAttribute('href', '/projects');
+    expect(screen.getByRole('link', { name: /phoenix engine/i })).toHaveAttribute('href', '/projects/PHX');
+    expect(screen.getByText('Kanban Board')).toBeInTheDocument();
+  });
+
+  it('renders issue detail breadcrumb connected to parent project', () => {
+    render(
+      <MemoryRouter initialEntries={['/issues/PHX-101']}>
+        <HeaderBreadcrumbs />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('link', { name: /^projects$/i })).toHaveAttribute('href', '/projects');
+    expect(screen.getByRole('link', { name: /phoenix engine/i })).toHaveAttribute('href', '/projects/PHX');
+    expect(screen.getByText('PHX-101')).toBeInTheDocument();
+  });
+
+  it('renders two-level breadcrumb for admin console subpages', () => {
+    render(
+      <MemoryRouter initialEntries={['/admin/teams']}>
+        <HeaderBreadcrumbs />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('link', { name: /admin center/i })).toHaveAttribute('href', '/admin/users');
+    expect(screen.getByText('Scrum Teams')).toBeInTheDocument();
+  });
+
+  it('renders two-level breadcrumb for user account pages', () => {
+    render(
+      <MemoryRouter initialEntries={['/preferences']}>
+        <HeaderBreadcrumbs />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('link', { name: /^account$/i })).toHaveAttribute('href', '/profile');
+    expect(screen.getByText('Preferences')).toBeInTheDocument();
   });
 });
