@@ -126,7 +126,7 @@ These high-priority epics originate directly from the original architectural blu
 * **Rationale & Blueprint Context**:  
   The blueprint placed an Nginx edge proxy in front of the API gateway to handle TLS 1.3, HTTP/2 multiplexing, rate-limiting, and static caching.
 * **Implemented Architecture**:
-  1. **Nginx Ingress Service in `docker-compose.prod.yml`**:
+  1. **Nginx Ingress Service in `docker-compose.yml`**:
      * Runs a hardened multi-stage `nginx:alpine` container (`nginx/Dockerfile.prod`) as the production unified edge ingress (`port 80`).
      * Compiles the React 19 SPA directly into the image for zero-latency static serving with immutable caching (`/assets/`).
   2. **Configuration & Reverse Proxy Topology**:

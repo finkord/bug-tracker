@@ -31,7 +31,7 @@ Whenever you add, modify, or refactor code in the repository, you **must** updat
 | **Database Entities / Schema**| `backend/src/**/*.entity.ts` | [`documentation/architecture/database-schema.md`](architecture/database-schema.md) |
 | **Frontend Views & Routes** | `frontend/src/pages/`, `App.tsx` | [`documentation/frontend/pages-and-routing.md`](frontend/pages-and-routing.md) |
 | **UI Components & Tokens** | `frontend/src/index.css`, `components/`| [`documentation/frontend/design-system.md`](frontend/design-system.md) |
-| **CLI / Scripts / Docker** | `docker-compose.yml`, `package.json` | [`documentation/operations/commands.md`](operations/commands.md) |
+| **CLI / Scripts / Docker** | `docker-compose.yml`, `docker-compose.infra.yml`, `package.json` | [`documentation/operations/commands.md`](operations/commands.md) |
 
 ---
 

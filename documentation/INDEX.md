@@ -27,7 +27,7 @@ Welcome to the central documentation hub for **BugTracker**. This directory serv
 | **Frontend Core** | React 19, Zustand, Query | [`frontend/src/App.tsx`](../frontend/src/App.tsx) | [`frontend/overview.md`](frontend/overview.md) |
 | **Routes & Views** | 19 Page views, Route Guards | [`frontend/src/pages/`](../frontend/src/pages) | [`frontend/pages-and-routing.md`](frontend/pages-and-routing.md) |
 | **Design System** | M3 Expressive, Tokens, Curves | [`frontend/src/index.css`](../frontend/src/index.css) | [`frontend/design-system.md`](frontend/design-system.md) |
-| **CLI & Docker** | Runbooks, dev, prod commands | [`docker-compose.yml`](../docker-compose.yml) | [`operations/commands.md`](operations/commands.md) |
+| **CLI & Docker** | Runbooks, dev, prod commands | [`docker-compose.yml`](../docker-compose.yml), [`docker-compose.infra.yml`](../docker-compose.infra.yml) | [`operations/commands.md`](operations/commands.md) |
 | **API Verification** | Automated curl test suite | Live API (`localhost:3000`) | [`operations/verification-api.md`](operations/verification-api.md) |
 | **Product Backlog** | Developer feature ideas & vision | User requirements backlog | [`backlog/product_ideas.md`](backlog/product_ideas.md) |
 

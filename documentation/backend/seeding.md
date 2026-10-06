@@ -8,7 +8,7 @@ The BugTracker Universal Data Seeder populates the system with realistic, multi-
 
 | Capability | Technical Design |
 |---|---|
-| **Universal Execution** | Runs via host CLI (`npm run seed:demo`), Makefile targets (`make seed-demo`, `make prod-seed`), or directly inside Docker production containers (`node dist/database/seed.js`). |
+| **Universal Execution** | Runs via host CLI (`npm run seed:demo`), Makefile targets (`make seed`, `make seed-demo`, `make prod-seed`), or directly inside Docker backend containers (`node dist/database/seed.js`). |
 | **High-Volume Scaling** | Supports generating 25 to 500+ users, multiple projects, and 1,000+ tickets in under 5 seconds. |
 | **Argon2id Hash Optimization** | Precomputes a single Argon2id hash once at startup and reuses it across all generated accounts, eliminating CPU bottlenecks while maintaining full OWASP password hashing. |
 | **Agile Organization** | Automatically establishes Scrum teams, team leads, Scrum Masters, Product Owners, Developers, and QA Engineers with weekly sprint capacity allocations. |
@@ -41,10 +41,10 @@ The seeder accepts standard GNU/POSIX-style command line flags:
 
 ```bash
 # Standard default dataset (25 users, 5 projects, 120 issues)
-make seed-demo
+make seed
 
 # Scale to 100 users, 8 projects, 300 issues via Makefile
-make seed-demo ARGS="--users=100 --projects=8 --issues=300"
+make seed ARGS="--users=100 --projects=8 --issues=300"
 
 # Direct npm script execution from software/backend/
 npm run seed:demo -- --users=100 --projects=8 --issues=300
@@ -62,11 +62,11 @@ make prod-seed
 # Scale production dataset with custom arguments via Makefile
 make prod-seed ARGS="--users=500 --issues=1000"
 
-# Direct execution inside running production container
-docker exec -it bugtracker-backend-prod node dist/database/seed.js --users=500 --issues=1000
+# Direct execution inside running backend container
+docker exec -it bugtracker-backend node dist/database/seed.js --users=500 --issues=1000
 
 # Non-destructive seed (append without clearing previous records)
-docker exec -it bugtracker-backend-prod node dist/database/seed.js --users=50 --issues=100 --no-clean
+docker exec -it bugtracker-backend node dist/database/seed.js --users=50 --issues=100 --no-clean
 ```
 
 ---

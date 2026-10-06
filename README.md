@@ -169,34 +169,44 @@ cd frontend && npm run dev
 
 ---
 
-## Production Deployment (Customer Package)
+## Production & Cloud Deployment (Decoupled Architecture)
 
-BugTracker provides a containerized production package designed for deployment on customer infrastructure (`docker-compose.prod.yml`). It packages the NestJS API into a hardened container, serves the compiled React SPA through Nginx reverse proxy on port 80, removes developer-only mock tools (like Mailpit), and connects to customer SMTP mail servers.
+BugTracker separates stateless application containers from stateful backing infrastructure:
+
+- **Application Tier (`docker-compose.yml`)**: Cloud-portable manifest running `backend` (NestJS) and `frontend` (Nginx SPA + Reverse Proxy on port 80).
+- **Backing Infrastructure (`docker-compose.infra.yml`)**: PostgreSQL 15, Redis 7, SeaweedFS (S3), and Mailpit.
+- **Cloud & AWS Deployments**: Point environment variables (`DB_HOST`, `REDIS_HOST`, `S3_ENDPOINT`, `MAIL_HOST`) to AWS RDS, AWS ElastiCache, Amazon S3, and AWS SES.
 
 ### 1. Configure Production Environment
 ```bash
-cp .env.prod.example .env.prod
-# Edit .env.prod to provide database credentials, SMTP configuration, and admin password
+cp .env.production.example .env.production
+# Edit .env.production with database credentials, SMTP configuration, and security secrets
 ```
 
-### 2. Launch Production Stack
+### 2. Launch Local Full-Stack Preview (Port 80)
 ```bash
-make prod-up
+make prod
 # Or via docker compose directly:
-docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.infra.yml -f docker-compose.yml up -d --build
 ```
 
-### 3. Initialize Production Database
+### 3. Launch Standalone Cloud / AWS Deployment
+```bash
+docker compose --env-file .env.production up -d
+```
+
+### 4. Initialize Production Database
 ```bash
 make prod-init
-# Or via docker compose directly:
-docker compose -f docker-compose.prod.yml exec backend npm run init:system:prod
+# Or directly:
+docker compose exec backend node dist/database/init-system.js
 ```
-This sets up system permission taxonomy, standard roles, system groups, and creates the initial administrator specified in `.env.prod`. No dummy tickets or fake engineers are created.
+This sets up system permission taxonomy, standard roles, system groups, and creates the initial administrator specified in `.env.production`.
 
-### 4. Stop Production Stack
+### 5. Stop Production Stack
 ```bash
-make prod-down
+make prod-down    # Stops application containers
+make down         # Stops all containers including backing infrastructure
 ```
 
 ---
