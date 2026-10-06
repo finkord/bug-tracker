@@ -12,6 +12,7 @@ import { IssueContextMenu } from '../components/common/IssueContextMenu';
 import { ProjectReleasesModal } from '../components/releases/ProjectReleasesModal';
 import { Avatar } from '../components/common/Avatar';
 import { Badge, EntityAvatar } from '../components/ui/index.js';
+import { NotFoundPage } from './NotFoundPage';
 import { useAuth } from '../store';
 import type { IssueItem, IssuePriority, IssueStatus, SprintItem } from '../api/client';
 import {
@@ -150,20 +151,12 @@ export const ProjectOverviewPage: React.FC = () => {
 
   if (!project && !projectsLoading) {
     return (
-      <div className="w-full p-8 text-center space-y-4">
-        <h2 className="text-base font-bold text-[var(--md-sys-color-on-surface)]">
-          Project Not Found
-        </h2>
-        <p className="text-xs text-[var(--md-sys-color-on-surface-variant)]">
-          Could not find project matching &quot;{projectParam}&quot;.
-        </p>
-        <Link
-          to="/projects"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] text-xs font-semibold"
-        >
-          Return to Projects
-        </Link>
-      </div>
+      <NotFoundPage
+        title="Project Workspace Not Found"
+        description={`We could not find a project matching "${projectParam}". It may have been deleted, archived, or you may not have access.`}
+        resourceType="Project"
+        resourceId={projectParam}
+      />
     );
   }
 

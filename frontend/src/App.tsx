@@ -13,6 +13,7 @@ import { Footer } from './components/common/Footer.js';
 import { ProtectedRoute, AdminRoute, PublicOnlyRoute } from './components/common/ProtectedRoute.js';
 import { PageSkeletonLoader } from './components/common/PageSkeletonLoader.js';
 import { KeyboardShortcutsModal } from './components/common/KeyboardShortcutsModal.js';
+import { AppErrorBoundary } from './components/common/AppErrorBoundary.js';
 import { Menu, Shield } from 'lucide-react';
 
 const HomePage = React.lazy(() =>
@@ -93,6 +94,12 @@ const ProjectOverviewPage = React.lazy(() =>
 const OAuthCallbackPage = React.lazy(() =>
   import('./pages/OAuthCallbackPage').then((m) => ({ default: m.OAuthCallbackPage })),
 );
+const NotFoundPage = React.lazy(() =>
+  import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })),
+);
+const ForbiddenPage = React.lazy(() =>
+  import('./pages/ForbiddenPage').then((m) => ({ default: m.ForbiddenPage })),
+);
 
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -168,7 +175,8 @@ export const App: React.FC = () => {
       <BrowserRouter>
         <AppLayout>
           <React.Suspense fallback={<PageSkeletonLoader />}>
-            <Routes>
+            <AppErrorBoundary>
+              <Routes>
               {/* Public & Guest-Only Routes */}
               <Route path="/" element={<HomePage />} />
               <Route
@@ -354,9 +362,14 @@ export const App: React.FC = () => {
                 <Route path="security-logs" element={<Navigate to="/admin/security" replace />} />
               </Route>
 
-              {/* Fallback */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+                {/* Access Denied and Error Routes */}
+                <Route path="/forbidden" element={<ForbiddenPage />} />
+                <Route path="/404" element={<NotFoundPage />} />
+
+                {/* Catch-all 404 Fallback */}
+                <Route path="*" element={<NotFoundPage />} />
+              </Routes>
+            </AppErrorBoundary>
           </React.Suspense>
         </AppLayout>
         <SessionExpiredModal />

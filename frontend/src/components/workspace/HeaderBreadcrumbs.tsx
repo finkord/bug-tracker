@@ -153,12 +153,26 @@ export const HeaderBreadcrumbs: React.FC = () => {
     );
   }
 
-  // 5. Standalone top-level workspace views (True Resource Hierarchy)
+  // 5. Access Denied route
+  if (path === '/forbidden') {
+    return (
+      <nav aria-label="Breadcrumb" className="flex items-center text-xs min-w-0">
+        <span className="font-bold text-[var(--md-sys-color-error)] truncate">
+          Access Denied
+        </span>
+      </nav>
+    );
+  }
+
+  // 6. Standalone top-level workspace views (True Resource Hierarchy)
   let title = 'Dashboard';
   if (path.startsWith('/my-issues')) title = 'My Issues';
   else if (path.startsWith('/search')) title = 'Advanced Search';
   else if (path.startsWith('/time-tracking')) title = 'Time Tracking';
   else if (path.startsWith('/projects')) title = 'Projects Directory';
+  else if (path.startsWith('/users/')) title = 'User Profile';
+  else if (path === '/' || path.startsWith('/dashboard')) title = 'Dashboard';
+  else title = 'Page Not Found';
 
   return (
     <nav aria-label="Breadcrumb" className="flex items-center text-xs min-w-0">

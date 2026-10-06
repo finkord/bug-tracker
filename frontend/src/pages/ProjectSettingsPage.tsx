@@ -24,6 +24,8 @@ import { ProjectComponentsTab } from '../components/projects/ProjectComponentsTa
 import { ProjectVersionsTab } from '../components/projects/ProjectVersionsTab';
 import { ProjectPermissionsTab } from '../components/projects/ProjectPermissionsTab';
 import { ProjectWebhooksTab } from '../components/projects/ProjectWebhooksTab';
+import { NotFoundPage } from './NotFoundPage';
+import { ForbiddenPage } from './ForbiddenPage';
 
 export type SettingsTab = 'general' | 'teams' | 'components' | 'versions' | 'access' | 'webhooks';
 
@@ -57,7 +59,7 @@ export const ProjectSettingsPage: React.FC = () => {
     return found ? found.id : 0;
   }, [rawIdentifier, projects]);
 
-  const { data: project = null, isLoading: projectLoading } = useProjectDetailQuery(projectId);
+  const { data: project = null, isLoading: projectLoading, error: projectError } = useProjectDetailQuery(projectId);
   const { data: usersData, isLoading: usersLoading } = useUsersQuery({ page: 1, limit: 100 });
   const allUsers = usersData?.items || [];
 
@@ -74,10 +76,29 @@ export const ProjectSettingsPage: React.FC = () => {
   }
 
   if (!project) {
+    const isForbidden =
+      (projectError as any)?.message?.toLowerCase()?.includes('forbidden') ||
+      (projectError as any)?.message?.toLowerCase()?.includes('permission') ||
+      (projectError as any)?.status === 403;
+
+    if (isForbidden) {
+      return (
+        <ForbiddenPage
+          title="Project Access Denied"
+          message={`You do not have administrative permissions to view or edit settings for project "${rawIdentifier || 'unknown'}".`}
+          resourceType="Project"
+          resourceId={rawIdentifier}
+        />
+      );
+    }
+
     return (
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-16 text-center text-xs text-[var(--md-sys-color-error)]">
-        Project workspace not found.
-      </div>
+      <NotFoundPage
+        title="Project Workspace Not Found"
+        description={`We could not find a project workspace matching "${rawIdentifier}". It may have been deleted, archived, or you may not have access.`}
+        resourceType="Project"
+        resourceId={rawIdentifier}
+      />
     );
   }
 

@@ -100,4 +100,24 @@ describe('HeaderBreadcrumbs Component', () => {
     expect(screen.getByRole('link', { name: /^account$/i })).toHaveAttribute('href', '/profile');
     expect(screen.getByText('Preferences')).toBeInTheDocument();
   });
+
+  it('renders Access Denied breadcrumb for /forbidden path', () => {
+    render(
+      <MemoryRouter initialEntries={['/forbidden']}>
+        <HeaderBreadcrumbs />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('Access Denied')).toBeInTheDocument();
+  });
+
+  it('renders Page Not Found breadcrumb for unmatched routes', () => {
+    render(
+      <MemoryRouter initialEntries={['/some/unknown/route']}>
+        <HeaderBreadcrumbs />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('Page Not Found')).toBeInTheDocument();
+  });
 });

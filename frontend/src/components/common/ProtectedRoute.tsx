@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../store';
+import { ForbiddenPage } from '../../pages/ForbiddenPage.js';
 
 export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -36,8 +37,18 @@ export const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }
     user?.groups?.some((g) => ['administrators', 'admin', 'admins'].includes(g.toLowerCase())) ||
     user?.systemRole === 'ADMIN';
 
-  if (!user || !isAdmin) {
-    return <Navigate to="/profile" replace />;
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!isAdmin) {
+    return (
+      <ForbiddenPage
+        title="Admin Console Access Denied"
+        message="You do not have administrative privileges to access the Admin Center. Please contact your workspace administrator if you need access."
+        requiredRole="ADMIN"
+      />
+    );
   }
 
   return <>{children}</>;

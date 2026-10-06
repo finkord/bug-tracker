@@ -16,6 +16,10 @@ vi.mock('../../api/queries/index.js', () => ({
     mutateAsync: mockMutateCreate,
     isPending: false,
   }),
+  useUserDetailQuery: () => ({
+    data: null,
+    isLoading: false,
+  }),
 }));
 
 const mockIssueWithSubtasks: IssueItem = {

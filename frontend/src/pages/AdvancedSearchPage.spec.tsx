@@ -24,6 +24,7 @@ vi.mock('../api/queries', () => ({
   useUpdateIssueStatusMutation: () => ({ mutateAsync: mockUpdateIssueStatusMutation }),
   useAssignIssueToMeMutation: () => ({ mutateAsync: vi.fn() }),
   useValidateJqlQuery: () => ({ data: { isValid: true }, isLoading: false }),
+  useUserDetailQuery: () => ({ data: null, isLoading: false }),
 }));
 
 vi.mock('../components/kanban/IssueDetailsModal', () => ({
