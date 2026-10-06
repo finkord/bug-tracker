@@ -24,7 +24,7 @@ BOLD    := \033[1m
         init-system seed seed-demo db-shell redis-shell \
         test test-backend test-frontend test-watch test-cov \
         lint typecheck check build clean \
-        prod-build prod-up prod-down prod-logs prod-init prod-seed
+        prod-build prod-up prod-down prod-logs prod-init prod-seed prod-db-shell prod-redis-shell
 
 # ------------------------------------------------------------------------------
 # 1. Self-Documenting Help Menu
@@ -55,7 +55,7 @@ help:
 	@echo ""
 	@printf "  $(BOLD)[DB] Database & System Initialization$(RESET)\n"
 	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make init-system" "Initialize baseline system (roles, permissions, admin account)"
-	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make seed-demo" "Seed legacy dummy tickets and demo users for testing"
+	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make seed-demo" "Seed scalable test dataset (ARGS=\"--users=100 --issues=300\")"
 	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make db-shell" "Open interactive psql CLI in PostgreSQL container"
 	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make redis-shell" "Open interactive redis-cli in Redis container"
 	@echo ""
@@ -74,6 +74,9 @@ help:
 	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make prod-down" "Stop production container stack"
 	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make prod-logs" "Stream production container logs"
 	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make prod-init" "Initialize production system roles & admin inside container"
+	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make prod-seed" "Seed scalable test dataset in production (ARGS=\"--users=500\")"
+	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make prod-db-shell" "Open interactive psql CLI in production PostgreSQL container"
+	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make prod-redis-shell" "Open interactive redis-cli in production Redis container"
 	@echo ""
 	@printf "  $(BOLD)[MAINT] Maintenance & Teardown$(RESET)\n"
 	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make build" "Compile production bundles for backend and frontend"
@@ -187,7 +190,7 @@ init-system:
 	npm --prefix backend run init:system
 
 seed-demo:
-	npm --prefix backend run seed:demo
+	npm --prefix backend run seed:demo -- $(ARGS)
 
 db-shell:
 	docker compose exec postgres psql -U postgres -d bug_tracker
@@ -245,7 +248,14 @@ prod-logs:
 prod-init:
 	docker compose -f docker-compose.prod.yml exec backend npm run init:system:prod
 
-prod-seed: prod-init
+prod-seed:
+	docker compose -f docker-compose.prod.yml exec backend node dist/database/seed.js $(ARGS)
+
+prod-db-shell:
+	docker compose -f docker-compose.prod.yml exec postgres psql -U postgres -d bug_tracker
+
+prod-redis-shell:
+	docker compose -f docker-compose.prod.yml exec redis redis-cli
 
 # ------------------------------------------------------------------------------
 # 8. Maintenance

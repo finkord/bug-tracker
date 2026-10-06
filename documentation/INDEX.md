@@ -23,7 +23,7 @@ Welcome to the central documentation hub for **BugTracker**. This directory serv
 | **WebSockets** | Socket.IO, Real-Time Board | [`backend/src/modules/events/`](../backend/src/modules/events) | [`backend/events.md`](backend/events.md) |
 | **Notifications & Triage** | In-app alerts, unread counts, snooze | [`backend/src/modules/notifications/`](../backend/src/modules/notifications) | [`backend/notifications.md`](backend/notifications.md) |
 | **Admin Operations** | Health, Metrics, User Control | [`backend/src/modules/admin/`](../backend/src/modules/admin) | [`backend/admin.md`](backend/admin.md) |
-| **Database Seeding** | 5 Teams, 30 Engineers, 46 Issues | [`backend/src/database/seed.ts`](../backend/src/database/seed.ts) | [`backend/seeding.md`](backend/seeding.md) |
+| **Database Seeding** | Universal CLI, 100-500+ Users, Scalable Sprints | [`backend/src/database/seed.ts`](../backend/src/database/seed.ts) | [`backend/seeding.md`](backend/seeding.md) |
 | **Frontend Core** | React 19, Zustand, Query | [`frontend/src/App.tsx`](../frontend/src/App.tsx) | [`frontend/overview.md`](frontend/overview.md) |
 | **Routes & Views** | 19 Page views, Route Guards | [`frontend/src/pages/`](../frontend/src/pages) | [`frontend/pages-and-routing.md`](frontend/pages-and-routing.md) |
 | **Design System** | M3 Expressive, Tokens, Curves | [`frontend/src/index.css`](../frontend/src/index.css) | [`frontend/design-system.md`](frontend/design-system.md) |

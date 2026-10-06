@@ -25,14 +25,17 @@ The project includes a Makefile for single-command automation:
 | `make infra-down` | Gracefully stop backing Docker containers |
 | `make infra-reset` | Wipe and re-create database volumes from scratch, then reinitialize |
 | `make init-system` | Initialize baseline system (roles, permissions, groups, system admin account) |
-| `make seed` | Alias to `init-system` (clean initialization without fake tickets) |
-| `make seed-demo` | Seed legacy dummy tickets and demo users for testing |
-| `make db-shell` | Open interactive PostgreSQL `psql` console |
-| `make redis-shell` | Open interactive Redis CLI |
+| `make seed-demo` | Seed scalable test dataset (accepts `ARGS="--users=100 --issues=300"`) |
+| `make db-shell` | Open interactive PostgreSQL `psql` console in dev container |
+| `make redis-shell` | Open interactive Redis CLI in dev container |
 | `make prod-build` | Build customer production images (NestJS backend + Nginx SPA) |
 | `make prod-up` | Launch containerized production stack on port 80 |
 | `make prod-down` | Stop production container stack |
+| `make prod-logs` | Stream production container logs |
 | `make prod-init` | Initialize production system roles and admin account inside container |
+| `make prod-seed` | Seed scalable test dataset in production container (accepts `ARGS="--users=500"`) |
+| `make prod-db-shell` | Open interactive PostgreSQL `psql` console in production container |
+| `make prod-redis-shell` | Open interactive Redis CLI in production container |
 | `make clean` | Clean dist bundles, test coverage, and temporary cache artifacts |
 
 ---
@@ -174,14 +177,38 @@ The production package (`docker-compose.prod.yml`) is designed for customer depl
    - System administrator account specified by `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD`
    - Zero fake tickets or dummy users are injected.
 
-4. **Stream Logs:**
+4. **Automated Data Seeding (Universal CLI Tool):**
+   ```bash
+   # Standard production seed (25 users, 5 projects, 120 issues)
+   make prod-seed
+
+   # Scale production data with custom counts
+   make prod-seed ARGS="--users=500 --projects=8 --issues=1000"
+
+   # Direct execution in container
+   docker exec -it bugtracker-backend-prod node dist/database/seed.js --users=500 --issues=1000
+
+   # Non-destructive seed (append without clearing previous data)
+   docker exec -it bugtracker-backend-prod node dist/database/seed.js --users=50 --issues=100 --no-clean
+   ```
+
+5. **Stream Logs:**
    ```bash
    make prod-logs
    # Or directly:
    docker compose -f docker-compose.prod.yml logs -f
    ```
 
-5. **Stop Production Stack:**
+6. **Interactive Database & Cache Consoles:**
+   ```bash
+   # Production PostgreSQL psql shell
+   make prod-db-shell
+
+   # Production Redis redis-cli shell
+   make prod-redis-shell
+   ```
+
+7. **Stop Production Stack:**
    ```bash
    make prod-down
    # Or directly:

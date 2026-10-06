@@ -46,7 +46,7 @@ Comprehensive technical documentation for all architectural layers, subsystems, 
 - **[Security Audit](documentation/backend/security-audit.md)**: Forensic audit logs, IP tracking, and failure analysis.
 - **[WebSockets & Events](documentation/backend/events.md)**: Real-time Socket.IO board events and user presence.
 - **[Admin Console](documentation/backend/admin.md)**: System diagnostics, health checks, and user management.
-- **[Database Seeder](documentation/backend/seeding.md)**: Multi-team engineering dataset (5 teams, 30 engineers, 46 issues).
+- **[Database Seeder & Universal CLI](documentation/backend/seeding.md)**: Scalable multi-team engineering dataset (up to 500+ users, 1,000+ tickets).
 
 ### Frontend & Operations
 - **[Frontend Architecture](documentation/frontend/overview.md)**: React 19 + Vite 8 SPA structure and state management.
