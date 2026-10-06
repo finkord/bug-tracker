@@ -15,14 +15,17 @@ export class SeaweedFsService {
   private readonly volumeUrl: string;
 
   constructor(private readonly configService?: ConfigService) {
-    this.masterUrl =
+    const rawMaster =
       this.configService?.get<string>?.('SEAWEED_MASTER_URL') ||
       process.env.SEAWEED_MASTER_URL ||
       'http://localhost:9333';
-    this.volumeUrl =
+    this.masterUrl = rawMaster.replace(/\/+$/, '');
+
+    const rawVolume =
       this.configService?.get<string>?.('SEAWEED_VOLUME_URL') ||
       process.env.SEAWEED_VOLUME_URL ||
       'http://localhost:8080';
+    this.volumeUrl = rawVolume.replace(/\/+$/, '');
   }
 
   async uploadFile(file: UploadedFileInput): Promise<{ fid: string; url: string }> {
@@ -37,11 +40,18 @@ export class SeaweedFsService {
     const blob = new Blob([new Uint8Array(file.buffer)], { type: file.mimetype });
     formData.append('file', blob, file.originalname);
 
-    const uploadUrl = `${this.volumeUrl}/${fid}`;
-    const uploadRes = await fetch(uploadUrl, {
+    const targetUrl = this.volumeUrl ? `${this.volumeUrl}/${fid}` : `http://${assignData.url}/${fid}`;
+    let uploadRes = await fetch(targetUrl, {
       method: 'POST',
       body: formData,
     });
+
+    if (!uploadRes.ok && assignData.url && targetUrl !== `http://${assignData.url}/${fid}`) {
+      uploadRes = await fetch(`http://${assignData.url}/${fid}`, {
+        method: 'POST',
+        body: formData,
+      });
+    }
 
     if (!uploadRes.ok) {
       throw new Error(`SeaweedFS volume upload failed: ${uploadRes.status}`);
@@ -54,7 +64,10 @@ export class SeaweedFsService {
   }
 
   async getFileBuffer(fid: string): Promise<{ buffer: Buffer; contentType: string }> {
-    const res = await fetch(`${this.volumeUrl}/${fid}`);
+    let res = await fetch(`${this.volumeUrl}/${fid}`);
+    if (!res.ok) {
+      res = await fetch(`${this.masterUrl}/${fid}`);
+    }
     if (!res.ok) {
       throw new Error(`SeaweedFS file retrieval failed: ${res.status}`);
     }
@@ -68,7 +81,10 @@ export class SeaweedFsService {
 
   async deleteFile(fid: string): Promise<void> {
     try {
-      await fetch(`${this.volumeUrl}/${fid}`, { method: 'DELETE' });
+      const res = await fetch(`${this.volumeUrl}/${fid}`, { method: 'DELETE' });
+      if (!res.ok) {
+        await fetch(`${this.masterUrl}/${fid}`, { method: 'DELETE' });
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       this.logger.warn(`Failed to delete fid ${fid} from SeaweedFS: ${message}`);
