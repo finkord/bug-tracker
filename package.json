@@ -22,10 +22,10 @@
     "init:system": "npm --prefix backend run init:system",
     "dev:stop": "fuser -k 3000/tcp 5173/tcp 2>/dev/null || true",
     "clean": "rm -rf backend/dist frontend/dist coverage backend/coverage frontend/coverage backend/*.tsbuildinfo frontend/*.tsbuildinfo *.log npm-debug.log*",
-    "docker:up": "docker compose up -d",
-    "docker:down": "docker compose down",
-    "docker:prod": "docker compose -f docker-compose.prod.yml up -d --build",
-    "docker:prod:down": "docker compose -f docker-compose.prod.yml down"
+    "docker:infra:up": "docker compose -f docker-compose.infra.yml up -d",
+    "docker:infra:down": "docker compose -f docker-compose.infra.yml down",
+    "docker:prod": "docker compose -f docker-compose.infra.yml -f docker-compose.yml up -d --build",
+    "docker:prod:down": "docker compose -f docker-compose.yml down"
   },
   "devDependencies": {
     "concurrently": "^10.0.5"

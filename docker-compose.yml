@@ -1,86 +1,100 @@
+# ==============================================================================
+# BugTracker — Stateless Application Tier (Cloud & Production Ready)
+# Services: Backend (NestJS API), Frontend (Nginx SPA + Reverse Proxy)
+#
+# Deployment on AWS / Cloud / On-Premise:
+#   docker compose --env-file .env.production up -d
+#
+# Full Local Stack (Infra + App):
+#   docker compose -f docker-compose.infra.yml -f docker-compose.yml up -d --build
+# ==============================================================================
+
 services:
-  # 1. Relational Database Tier: PostgreSQL 15
-  postgres:
-    image: postgres:15-alpine
-    container_name: bugtracker-postgres
+  # 1. Core Application Tier: NestJS Modular Monolith API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bugtracker-backend
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
-      POSTGRES_DB: ${DB_NAME:-bug_tracker}
-    ports:
-      - "${DB_PORT:-5432}:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-bug_tracker}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      NODE_ENV: production
+      PORT: 3000
+      API_PREFIX: api/v1
+      ENABLE_SWAGGER: ${ENABLE_SWAGGER:-true}
+
+      # Relational Database (Local Docker default -> postgres, AWS -> RDS endpoint)
+      DB_HOST: ${DB_HOST:-postgres}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_SYNCHRONIZE: ${DB_SYNCHRONIZE:-true}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_NAME: ${DB_NAME:-bug_tracker}
+
+      # In-Memory Cache & WebSocket Bus (Local Docker default -> redis, AWS -> ElastiCache)
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+
+      # Mailer Service (Local Docker default -> mailpit, AWS -> Amazon SES)
+      MAIL_HOST: ${MAIL_HOST:-mailpit}
+      MAIL_PORT: ${MAIL_PORT:-1025}
+      MAIL_USER: ${MAIL_USER:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_SECURE: ${MAIL_SECURE:-false}
+      MAIL_FROM: ${MAIL_FROM:-"no-reply@bugtracker.local"}
+
+      # Object Storage (Local Docker default -> SeaweedFS, AWS -> Amazon S3)
+      S3_ENDPOINT: ${S3_ENDPOINT:-http://seaweedfs:8333}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-any}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-any}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME:-bugtracker-attachments}
+      S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-true}
+      SEAWEED_MASTER_URL: ${SEAWEED_MASTER_URL:-http://seaweedfs:9333}
+      SEAWEED_VOLUME_URL: ${SEAWEED_VOLUME_URL:-http://seaweedfs:8080}
+
+      # Ingress & Security Configuration
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
+      JWT_SECRET: ${JWT_SECRET:-super_secret_jwt_access_key_change_in_production_min_32_chars}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-super_secret_jwt_refresh_key_change_in_production_min_32_chars}
+
+      # Initial Admin Setup
+      INITIAL_ADMIN_EMAIL: ${INITIAL_ADMIN_EMAIL:-admin@bugtracker.local}
+      INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:-AdminPassword123!}
+      INITIAL_ADMIN_NAME: ${INITIAL_ADMIN_NAME:-"System Administrator"}
+
+      # External Identity Providers (OAuth2 / OIDC) & Bot Protection
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-Ov23liowrXkQH7XphlcP}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-5ca11b790717d78b6cc2e9fdbab955bf2b3d0419}
+      GITHUB_CALLBACK_URL: ${GITHUB_CALLBACK_URL:-http://localhost/api/v1/auth/github/callback}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-133097189796-jmtng0dmfhmabetq39e8qc8vdebqn4ad.apps.googleusercontent.com}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-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}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-http://localhost/api/v1/auth/google/callback}
+      CAPTCHA_PROVIDER: ${CAPTCHA_PROVIDER:-turnstile}
+      CAPTCHA_SECRET_KEY: ${CAPTCHA_SECRET_KEY:-0x4AAAAAAFBDW7slniLnmgtBJZ0F_4ZezO8}
+      TURNSTILE_SECRET: ${TURNSTILE_SECRET:-0x4AAAAAAFBDW7slniLnmgtBJZ0F_4ZezO8}
+      TURNSTILE_HOSTNAMES: ${TURNSTILE_HOSTNAMES:-localhost,127.0.0.1}
     networks:
       - bugtracker-network
 
-  # 2. In-Memory Cache, Rate Limiting & WebSocket Bus: Redis 7
-  redis:
-    image: redis:7-alpine
-    container_name: bugtracker-redis
+  # 2. Production Edge Ingress & Pre-compiled Static SPA: Nginx
+  frontend:
+    build:
+      context: .
+      dockerfile: ./nginx/Dockerfile.prod
+      args:
+        VITE_TURNSTILE_SITE_KEY: ${VITE_TURNSTILE_SITE_KEY:-0x4AAAAAAFBDW7LqZnzsV119}
+    container_name: bugtracker-frontend
     restart: unless-stopped
-    command: redis-server --appendonly yes
     ports:
-      - "${REDIS_PORT:-6379}:6379"
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
+      - "${HTTP_PORT:-80}:80"
+    depends_on:
+      - backend
     networks:
       - bugtracker-network
-
-  # 3. Local Transactional Email Testing Server: Mailpit
-  mailpit:
-    image: axllent/mailpit:latest
-    container_name: bugtracker-mailpit
-    restart: unless-stopped
-    environment:
-      MP_MAX_MESSAGES: 5000
-      MP_DATABASE: /data/mailpit.db
-      MP_SMTP_AUTH_ACCEPT_ANY: 1
-      MP_SMTP_AUTH_ALLOW_INSECURE: 1
-    ports:
-      - "${MAIL_SMTP_PORT:-1025}:1025"   # SMTP port
-      - "${MAIL_UI_PORT:-8025}:8025"     # Web UI dashboard
-    volumes:
-      - mailpit_data:/data
-    networks:
-      - bugtracker-network
-
-  # 4. S3-Compatible Distributed Object Storage: SeaweedFS (Apache 2.0, Go)
-  seaweedfs:
-    image: chrislusf/seaweedfs:latest
-    container_name: bugtracker-seaweedfs
-    restart: unless-stopped
-    command: "server -s3 -dir=/data -s3.port=8333 -ip.bind=0.0.0.0"
-    ports:
-      - "${S3_PORT:-8333}:8333"           # S3 API endpoint
-      - "${SEAWEED_MASTER_PORT:-9333}:9333" # Master status & management UI
-      - "${SEAWEED_VOLUME_PORT:-8080}:8080" # Volume server endpoint
-    volumes:
-      - seaweedfs_data:/data
-    networks:
-      - bugtracker-network
-
-volumes:
-  postgres_data:
-    driver: local
-  redis_data:
-    driver: local
-  mailpit_data:
-    driver: local
-  seaweedfs_data:
-    driver: local
 
 networks:
   bugtracker-network:
-    driver: bridge
+    name: bugtracker-network

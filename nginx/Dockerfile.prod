@@ -12,9 +12,11 @@ WORKDIR /app
 # Set production API and WebSocket endpoints (relative routes proxied by Nginx)
 ARG VITE_API_URL=/api/v1
 ARG VITE_SOCKET_URL=/events
+ARG VITE_TURNSTILE_SITE_KEY=0x4AAAAAAFBDW7LqZnzsV119
 
 ENV VITE_API_URL=${VITE_API_URL}
 ENV VITE_SOCKET_URL=${VITE_SOCKET_URL}
+ENV VITE_TURNSTILE_SITE_KEY=${VITE_TURNSTILE_SITE_KEY}
 
 # Install dependencies
 COPY frontend/package*.json ./

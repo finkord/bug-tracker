@@ -19,12 +19,17 @@ RED     := \033[31m
 RESET   := \033[0m
 BOLD    := \033[1m
 
-.PHONY: help setup env doctor dev dev-backend dev-frontend dev-stop dev-down dev-clean dev-reset \
+COMPOSE_INFRA := docker compose -f docker-compose.infra.yml
+COMPOSE_APP   := docker compose -f docker-compose.yml
+COMPOSE_ALL   := docker compose -f docker-compose.infra.yml -f docker-compose.yml
+
+.PHONY: help setup env doctor \
+        dev dev-backend dev-frontend dev-stop dev-down dev-clean dev-reset \
         infra-up infra-down infra-logs infra-ps infra-reset wait-infra \
+        prod prod-up prod-down prod-logs prod-build prod-init prod-seed down \
         init-system seed seed-demo db-shell redis-shell \
         test test-backend test-frontend test-watch test-cov \
-        lint typecheck check build clean \
-        prod-build prod-up prod-down prod-logs prod-init prod-seed prod-db-shell prod-redis-shell
+        lint typecheck check build clean
 
 # ------------------------------------------------------------------------------
 # 1. Self-Documenting Help Menu
@@ -34,28 +39,35 @@ help:
 	@printf "  $(BOLD)$(CYAN)BugTracker Developer CLI$(RESET)\n"
 	@printf "  $(YELLOW)======================================================================$(RESET)\n"
 	@echo ""
-	@printf "  $(BOLD)[DEV] Development Workflows$(RESET)\n"
-	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make dev" "Start backend and frontend together with unified colored logs"
-	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make dev-backend" "Start only NestJS backend in watch mode (port 3000)"
-	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make dev-frontend" "Start only Vite React frontend (port 5173)"
-	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make dev-stop" "Stop local development processes (ports 3000 and 5173)"
-	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make dev-down" "Stop backing infrastructure containers safely"
-	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make dev-clean" "Teardown dev servers, docker volumes, and build caches"
-	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make dev-reset" "Reset database and storage volumes, restart, and initialize"
+	@printf "  $(BOLD)[DEV] Development Workflows (Host + Hot-Reload)$(RESET)\n"
+	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make dev" "Start backing infra + launch backend (:3000) & frontend (:5173)"
+	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make dev-backend" "Start backing infra + launch only backend in watch mode"
+	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make dev-frontend" "Start only Vite frontend (:5173)"
+	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make dev-stop" "Stop host node processes on ports 3000 and 5173"
+	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make dev-down" "Stop host servers and backing infra containers"
+	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make dev-reset" "Reset database volume, restart infra, and initialize schema"
 	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make setup" "Bootstrap full environment (deps, .env, docker, init-system)"
 	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make doctor" "Run environment diagnostic check (tools, ports, docker)"
 	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make env" "Ensure backend and frontend .env files exist from templates"
 	@echo ""
-	@printf "  $(BOLD)[INFRA] Infrastructure (Docker Dev Stack)$(RESET)\n"
-	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make infra-up" "Start backing containers (Postgres, Redis, Mailpit, SeaweedFS)"
-	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make infra-down" "Stop backing containers safely"
-	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make infra-logs" "Stream logs from all infrastructure containers"
-	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make infra-ps" "Check health and status of running containers"
+	@printf "  $(BOLD)[INFRA] Backing Infrastructure (Postgres, Redis, SeaweedFS, Mailpit)$(RESET)\n"
+	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make infra-up" "Start backing infrastructure containers"
+	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make infra-down" "Stop backing infrastructure containers"
+	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make infra-logs" "Stream logs from backing infrastructure containers"
+	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make infra-ps" "Check health and status of backing containers"
 	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make infra-reset" "Reset database and storage volumes (destructive)"
 	@echo ""
-	@printf "  $(BOLD)[DB] Database & System Initialization$(RESET)\n"
+	@printf "  $(BOLD)[PROD] Production Preview (Full Container Stack on Port 80)$(RESET)\n"
+	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make prod" "Build images and launch container stack (port 80)"
+	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make prod-down" "Stop application containers"
+	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make prod-logs" "Stream application container logs"
+	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make prod-init" "Run baseline system initialization inside backend container"
+	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make prod-seed" "Seed test data inside backend container (ARGS=\"--users=100\")"
+	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make down" "Stop all containers (both application and backing infra)"
+	@echo ""
+	@printf "  $(BOLD)[DATA] Database & Test Data Management$(RESET)\n"
 	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make init-system" "Initialize baseline system (roles, permissions, admin account)"
-	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make seed-demo" "Seed scalable test dataset (ARGS=\"--users=100 --issues=300\")"
+	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make seed" "Seed scalable test dataset (ARGS=\"--users=100 --issues=300\")"
 	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make db-shell" "Open interactive psql CLI in PostgreSQL container"
 	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make redis-shell" "Open interactive redis-cli in Redis container"
 	@echo ""
@@ -64,21 +76,9 @@ help:
 	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make lint" "Run oxlint static analysis across backend and frontend"
 	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make typecheck" "Run tsc --noEmit across backend and frontend"
 	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make test" "Run backend and frontend Vitest test suites"
-	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make test-backend" "Run backend Vitest suite"
-	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make test-frontend" "Run frontend Vitest suite"
 	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make test-cov" "Run backend test coverage report"
 	@echo ""
-	@printf "  $(BOLD)[PROD] Production Packaging & Deployment$(RESET)\n"
-	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make prod-build" "Build customer production images (NestJS backend + Nginx SPA)"
-	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make prod-up" "Launch customer production stack on port 80"
-	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make prod-down" "Stop production container stack"
-	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make prod-logs" "Stream production container logs"
-	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make prod-init" "Initialize production system roles & admin inside container"
-	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make prod-seed" "Seed scalable test dataset in production (ARGS=\"--users=500\")"
-	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make prod-db-shell" "Open interactive psql CLI in production PostgreSQL container"
-	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make prod-redis-shell" "Open interactive redis-cli in production Redis container"
-	@echo ""
-	@printf "  $(BOLD)[MAINT] Maintenance & Teardown$(RESET)\n"
+	@printf "  $(BOLD)[MAINT] Maintenance & Build$(RESET)\n"
 	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make build" "Compile production bundles for backend and frontend"
 	@printf "    $(GREEN)%-18s$(RESET) %s\n" "make clean" "Clean dist directories, coverage, and cache artifacts"
 	@echo ""
@@ -105,23 +105,25 @@ setup: env
 	@npm install
 	@npm --prefix backend install
 	@npm --prefix frontend install
-	@echo "Starting Docker infrastructure..."
+	@echo "Starting Docker backing infrastructure..."
 	@$(MAKE) infra-up
 	@$(MAKE) wait-infra
 	@echo "Initializing system roles, permissions, and admin account..."
 	@$(MAKE) init-system
 	@echo ""
-	@printf "  $(GREEN)$(BOLD)[PASS] Setup complete!$(RESET) Run $(CYAN)make dev$(RESET) to start developing.\n\n"
+	@printf "  $(GREEN)$(BOLD)[PASS] Setup complete!$(RESET) Run $(CYAN)make dev$(RESET) or $(CYAN)make prod$(RESET).\n\n"
 
 # ------------------------------------------------------------------------------
 # 3. Development Workflows
 # ------------------------------------------------------------------------------
 dev:
-	@docker compose up -d
+	@$(MAKE) infra-up
+	@$(MAKE) wait-infra
 	@npm run dev
 
 dev-backend:
-	@docker compose up -d
+	@$(MAKE) infra-up
+	@$(MAKE) wait-infra
 	@npm run dev:backend
 
 dev-frontend:
@@ -132,74 +134,104 @@ dev-stop:
 	@fuser -k 3000/tcp 5173/tcp 2>/dev/null || true
 	@echo "Development servers stopped."
 
-dev-down:
+dev-down: dev-stop
 	@echo "Stopping backing infrastructure containers..."
-	@docker compose down
+	@$(COMPOSE_INFRA) down
 
 dev-clean: dev-stop
 	@echo "Stopping infrastructure and removing data volumes..."
-	@docker compose down -v
+	@$(COMPOSE_INFRA) down -v
 	@$(MAKE) clean
 	@echo "Development environment completely cleaned."
 
 dev-reset: dev-stop
 	@echo "Resetting development database and storage..."
-	@docker compose down -v
-	@docker compose up -d
-	@$(MAKE) wait-infra
-	@$(MAKE) init-system
+	@$(MAKE) infra-reset
 	@echo "Development environment reset complete."
 
 # ------------------------------------------------------------------------------
-# 4. Infrastructure (Docker Dev Stack)
+# 4. Backing Infrastructure Tier (PostgreSQL, Redis, SeaweedFS, Mailpit)
 # ------------------------------------------------------------------------------
 infra-up:
-	docker compose up -d
+	$(COMPOSE_INFRA) up -d
 
 infra-down:
-	docker compose down
+	$(COMPOSE_INFRA) down
 
 infra-logs:
-	docker compose logs -f
+	$(COMPOSE_INFRA) logs -f
 
 infra-ps:
-	docker compose ps
+	$(COMPOSE_INFRA) ps
 
 wait-infra:
 	@echo "Waiting for PostgreSQL to accept connections..."
-	@until docker compose exec postgres pg_isready -U postgres -d bug_tracker >/dev/null 2>&1; do \
+	@until $(COMPOSE_INFRA) exec postgres pg_isready -U postgres -d bug_tracker >/dev/null 2>&1; do \
 		sleep 1; \
 	done
 	@echo "PostgreSQL is ready."
 	@echo "Waiting for Redis..."
-	@until docker compose exec redis redis-cli ping >/dev/null 2>&1; do \
+	@until $(COMPOSE_INFRA) exec redis redis-cli ping >/dev/null 2>&1; do \
 		sleep 1; \
 	done
 	@echo "Redis is ready."
 
 infra-reset:
-	docker compose down -v
-	docker compose up -d
+	$(COMPOSE_INFRA) down -v
+	$(COMPOSE_INFRA) up -d
 	@$(MAKE) wait-infra
 	@$(MAKE) init-system
 
 # ------------------------------------------------------------------------------
-# 5. Database & System Initialization
+# 5. Production Stack (Containerized Application Tier)
+# ------------------------------------------------------------------------------
+prod: prod-up
+
+prod-build:
+	$(COMPOSE_APP) build
+
+prod-up:
+	@$(MAKE) infra-up
+	@$(MAKE) wait-infra
+	$(COMPOSE_ALL) up -d --build
+
+prod-down:
+	$(COMPOSE_APP) down
+
+prod-logs:
+	$(COMPOSE_APP) logs -f
+
+prod-init:
+	$(COMPOSE_APP) exec backend node dist/database/init-system.js
+
+prod-seed:
+	$(COMPOSE_APP) exec backend node dist/database/seed.js $(ARGS)
+
+down:
+	@echo "Stopping all containers..."
+	$(COMPOSE_ALL) down
+
+# ------------------------------------------------------------------------------
+# 6. Database & System Initialization (Universal)
 # ------------------------------------------------------------------------------
 init-system:
+	npm --prefix backend run build
 	npm --prefix backend run init:system
 
-seed-demo:
-	npm --prefix backend run seed:demo -- $(ARGS)
+seed:
+	npm --prefix backend run build
+	node backend/dist/database/seed.js $(ARGS)
+
+seed-demo: seed
 
 db-shell:
-	docker compose exec postgres psql -U postgres -d bug_tracker
+	$(COMPOSE_INFRA) exec postgres psql -U postgres -d bug_tracker
 
 redis-shell:
-	docker compose exec redis redis-cli
+	$(COMPOSE_INFRA) exec redis redis-cli
 
 # ------------------------------------------------------------------------------
-# 6. Quality Assurance & Testing
+# 7. Quality Assurance & Testing
 # ------------------------------------------------------------------------------
 lint:
 	npm --prefix backend run lint
@@ -210,7 +242,7 @@ typecheck:
 	@cd backend && npx tsc --noEmit
 	@echo "Type checking frontend..."
 	@cd frontend && npx tsc --noEmit
-	@echo "TypeScript type checks passed!"
+	@echo "TypeScript type checks passed."
 
 check: lint typecheck
 
@@ -231,34 +263,7 @@ test-cov:
 	npm --prefix backend run test:cov
 
 # ------------------------------------------------------------------------------
-# 7. Production Stack (Containerized Deployment)
-# ------------------------------------------------------------------------------
-prod-build:
-	docker compose -f docker-compose.prod.yml build
-
-prod-up:
-	docker compose -f docker-compose.prod.yml up -d --build
-
-prod-down:
-	docker compose -f docker-compose.prod.yml down
-
-prod-logs:
-	docker compose -f docker-compose.prod.yml logs -f
-
-prod-init:
-	docker compose -f docker-compose.prod.yml exec backend npm run init:system:prod
-
-prod-seed:
-	docker compose -f docker-compose.prod.yml exec backend node dist/database/seed.js $(ARGS)
-
-prod-db-shell:
-	docker compose -f docker-compose.prod.yml exec postgres psql -U postgres -d bug_tracker
-
-prod-redis-shell:
-	docker compose -f docker-compose.prod.yml exec redis redis-cli
-
-# ------------------------------------------------------------------------------
-# 8. Maintenance
+# 8. Maintenance & Build
 # ------------------------------------------------------------------------------
 build:
 	npm --prefix backend run build
