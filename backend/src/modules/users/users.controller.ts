@@ -65,7 +65,10 @@ export class UsersController {
       isBlocked: user.isBlocked,
       twoFactorEnabled: user.twoFactorEnabled,
       oauthProvider: user.oauthProvider,
-      hasPassword: !!user.passwordHash,
+      hasPassword:
+        typeof (user as any).hasPassword === 'boolean'
+          ? (user as any).hasPassword
+          : Boolean(user.passwordHash),
       createdAt: user.createdAt,
     };
   }

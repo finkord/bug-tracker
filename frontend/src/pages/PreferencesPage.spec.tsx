@@ -56,7 +56,7 @@ describe('PreferencesPage', () => {
     expect(rootDiv.className).not.toContain('max-w-5xl');
   });
 
-  it('renders preferences header, settings cards, and live rail preview', () => {
+  it('renders preferences header and settings cards', () => {
     render(
       <MemoryRouter>
         <PreferencesPage />
@@ -65,9 +65,9 @@ describe('PreferencesPage', () => {
 
     expect(screen.getByRole('heading', { name: /^Preferences$/i })).toBeInTheDocument();
     expect(screen.getByText(/Collapsed Sidebar Text Labels/i)).toBeInTheDocument();
-    expect(screen.getByText(/Brand Logo Style/i)).toBeInTheDocument();
+    expect(screen.getByText(/Brand Logo Color & Style/i)).toBeInTheDocument();
     expect(screen.getByText(/Visual Theme/i)).toBeInTheDocument();
-    expect(screen.getByText(/Live Rail Preview/i)).toBeInTheDocument();
+    expect(screen.getByText(/Sidebar Collapse Behavior/i)).toBeInTheDocument();
   });
 
   it('does not overwrite active local light theme when server returns dark, and syncs local theme to server', () => {

@@ -21,7 +21,6 @@ vi.mock('../components/profile', () => ({
   ProfileSecurityCard: () => <div data-testid="mock-security-card">Security Card</div>,
   ProfileTwoFactorCard: () => <div data-testid="mock-2fa-card">2FA Card</div>,
   ProfileSessionsCard: () => <div data-testid="mock-sessions-card">Sessions Card</div>,
-  ProfileAdminBanner: () => <div data-testid="mock-admin-banner">Admin Banner</div>,
   ProfileTimeTab: () => <div data-testid="mock-time-tab">Time Tab</div>,
 }));
 

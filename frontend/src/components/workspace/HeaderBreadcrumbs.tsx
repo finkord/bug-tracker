@@ -147,7 +147,7 @@ export const HeaderBreadcrumbs: React.FC = () => {
         <ChevronRight className="w-3.5 h-3.5 opacity-40 shrink-0" />
 
         <span className="font-semibold text-[var(--md-sys-color-primary)] truncate">
-          {isProfile ? 'Profile Settings' : 'Preferences'}
+          {isProfile ? 'Profile' : 'Preferences'}
         </span>
       </nav>
     );
@@ -171,6 +171,7 @@ export const HeaderBreadcrumbs: React.FC = () => {
   else if (path.startsWith('/time-tracking')) title = 'Time Tracking';
   else if (path.startsWith('/projects')) title = 'Projects Directory';
   else if (path.startsWith('/users/')) title = 'User Profile';
+  else if (path.startsWith('/reset-password')) title = 'Reset Password';
   else if (path === '/' || path.startsWith('/dashboard')) title = 'Dashboard';
   else title = 'Page Not Found';
 

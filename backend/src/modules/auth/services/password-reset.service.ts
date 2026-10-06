@@ -43,16 +43,64 @@ export class PasswordResetService {
 
     const resetUrl = `http://localhost:5173/reset-password?token=${resetToken}`;
 
+    const textContent = `Hello ${user.fullName},
+
+We received a request to reset your BugTracker account password. Click the link below or copy it into your browser to choose a new password:
+
+${resetUrl}
+
+This link is valid for 60 minutes.
+
+If you did not request a password reset, you can safely ignore this email.
+
+Best regards,
+The BugTracker Team`;
+
+    const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>BugTracker Password Reset Request</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px; color: #1e293b;">
+  <div style="max-width: 560px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; padding: 32px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+    <div style="margin-bottom: 24px; text-align: center;">
+      <h1 style="color: #4f46e5; font-size: 24px; font-weight: 800; margin: 0 0 8px;">BugTracker</h1>
+      <p style="color: #64748b; font-size: 14px; margin: 0;">Enterprise Project Management</p>
+    </div>
+    <div style="margin-bottom: 24px;">
+      <h2 style="font-size: 18px; font-weight: 700; color: #0f172a; margin: 0 0 12px;">Reset your password</h2>
+      <p style="font-size: 14px; line-height: 1.6; color: #334155; margin: 0 0 16px;">
+        Hi <strong>${user.fullName}</strong>,
+      </p>
+      <p style="font-size: 14px; line-height: 1.6; color: #334155; margin: 0 0 24px;">
+        We received a request to reset your BugTracker account password. Click the button below to set a new password.
+      </p>
+      <div style="text-align: center; margin: 32px 0;">
+        <a href="${resetUrl}" style="display: inline-block; background-color: #4f46e5; color: #ffffff; font-size: 14px; font-weight: 600; text-decoration: none; padding: 12px 32px; border-radius: 9999px; box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);">
+          Reset Password
+        </a>
+      </div>
+      <p style="font-size: 12px; line-height: 1.5; color: #64748b; margin: 0 0 8px;">
+        Or copy and paste this link into your browser:
+      </p>
+      <p style="font-size: 12px; line-height: 1.5; color: #4f46e5; word-break: break-all; margin: 0 0 24px;">
+        ${resetUrl}
+      </p>
+      <p style="font-size: 12px; color: #94a3b8; margin: 0;">
+        This password reset link is valid for 60 minutes. If you did not request a password reset, you can safely ignore this email.
+      </p>
+    </div>
+  </div>
+</body>
+</html>`;
+
     try {
       await this.mailerService.sendMail({
         to: user.email,
         subject: 'BugTracker Password Reset Request',
-        template: 'password-reset',
-        context: {
-          fullName: user.fullName,
-          resetUrl,
-          expiresInMinutes: 60,
-        },
+        text: textContent,
+        html: htmlContent,
       });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);

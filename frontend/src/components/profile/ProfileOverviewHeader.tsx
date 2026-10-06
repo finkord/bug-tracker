@@ -58,25 +58,13 @@ export const ProfileOverviewHeader: React.FC = () => {
             </div>
           </div>
 
-          {/* Quick Badges / Status Chips & Edit Profile Button */}
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            <div className="px-3 py-1 rounded-full bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] border border-[var(--md-sys-color-outline-variant)]/30 flex items-center gap-1.5 font-medium">
-              <span>ID:</span>
-              <strong className="text-[var(--md-sys-color-on-surface)] font-mono">#{user.id}</strong>
-            </div>
-
-            <Badge variant={user.isActivated ? 'success' : 'neutral'} size="sm" dot>
-              {user.isActivated ? 'Activated' : 'Pending Activation'}
-            </Badge>
-
-            <div className="px-3 py-1 rounded-full bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] border border-[var(--md-sys-color-outline-variant)]/30 font-medium">
-              Auth: <strong className="text-[var(--md-sys-color-primary)]">{user.oauthProvider || 'LOCAL'}</strong>
-            </div>
-
-            <Badge variant={user.hasPassword ? 'success' : 'warning'} size="sm">
-              {user.hasPassword ? 'Password Configured' : 'OAuth Only'}
-            </Badge>
-
+          {/* Quick Actions */}
+          <div className="flex items-center gap-3">
+            {user.createdAt && (
+              <span className="text-xs text-[var(--md-sys-color-on-surface-variant)] hidden sm:inline font-medium">
+                Member since {new Date(user.createdAt).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
+              </span>
+            )}
             <Button
               type="button"
               variant="outline"

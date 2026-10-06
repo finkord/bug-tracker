@@ -91,7 +91,7 @@ describe('HeaderBreadcrumbs Component', () => {
   });
 
   it('renders two-level breadcrumb for user account pages', () => {
-    render(
+    const { unmount } = render(
       <MemoryRouter initialEntries={['/preferences']}>
         <HeaderBreadcrumbs />
       </MemoryRouter>,
@@ -99,6 +99,17 @@ describe('HeaderBreadcrumbs Component', () => {
 
     expect(screen.getByRole('link', { name: /^account$/i })).toHaveAttribute('href', '/profile');
     expect(screen.getByText('Preferences')).toBeInTheDocument();
+
+    unmount();
+
+    render(
+      <MemoryRouter initialEntries={['/profile']}>
+        <HeaderBreadcrumbs />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('link', { name: /^account$/i })).toHaveAttribute('href', '/profile');
+    expect(screen.getByText('Profile')).toBeInTheDocument();
   });
 
   it('renders Access Denied breadcrumb for /forbidden path', () => {

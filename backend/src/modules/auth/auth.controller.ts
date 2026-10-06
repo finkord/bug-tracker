@@ -13,6 +13,9 @@ import {
   HttpStatus,
   BadRequestException,
   NotFoundException,
+  Delete,
+  Param,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
@@ -28,6 +31,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { User } from '../users/entities/user.entity.js';
 import { OAuthCodeStoreService } from './services/oauth-code-store.service.js';
+import { SecurityAuditService } from '../security-audit/security-audit.service.js';
 import type { AuthTokens } from './services/token-session.service.js';
 
 interface OAuthAuthenticatedRequest extends Request {
@@ -44,6 +48,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
     private readonly oauthCodeStore: OAuthCodeStoreService,
+    private readonly securityAuditService: SecurityAuditService,
   ) {}
 
   private setAuthCookies(res: Response, tokens: Partial<AuthTokens>): void {
@@ -351,5 +356,47 @@ export class AuthController {
     const token = bearerToken || cookieToken;
 
     return this.authService.logoutByToken(token);
+  }
+
+  @Get('sessions')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Get active device sessions for current user',
+    description: 'Returns device sessions with device footprint, browser/OS deduction, and active device indicator.',
+  })
+  async getMySessions(
+    @CurrentUser() user: User,
+    @Ip() ip: string,
+    @Headers('user-agent') userAgent?: string,
+  ) {
+    return this.securityAuditService.getUserSessions(user.id, ip, userAgent);
+  }
+
+  @Delete('sessions/:id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Revoke a specific device session',
+  })
+  async revokeSession(
+    @CurrentUser() user: User,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.securityAuditService.revokeSession(user.id, id);
+  }
+
+  @Post('sessions/revoke-others')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Revoke all other device sessions except current one',
+  })
+  async revokeOtherSessions(
+    @CurrentUser() user: User,
+    @Ip() ip: string,
+    @Headers('user-agent') userAgent?: string,
+  ) {
+    return this.securityAuditService.revokeOtherSessions(user.id, ip, userAgent);
   }
 }

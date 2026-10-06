@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { EntityAvatar } from '../ui/EntityAvatar.js';
 
 export interface AvatarProps {
   name: string;
@@ -64,6 +65,19 @@ export const Avatar: React.FC<AvatarProps> = ({
   const sizeClass = sizeClasses[size];
 
   const tooltipText = role ? `${name} (${role})` : name;
+
+  if (avatarUrl?.startsWith('preset:')) {
+    const mappedSize = size === 'compact' ? 'xs' : size;
+    return (
+      <EntityAvatar
+        name={name}
+        avatarUrl={avatarUrl}
+        size={mappedSize}
+        className={`rounded-full ${className}`}
+        showTooltip={showTooltip}
+      />
+    );
+  }
 
   if (avatarUrl && !imageError) {
     return (

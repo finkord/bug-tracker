@@ -137,9 +137,19 @@ export class TwoFactorAuthService {
     ipAddress: string,
     userAgent?: string,
   ): Promise<AuthTokens> {
+    const rawToken = dto.tempToken || dto.challengeToken;
+    const rawCode = dto.code || dto.totpCode;
+
+    if (!rawToken) {
+      throw new BadRequestException('Temporary token is required');
+    }
+    if (!rawCode) {
+      throw new BadRequestException('2FA verification code is required');
+    }
+
     let payload: { sub: number; is2faPending?: boolean; tokenType?: string };
     try {
-      payload = this.jwtService.verify<{ sub: number; is2faPending?: boolean; tokenType?: string }>(dto.tempToken);
+      payload = this.jwtService.verify<{ sub: number; is2faPending?: boolean; tokenType?: string }>(rawToken);
     } catch {
       throw new UnauthorizedException('2FA challenge session expired. Please sign in again.');
     }
@@ -154,7 +164,7 @@ export class TwoFactorAuthService {
     }
 
     const isValid = verifySync({
-      token: dto.code,
+      token: rawCode,
       secret: user.twoFactorSecret,
     });
 

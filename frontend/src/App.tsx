@@ -204,14 +204,7 @@ export const App: React.FC = () => {
                   </PublicOnlyRoute>
                 }
               />
-              <Route
-                path="/reset-password"
-                element={
-                  <PublicOnlyRoute>
-                    <ResetPasswordPage />
-                  </PublicOnlyRoute>
-                }
-              />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
 
               {/* Protected Workspace & Board Routes */}

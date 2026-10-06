@@ -134,6 +134,9 @@ export class User {
       resetPasswordToken,
       ...safeUser
     } = this;
-    return safeUser;
+    return {
+      ...safeUser,
+      hasPassword: Boolean(passwordHash),
+    };
   }
 }

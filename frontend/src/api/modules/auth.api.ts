@@ -29,19 +29,29 @@ export const authApi = {
       body: JSON.stringify(payload),
     }),
 
-  verify2fa: (data: { tempToken?: string; challengeToken?: string; code?: string; totpCode?: string }) =>
-    request<AuthTokens>('/auth/2fa/verify', {
+  verify2fa: (data: { tempToken?: string; challengeToken?: string; code?: string; totpCode?: string }) => {
+    const tempToken = data.tempToken || data.challengeToken;
+    const code = data.code || data.totpCode;
+    return request<AuthTokens>('/auth/2fa/verify', {
       method: 'POST',
       body: JSON.stringify({
-        challengeToken: data.challengeToken || data.tempToken,
-        totpCode: data.totpCode || data.code,
+        tempToken,
+        code,
+        challengeToken: tempToken,
+        totpCode: code,
       }),
-    }),
+    });
+  },
 
   verify2Fa: (challengeToken: string, totpCode: string) =>
     request<AuthTokens>('/auth/2fa/verify', {
       method: 'POST',
-      body: JSON.stringify({ challengeToken, totpCode }),
+      body: JSON.stringify({
+        tempToken: challengeToken,
+        code: totpCode,
+        challengeToken,
+        totpCode,
+      }),
     }),
 
   generate2fa: () =>
@@ -121,5 +131,30 @@ export const authApi = {
     request<AuthTokens>('/auth/oauth/exchange', {
       method: 'POST',
       body: JSON.stringify({ code }),
+    }),
+
+  getSessions: () =>
+    request<
+      Array<{
+        id: number;
+        ipAddress: string;
+        userAgent: string;
+        browser: string;
+        os: string;
+        deviceType: 'desktop' | 'mobile' | 'tablet';
+        createdAt: string;
+        lastActiveAt: string;
+        isCurrent: boolean;
+      }>
+    >('/auth/sessions'),
+
+  revokeSession: (id: number) =>
+    request<{ success: boolean; message: string }>(`/auth/sessions/${id}`, {
+      method: 'DELETE',
+    }),
+
+  revokeOtherSessions: () =>
+    request<{ success: boolean; revokedCount: number }>('/auth/sessions/revoke-others', {
+      method: 'POST',
     }),
 };

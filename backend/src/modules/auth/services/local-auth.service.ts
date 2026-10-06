@@ -77,16 +77,64 @@ export class LocalAuthService {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:5173');
     const activationUrl = `${frontendUrl}/activate?token=${activationToken}`;
 
+    const textContent = `Hello ${newUser.fullName},
+
+Welcome to BugTracker! Please activate your account by clicking the link below or copying it into your browser:
+
+${activationUrl}
+
+This activation link will expire in 24 hours.
+
+If you did not sign up for a BugTracker account, please disregard this email.
+
+Best regards,
+The BugTracker Team`;
+
+    const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Activate Your BugTracker Account</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px; color: #1e293b;">
+  <div style="max-width: 560px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; padding: 32px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+    <div style="margin-bottom: 24px; text-align: center;">
+      <h1 style="color: #4f46e5; font-size: 24px; font-weight: 800; margin: 0 0 8px;">BugTracker</h1>
+      <p style="color: #64748b; font-size: 14px; margin: 0;">Enterprise Project Management</p>
+    </div>
+    <div style="margin-bottom: 24px;">
+      <h2 style="font-size: 18px; font-weight: 700; color: #0f172a; margin: 0 0 12px;">Confirm your email address</h2>
+      <p style="font-size: 14px; line-height: 1.6; color: #334155; margin: 0 0 16px;">
+        Hi <strong>${newUser.fullName}</strong>,
+      </p>
+      <p style="font-size: 14px; line-height: 1.6; color: #334155; margin: 0 0 24px;">
+        Thank you for creating an account on BugTracker. Please click the button below to activate your account and access your workspace.
+      </p>
+      <div style="text-align: center; margin: 32px 0;">
+        <a href="${activationUrl}" style="display: inline-block; background-color: #4f46e5; color: #ffffff; font-size: 14px; font-weight: 600; text-decoration: none; padding: 12px 32px; border-radius: 9999px; box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);">
+          Activate Account
+        </a>
+      </div>
+      <p style="font-size: 12px; line-height: 1.5; color: #64748b; margin: 0 0 8px;">
+        Or copy and paste this link into your browser:
+      </p>
+      <p style="font-size: 12px; line-height: 1.5; color: #4f46e5; word-break: break-all; margin: 0 0 24px;">
+        ${activationUrl}
+      </p>
+      <p style="font-size: 12px; color: #94a3b8; margin: 0;">
+        This activation link expires in 24 hours. If you did not create this account, no further action is required.
+      </p>
+    </div>
+  </div>
+</body>
+</html>`;
+
     try {
       await this.mailerService.sendMail({
         to: newUser.email,
         subject: 'Activate Your BugTracker Account',
-        template: 'activation',
-        context: {
-          fullName: newUser.fullName,
-          activationUrl,
-          expiresInHours: 24,
-        },
+        text: textContent,
+        html: htmlContent,
       });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);

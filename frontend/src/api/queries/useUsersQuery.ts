@@ -58,6 +58,11 @@ export const userQueries = {
       queryKey: [...userQueries.all, 'preferences'] as const,
       queryFn: () => api.getPreferences(),
     }),
+  sessions: () =>
+    queryOptions({
+      queryKey: [...userQueries.all, 'sessions'] as const,
+      queryFn: () => api.getSessions(),
+    }),
 };
 
 // Aliased for full backwards compatibility
@@ -264,3 +269,28 @@ export function useUploadAvatarMutation() {
     },
   });
 }
+
+export function useSessionsQuery() {
+  return useQuery(userQueries.sessions());
+}
+
+export function useRevokeSessionMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api.revokeSession(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: userQueries.sessions().queryKey });
+    },
+  });
+}
+
+export function useRevokeOtherSessionsMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.revokeOtherSessions(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: userQueries.sessions().queryKey });
+    },
+  });
+}
+

@@ -1,201 +1,152 @@
 import React, { useState } from 'react';
-import { useMyWorklogsQuery } from '../../api/queries';
-import { TimeCalendar, type DayWorklog } from '../common/TimeCalendar';
-import { Clock, Trophy, Flame, Award, Sparkles, Zap, Target } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useMyWorklogsQuery, useDeleteWorklogMutation } from '../../api/queries';
+import { MyWorklogsTable } from '../time/MyWorklogsTable';
+import { LogWorkModal } from '../kanban/LogWorkModal';
+import { Card, Button } from '../ui/index.js';
+import { Clock, Calendar, Trophy, ExternalLink, Plus } from 'lucide-react';
 
-/**
- * Material 3 Personal Time & Effort tab with streak calculation, milestone badges, and monthly calendar.
- */
 export const ProfileTimeTab: React.FC = () => {
-  const { data: myWorklogsData } = useMyWorklogsQuery(1, 100);
-  const myLogs = myWorklogsData?.items || [];
-  const [calendarDate, setCalendarDate] = useState<Date>(new Date());
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
+  const [isLogModalOpen, setIsLogModalOpen] = useState(false);
 
-  // Compute daily hours for personal calendar
-  const myDailyHours: Record<string, number> = {};
-  let totalPersonalHours = 0;
-  const currentMonthPrefix = `${calendarDate.getFullYear()}-${String(calendarDate.getMonth() + 1).padStart(2, '0')}`;
-  let thisMonthPersonalHours = 0;
+  const { data: myWorklogsData, isLoading } = useMyWorklogsQuery(page, limit);
+  const deleteMutation = useDeleteWorklogMutation();
 
-  myLogs.forEach((l) => {
-    const hours = l.timeSpentHours || 0;
-    totalPersonalHours += hours;
-    myDailyHours[l.dateLogged] = Number(((myDailyHours[l.dateLogged] || 0) + hours).toFixed(2));
-    if (l.dateLogged.startsWith(currentMonthPrefix)) {
-      thisMonthPersonalHours += hours;
+  const worklogs = myWorklogsData?.items || [];
+  const total = myWorklogsData?.total || 0;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+
+  // Compute summary metrics
+  const now = new Date();
+  const currentMonthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+  let totalLoggedHours = 0;
+  let thisMonthHours = 0;
+  const uniqueIssues = new Set<number>();
+
+  worklogs.forEach((log) => {
+    const hours = log.timeSpentHours || 0;
+    totalLoggedHours += hours;
+    if (log.dateLogged.startsWith(currentMonthPrefix)) {
+      thisMonthHours += hours;
+    }
+    if (log.issue?.id) {
+      uniqueIssues.add(log.issue.id);
     }
   });
 
-  // Calculate streak (consecutive active days up to today or yesterday)
-  const sortedDates = Object.keys(myDailyHours).filter((d) => myDailyHours[d] > 0).sort().reverse();
-  let streak = 0;
-  if (sortedDates.length > 0) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    const latestLoggedDate = new Date(sortedDates[0] + 'T00:00:00');
-    if (latestLoggedDate.getTime() === today.getTime() || latestLoggedDate.getTime() === yesterday.getTime()) {
-      streak = 1;
-      let checkDate = new Date(latestLoggedDate);
-      for (let i = 1; i < sortedDates.length; i++) {
-        checkDate.setDate(checkDate.getDate() - 1);
-        const checkStr = checkDate.toISOString().split('T')[0];
-        if (sortedDates.includes(checkStr)) {
-          streak++;
-        } else {
-          break;
-        }
-      }
-    }
-  }
-
-  const calendarWorklogs: DayWorklog[] = myLogs.map((l) => ({
-    id: l.id,
-    timeSpentHours: l.timeSpentHours,
-    dateLogged: l.dateLogged,
-    description: l.description,
-    issue: l.issue,
-  }));
+  const handleDeleteWorklog = (issueId: number, worklogId: number) => {
+    deleteMutation.mutate({ issueId, worklogId });
+  };
 
   return (
-    <div className="space-y-5 animate-in fade-in duration-200">
-      {/* Achievements Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <div className="p-5 rounded-3xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 shadow-xs flex items-center justify-between">
-          <div className="space-y-0.5">
+    <div className="space-y-6 animate-in fade-in duration-200">
+      {/* Top Effort Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card className="p-5 flex items-center justify-between">
+          <div className="space-y-1">
             <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
-              Total Effort
+              Total Logged Effort
             </span>
-            <p className="text-xl sm:text-2xl font-black text-[var(--md-sys-color-primary)]">
-              {totalPersonalHours.toFixed(1)}h
+            <p className="text-2xl font-black text-[var(--md-sys-color-primary)]">
+              {totalLoggedHours.toFixed(1)}h
+            </p>
+            <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
+              Across all projects
             </p>
           </div>
-          <div className="w-10 h-10 rounded-full bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center">
-            <Clock className="w-5 h-5" />
+          <div className="w-11 h-11 rounded-2xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center">
+            <Clock className="w-5 h-5 text-[var(--md-sys-color-primary)]" />
           </div>
-        </div>
+        </Card>
 
-        <div className="p-5 rounded-3xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 shadow-xs flex items-center justify-between">
-          <div className="space-y-0.5">
+        <Card className="p-5 flex items-center justify-between">
+          <div className="space-y-1">
             <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
               This Month
             </span>
-            <p className="text-xl sm:text-2xl font-black text-[var(--md-sys-color-success)]">
-              {thisMonthPersonalHours.toFixed(1)}h
+            <p className="text-2xl font-black text-[var(--md-sys-color-success)]">
+              {thisMonthHours.toFixed(1)}h
+            </p>
+            <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
+              Current billing period
             </p>
           </div>
-          <div className="w-10 h-10 rounded-full bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] flex items-center justify-center">
-            <Trophy className="w-5 h-5" />
+          <div className="w-11 h-11 rounded-2xl bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] flex items-center justify-center">
+            <Trophy className="w-5 h-5 text-[var(--md-sys-color-success)]" />
           </div>
-        </div>
+        </Card>
 
-        <div className="p-5 rounded-3xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 shadow-xs flex items-center justify-between">
-          <div className="space-y-0.5">
+        <Card className="p-5 flex items-center justify-between">
+          <div className="space-y-1">
             <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
-              Day Streak
+              Work Items Logged
             </span>
-            <p className="text-xl sm:text-2xl font-black text-[var(--md-sys-color-warning)] flex items-center gap-1">
-              <span>{streak}</span>
-              <span className="text-xs font-normal text-[var(--md-sys-color-on-surface-variant)]">days</span>
+            <p className="text-2xl font-black text-[var(--md-sys-color-on-surface)]">
+              {uniqueIssues.size}
             </p>
+            <div className="pt-0.5">
+              <Link
+                to="/time-tracking"
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--md-sys-color-primary)] hover:underline"
+              >
+                <span>Open Timesheet Matrix</span>
+                <ExternalLink className="w-3 h-3" />
+              </Link>
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-full bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] flex items-center justify-center">
-            <Flame className="w-5 h-5" />
+          <div className="w-11 h-11 rounded-2xl bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] flex items-center justify-center">
+            <Calendar className="w-5 h-5" />
           </div>
-        </div>
-
-        <div className="p-5 rounded-3xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 shadow-xs flex items-center justify-between">
-          <div className="space-y-0.5">
-            <span className="text-[11px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
-              Worklogs
-            </span>
-            <p className="text-xl sm:text-2xl font-black text-[var(--md-sys-color-tertiary)]">
-              {myLogs.length}
-            </p>
-          </div>
-          <div className="w-10 h-10 rounded-full bg-[var(--md-sys-color-tertiary-container)] text-[var(--md-sys-color-on-tertiary-container)] flex items-center justify-center">
-            <Award className="w-5 h-5" />
-          </div>
-        </div>
+        </Card>
       </div>
 
-      {/* Achievement Badges Showcase */}
-      <div className="p-6 rounded-3xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 space-y-4 shadow-xs">
-        <h4 className="text-xs font-bold text-[var(--md-sys-color-on-surface)] flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-[var(--md-sys-color-warning)]" />
-          <span>Personal Engineering Milestones & Badges</span>
-        </h4>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div
-            className={`p-3.5 rounded-2xl border flex items-center gap-3 transition-colors ${
-              streak >= 3
-                ? 'border-[var(--md-sys-color-warning)]/40 bg-[var(--md-sys-color-warning-container)]/30'
-                : 'border-[var(--md-sys-color-outline-variant)]/20 bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] opacity-70'
-            }`}
-          >
-            <div className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-warning-container)] text-[var(--md-sys-color-on-warning-container)] flex items-center justify-center font-bold text-sm">
-              <Flame className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">Consistency Hero</p>
-              <p className="text-[10px] text-[var(--md-sys-color-on-surface-variant)]">
-                {streak >= 3 ? 'Unlocked! 3+ days streak' : 'Log work 3 days consecutively'}
-              </p>
-            </div>
+      {/* Unified Worklogs Table */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-base font-bold text-[var(--md-sys-color-on-surface)]">
+              Recent Personal Worklogs
+            </h3>
+            <p className="text-xs text-[var(--md-sys-color-on-surface-variant)]">
+              Review and manage logged time entries across assigned tasks and tickets
+            </p>
           </div>
 
-          <div
-            className={`p-3.5 rounded-2xl border flex items-center gap-3 transition-colors ${
-              Object.values(myDailyHours).some((h) => h >= 8)
-                ? 'border-[var(--md-sys-color-success)]/40 bg-[var(--md-sys-color-success-container)]/30'
-                : 'border-[var(--md-sys-color-outline-variant)]/20 bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] opacity-70'
-            }`}
+          <Button
+            type="button"
+            variant="filled"
+            size="sm"
+            onClick={() => setIsLogModalOpen(true)}
+            leftIcon={<Plus className="w-4 h-4" />}
           >
-            <div className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] flex items-center justify-center font-bold text-sm">
-              <Zap className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">Daily 8h Sprinter</p>
-              <p className="text-[10px] text-[var(--md-sys-color-on-surface-variant)]">
-                {Object.values(myDailyHours).some((h) => h >= 8)
-                  ? 'Unlocked! Reached 8h in 1 day'
-                  : 'Log 8 hours in a single day'}
-              </p>
-            </div>
-          </div>
-
-          <div
-            className={`p-3.5 rounded-2xl border flex items-center gap-3 transition-colors ${
-              myLogs.length >= 5
-                ? 'border-[var(--md-sys-color-primary)]/40 bg-[var(--md-sys-color-primary-container)]/30'
-                : 'border-[var(--md-sys-color-outline-variant)]/20 bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] opacity-70'
-            }`}
-          >
-            <div className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] flex items-center justify-center font-bold text-sm">
-              <Target className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">Active Contributor</p>
-              <p className="text-[10px] text-[var(--md-sys-color-on-surface-variant)]">
-                {myLogs.length >= 5 ? 'Unlocked! 5+ logged tasks' : 'Submit at least 5 worklogs'}
-              </p>
-            </div>
-          </div>
+            Log Time
+          </Button>
         </div>
+
+        <MyWorklogsTable
+          worklogs={worklogs}
+          total={total}
+          page={page}
+          limit={limit}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          onLimitChange={setLimit}
+          loading={isLoading}
+          onOpenLogModal={() => setIsLogModalOpen(true)}
+          onDeleteWorklog={handleDeleteWorklog}
+        />
       </div>
 
-      {/* Interactive Personal Calendar */}
-      <TimeCalendar
-        currentDate={calendarDate}
-        onDateChange={setCalendarDate}
-        dailyHours={myDailyHours}
-        worklogs={calendarWorklogs}
-        title="My Monthly Worklog Calendar"
-        subtitle="Click on any day to see the exact issues and tasks you worked on"
-        isTeamView={false}
+      <LogWorkModal
+        isOpen={isLogModalOpen}
+        onClose={() => setIsLogModalOpen(false)}
+        onSuccess={() => setIsLogModalOpen(false)}
       />
     </div>
   );
 };
+
+export default ProfileTimeTab;

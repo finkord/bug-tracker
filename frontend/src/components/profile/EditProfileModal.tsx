@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../store';
 import { api, usersApi } from '../../api/client';
 import { User, Briefcase } from 'lucide-react';
-import { FormModal, AvatarPicker } from '../ui';
+import { FormModal, AvatarPicker, Input } from '../ui/index.js';
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -11,7 +11,8 @@ interface EditProfileModalProps {
 }
 
 /**
- * Material 3 Modal for updating profile details (Full Name, Job Title, Avatar) with native SeaweedFS storage.
+ * Material 3 Modal for updating profile details (Full Name, Job Title, Avatar)
+ * Supports both native image uploads and unified shape/color presets.
  */
 export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   isOpen,
@@ -23,6 +24,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   const [fullName, setFullName] = useState(user?.fullName || '');
   const [jobTitle, setJobTitle] = useState(user?.jobTitle || '');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
   const [isAvatarRemoved, setIsAvatarRemoved] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,11 +42,12 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
         jobTitle: jobTitle.trim(),
       });
 
-      // 2. Upload Avatar File to SeaweedFS if selected
+      // 2. Upload or update Avatar
       if (selectedFile) {
         await usersApi.uploadAvatar(selectedFile);
+      } else if (selectedPreset) {
+        await api.updateAvatar(selectedPreset);
       } else if (isAvatarRemoved) {
-        // Clear avatar if user explicitly removed it
         await api.updateAvatar('');
       }
 
@@ -62,8 +65,8 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
     <FormModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Edit Profile Info"
-      description="Update your display name, coworker role title, and avatar"
+      title="Edit Profile"
+      description="Update your display name, coworker role title, and avatar icon or photo"
       size="md"
       onSubmit={handleSubmit}
       error={error}
@@ -72,54 +75,61 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       submittingLabel="Saving..."
       submitDisabled={!fullName.trim()}
     >
-      <div>
-        <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] mb-1">
+      <div className="space-y-1">
+        <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)]">
           Full Name
         </label>
-        <div className="relative">
-          <User className="absolute left-3.5 top-3 w-4 h-4 text-[var(--md-sys-color-outline)]" />
-          <input
-            type="text"
-            required
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            placeholder="Jane Doe"
-            className="w-full pl-10 pr-4 py-2.5 text-xs rounded-2xl bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]/40 font-medium focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)]"
-          />
-        </div>
+        <Input
+          type="text"
+          required
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
+          placeholder="Jane Doe"
+          leftIcon={<User className="w-4 h-4 text-[var(--md-sys-color-outline)]" />}
+        />
       </div>
 
-      <div>
-        <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] mb-1">
+      <div className="space-y-1">
+        <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)]">
           Coworker Job Title / Specialization
         </label>
-        <div className="relative">
-          <Briefcase className="absolute left-3.5 top-3 w-4 h-4 text-[var(--md-sys-color-outline)]" />
-          <input
-            type="text"
-            value={jobTitle}
-            onChange={(e) => setJobTitle(e.target.value)}
-            placeholder="Principal Frontend Architect, Senior DevOps, etc."
-            className="w-full pl-10 pr-4 py-2.5 text-xs rounded-2xl bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]/40 font-medium focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)]"
-          />
-        </div>
+        <Input
+          type="text"
+          value={jobTitle}
+          onChange={(e) => setJobTitle(e.target.value)}
+          placeholder="Principal Frontend Architect, Senior DevOps, etc."
+          leftIcon={<Briefcase className="w-4 h-4 text-[var(--md-sys-color-outline)]" />}
+        />
       </div>
 
-      <AvatarPicker
-        name={fullName || user.fullName}
-        initialAvatarUrl={user.avatarUrl}
-        allowPresets={false}
-        onChange={(val) => {
-          if (val.mode === 'upload' && val.file) {
-            setSelectedFile(val.file);
-            setIsAvatarRemoved(false);
-          } else if (val.mode === 'default' && !val.previewUrl) {
-            setSelectedFile(null);
-            setIsAvatarRemoved(true);
-          }
-        }}
-        onError={setError}
-      />
+      <div className="space-y-1 pt-1">
+        <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)]">
+          Avatar (Photo or Color Preset)
+        </label>
+        <AvatarPicker
+          name={fullName || user.fullName}
+          initialAvatarUrl={user.avatarUrl}
+          allowPresets={true}
+          onChange={(val) => {
+            if (val.mode === 'upload' && val.file) {
+              setSelectedFile(val.file);
+              setSelectedPreset(null);
+              setIsAvatarRemoved(false);
+            } else if (val.mode === 'preset' && val.presetUrl) {
+              setSelectedFile(null);
+              setSelectedPreset(val.presetUrl);
+              setIsAvatarRemoved(false);
+            } else if (val.mode === 'default' && !val.previewUrl) {
+              setSelectedFile(null);
+              setSelectedPreset(null);
+              setIsAvatarRemoved(true);
+            }
+          }}
+          onError={setError}
+        />
+      </div>
     </FormModal>
   );
 };
+
+export default EditProfileModal;

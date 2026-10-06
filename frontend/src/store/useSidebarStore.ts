@@ -1,12 +1,24 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+export type BrandStyle =
+  | 'vibrant'
+  | 'metallic'
+  | 'indigo'
+  | 'blue'
+  | 'emerald'
+  | 'amber'
+  | 'rose'
+  | 'purple'
+  | 'cyan'
+  | 'violet';
+
 export interface SidebarState {
   collapsed: boolean;
   collapseMode: 'rail' | 'hidden';
   mobileOpen: boolean;
   showCollapsedLabels: boolean;
-  brandStyle: 'vibrant' | 'metallic';
+  brandStyle: BrandStyle;
   toggleSidebar: () => void;
   setCollapsed: (collapsed: boolean) => void;
   setCollapseMode: (mode: 'rail' | 'hidden') => void;
@@ -14,14 +26,14 @@ export interface SidebarState {
   closeMobile: () => void;
   setShowCollapsedLabels: (show: boolean) => void;
   toggleCollapsedLabels: () => void;
-  setBrandStyle: (style: 'vibrant' | 'metallic') => void;
+  setBrandStyle: (style: BrandStyle) => void;
 }
 
 export const useSidebarStore = create<SidebarState>()(
   persist(
     (set) => ({
       collapsed: false,
-      collapseMode: 'rail',
+      collapseMode: 'hidden',
       mobileOpen: false,
       showCollapsedLabels: false,
       brandStyle: 'vibrant',
@@ -33,7 +45,7 @@ export const useSidebarStore = create<SidebarState>()(
       setShowCollapsedLabels: (showCollapsedLabels: boolean) => set({ showCollapsedLabels }),
       toggleCollapsedLabels: () =>
         set((state) => ({ showCollapsedLabels: !state.showCollapsedLabels })),
-      setBrandStyle: (brandStyle: 'vibrant' | 'metallic') => set({ brandStyle }),
+      setBrandStyle: (brandStyle: BrandStyle) => set({ brandStyle }),
     }),
     {
       name: 'bt_sidebar_store',

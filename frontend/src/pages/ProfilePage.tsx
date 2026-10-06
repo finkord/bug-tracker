@@ -8,7 +8,6 @@ import {
   ProfileSecurityCard,
   ProfileTwoFactorCard,
   ProfileSessionsCard,
-  ProfileAdminBanner,
   ProfileTimeTab,
 } from '../components/profile';
 
@@ -38,7 +37,8 @@ export const ProfilePage: React.FC = () => {
       >
         <TabsList
           variant="underline"
-          className="w-full grid grid-cols-2 gap-0 p-0 overflow-visible border-b border-[var(--md-sys-color-outline-variant)]/30"
+          scrollable={false}
+          className="w-full grid grid-cols-2 gap-0 p-0 border-b border-[var(--md-sys-color-outline-variant)]/30"
         >
           <TabsTrigger
             value="account"
@@ -65,11 +65,12 @@ export const ProfilePage: React.FC = () => {
       {activeTab === 'time' ? (
         <ProfileTimeTab />
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start animate-in fade-in duration-200">
-          <ProfileSecurityCard />
-          <ProfileTwoFactorCard />
+        <div className="space-y-6 animate-in fade-in duration-200">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+            <ProfileSecurityCard />
+            <ProfileTwoFactorCard />
+          </div>
           <ProfileSessionsCard />
-          <ProfileAdminBanner />
         </div>
       )}
     </div>
