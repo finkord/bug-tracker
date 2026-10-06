@@ -11,6 +11,8 @@ describe('OAuthCodeStoreService', () => {
   const mockTokens: AuthTokens = {
     accessToken: 'test-access-token',
     refreshToken: 'test-refresh-token',
+    tokenType: 'Bearer',
+    expiresIn: 900,
     user: {
       id: 1,
       fullName: 'Test User',

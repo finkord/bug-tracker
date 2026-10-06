@@ -23,10 +23,13 @@
     "init:system": "tsx src/database/init-system.ts",
     "init:system:prod": "node dist/database/init-system.js",
     "seed": "tsx src/database/init-system.ts",
-    "seed:demo": "tsx src/database/seed.ts",
+    "seed:demo": "node dist/database/seed.js",
+    "seed:demo:build": "npm run build && node dist/database/seed.js",
+    "seed:demo:prod": "node dist/database/seed.js",
     "swagger:export": "tsx src/scripts/export-swagger.ts"
   },
   "dependencies": {
+    "@faker-js/faker": "^10.6.0",
     "@nestjs-modules/mailer": "^2.3.7",
     "@nestjs/common": "^12.0.1",
     "@nestjs/config": "^12.0.1",

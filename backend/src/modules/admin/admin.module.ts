@@ -16,6 +16,8 @@ import { IssueSecurityScheme } from '../rbac/entities/issue-security-scheme.enti
 import { IssueSecurityLevel } from '../rbac/entities/issue-security-level.entity.js';
 import { IssueSecurityGrant } from '../rbac/entities/issue-security-grant.entity.js';
 import { Sprint } from '../sprints/entities/sprint.entity.js';
+import { Team } from '../teams/entities/team.entity.js';
+import { TeamMember } from '../teams/entities/team-member.entity.js';
 import { SeedService } from './seed.service.js';
 import { SystemInitService } from './system-init.service.js';
 import { SystemBannerService } from './system-banner.service.js';
@@ -28,6 +30,8 @@ import { EventsModule } from '../events/events.module.js';
     TypeOrmModule.forFeature([
       User,
       Project,
+      Team,
+      TeamMember,
       Sprint,
       Issue,
       IssueLink,

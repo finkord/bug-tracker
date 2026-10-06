@@ -22,7 +22,19 @@ import {
 import { IssueSecurityScheme } from '../rbac/entities/issue-security-scheme.entity.js';
 import { IssueSecurityLevel } from '../rbac/entities/issue-security-level.entity.js';
 import { IssueSecurityGrant } from '../rbac/entities/issue-security-grant.entity.js';
+import { faker } from '@faker-js/faker';
 import { Sprint, SprintStatus } from '../sprints/entities/sprint.entity.js';
+import { Team } from '../teams/entities/team.entity.js';
+import { TeamMember, TeamMemberRole } from '../teams/entities/team-member.entity.js';
+
+export interface SeedOptions {
+  clean?: boolean;
+  usersCount?: number;
+  projectsCount?: number;
+  sprintsCount?: number;
+  issuesCount?: number;
+  seedNumber?: number;
+}
 
 @Injectable()
 export class SeedService {
@@ -33,6 +45,10 @@ export class SeedService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Project)
     private readonly projectRepository: Repository<Project>,
+    @InjectRepository(Team)
+    private readonly teamRepository: Repository<Team>,
+    @InjectRepository(TeamMember)
+    private readonly teamMemberRepository: Repository<TeamMember>,
     @InjectRepository(Sprint)
     private readonly sprintRepository: Repository<Sprint>,
     @InjectRepository(Issue)
@@ -65,8 +81,9 @@ export class SeedService {
 
   /**
    * Cleans existing records and seeds realistic multi-team engineering dataset.
+   * Can scale to 100-500+ users, configurable projects, teams, sprints and issues.
    */
-  async runSeed(options: { clean?: boolean } = { clean: true }): Promise<{
+  async runSeed(options: SeedOptions = { clean: true }): Promise<{
     projectsCount: number;
     usersCount: number;
     issuesCount: number;
@@ -76,42 +93,55 @@ export class SeedService {
     groupsCount: number;
     rolesCount: number;
     schemesCount: number;
+    teamsCount: number;
   }> {
-    this.logger.log('Starting realistic fake data generation & RBAC seeding...');
+    const isClean = options.clean ?? true;
+    const targetUsersCount = Math.max(options.usersCount ?? 30, 6);
+    const targetProjectsCount = Math.max(options.projectsCount ?? 5, 2);
+    const sprintsPerProject = Math.max(options.sprintsCount ? Math.ceil(options.sprintsCount / targetProjectsCount) : 3, 1);
+    const targetIssuesCount = Math.max(options.issuesCount ?? (targetUsersCount * 4), 30);
+    const seedNumber = options.seedNumber ?? 42;
 
-    if (options.clean) {
+    faker.seed(seedNumber);
+    this.logger.log(`Starting scalable data seeding (Target: ${targetUsersCount} users, ${targetProjectsCount} projects, ${targetIssuesCount} issues)...`);
+
+    if (isClean) {
       this.logger.log('Cleaning existing database records...');
       await this.cleanDatabase();
     }
 
-    // 1. Password hashing for all seed accounts
+    // 1. Password hashing for all seed accounts (precomputed once for high-throughput batching)
     const defaultPasswordHash = await argon2.hash('Password123!', ARGON2_OPTIONS);
 
-    // 2. Create Users across 5 engineering domains
-    const usersMap = await this.seedUsers(defaultPasswordHash);
+    // 2. Create Users (core engineers + scalable faker users up to targetUsersCount)
+    const usersMap = await this.seedUsers(defaultPasswordHash, targetUsersCount);
     this.logger.log(`Seeded ${Object.keys(usersMap).length} engineers and leads.`);
 
-    // 3. Create 5 Projects / Teams
-    const projectsMap = await this.seedProjects(usersMap);
-    this.logger.log(`Seeded ${Object.keys(projectsMap).length} projects / teams.`);
+    // 3. Create Projects (core 5 workspaces + dynamic projects up to targetProjectsCount)
+    const projectsMap = await this.seedProjects(usersMap, targetProjectsCount);
+    this.logger.log(`Seeded ${Object.keys(projectsMap).length} projects.`);
 
-    // 4. Create RBAC Foundation (Groups, Roles, Schemes, Grants, Security Levels, Project Actors)
+    // 4. Create Agile Teams & Team Memberships
+    const teamsCount = await this.seedTeams(usersMap, projectsMap);
+    this.logger.log(`Seeded ${teamsCount} engineering teams with leads and members.`);
+
+    // 5. Create RBAC Foundation (Groups, Roles, Schemes, Grants, Security Levels, Project Actors)
     const rbacStats = await this.seedRbacStructure(usersMap, projectsMap);
     this.logger.log(`Seeded RBAC: ${rbacStats.groupsCount} groups, ${rbacStats.rolesCount} roles, ${rbacStats.schemesCount} schemes, ${rbacStats.grantsCount} grants.`);
 
-    // 5. Create Issues / Tickets
-    const issuesMap = await this.seedIssues(projectsMap, usersMap);
-    this.logger.log(`Seeded ${Object.keys(issuesMap).length} realistic tickets.`);
+    // 6. Create Sprints, Issues & Backlogs
+    const issuesMap = await this.seedIssues(projectsMap, usersMap, targetIssuesCount, sprintsPerProject);
+    this.logger.log(`Seeded ${Object.keys(issuesMap).length} realistic tickets across sprints and backlogs.`);
 
-    // 6. Create Cross-Team Issue Dependencies
+    // 7. Create Cross-Team Issue Dependencies
     const linksCount = await this.seedIssueLinks(issuesMap);
     this.logger.log(`Seeded ${linksCount} cross-project issue dependencies.`);
 
-    // 7. Create Worklogs & Timesheet Distribution
+    // 8. Create Worklogs & Timesheet Distribution
     const worklogsCount = await this.seedWorklogs(issuesMap, usersMap);
     this.logger.log(`Seeded ${worklogsCount} worklogs across current and previous weeks.`);
 
-    // 8. Create Issue Comments & PR discussions
+    // 9. Create Issue Comments & PR discussions
     const commentsCount = await this.seedComments(issuesMap, usersMap);
     this.logger.log(`Seeded ${commentsCount} issue comments.`);
 
@@ -125,6 +155,7 @@ export class SeedService {
       groupsCount: rbacStats.groupsCount,
       rolesCount: rbacStats.rolesCount,
       schemesCount: rbacStats.schemesCount,
+      teamsCount,
     };
   }
 
@@ -143,12 +174,14 @@ export class SeedService {
     await this.worklogRepository.createQueryBuilder().delete().from(Worklog).execute();
     await this.commentRepository.createQueryBuilder().delete().from(Comment).execute();
     await this.issueRepository.createQueryBuilder().delete().from(Issue).execute();
+    await this.teamMemberRepository.createQueryBuilder().delete().from(TeamMember).execute();
+    await this.teamRepository.createQueryBuilder().delete().from(Team).execute();
     await this.sprintRepository.createQueryBuilder().delete().from(Sprint).execute();
     await this.projectRepository.createQueryBuilder().delete().from(Project).execute();
     await this.userRepository.createQueryBuilder().delete().from(User).execute();
   }
 
-  private async seedUsers(passwordHash: string): Promise<Record<string, User>> {
+  private async seedUsers(passwordHash: string, targetCount = 30): Promise<Record<string, User>> {
     const rawUsers: Array<{
       key: string;
       fullName: string;
@@ -203,6 +236,7 @@ export class SeedService {
 
     const result: Record<string, User> = {};
 
+    // 1. Save core seed engineers
     for (const item of rawUsers) {
       const user = this.userRepository.create({
         fullName: item.fullName,
@@ -218,44 +252,106 @@ export class SeedService {
       result[item.key] = saved;
     }
 
+    // 2. Generate scalable realistic users if targetCount > rawUsers.length
+    const remainingToGenerate = Math.max(0, targetCount - rawUsers.length);
+    if (remainingToGenerate > 0) {
+      const rolesPool = [
+        'Full Stack Engineer',
+        'Senior Frontend Developer',
+        'Backend Microservices Developer',
+        'DevOps & Kubernetes Engineer',
+        'QA Automation Engineer',
+        'Site Reliability Engineer',
+        'Cloud Infrastructure Engineer',
+        'Database Reliability Specialist',
+        'Security Operations Analyst',
+        'UI/UX Design Systems Engineer',
+      ];
+
+      const additionalUsers: User[] = [];
+      for (let i = 1; i <= remainingToGenerate; i++) {
+        const firstName = faker.person.firstName();
+        const lastName = faker.person.lastName();
+        const fullName = `${firstName} ${lastName}`;
+        const email = `user${i}.${faker.internet.username().toLowerCase()}@bugtracker.local`;
+        const jobTitle = faker.helpers.arrayElement(rolesPool);
+        const avatarUrl = faker.image.avatarGitHub();
+
+        const user = this.userRepository.create({
+          fullName,
+          email,
+          passwordHash,
+          systemRole: SystemRole.USER,
+          jobTitle,
+          avatarUrl,
+          isActivated: true,
+          oauthProvider: OAuthProvider.LOCAL,
+        });
+        additionalUsers.push(user);
+      }
+
+      // Batch save in chunks of 50
+      for (let i = 0; i < additionalUsers.length; i += 50) {
+        const chunk = additionalUsers.slice(i, i + 50);
+        const savedChunk = await this.userRepository.save(chunk);
+        for (let j = 0; j < savedChunk.length; j++) {
+          result[`gen_user_${i + j + 1}`] = savedChunk[j];
+        }
+      }
+    }
+
     return result;
   }
 
-  private async seedProjects(users: Record<string, User>): Promise<Record<string, Project>> {
+  private async seedProjects(users: Record<string, User>, targetCount = 5): Promise<Record<string, Project>> {
     const rawProjects = [
       {
         key: 'UI',
         name: 'Web UI & Design Systems',
         description: 'Frontend client interfaces, Kanban canvas, responsive layouts, and Material 3 design system.',
-        lead: users['volodymyr'],
+        lead: users['volodymyr'] || Object.values(users)[0],
       },
       {
         key: 'CORE',
         name: 'Core Platform & Domain Engine',
         description: 'Business logic, NestJS modules, TypeORM database schema, JWT auth, and Lucene search indexing.',
-        lead: users['alex'],
+        lead: users['alex'] || Object.values(users)[0],
       },
       {
         key: 'MON',
         name: 'Observability & Telemetry',
         description: 'Prometheus metrics scrapers, OpenTelemetry distributed tracing, Grafana alerts, and health monitors.',
-        lead: users['sarah'],
+        lead: users['sarah'] || Object.values(users)[0],
       },
       {
         key: 'INFRA',
         name: 'Cloud Infrastructure & DevOps',
         description: 'Kubernetes cluster deployments, Terraform scripts, Docker containers, and Redis session stores.',
-        lead: users['david'],
+        lead: users['david'] || Object.values(users)[0],
       },
       {
         key: 'NET',
         name: 'Network Security & Edge Operations',
         description: 'Cloudflare Turnstile captcha integration, TLS 1.3 encryption, DDoS mitigation, and RBAC firewall rules.',
-        lead: users['elena'],
+        lead: users['elena'] || Object.values(users)[0],
       },
     ];
 
+    const extraProjectTemplates = [
+      { key: 'PAY', name: 'Billing & Payment Orchestration', description: 'PCI-DSS compliant payment gateways, Stripe webhooks, subscriptions, and financial invoicing.' },
+      { key: 'AUTH', name: 'Identity, OAuth & MFA Service', description: 'Centralized authentication service, Argon2 verification, RFC 6749 tokens, and session revocations.' },
+      { key: 'ANALYT', name: 'Big Data & Realtime Analytics', description: 'ClickHouse OLAP ingestion pipelines, user telemetry aggregations, and business metrics dashboards.' },
+      { key: 'MOBILE', name: 'Native iOS & Android Clients', description: 'SwiftUI and Jetpack Compose mobile applications, offline sync engines, and push notifications.' },
+      { key: 'NOTIF', name: 'Omnichannel Notification Hub', description: 'Transactional emails via SMTP, WebSocket alerts, Discord/Slack webhooks, and SMS dispatchers.' },
+      { key: 'SEARCH', name: 'Distributed Search & JQL Query', description: 'PostgreSQL full-text indexes, GIN search vectors, AST query parser, and rapid filters.' },
+      { key: 'AI', name: 'AI Assistant & Copilot Gateway', description: 'LLM agents, vector embeddings, contextual code review suggestions, and automated bug deduplication.' },
+      { key: 'DOCS', name: 'Developer Portal & Public API', description: 'OpenAPI 3.1 specifications, rate limit proxies, interactive SDK generation, and developer documentation.' },
+      { key: 'SEC', name: 'Vulnerability Management & PenTesting', description: 'Static analysis tooling, automated dependency audits, OWASP ASVS verification, and secret scanning.' },
+      { key: 'EDGE', name: 'Edge Caching & CDN Distribution', description: 'Global CDN edge compute handlers, Brotli compression, static asset delivery, and DDoS filters.' },
+    ];
+
     const result: Record<string, Project> = {};
+    const userValues = Object.values(users);
 
     for (const p of rawProjects) {
       const project = this.projectRepository.create({
@@ -269,7 +365,92 @@ export class SeedService {
       result[p.key] = saved;
     }
 
+    const additionalNeeded = Math.max(0, targetCount - rawProjects.length);
+    for (let i = 0; i < additionalNeeded; i++) {
+      const template = extraProjectTemplates[i % extraProjectTemplates.length];
+      const keySuffix = Math.floor(i / extraProjectTemplates.length) > 0 ? `${Math.floor(i / extraProjectTemplates.length) + 1}` : '';
+      const uniqueKey = `${template.key}${keySuffix}`.slice(0, 10);
+      const lead = userValues[(i + 5) % userValues.length];
+
+      const project = this.projectRepository.create({
+        key: uniqueKey,
+        name: `${template.name}${keySuffix ? ` ${keySuffix}` : ''}`,
+        description: template.description,
+        leadId: lead.id,
+        lead,
+      });
+      const saved = await this.projectRepository.save(project);
+      result[uniqueKey] = saved;
+    }
+
     return result;
+  }
+
+  private async seedTeams(
+    users: Record<string, User>,
+    projects: Record<string, Project>,
+  ): Promise<number> {
+    const userValues = Object.values(users);
+    let teamCount = 0;
+
+    const teamNames = [
+      'Alpha Squad',
+      'Bravo Explorers',
+      'Delta Titans',
+      'Phoenix Engine',
+      'Nexus Forge',
+      'Vanguard Operations',
+      'Cyber Guardians',
+      'Quantum Velocity',
+      'Echo Flight',
+      'Apex Pioneers',
+    ];
+
+    for (const [idx, project] of Object.values(projects).entries()) {
+      const teamName = `${teamNames[idx % teamNames.length]} (${project.key})`;
+      const lead = project.lead || userValues[idx % userValues.length];
+
+      const team = this.teamRepository.create({
+        name: teamName,
+        description: `Dedicated agile engineering team delivering high-impact milestones for ${project.name}`,
+        projectId: project.id,
+        project,
+        leadId: lead.id,
+        lead,
+        sprintCapacityHours: 160.0,
+      });
+      const savedTeam = await this.teamRepository.save(team);
+      teamCount++;
+
+      // Assign 4 to 8 members per team
+      const memberCount = Math.min(8, Math.max(3, Math.floor(userValues.length / Object.keys(projects).length)));
+      const teamMembers: TeamMember[] = [];
+
+      for (let m = 0; m < memberCount; m++) {
+        const userIndex = (idx * 5 + m) % userValues.length;
+        const memberUser = userValues[userIndex];
+
+        const role = m === 0 ? TeamMemberRole.SCRUM_MASTER
+          : m === 1 ? TeamMemberRole.PRODUCT_OWNER
+          : m % 3 === 0 ? TeamMemberRole.QA_ENGINEER
+          : TeamMemberRole.DEVELOPER;
+
+        teamMembers.push(
+          this.teamMemberRepository.create({
+            teamId: savedTeam.id,
+            team: savedTeam,
+            userId: memberUser.id,
+            user: memberUser,
+            role,
+            weeklyCapacityHours: 40.0,
+          }),
+        );
+      }
+
+      await this.teamMemberRepository.save(teamMembers);
+    }
+
+    return teamCount;
   }
 
   private async seedRbacStructure(
@@ -536,15 +717,31 @@ export class SeedService {
 
       // Team members -> Developer
       const memberKeys = projectTeamMembers[projKey] || [];
-      for (const mk of memberKeys) {
-        const u = users[mk];
-        if (u) {
+      const userList = Object.values(users);
+      if (memberKeys.length > 0) {
+        for (const mk of memberKeys) {
+          const u = users[mk];
+          if (u) {
+            await this.roleActorRepository.save(
+              this.roleActorRepository.create({
+                projectId: project.id,
+                roleId: rolesMap['Developer'].id,
+                actorType: ProjectActorType.USER,
+                userId: u.id,
+              }),
+            );
+          }
+        }
+      } else {
+        // Dynamic project: allocate 5 developers
+        for (let d = 0; d < Math.min(6, userList.length); d++) {
+          const devUser = userList[(project.id * 3 + d) % userList.length];
           await this.roleActorRepository.save(
             this.roleActorRepository.create({
               projectId: project.id,
               roleId: rolesMap['Developer'].id,
               actorType: ProjectActorType.USER,
-              userId: u.id,
+              userId: devUser.id,
             }),
           );
         }
@@ -572,6 +769,8 @@ export class SeedService {
   private async seedIssues(
     projects: Record<string, Project>,
     users: Record<string, User>,
+    targetIssuesCount = 120,
+    sprintsPerProject = 3,
   ): Promise<Record<string, Issue>> {
     const rawIssues: Array<{
       projectKey: string;
@@ -1197,46 +1396,74 @@ export class SeedService {
 
     const result: Record<string, Issue> = {};
     const sprintMap: Record<string, Record<string, number>> = {};
+    const projectSprintsList: Record<string, number[]> = {};
+    const maxIssueNumByProject: Record<string, number> = {};
 
     for (const [key, proj] of Object.entries(projects)) {
       sprintMap[key] = {};
+      projectSprintsList[key] = [];
 
-      const s1 = this.sprintRepository.create({
-        projectId: proj.id,
-        name: 'Sprint 1 (Completed)',
-        goal: `${proj.name} initial architecture and foundational MVP components`,
-        status: SprintStatus.COMPLETED,
-        startDate: '2026-08-01',
-        endDate: '2026-08-14',
-      });
-      const savedS1 = await this.sprintRepository.save(s1);
-      sprintMap[key]['Sprint 1 (Completed)'] = savedS1.id;
+      const count = Math.max(1, sprintsPerProject);
+      if (count === 1) {
+        const s = this.sprintRepository.create({
+          projectId: proj.id,
+          name: 'Sprint 1 (Active)',
+          goal: `${proj.name} core delivery milestone and production stabilization`,
+          status: SprintStatus.ACTIVE,
+          startDate: '2026-08-15',
+          endDate: '2026-08-29',
+        });
+        const savedS = await this.sprintRepository.save(s);
+        sprintMap[key]['Sprint 1 (Active)'] = savedS.id;
+        sprintMap[key]['Sprint 2 (Active)'] = savedS.id;
+        projectSprintsList[key].push(savedS.id);
+      } else {
+        const s1 = this.sprintRepository.create({
+          projectId: proj.id,
+          name: 'Sprint 1 (Completed)',
+          goal: `${proj.name} initial architecture and foundational MVP components`,
+          status: SprintStatus.COMPLETED,
+          startDate: '2026-08-01',
+          endDate: '2026-08-14',
+        });
+        const savedS1 = await this.sprintRepository.save(s1);
+        sprintMap[key]['Sprint 1 (Completed)'] = savedS1.id;
+        projectSprintsList[key].push(savedS1.id);
 
-      const s2 = this.sprintRepository.create({
-        projectId: proj.id,
-        name: 'Sprint 2 (Active)',
-        goal: `${proj.name} feature implementation, testing, and production stabilization`,
-        status: SprintStatus.ACTIVE,
-        startDate: '2026-08-15',
-        endDate: '2026-08-29',
-      });
-      const savedS2 = await this.sprintRepository.save(s2);
-      sprintMap[key]['Sprint 2 (Active)'] = savedS2.id;
+        const s2 = this.sprintRepository.create({
+          projectId: proj.id,
+          name: 'Sprint 2 (Active)',
+          goal: `${proj.name} feature implementation, testing, and production stabilization`,
+          status: SprintStatus.ACTIVE,
+          startDate: '2026-08-15',
+          endDate: '2026-08-29',
+        });
+        const savedS2 = await this.sprintRepository.save(s2);
+        sprintMap[key]['Sprint 2 (Active)'] = savedS2.id;
+        projectSprintsList[key].push(savedS2.id);
 
-      const s3 = this.sprintRepository.create({
-        projectId: proj.id,
-        name: 'Sprint 3 (Upcoming)',
-        goal: `${proj.name} enterprise enhancements and third-party integrations`,
-        status: SprintStatus.PLANNED,
-        startDate: '2026-08-30',
-        endDate: '2026-09-13',
-      });
-      const savedS3 = await this.sprintRepository.save(s3);
-      sprintMap[key]['Sprint 3 (Upcoming)'] = savedS3.id;
+        for (let i = 3; i <= count; i++) {
+          const sprintName = i === 3 ? 'Sprint 3 (Upcoming)' : `Sprint ${i}`;
+          const sN = this.sprintRepository.create({
+            projectId: proj.id,
+            name: sprintName,
+            goal: `${proj.name} milestone ${i} enhancements, enterprise scalability, and maintenance`,
+            status: SprintStatus.PLANNED,
+            startDate: `2026-09-${String(1 + (i - 3) * 14).padStart(2, '0')}`,
+            endDate: `2026-09-${String(14 + (i - 3) * 14).padStart(2, '0')}`,
+          });
+          const savedSN = await this.sprintRepository.save(sN);
+          sprintMap[key][sprintName] = savedSN.id;
+          projectSprintsList[key].push(savedSN.id);
+        }
+      }
     }
 
+    // Insert curated raw issues
     for (const item of rawIssues) {
       const project = projects[item.projectKey];
+      if (!project) continue;
+
       const reporter = users[item.reporterKey] || Object.values(users)[0];
       const assignee = item.assigneeKey ? users[item.assigneeKey] : null;
       const targetSprintId = item.sprint ? sprintMap[item.projectKey]?.[item.sprint] || null : null;
@@ -1262,6 +1489,133 @@ export class SeedService {
       const saved = await this.issueRepository.save(issue);
       const compositeKey = `${item.projectKey}-${item.issueNum}`;
       result[compositeKey] = saved;
+      maxIssueNumByProject[item.projectKey] = Math.max(maxIssueNumByProject[item.projectKey] || 0, item.issueNum);
+    }
+
+    // Scalable faker issues generation if targetIssuesCount > raw issues count
+    const remainingIssuesCount = Math.max(0, targetIssuesCount - Object.keys(result).length);
+    if (remainingIssuesCount > 0) {
+      const allProjectKeys = Object.keys(projects);
+      const allUsersList = Object.values(users);
+
+      const actionVerbs = [
+        'Implement', 'Refactor', 'Optimize', 'Fix race condition in', 'Add unit tests for',
+        'Upgrade', 'Investigate latency in', 'Design architecture for', 'Enhance caching on',
+        'Resolve regression in', 'Configure metrics for', 'Automate migration of', 'Audit security of',
+        'Harden error handling on', 'Benchmark throughput for',
+      ];
+      const techComponents = [
+        'distributed lock coordinator', 'JWT token revocation blacklist', 'audit log streaming pipeline',
+        'PostgreSQL B-tree index', 'SeaweedFS chunk storage', 'real-time WebSocket gateway',
+        'RBAC permission evaluator', 'rate limiter sliding window', 'session cookie serializer',
+        'Elasticsearch query parser', 'OAuth provider exchange', 'database connection pool',
+        'timesheet aggregation query', 'Kanban drag-and-drop state machine', 'password policy validator',
+        'CORS origin filter', 'Kubernetes liveness probe', 'Prometheus histogram collector',
+      ];
+      const techContexts = [
+        'under high concurrent load', 'to prevent deadlock timeouts', 'for enterprise tenant isolation',
+        'in multi-node cluster topology', 'complying with OWASP standards', 'with zero-downtime deployment',
+        'to reduce memory heap overhead', 'during background cron synchronization', 'to improve P99 response time',
+      ];
+
+      const additionalIssues: Issue[] = [];
+
+      for (let i = 0; i < remainingIssuesCount; i++) {
+        const projKey = allProjectKeys[i % allProjectKeys.length];
+        const project = projects[projKey];
+        const nextNum = (maxIssueNumByProject[projKey] || 0) + 1;
+        maxIssueNumByProject[projKey] = nextNum;
+
+        const verb = faker.helpers.arrayElement(actionVerbs);
+        const comp = faker.helpers.arrayElement(techComponents);
+        const ctx = faker.helpers.arrayElement(techContexts);
+        const title = `${verb} ${comp} ${ctx}`;
+        const description = `${faker.hacker.phrase()} Implement comprehensive regression test suites and verify performance telemetry under peak traffic.`;
+
+        const issueType = faker.helpers.arrayElement([
+          IssueType.BUG,
+          IssueType.TASK,
+          IssueType.FEATURE,
+          IssueType.IMPROVEMENT,
+        ]);
+        const priority = faker.helpers.arrayElement([
+          IssuePriority.LOW,
+          IssuePriority.MEDIUM,
+          IssuePriority.HIGH,
+          IssuePriority.CRITICAL,
+        ]);
+
+        // Distribute: 30% Active sprint, 25% Completed sprint, 25% Planned sprint, 20% Backlog (null)
+        const projectSprints = projectSprintsList[projKey] || [];
+        let assignedSprintId: number | null = null;
+        let status: IssueStatus;
+
+        const sprintChoice = faker.number.int({ min: 1, max: 100 });
+        if (sprintChoice <= 30 && projectSprints.length >= 2) {
+          // Active sprint (index 1)
+          assignedSprintId = projectSprints[1];
+          status = faker.helpers.arrayElement([
+            IssueStatus.IN_PROGRESS,
+            IssueStatus.REVIEW,
+            IssueStatus.RESOLVED,
+            IssueStatus.OPEN,
+          ]);
+        } else if (sprintChoice <= 55 && projectSprints.length >= 1) {
+          // Completed sprint (index 0)
+          assignedSprintId = projectSprints[0];
+          status = faker.helpers.arrayElement([IssueStatus.RESOLVED, IssueStatus.CLOSED]);
+        } else if (sprintChoice <= 80 && projectSprints.length >= 3) {
+          // Planned sprint (index 2 or later)
+          assignedSprintId = faker.helpers.arrayElement(projectSprints.slice(2));
+          status = IssueStatus.OPEN;
+        } else {
+          // Backlog
+          assignedSprintId = null;
+          status = IssueStatus.OPEN;
+        }
+
+        const reporter = faker.helpers.arrayElement(allUsersList);
+        const assignee = faker.number.int({ min: 1, max: 10 }) === 1
+          ? null
+          : faker.helpers.arrayElement(allUsersList);
+
+        const estHours = faker.helpers.arrayElement([2, 4, 6, 8, 12, 16, 20, 24, 32]);
+        const labels = [
+          projKey.toLowerCase(),
+          faker.helpers.arrayElement(['backend', 'frontend', 'security', 'infra', 'performance', 'database']),
+        ];
+
+        const issue = this.issueRepository.create({
+          projectId: project.id,
+          project,
+          issueNum: nextNum,
+          title,
+          description,
+          issueType,
+          status,
+          priority,
+          estimatedHours: estHours,
+          loggedHours: 0,
+          sprintId: assignedSprintId,
+          reporterId: reporter.id,
+          reporter,
+          assigneeId: assignee ? assignee.id : null,
+          assignee,
+          labels,
+        });
+
+        additionalIssues.push(issue);
+      }
+
+      // Save in batches of 50
+      for (let i = 0; i < additionalIssues.length; i += 50) {
+        const chunk = additionalIssues.slice(i, i + 50);
+        const savedChunk = await this.issueRepository.save(chunk);
+        for (const saved of savedChunk) {
+          const compKey = `${saved.project?.key || Object.keys(projects).find((k) => projects[k].id === saved.projectId)}-${saved.issueNum}`;
+          result[compKey] = saved;
+        }
+      }
     }
 
     return result;

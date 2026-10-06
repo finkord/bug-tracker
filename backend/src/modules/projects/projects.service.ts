@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException, Optional } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException, ConflictException, BadRequestException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Project } from './entities/project.entity.js';
@@ -68,7 +68,9 @@ export class ProjectsService {
   constructor(
     @InjectRepository(Project)
     private readonly projectRepository: Repository<Project>,
+    @Inject(PermissionEvaluatorService)
     private readonly permissionEvaluator: PermissionEvaluatorService,
+    @Inject(DataSource)
     private readonly dataSource: DataSource,
     @InjectRepository(PermissionScheme)
     private readonly schemeRepository: Repository<PermissionScheme>,
@@ -84,8 +86,10 @@ export class ProjectsService {
     private readonly versionRepository: Repository<ProjectVersion>,
     @InjectRepository(Issue)
     private readonly issueRepository: Repository<Issue>,
+    @Inject(JqlParserService)
     private readonly jqlParserService: JqlParserService,
     @Optional()
+    @Inject(SeaweedFsService)
     private readonly seaweedFsService?: SeaweedFsService,
   ) {}
 
