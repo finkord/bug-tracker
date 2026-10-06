@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Sun,
   Moon,
+  Laptop,
   User,
   Sliders,
   LogOut,
@@ -18,7 +19,7 @@ import {
   DropdownMenuSeparator,
 } from '../ui/Dropdown';
 import { Avatar } from '../common/Avatar';
-import { useTheme, useAuth } from '../../store';
+import { useTheme, useAuth, type Theme } from '../../store';
 import { api } from '../../api/client';
 
 interface SidebarBottomActionsProps {
@@ -29,7 +30,7 @@ interface SidebarBottomActionsProps {
 
 /**
  * Bottom action utilities for the Super-Sidebar (User Profile dock and Theme toggle).
- * Implements Linear-style bottom dock with high-density M3 tokens.
+ * Implements Linear-style bottom dock with high-density M3 tokens and 3-state theme switching.
  */
 export const SidebarBottomActions: React.FC<SidebarBottomActionsProps> = ({
   collapsed = false,
@@ -37,7 +38,7 @@ export const SidebarBottomActions: React.FC<SidebarBottomActionsProps> = ({
   onOpenChange,
 }) => {
   const navigate = useNavigate();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = React.useState(false);
 
@@ -54,8 +55,21 @@ export const SidebarBottomActions: React.FC<SidebarBottomActionsProps> = ({
     onOpenChange?.(open);
   };
 
+  const handleSelectTheme = (newTheme: Theme) => {
+    setTheme(newTheme);
+    if (user) {
+      api.updatePreferences({ theme: newTheme }).catch(() => {
+        // Non-blocking preference sync
+      });
+    }
+  };
+
   const handleToggleTheme = () => {
-    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    let nextTheme: Theme = 'light';
+    if (theme === 'system') nextTheme = 'light';
+    else if (theme === 'light') nextTheme = 'dark';
+    else nextTheme = 'system';
+
     toggleTheme();
     if (user) {
       api.updatePreferences({ theme: nextTheme }).catch(() => {
@@ -196,37 +210,83 @@ export const SidebarBottomActions: React.FC<SidebarBottomActionsProps> = ({
   return (
     <div className={`shrink-0 border-t border-[var(--md-sys-color-outline-variant)]/15 flex flex-col gap-1 ${collapsed ? 'p-1.5' : 'px-2 py-2'
       }`}>
-      {/* Theme Toggle Utility */}
+      {/* Theme Toggle Utility (3-State Switching: System, Light, Dark) */}
       <div className="flex items-center w-full">
         {collapsed ? (
-          <Tooltip content={theme === 'dark' ? 'Switch to Light mode' : 'Switch to Dark mode'} side="right">
+          <Tooltip
+            content={
+              theme === 'system'
+                ? 'Theme: System (Auto) — Switch to Light'
+                : theme === 'light'
+                  ? 'Theme: Light — Switch to Dark'
+                  : 'Theme: Dark — Switch to System'
+            }
+            side="right"
+          >
             <button
               type="button"
               onClick={handleToggleTheme}
               className="w-9 h-9 mx-auto rounded-lg flex items-center justify-center text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)] transition-colors cursor-pointer"
-              aria-label="Toggle theme"
+              aria-label={`Toggle theme (currently ${theme})`}
             >
-              {theme === 'dark' ? (
-                <Sun className="w-4 h-4 text-[var(--md-sys-color-warning)]" />
-              ) : (
+              {theme === 'system' ? (
+                <Laptop className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
+              ) : theme === 'dark' ? (
                 <Moon className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
+              ) : (
+                <Sun className="w-4 h-4 text-[var(--md-sys-color-warning)]" />
               )}
             </button>
           </Tooltip>
         ) : (
-          <button
-            type="button"
-            onClick={handleToggleTheme}
-            className="w-full h-[34px] px-2.5 flex items-center gap-2.5 rounded-lg text-left text-[13px] font-medium text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)] transition-colors select-none cursor-pointer"
-            aria-label="Toggle theme"
+          <div
+            role="group"
+            aria-label="Theme selection"
+            className="w-full h-[34px] p-0.5 grid grid-cols-3 gap-0.5 rounded-lg bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/20 text-xs select-none"
           >
-            {theme === 'dark' ? (
-              <Sun className="w-4 h-4 shrink-0 text-[var(--md-sys-color-warning)]" />
-            ) : (
-              <Moon className="w-4 h-4 shrink-0 text-[var(--md-sys-color-primary)]" />
-            )}
-            <span className="truncate leading-none">{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
-          </button>
+            <button
+              type="button"
+              onClick={() => handleSelectTheme('system')}
+              className={`flex items-center justify-center gap-1.5 rounded-md transition-all cursor-pointer ${
+                theme === 'system'
+                  ? 'bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-primary)] font-semibold shadow-xs'
+                  : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container-high)]/60'
+              }`}
+              title="System (Auto) theme"
+              aria-label="System theme"
+            >
+              <Laptop className="w-3.5 h-3.5 shrink-0" />
+              <span className="text-[11px] font-medium leading-none truncate">Auto</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSelectTheme('light')}
+              className={`flex items-center justify-center gap-1.5 rounded-md transition-all cursor-pointer ${
+                theme === 'light'
+                  ? 'bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-warning)] font-semibold shadow-xs'
+                  : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container-high)]/60'
+              }`}
+              title="Light theme"
+              aria-label="Light mode"
+            >
+              <Sun className="w-3.5 h-3.5 shrink-0" />
+              <span className="text-[11px] font-medium leading-none truncate">Light</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSelectTheme('dark')}
+              className={`flex items-center justify-center gap-1.5 rounded-md transition-all cursor-pointer ${
+                theme === 'dark'
+                  ? 'bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-primary)] font-semibold shadow-xs'
+                  : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container-high)]/60'
+              }`}
+              title="Dark theme"
+              aria-label="Dark mode"
+            >
+              <Moon className="w-3.5 h-3.5 shrink-0" />
+              <span className="text-[11px] font-medium leading-none truncate">Dark</span>
+            </button>
+          </div>
         )}
       </div>
 

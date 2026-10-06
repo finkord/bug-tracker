@@ -9,7 +9,7 @@ import { Issue, IssueStatus, IssueType } from '../issues/entities/issue.entity.j
 import { CreateProjectDto } from './dto/create-project.dto.js';
 import { UpdateProjectDto } from './dto/update-project.dto.js';
 import { CreateQuickFilterDto, UpdateQuickFilterDto } from './dto/quick-filter.dto.js';
-import { CreateComponentDto } from './dto/component.dto.js';
+import { CreateComponentDto, UpdateComponentDto } from './dto/component.dto.js';
 import {
   CreateProjectVersionDto,
   UpdateProjectVersionDto,
@@ -495,6 +495,46 @@ export class ProjectsService {
     });
 
     return this.componentRepository.save(component);
+  }
+
+  /**
+   * Updates an existing component within a project.
+   */
+  async updateComponent(
+    projectId: number,
+    componentId: number,
+    dto: UpdateComponentDto,
+  ): Promise<ProjectComponent> {
+    const component = await this.componentRepository.findOne({
+      where: { id: componentId, projectId },
+    });
+    if (!component) {
+      throw new NotFoundException(`Component with ID #${componentId} not found in project #${projectId}`);
+    }
+
+    if (dto.name && dto.name !== component.name) {
+      const existing = await this.componentRepository.findOne({
+        where: { projectId, name: dto.name },
+      });
+      if (existing) {
+        throw new ConflictException(`Component "${dto.name}" already exists in project`);
+      }
+      component.name = dto.name;
+    }
+
+    if (dto.description !== undefined) {
+      component.description = dto.description || null;
+    }
+
+    if (dto.leadId !== undefined) {
+      component.leadId = dto.leadId || null;
+    }
+
+    await this.componentRepository.save(component);
+    return this.componentRepository.findOneOrFail({
+      where: { id: component.id },
+      relations: { lead: true },
+    });
   }
 
   /**

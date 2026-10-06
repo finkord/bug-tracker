@@ -21,7 +21,7 @@ export const notificationsApi = {
   },
 
   getUnreadCount: () =>
-    request<{ unreadCount: number }>('/notifications/unread-count'),
+    request<{ unreadCount: number; count: number }>('/notifications/unread-count'),
 
   markAsRead: (notificationIds?: number[]) =>
     request<{ success: boolean; affected: number }>('/notifications/mark-read', {

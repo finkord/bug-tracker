@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { ProjectItem, UserProfile } from '../../api/client';
 import {
@@ -6,7 +6,17 @@ import {
   useDeleteProjectMutation,
   useUploadProjectAvatarMutation,
 } from '../../api/queries';
-import { Button, Input, UserPicker, AvatarPicker, type AvatarPickerValue } from '../ui';
+import {
+  Card,
+  Button,
+  Input,
+  Textarea,
+  Modal,
+  Badge,
+  UserPicker,
+  AvatarPicker,
+  type AvatarPickerValue,
+} from '../ui';
 import {
   Save,
   Trash2,
@@ -15,6 +25,7 @@ import {
   AlertCircle,
   Copy,
   Check,
+  ShieldAlert,
 } from 'lucide-react';
 
 interface ProjectGeneralTabProps {
@@ -42,13 +53,17 @@ export const ProjectGeneralTab: React.FC<ProjectGeneralTabProps> = ({
 
   const [avatarValue, setAvatarValue] = useState<AvatarPickerValue | null>(null);
 
-  const [prevProjectId, setPrevProjectId] = useState<number | undefined>(project.id);
-  if (project.id !== prevProjectId) {
-    setPrevProjectId(project.id);
+  // Danger zone deletion modal state
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteConfirmationKey, setDeleteConfirmationKey] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  useEffect(() => {
     setName(project.name || '');
     setDescription(project.description || '');
     setLeadId(project.leadId || 0);
-  }
+  }, [project.id, project.name, project.description, project.leadId]);
 
   const handleCopyKey = () => {
     navigator.clipboard.writeText(project.key);
@@ -94,32 +109,37 @@ export const ProjectGeneralTab: React.FC<ProjectGeneralTabProps> = ({
         });
       }
 
-      setSuccess('Project details and logo updated successfully.');
-      setTimeout(() => setSuccess(null), 3000);
+      setSuccess('Project settings and branding saved successfully.');
+      setTimeout(() => setSuccess(null), 3500);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to update project');
+      setError(err instanceof Error ? err.message : 'Failed to update project settings');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDeleteProject = async () => {
-    const confirmation = window.prompt(
-      `To permanently delete this project workspace, type its key "${project.key}":`,
-    );
+  const handleConfirmDelete = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (deleteConfirmationKey.trim().toUpperCase() !== project.key.toUpperCase()) {
+      setDeleteError(`Please type "${project.key}" exactly to confirm.`);
+      return;
+    }
 
-    if (confirmation === project.key) {
-      try {
-        await deleteMutation.mutateAsync(project.id);
-        navigate('/projects');
-      } catch (err: unknown) {
-        alert(err instanceof Error ? err.message : 'Failed to delete project');
-      }
+    setIsDeleting(true);
+    setDeleteError(null);
+
+    try {
+      await deleteMutation.mutateAsync(project.id);
+      setIsDeleteModalOpen(false);
+      navigate('/projects');
+    } catch (err: unknown) {
+      setDeleteError(err instanceof Error ? err.message : 'Failed to delete project');
+      setIsDeleting(false);
     }
   };
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 max-w-4xl">
       {/* Header */}
       <div className="pb-4 border-b border-[var(--md-sys-color-outline-variant)]/40">
         <h2 className="text-base font-black text-[var(--md-sys-color-on-surface)]">
@@ -131,138 +151,277 @@ export const ProjectGeneralTab: React.FC<ProjectGeneralTabProps> = ({
       </div>
 
       {error && (
-        <div className="p-3 rounded-xl bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] text-xs flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 shrink-0" />
-          <span>{error}</span>
+        <div className="p-3.5 rounded-2xl bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] text-xs flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 text-[var(--md-sys-color-error)]" />
+            <span>{error}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setError(null)}
+            className="text-xs font-bold hover:underline cursor-pointer"
+          >
+            Dismiss
+          </button>
         </div>
       )}
 
       {success && (
-        <div className="p-3 rounded-xl bg-[var(--md-sys-color-success-container,rgba(16,185,129,0.15))] text-[var(--md-sys-color-on-success-container,rgb(16,185,129))] text-xs flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 shrink-0" />
-          <span>{success}</span>
+        <div className="p-3.5 rounded-2xl bg-[var(--md-sys-color-success-container,rgba(16,185,129,0.15))] text-[var(--md-sys-color-on-success-container,rgb(16,185,129))] text-xs flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 shrink-0 text-[var(--md-sys-color-success,rgb(16,185,129))]" />
+            <span>{success}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSuccess(null)}
+            className="text-xs font-bold hover:underline cursor-pointer"
+          >
+            Dismiss
+          </button>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Project Logo & Identity Section */}
-        <AvatarPicker
-          name={name || project.name}
-          entityKey={project.key}
-          initialAvatarUrl={project.avatarUrl}
-          onChange={setAvatarValue}
-          onError={setError}
-        />
-
-        {/* Project Key (Read-only) */}
-        <div>
-          <label className="block text-xs font-bold text-[var(--md-sys-color-on-surface)] mb-1">
-            Project Key
-          </label>
-          <div className="flex items-center gap-2">
-            <div className="px-3.5 py-2 rounded-xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/40 font-mono font-black text-sm text-[var(--md-sys-color-primary)] select-all">
-              {project.key}
-            </div>
-            <button
-              type="button"
-              onClick={handleCopyKey}
-              className="p-2 rounded-xl border border-[var(--md-sys-color-outline-variant)]/40 hover:bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface-variant)] transition cursor-pointer"
-              title="Copy Project Key"
-            >
-              {copiedKey ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-            </button>
-            <span className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] ml-2">
-              Prefix used for issue keys (e.g. {project.key}-101). Key cannot be changed once created.
-            </span>
+        {/* Card 1: Visual Identity & Key */}
+        <Card
+          variant="outlined"
+          padding="lg"
+          rounded="2xl"
+          className="bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/40 space-y-5"
+        >
+          <div>
+            <h3 className="text-sm font-black text-[var(--md-sys-color-on-surface)]">
+              Workspace Identity & Branding
+            </h3>
+            <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-0.5">
+              Customize the logo avatar badge and inspect the immutable project key prefix.
+            </p>
           </div>
-        </div>
 
-        {/* Project Name */}
-        <div>
-          <label className="block text-xs font-bold text-[var(--md-sys-color-on-surface)] mb-1">
-            Project Name <span className="text-[var(--md-sys-color-error)]">*</span>
-          </label>
-          <Input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Mobile Bug Tracker"
-            required
-            className="text-xs font-semibold"
+          <AvatarPicker
+            name={name || project.name}
+            entityKey={project.key}
+            initialAvatarUrl={project.avatarUrl}
+            onChange={setAvatarValue}
+            onError={setError}
           />
-        </div>
 
-        {/* Description */}
-        <div>
-          <label className="block text-xs font-bold text-[var(--md-sys-color-on-surface)] mb-1">
-            Description
-          </label>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Describe the scope and objective of this project workspace..."
-            rows={3}
-            className="w-full p-2.5 text-xs rounded-xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] placeholder-[var(--md-sys-color-on-surface-variant)]/60 focus:outline-none focus:ring-2 focus:ring-[var(--md-sys-color-primary)]/40"
-          />
-        </div>
+          <div className="pt-2 border-t border-[var(--md-sys-color-outline-variant)]/20">
+            <label className="block text-xs font-bold text-[var(--md-sys-color-on-surface)] mb-1.5">
+              Project Workspace Key
+            </label>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <div className="px-3.5 py-1.5 rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)]/60 font-mono font-black text-sm text-[var(--md-sys-color-primary)] select-all tracking-wider">
+                {project.key}
+              </div>
+              <Button
+                type="button"
+                variant="outlined"
+                size="xs"
+                onClick={handleCopyKey}
+                leftIcon={copiedKey ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                title="Copy Project Key"
+              >
+                {copiedKey ? 'Copied' : 'Copy Key'}
+              </Button>
+              <span className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
+                Permanent ticket prefix (e.g. {project.key}-101). Cannot be altered post-creation.
+              </span>
+            </div>
+          </div>
+        </Card>
 
-        {/* Project Lead */}
-        <div>
-          <label className="block text-xs font-bold text-[var(--md-sys-color-on-surface)] mb-1">
-            Project Lead
-          </label>
-          <UserPicker
-            value={leadId || null}
-            onChange={(userId) => setLeadId(userId || 0)}
-            users={allUsers}
-            fallbackUser={project.lead}
-            placeholder="Select project lead..."
-            allowUnassigned={false}
-            showAssignToMe
-            className="w-full"
-          />
-          <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] mt-1">
-            The project lead receives notifications for unassigned issues and has administrative control.
-          </p>
-        </div>
+        {/* Card 2: Details */}
+        <Card
+          variant="outlined"
+          padding="lg"
+          rounded="2xl"
+          className="bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/40 space-y-4"
+        >
+          <div>
+            <h3 className="text-sm font-black text-[var(--md-sys-color-on-surface)]">
+              General Information
+            </h3>
+            <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-0.5">
+              Set the user-facing project title and domain objective.
+            </p>
+          </div>
 
-        {/* Save Changes Button */}
-        <div className="pt-2">
+          <div>
+            <label className="block text-xs font-bold text-[var(--md-sys-color-on-surface)] mb-1">
+              Project Name <span className="text-[var(--md-sys-color-error)]">*</span>
+            </label>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Core Platform Engine"
+              required
+              className="text-xs font-semibold"
+            />
+          </div>
+
+          <div>
+            <Textarea
+              label="Description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Describe the scope, architecture, or roadmap of this project workspace..."
+              rows={3}
+            />
+          </div>
+        </Card>
+
+        {/* Card 3: Governance & Leadership */}
+        <Card
+          variant="outlined"
+          padding="lg"
+          rounded="2xl"
+          className="bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/40 space-y-4"
+        >
+          <div>
+            <h3 className="text-sm font-black text-[var(--md-sys-color-on-surface)]">
+              Leadership & Ownership
+            </h3>
+            <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-0.5">
+              Assign the project lead responsible for issue triage, defaults, and administrative authority.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-[var(--md-sys-color-on-surface)] mb-1">
+              Project Lead
+            </label>
+            <UserPicker
+              value={leadId || null}
+              onChange={(userId) => setLeadId(userId || 0)}
+              users={allUsers}
+              fallbackUser={project.lead}
+              placeholder="Select project lead..."
+              allowUnassigned={false}
+              showAssignToMe
+              className="w-full"
+            />
+            <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] mt-1.5">
+              The project lead receives triage notifications for unassigned tickets and has default project oversight.
+            </p>
+          </div>
+        </Card>
+
+        {/* Submit Actions Strip */}
+        <div className="flex items-center justify-end gap-3 pt-2">
           <Button
             type="submit"
             variant="primary"
-            size="sm"
+            size="md"
             disabled={loading}
-            leftIcon={<Save className="w-3.5 h-3.5" />}
+            leftIcon={<Save className="w-4 h-4" />}
           >
             {loading ? 'Saving Changes...' : 'Save General Settings'}
           </Button>
         </div>
       </form>
 
-      {/* Danger Zone: Delete Project */}
-      <div className="pt-8 border-t border-[var(--md-sys-color-error)]/20 mt-8">
-        <div className="p-4 rounded-2xl bg-[var(--md-sys-color-error-container)]/20 border border-[var(--md-sys-color-error)]/30 space-y-3">
-          <div className="flex items-center gap-2 text-[var(--md-sys-color-error)]">
-            <AlertTriangle className="w-4 h-4 shrink-0" />
-            <h3 className="text-xs font-black uppercase tracking-wider">
-              Danger Zone: Delete Project
+      {/* Danger Zone: Delete Project Card */}
+      <Card
+        variant="outlined"
+        padding="lg"
+        rounded="2xl"
+        className="border-[var(--md-sys-color-error)]/30 bg-[var(--md-sys-color-error-container)]/10 space-y-4"
+      >
+        <div className="flex items-center gap-2.5 text-[var(--md-sys-color-error)]">
+          <AlertTriangle className="w-5 h-5 shrink-0" />
+          <div>
+            <h3 className="text-sm font-black uppercase tracking-wider">
+              Danger Zone: Delete Workspace
             </h3>
+            <p className="text-xs text-[var(--md-sys-color-on-surface)] mt-0.5">
+              Permanently destroys this project workspace, including all tickets, boards, releases, components, and sprint histories. This action cannot be reversed.
+            </p>
           </div>
-          <p className="text-xs text-[var(--md-sys-color-on-surface)]">
-            Permanently deletes this project, its backlog, sprints, issues, and configuration. This action cannot be undone.
-          </p>
+        </div>
+
+        <div className="pt-2 border-t border-[var(--md-sys-color-error)]/20 flex justify-end">
           <Button
             type="button"
             variant="outline"
-            size="xs"
-            onClick={handleDeleteProject}
+            size="sm"
+            onClick={() => {
+              setDeleteConfirmationKey('');
+              setDeleteError(null);
+              setIsDeleteModalOpen(true);
+            }}
             leftIcon={<Trash2 className="w-3.5 h-3.5" />}
             className="border-[var(--md-sys-color-error)] text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/40"
           >
             Delete Project Workspace
           </Button>
         </div>
-      </div>
+      </Card>
+
+      {/* Typed Confirmation Delete Modal */}
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        title="Permanently Delete Project Workspace"
+        description="This action cannot be undone. All linked tasks, sprints, and boards will be deleted."
+        size="md"
+      >
+        <form onSubmit={handleConfirmDelete} className="space-y-4">
+          <div className="p-3.5 rounded-2xl bg-[var(--md-sys-color-error-container)]/30 border border-[var(--md-sys-color-error)]/30 text-xs text-[var(--md-sys-color-on-surface)] space-y-2">
+            <div className="flex items-center gap-2 text-[var(--md-sys-color-error)] font-bold">
+              <ShieldAlert className="w-4 h-4 shrink-0" />
+              <span>Irreversible Action</span>
+            </div>
+            <p>
+              You are about to delete workspace <Badge variant="neutral" size="sm" className="font-mono">{project.key}</Badge> ({project.name}).
+            </p>
+          </div>
+
+          {deleteError && (
+            <div className="p-3 rounded-xl bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{deleteError}</span>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-bold text-[var(--md-sys-color-on-surface)] mb-1">
+              Type the project key <span className="font-mono text-[var(--md-sys-color-error)]">{project.key}</span> to confirm:
+            </label>
+            <Input
+              value={deleteConfirmationKey}
+              onChange={(e) => setDeleteConfirmationKey(e.target.value)}
+              placeholder={project.key}
+              autoFocus
+              className="text-xs font-mono font-bold"
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-[var(--md-sys-color-outline-variant)]/30">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsDeleteModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="danger"
+              size="sm"
+              disabled={
+                isDeleting ||
+                deleteConfirmationKey.trim().toUpperCase() !== project.key.toUpperCase()
+              }
+              leftIcon={<Trash2 className="w-3.5 h-3.5" />}
+            >
+              {isDeleting ? 'Deleting...' : 'Delete Project Workspace'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

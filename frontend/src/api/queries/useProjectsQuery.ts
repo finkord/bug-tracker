@@ -6,6 +6,7 @@ import {
   type CreateQuickFilterPayload,
   type UpdateQuickFilterPayload,
   type CreateComponentPayload,
+  type UpdateComponentPayload,
   type CreateProjectVersionPayload,
   type UpdateProjectVersionPayload,
   type ReleaseVersionPayload,
@@ -202,6 +203,26 @@ export function useCreateProjectComponentMutation() {
     }) => api.createProjectComponent(projectId, (data || payload)!),
     onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: projectQueries.components(created.projectId).queryKey });
+    },
+  });
+}
+
+export function useUpdateProjectComponentMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      projectId,
+      componentId,
+      data,
+      payload,
+    }: {
+      projectId: number;
+      componentId: number;
+      data?: UpdateComponentPayload;
+      payload?: UpdateComponentPayload;
+    }) => api.updateProjectComponent(projectId, componentId, (data || payload)!),
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: projectQueries.components(updated.projectId).queryKey });
     },
   });
 }

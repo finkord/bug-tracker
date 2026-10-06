@@ -32,6 +32,8 @@ export interface UserProfile {
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
+  tokenType?: string;
+  expiresIn?: number;
   user?: UserProfile;
 }
 

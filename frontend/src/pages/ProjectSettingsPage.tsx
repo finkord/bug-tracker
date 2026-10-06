@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   Settings,
   Users2,
@@ -16,8 +16,7 @@ import {
   useProjectComponentsQuery,
   useProjectVersionsQuery,
 } from '../api/queries';
-import { Badge, EntityAvatar } from '../components/ui/index.js';
-import { BackButton } from '../components/common/BackButton.js';
+import { Badge, EntityAvatar, ScrollableTabsContainer } from '../components/ui/index.js';
 import { ProjectGeneralTab } from '../components/projects/ProjectGeneralTab';
 import { ProjectTeamsTab } from '../components/projects/ProjectTeamsTab';
 import { ProjectComponentsTab } from '../components/projects/ProjectComponentsTab';
@@ -26,26 +25,29 @@ import { ProjectPermissionsTab } from '../components/projects/ProjectPermissions
 import { ProjectWebhooksTab } from '../components/projects/ProjectWebhooksTab';
 import { NotFoundPage } from './NotFoundPage';
 import { ForbiddenPage } from './ForbiddenPage';
+import { cn } from '../utils/cn.js';
 
 export type SettingsTab = 'general' | 'teams' | 'components' | 'versions' | 'access' | 'webhooks';
 
 export const ProjectSettingsPage: React.FC = () => {
-  const { id, projectId: paramProjectId } = useParams<{ id?: string; projectId?: string }>();
+  const { id, projectId: paramProjectId, tab: paramTab } = useParams<{
+    id?: string;
+    projectId?: string;
+    tab?: string;
+  }>();
   const rawIdentifier = paramProjectId || id;
+  const navigate = useNavigate();
 
-  const [searchParams, setSearchParams] = useSearchParams();
-  const rawTab = searchParams.get('tab') as SettingsTab | null;
-  const activeTab: SettingsTab = rawTab && ['general', 'teams', 'components', 'versions', 'access', 'webhooks'].includes(rawTab)
-    ? rawTab
-    : 'general';
+  const [searchParams] = useSearchParams();
+  const queryTab = searchParams.get('tab') as SettingsTab | null;
 
-  const setActiveTab = (tab: SettingsTab) => {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      next.set('tab', tab);
-      return next;
-    });
-  };
+  const validTabs: SettingsTab[] = ['general', 'teams', 'components', 'versions', 'access', 'webhooks'];
+  const activeTab: SettingsTab =
+    paramTab && validTabs.includes(paramTab as SettingsTab)
+      ? (paramTab as SettingsTab)
+      : queryTab && validTabs.includes(queryTab)
+      ? queryTab
+      : 'general';
 
   const { data: projects = [] } = useProjectsQuery();
 
@@ -66,6 +68,11 @@ export const ProjectSettingsPage: React.FC = () => {
   const { data: teams = [] } = useTeamsQuery(projectId);
   const { data: components = [] } = useProjectComponentsQuery(projectId);
   const { data: versions = [] } = useProjectVersionsQuery(projectId);
+
+  const handleTabChange = (tab: SettingsTab) => {
+    const projectKeyOrId = project?.key || rawIdentifier;
+    navigate(`/projects/${projectKeyOrId}/settings/${tab}`);
+  };
 
   if (projectLoading || usersLoading) {
     return (
@@ -106,151 +113,152 @@ export const ProjectSettingsPage: React.FC = () => {
     {
       id: 'general' as const,
       label: 'General',
-      description: 'Details & Ownership',
       Icon: Settings,
     },
     {
       id: 'teams' as const,
       label: 'Teams & Rosters',
-      description: 'Scrum teams & capacities',
       Icon: Users2,
       count: teams.length,
     },
     {
       id: 'components' as const,
       label: 'Components',
-      description: 'Subsystems & modules',
       Icon: Layers,
       count: components.length,
     },
     {
       id: 'versions' as const,
       label: 'Releases & Versions',
-      description: 'Milestones & changelogs',
       Icon: Tag,
       count: versions.length,
     },
     {
       id: 'access' as const,
       label: 'People & Permissions',
-      description: 'Roles & security scheme',
       Icon: Shield,
     },
     {
       id: 'webhooks' as const,
       label: 'Webhooks',
-      description: 'Automation & events',
       Icon: Webhook,
     },
   ];
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-5 flex-1 flex flex-col min-w-0 space-y-6 animate-in fade-in duration-200">
-      {/* Back button & Header Strip */}
-      <div className="space-y-4 border-b border-[var(--md-sys-color-outline-variant)]/20 pb-5">
-        <div className="flex items-center justify-between">
-          <BackButton
-            fallbackPath={`/projects/${project.key}`}
-            label={`Back to ${project.key}`}
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-5 flex-1 flex flex-col min-w-0 space-y-4 animate-in fade-in duration-200">
+      {/* ── Project Header Strip ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
+        <div className="flex items-center gap-3.5">
+          <EntityAvatar
+            name={project.name}
+            projectKey={project.key}
+            avatarUrl={project.avatarUrl}
+            size="lg"
           />
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-black text-[var(--md-sys-color-on-surface)] tracking-tight">
+                {project.name}
+              </h1>
+              <Badge variant="neutral" size="sm" className="font-mono uppercase tracking-wide">
+                {project.key}
+              </Badge>
+            </div>
+            <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-0.5">
+              Project administration hub for configuration, scrum teams, components, releases, permissions, and webhooks.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
           <Badge variant="primary" size="md">
             Lead: {project.lead?.fullName || `User #${project.leadId}`}
           </Badge>
         </div>
-
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5">
-            <EntityAvatar
-              name={project.name}
-              projectKey={project.key}
-              avatarUrl={project.avatarUrl}
-              size="lg"
-            />
-            <div>
-              <h1 className="text-xl sm:text-2xl font-black text-[var(--md-sys-color-on-surface)] tracking-tight">
-                {project.name} — Project Settings
-              </h1>
-              <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-0.5">
-                Centralized project administration hub for teams, components, releases, permissions, and automation.
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
 
-      {/* Two-Column Responsive Settings Layout */}
-      <div className="flex flex-col md:flex-row gap-6 items-start flex-1 min-w-0">
-        {/* Left Navigation Sidebar */}
-        <aside className="w-full md:w-60 lg:w-64 shrink-0">
-          <nav className="flex md:flex-col gap-1 overflow-x-auto md:overflow-x-visible pb-2 md:pb-0 p-1.5 rounded-2xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/30">
-            {navItems.map((item) => {
-              const active = activeTab === item.id;
-              const Icon = item.Icon;
+      {/* ── Top Horizontal Underline Navigation Tabs Bar ── */}
+      <ScrollableTabsContainer
+        as="nav"
+        aria-label="Project Settings Navigation Tabs"
+        className="border-b border-[var(--md-sys-color-outline-variant)]/20 w-full"
+        railClassName="gap-1 sm:gap-2"
+      >
+        {navItems.map((item) => {
+          const active = activeTab === item.id;
+          const Icon = item.Icon;
 
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setActiveTab(item.id)}
-                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer shrink-0 md:shrink select-none ${
+          return (
+            <button
+              key={item.id}
+              type="button"
+              id={`project-settings-tab-${item.id}`}
+              onClick={() => handleTabChange(item.id)}
+              className={cn(
+                'group relative flex items-center gap-2 py-3 px-3.5 text-xs sm:text-sm font-semibold whitespace-nowrap transition-all duration-150 border-b-2 -mb-px outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--md-sys-color-primary)] rounded-t-lg select-none cursor-pointer',
+                active
+                  ? 'text-[var(--md-sys-color-primary)] border-[var(--md-sys-color-primary)] font-bold'
+                  : 'text-[var(--md-sys-color-on-surface-variant)] border-transparent hover:text-[var(--md-sys-color-on-surface)] hover:border-[var(--md-sys-color-outline-variant)]/40 hover:bg-[var(--md-sys-color-surface-container-highest)]/30',
+              )}
+            >
+              <Icon
+                className={cn(
+                  'w-4 h-4 shrink-0 transition-colors',
+                  active
+                    ? 'text-[var(--md-sys-color-primary)]'
+                    : 'text-[var(--md-sys-color-on-surface-variant)] group-hover:text-[var(--md-sys-color-on-surface)]',
+                )}
+              />
+              <span>{item.label}</span>
+
+              {item.count !== undefined && item.count > 0 && (
+                <span
+                  className={cn(
+                    'text-[10px] px-1.5 py-0.2 rounded-full font-bold ml-1 shrink-0',
                     active
-                      ? 'bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] shadow-2xs'
-                      : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container)]'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <Icon className="w-4 h-4 shrink-0" />
-                    <span className="truncate">{item.label}</span>
-                  </div>
-
-                  {item.count !== undefined && item.count > 0 && (
-                    <span
-                      className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ml-1.5 shrink-0 ${
-                        active
-                          ? 'bg-[var(--md-sys-color-on-primary)]/20 text-[var(--md-sys-color-on-primary)]'
-                          : 'bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-on-surface)]'
-                      }`}
-                    >
-                      {item.count}
-                    </span>
+                      ? 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)]'
+                      : 'bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-on-surface)]',
                   )}
-                </button>
-              );
-            })}
-          </nav>
-        </aside>
+                >
+                  {item.count}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </ScrollableTabsContainer>
 
-        {/* Right Active Panel */}
-        <main className="flex-1 min-w-0 w-full p-6 rounded-3xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/30 shadow-2xs">
-          {activeTab === 'general' && (
-            <ProjectGeneralTab project={project} allUsers={allUsers} />
-          )}
+      {/* ── Active Tab Content (Full-Width Canvas) ── */}
+      <main className="flex-1 min-w-0 w-full p-4 sm:p-6 rounded-3xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/30 shadow-2xs">
+        {activeTab === 'general' && (
+          <ProjectGeneralTab project={project} allUsers={allUsers} />
+        )}
 
-          {activeTab === 'teams' && (
-            <ProjectTeamsTab projectId={projectId} allUsers={allUsers} />
-          )}
+        {activeTab === 'teams' && (
+          <ProjectTeamsTab projectId={projectId} allUsers={allUsers} />
+        )}
 
-          {activeTab === 'components' && (
-            <ProjectComponentsTab projectId={projectId} allUsers={allUsers} />
-          )}
+        {activeTab === 'components' && (
+          <ProjectComponentsTab projectId={projectId} allUsers={allUsers} />
+        )}
 
-          {activeTab === 'versions' && (
-            <ProjectVersionsTab projectId={projectId} />
-          )}
+        {activeTab === 'versions' && (
+          <ProjectVersionsTab projectId={projectId} />
+        )}
 
-          {activeTab === 'access' && (
-            <ProjectPermissionsTab
-              projectId={projectId}
-              project={project}
-              allUsers={allUsers}
-            />
-          )}
+        {activeTab === 'access' && (
+          <ProjectPermissionsTab
+            projectId={projectId}
+            project={project}
+            allUsers={allUsers}
+          />
+        )}
 
-          {activeTab === 'webhooks' && (
-            <ProjectWebhooksTab projectId={projectId} />
-          )}
-        </main>
-      </div>
+        {activeTab === 'webhooks' && (
+          <ProjectWebhooksTab projectId={projectId} />
+        )}
+      </main>
     </div>
   );
 };

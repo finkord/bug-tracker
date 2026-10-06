@@ -44,10 +44,7 @@ const UserProfilePopoverContent: React.FC<UserProfilePopoverInternalProps> = ({
   const [isOpen, setIsOpen] = useState(false);
 
   const targetId = explicitUserId || initialUser?.id;
-  const queryResult =
-    typeof useUserDetailQuery === 'function'
-      ? useUserDetailQuery(isOpen && targetId ? targetId : undefined)
-      : undefined;
+  const queryResult = useUserDetailQuery(isOpen && targetId ? targetId : undefined);
   const fetchedUser = queryResult?.data;
 
   // Combine initial user data with live-queried user details

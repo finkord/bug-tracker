@@ -6,6 +6,7 @@ import { UsersService } from '../../users/users.service.js';
 import { SecurityAuditService } from '../../security-audit/security-audit.service.js';
 import { LoginAttemptStatus } from '../../security-audit/entities/login-audit-log.entity.js';
 import { TokenSessionService, type AuthTokens } from './token-session.service.js';
+import { LoginRateLimiterService } from './login-rate-limiter.service.js';
 import { Verify2faDto, Enable2faDto } from '../dto/verify-2fa.dto.js';
 import { User } from '../../users/entities/user.entity.js';
 
@@ -16,6 +17,7 @@ export class TwoFactorAuthService {
     private readonly jwtService: JwtService,
     private readonly securityAuditService: SecurityAuditService,
     private readonly tokenSessionService: TokenSessionService,
+    private readonly loginRateLimiter: LoginRateLimiterService,
   ) {}
 
   /**
@@ -71,7 +73,8 @@ export class TwoFactorAuthService {
       throw new BadRequestException('Two-factor secret is missing. Please generate a QR code first.');
     }
 
-    const isValid = verifySync({ token: code, secret });
+    const check = verifySync({ token: code, secret });
+    const isValid = typeof check === 'boolean' ? check : Boolean((check as { valid?: boolean })?.valid);
     if (!isValid) {
       throw new BadRequestException('Invalid 6-digit TOTP verification code');
     }
@@ -102,7 +105,8 @@ export class TwoFactorAuthService {
       throw new BadRequestException('Two-factor authentication is not active on this account');
     }
 
-    const isValid = verifySync({ token: code, secret: latestUser.twoFactorSecret });
+    const check = verifySync({ token: code, secret: latestUser.twoFactorSecret });
+    const isValid = typeof check === 'boolean' ? check : Boolean((check as { valid?: boolean })?.valid);
     if (!isValid) {
       throw new BadRequestException('Invalid 6-digit TOTP verification code');
     }
@@ -163,22 +167,55 @@ export class TwoFactorAuthService {
       throw new UnauthorizedException('2FA configuration error for this account');
     }
 
-    const isValid = verifySync({
-      token: rawCode,
-      secret: user.twoFactorSecret,
-    });
-
-    if (!isValid) {
+    // 1. Check if identifier is currently locked out in Redis
+    const lockoutStatus = await this.loginRateLimiter.isLocked(user.email);
+    if (lockoutStatus.isLocked) {
       await this.securityAuditService.recordLoginAttempt({
         userId: user.id,
         attemptedEmail: user.email,
         ipAddress,
         userAgent,
-        status: LoginAttemptStatus.TWO_FACTOR_FAILED,
-        failureReason: 'Invalid 6-digit TOTP code provided',
+        status: LoginAttemptStatus.ACCOUNT_LOCKED,
+        failureReason: `Account locked during 2FA. Remaining seconds: ${lockoutStatus.remainingSeconds}`,
       });
+      throw new UnauthorizedException(
+        `Account is temporarily locked due to multiple failed verification attempts. Try again in ${lockoutStatus.remainingSeconds} seconds.`,
+      );
+    }
+
+    const check = verifySync({
+      token: rawCode,
+      secret: user.twoFactorSecret,
+    });
+    const isValid = typeof check === 'boolean' ? check : Boolean((check as { valid?: boolean })?.valid);
+
+    if (!isValid) {
+      const failedResult = await this.loginRateLimiter.recordFailedAttempt(user.email);
+
+      await this.securityAuditService.recordLoginAttempt({
+        userId: user.id,
+        attemptedEmail: user.email,
+        ipAddress,
+        userAgent,
+        status: failedResult.isLocked
+          ? LoginAttemptStatus.ACCOUNT_LOCKED
+          : LoginAttemptStatus.TWO_FACTOR_FAILED,
+        failureReason: failedResult.isLocked
+          ? 'Exceeded 5 failed 2FA attempts. Account locked for 15 minutes.'
+          : `Invalid 6-digit TOTP code provided (attempt ${failedResult.attempts}/5)`,
+      });
+
+      if (failedResult.isLocked) {
+        throw new UnauthorizedException(
+          'Account has been temporarily locked for 15 minutes due to 5 consecutive failed verification attempts.',
+        );
+      }
+
       throw new UnauthorizedException('Invalid 6-digit authentication code');
     }
+
+    // 2. Successful verification: reset failed attempt counter and record success
+    await this.loginRateLimiter.resetAttempts(user.email);
 
     await this.securityAuditService.recordLoginAttempt({
       userId: user.id,

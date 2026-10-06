@@ -184,11 +184,11 @@ export const ProjectVersionsTab: React.FC<ProjectVersionsTabProps> = ({ projectI
     },
     {
       id: 'actions',
-      header: () => <div className="text-right">Actions</div>,
+      header: 'Actions',
       cell: ({ row }) => {
         const ver = row.original;
         return (
-          <div className="flex items-center justify-end gap-1.5 whitespace-nowrap">
+          <div className="flex items-center justify-start gap-1.5 whitespace-nowrap">
             {ver.status !== 'RELEASED' && (
               <Button
                 variant="ghost"
@@ -201,23 +201,27 @@ export const ProjectVersionsTab: React.FC<ProjectVersionsTabProps> = ({ projectI
               </Button>
             )}
 
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="xs"
               onClick={() => handleArchive(ver)}
-              className="p-1.5 rounded-lg text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] transition cursor-pointer"
+              className="p-1.5 text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)]"
               title={ver.status === 'ARCHIVED' ? 'Unarchive' : 'Archive version'}
             >
               <Archive className="w-3.5 h-3.5" />
-            </button>
+            </Button>
 
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="xs"
               onClick={() => handleDelete(ver)}
-              className="p-1.5 rounded-lg text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/30 transition cursor-pointer"
+              className="p-1.5 text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/30"
               title="Delete version"
             >
               <Trash2 className="w-3.5 h-3.5" />
-            </button>
+            </Button>
           </div>
         );
       },

@@ -58,11 +58,11 @@ describe('useSidebarStore', () => {
   });
 
   it('should set collapseMode correctly', () => {
-    expect(useSidebarStore.getState().collapseMode).toBe('rail');
-    useSidebarStore.getState().setCollapseMode('hidden');
     expect(useSidebarStore.getState().collapseMode).toBe('hidden');
     useSidebarStore.getState().setCollapseMode('rail');
     expect(useSidebarStore.getState().collapseMode).toBe('rail');
+    useSidebarStore.getState().setCollapseMode('hidden');
+    expect(useSidebarStore.getState().collapseMode).toBe('hidden');
   });
 
   it('should set brandStyle correctly', () => {

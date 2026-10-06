@@ -6,8 +6,19 @@ import {
   useRemoveTeamMemberMutation,
   useTeamCapacityQuery,
 } from '../../api/queries';
-import { Button, Input, Modal, EntityAvatar } from '../ui/index.js';
-import { Avatar } from '../common/Avatar.js';
+import {
+  Button,
+  Input,
+  Modal,
+  EntityAvatar,
+  UserPicker,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '../ui/index.js';
+import { UserIdentity } from '../common/UserIdentity.js';
 import {
   UserPlus,
   Trash2,
@@ -140,11 +151,9 @@ export const TeamRosterModal: React.FC<TeamRosterModalProps> = ({
         )}
 
         {/* Capacity Summary Strip */}
-        <div className="p-3.5 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/50 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-primary)]">
-              <EntityAvatar name={team.name} avatarUrl={team.avatarUrl} size="sm" />
-            </div>
+        <div className="p-4 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/40 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs items-center">
+          <div className="flex items-center gap-3">
+            <EntityAvatar name={team.name} avatarUrl={team.avatarUrl} size="md" />
             <div>
               <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)]">
                 Active Members
@@ -176,38 +185,37 @@ export const TeamRosterModal: React.FC<TeamRosterModalProps> = ({
           </div>
         </div>
 
-        {/* Add Member Bar */}
+        {/* Add Member Form */}
         <form
           onSubmit={handleAddMember}
-          className="p-3 rounded-2xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)] flex flex-wrap items-center gap-2"
+          className="p-3.5 rounded-2xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/40 flex flex-wrap items-center gap-2.5"
         >
-          <div className="flex-1 min-w-[180px]">
-            <select
-              value={selectedUserId}
-              onChange={(e) => setSelectedUserId(e.target.value ? Number(e.target.value) : '')}
-              className="w-full p-2 text-xs rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] font-medium focus:outline-none focus:ring-2 focus:ring-[var(--md-sys-color-primary)]/40 cursor-pointer"
-            >
-              <option value="">Select user to add...</option>
-              {availableUsers.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.fullName || u.email}
-                </option>
-              ))}
-            </select>
+          <div className="flex-1 min-w-[200px]">
+            <UserPicker
+              users={availableUsers}
+              value={selectedUserId ? Number(selectedUserId) : null}
+              onChange={(userId) => setSelectedUserId(userId ?? '')}
+              placeholder="Select user to add..."
+              className="w-full"
+            />
           </div>
 
-          <div className="w-44">
-            <select
+          <div className="w-48">
+            <Select
               value={selectedRole}
-              onChange={(e) => setSelectedRole(e.target.value as TeamMemberRole)}
-              className="w-full p-2 text-xs rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] font-medium focus:outline-none focus:ring-2 focus:ring-[var(--md-sys-color-primary)]/40 cursor-pointer"
+              onValueChange={(val) => setSelectedRole(val as TeamMemberRole)}
             >
-              {ROLE_OPTIONS.map((r) => (
-                <option key={r.value} value={r.value}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger size="sm" className="h-9 text-xs rounded-xl bg-[var(--md-sys-color-surface)]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ROLE_OPTIONS.map((r) => (
+                  <SelectItem key={r.value} value={r.value}>
+                    {r.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="w-24">
@@ -225,7 +233,7 @@ export const TeamRosterModal: React.FC<TeamRosterModalProps> = ({
 
           <Button
             type="submit"
-            variant="primary"
+            variant="filled"
             size="sm"
             disabled={loading || !selectedUserId}
             leftIcon={<UserPlus className="w-3.5 h-3.5" />}
@@ -235,13 +243,13 @@ export const TeamRosterModal: React.FC<TeamRosterModalProps> = ({
         </form>
 
         {/* Member Table */}
-        <div className="overflow-x-auto rounded-2xl border border-[var(--md-sys-color-outline-variant)]/50 bg-[var(--md-sys-color-surface-container-low)]">
+        <div className="overflow-x-auto rounded-2xl border border-[var(--md-sys-color-outline-variant)]/40 bg-[var(--md-sys-color-surface-container-low)]">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="border-b border-[var(--md-sys-color-outline-variant)]/40 bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface-variant)] font-bold">
+              <tr className="border-b border-[var(--md-sys-color-outline-variant)]/30 bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface-variant)] font-bold">
                 <th className="py-2.5 px-3">Member</th>
                 <th className="py-2.5 px-3">Role</th>
-                <th className="py-2.5 px-3 w-28">Weekly Hours</th>
+                <th className="py-2.5 px-3 w-32">Weekly Hours</th>
                 <th className="py-2.5 px-3 w-16 text-right"></th>
               </tr>
             </thead>
@@ -255,44 +263,45 @@ export const TeamRosterModal: React.FC<TeamRosterModalProps> = ({
               ) : (
                 team.members.map((member) => (
                   <tr key={member.id} className="hover:bg-[var(--md-sys-color-surface-container)]/40 transition">
-                    {/* User */}
+                    {/* User Identity with profile navigation */}
                     <td className="py-2.5 px-3">
-                      <div className="flex items-center gap-2">
-                        <Avatar
-                          name={member.user?.fullName || 'User'}
-                          avatarUrl={member.user?.avatarUrl}
-                          size="sm"
-                        />
-                        <div>
-                          <div className="font-bold text-[var(--md-sys-color-on-surface)]">
-                            {member.user?.fullName || `User #${member.userId}`}
-                          </div>
-                          <div className="text-[10px] text-[var(--md-sys-color-on-surface-variant)]">
-                            {member.user?.email}
-                          </div>
-                        </div>
-                      </div>
+                      <UserIdentity
+                        userId={member.userId}
+                        user={member.user}
+                        name={member.user?.fullName || `User #${member.userId}`}
+                        email={member.user?.email}
+                        avatarUrl={member.user?.avatarUrl}
+                        size="sm"
+                        showName
+                        showEmail
+                      />
                     </td>
 
                     {/* Role Dropdown */}
                     <td className="py-2.5 px-3">
-                      <select
-                        value={member.role}
-                        onChange={(e) => handleUpdateRole(member.id, e.target.value as TeamMemberRole)}
-                        className="p-1.5 text-xs rounded-lg bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)]/60 text-[var(--md-sys-color-on-surface)] font-medium focus:outline-none focus:ring-1 focus:ring-[var(--md-sys-color-primary)] cursor-pointer"
-                      >
-                        {ROLE_OPTIONS.map((r) => (
-                          <option key={r.value} value={r.value}>
-                            {r.label}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="w-44">
+                        <Select
+                          value={member.role}
+                          onValueChange={(val) => handleUpdateRole(member.id, val as TeamMemberRole)}
+                        >
+                          <SelectTrigger size="sm" className="h-8 text-xs rounded-lg bg-[var(--md-sys-color-surface)]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ROLE_OPTIONS.map((r) => (
+                              <SelectItem key={r.value} value={r.value}>
+                                {r.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </td>
 
                     {/* Weekly Hours Input */}
                     <td className="py-2.5 px-3">
                       <div className="flex items-center gap-1.5">
-                        <input
+                        <Input
                           type="number"
                           min={0}
                           max={168}
@@ -304,7 +313,7 @@ export const TeamRosterModal: React.FC<TeamRosterModalProps> = ({
                               handleUpdateHours(member.id, val);
                             }
                           }}
-                          className="w-16 p-1 text-xs rounded-lg bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)]/60 text-center font-bold focus:outline-none focus:ring-1 focus:ring-[var(--md-sys-color-primary)]"
+                          className="w-20 h-8 text-xs text-center font-bold"
                         />
                         <span className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] font-semibold">
                           h/wk
@@ -314,14 +323,15 @@ export const TeamRosterModal: React.FC<TeamRosterModalProps> = ({
 
                     {/* Remove Action */}
                     <td className="py-2.5 px-3 text-right">
-                      <button
-                        type="button"
+                      <Button
+                        variant="ghost"
+                        size="xs"
                         onClick={() => handleRemoveMember(member.id)}
-                        className="p-1.5 rounded-lg text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/30 transition cursor-pointer"
+                        className="text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/30 rounded-lg p-1.5"
                         title="Remove member from team"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 ))
@@ -332,7 +342,7 @@ export const TeamRosterModal: React.FC<TeamRosterModalProps> = ({
 
         {/* Footer */}
         <div className="flex justify-end pt-2">
-          <Button variant="outline" size="sm" onClick={onClose}>
+          <Button variant="outlined" size="sm" onClick={onClose}>
             Close
           </Button>
         </div>

@@ -23,7 +23,7 @@ import {
   useTestWebhookMutation,
 } from '../../api/queries';
 import type { ProjectWebhookItem } from '../../api/types/webhooks.types.js';
-import { Button, Input, Badge, Modal } from '../ui';
+import { Card, Button, Input, Badge, Modal } from '../ui';
 
 interface ProjectWebhooksTabProps {
   projectId: number;
@@ -52,6 +52,7 @@ export const ProjectWebhooksTab: React.FC<ProjectWebhooksTabProps> = ({ projectI
   // Form states
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
+  const [format, setFormat] = useState<'generic' | 'discord' | 'slack'>('generic');
   const [secret, setSecret] = useState('');
   const [selectedEvents, setSelectedEvents] = useState<string[]>(['*']);
   const [isActive, setIsActive] = useState(true);
@@ -76,10 +77,21 @@ export const ProjectWebhooksTab: React.FC<ProjectWebhooksTabProps> = ({ projectI
     setSecret(`whsec_${hex}`);
   };
 
+  const handleUrlChange = (newUrl: string) => {
+    setUrl(newUrl);
+    const lower = newUrl.toLowerCase();
+    if (lower.includes('discord.com/api/webhooks') || lower.includes('discordapp.com/api/webhooks')) {
+      setFormat('discord');
+    } else if (lower.includes('hooks.slack.com')) {
+      setFormat('slack');
+    }
+  };
+
   const handleOpenCreateModal = () => {
     setEditingWebhook(null);
     setName('');
     setUrl('');
+    setFormat('generic');
     generateRandomSecret();
     setSelectedEvents(['*']);
     setIsActive(true);
@@ -91,6 +103,7 @@ export const ProjectWebhooksTab: React.FC<ProjectWebhooksTabProps> = ({ projectI
     setEditingWebhook(webhook);
     setName(webhook.name);
     setUrl(webhook.url);
+    setFormat(((webhook as any).format as 'generic' | 'discord' | 'slack') || 'generic');
     setSecret(webhook.secret || '');
     setSelectedEvents(webhook.events && webhook.events.length > 0 ? webhook.events : ['*']);
     setIsActive(webhook.isActive);
@@ -130,7 +143,8 @@ export const ProjectWebhooksTab: React.FC<ProjectWebhooksTabProps> = ({ projectI
           payload: {
             name: name.trim(),
             url: url.trim(),
-            secret: secret.trim() || undefined,
+            format,
+            secret: format === 'generic' ? (secret.trim() || undefined) : undefined,
             events: selectedEvents,
             isActive,
           },
@@ -139,7 +153,8 @@ export const ProjectWebhooksTab: React.FC<ProjectWebhooksTabProps> = ({ projectI
         await createMutation.mutateAsync({
           name: name.trim(),
           url: url.trim(),
-          secret: secret.trim() || undefined,
+          format,
+          secret: format === 'generic' ? (secret.trim() || undefined) : undefined,
           events: selectedEvents,
           isActive,
         });
@@ -276,9 +291,12 @@ export const ProjectWebhooksTab: React.FC<ProjectWebhooksTabProps> = ({ projectI
             const hasFailures = webhook.failureCount > 0 || Boolean(webhook.lastFailureReason);
 
             return (
-              <div
+              <Card
                 key={webhook.id}
-                className="p-5 rounded-3xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/20 shadow-xs space-y-4 hover:border-[var(--md-sys-color-primary)]/30 transition-all duration-150"
+                variant="outlined"
+                padding="lg"
+                rounded="2xl"
+                className="bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/30 shadow-xs space-y-4 hover:border-[var(--md-sys-color-primary)]/40 transition-all duration-150"
               >
                 {/* Row Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--md-sys-color-outline-variant)]/15 pb-4">
@@ -302,6 +320,19 @@ export const ProjectWebhooksTab: React.FC<ProjectWebhooksTabProps> = ({ projectI
                           size="sm"
                         >
                           {webhook.isActive ? 'Enabled' : 'Paused'}
+                        </Badge>
+                        <Badge
+                          variant={
+                            (webhook as any).format === 'discord'
+                              ? 'secondary'
+                              : (webhook as any).format === 'slack'
+                              ? 'neutral'
+                              : 'tonal'
+                          }
+                          size="sm"
+                          className="capitalize"
+                        >
+                          {(webhook as any).format || 'Generic'}
                         </Badge>
                         {hasFailures && (
                           <Badge variant="error" size="sm">
@@ -346,7 +377,7 @@ export const ProjectWebhooksTab: React.FC<ProjectWebhooksTabProps> = ({ projectI
                       size="sm"
                       className="rounded-xl text-xs"
                     >
-                      {webhook.isActive ? 'Pause' : 'Activate'}
+                      {webhook.isActive ? 'Pause' : 'Resume'}
                     </Button>
 
                     <Button
@@ -407,21 +438,26 @@ export const ProjectWebhooksTab: React.FC<ProjectWebhooksTabProps> = ({ projectI
                   ))}
 
                   <div className="ml-auto flex items-center gap-3 text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
-                    <button
-                      onClick={() => handleCopySecret(webhook)}
-                      className="inline-flex items-center gap-1 hover:text-[var(--md-sys-color-primary)] cursor-pointer"
-                    >
-                      {copiedSecretId === webhook.id ? (
-                        <Check className="w-3 h-3 text-[var(--md-sys-color-success)]" />
-                      ) : (
-                        <Copy className="w-3 h-3" />
-                      )}
-                      <span>
+                    {!(webhook as any).format || (webhook as any).format === 'generic' ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="xs"
+                        onClick={() => handleCopySecret(webhook)}
+                        leftIcon={
+                          copiedSecretId === webhook.id ? (
+                            <Check className="w-3 h-3 text-[var(--md-sys-color-success)]" />
+                          ) : (
+                            <Copy className="w-3 h-3" />
+                          )
+                        }
+                        className="text-[11px] h-auto py-1 px-2 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)]"
+                      >
                         {copiedSecretId === webhook.id
                           ? 'Secret Copied'
                           : webhook.maskedSecret || 'Copy Secret'}
-                      </span>
-                    </button>
+                      </Button>
+                    ) : null}
 
                     {webhook.lastTriggeredAt && (
                       <span>
@@ -471,7 +507,7 @@ export const ProjectWebhooksTab: React.FC<ProjectWebhooksTabProps> = ({ projectI
                     </span>
                   </div>
                 )}
-              </div>
+              </Card>
             );
           })}
         </div>
@@ -482,7 +518,7 @@ export const ProjectWebhooksTab: React.FC<ProjectWebhooksTabProps> = ({ projectI
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={editingWebhook ? 'Edit Webhook Configuration' : 'Register Outbound Webhook'}
-        description="BugTracker dispatches real-time HMAC-signed POST requests when project events trigger."
+        description="BugTracker dispatches real-time events to external webhooks, chat systems, or CI pipelines."
         size="lg"
       >
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -498,58 +534,107 @@ export const ProjectWebhooksTab: React.FC<ProjectWebhooksTabProps> = ({ projectI
               label="Webhook Name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. CI/CD Release Pipeline or Slack Notifications"
+              placeholder="e.g. CI/CD Pipeline, Discord Alerts, or Slack Channel"
               required
             />
+
+            {/* Platform Preset Selector */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
+                Payload Format & Platform Preset
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: 'generic' as const, label: 'Generic JSON', sub: 'Standard HMAC' },
+                  { id: 'discord' as const, label: 'Discord', sub: 'Rich Embeds' },
+                  { id: 'slack' as const, label: 'Slack', sub: 'Attachments' },
+                ].map((opt) => (
+                  <button
+                    type="button"
+                    key={opt.id}
+                    onClick={() => setFormat(opt.id)}
+                    className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
+                      format === opt.id
+                        ? 'bg-[var(--md-sys-color-primary-container)]/30 border-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-surface)] shadow-2xs font-bold'
+                        : 'bg-[var(--md-sys-color-surface-container)] border-[var(--md-sys-color-outline-variant)]/20 text-[var(--md-sys-color-on-surface-variant)] hover:border-[var(--md-sys-color-outline)]'
+                    }`}
+                  >
+                    <span className="block text-xs font-bold">{opt.label}</span>
+                    <span className="block text-[10px] opacity-75">{opt.sub}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
 
             <Input
               label="Endpoint URL"
               value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://example.com/api/v1/webhook"
+              onChange={(e) => handleUrlChange(e.target.value)}
+              placeholder={
+                format === 'discord'
+                  ? 'https://discord.com/api/webhooks/...'
+                  : format === 'slack'
+                  ? 'https://hooks.slack.com/services/...'
+                  : 'https://example.com/api/v1/webhook'
+              }
               type="url"
               required
             />
 
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
-                  HMAC Signing Secret
-                </label>
-                <button
-                  type="button"
-                  onClick={generateRandomSecret}
-                  className="text-xs font-semibold text-[var(--md-sys-color-primary)] hover:underline flex items-center gap-1 cursor-pointer"
-                >
-                  <RefreshCw className="w-3 h-3" />
-                  <span>Generate New Secret</span>
-                </button>
+            {format === 'generic' ? (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
+                    HMAC Signing Secret
+                  </label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="xs"
+                    onClick={generateRandomSecret}
+                    leftIcon={<RefreshCw className="w-3 h-3" />}
+                    className="text-xs font-semibold text-[var(--md-sys-color-primary)]"
+                  >
+                    Generate New Secret
+                  </Button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="text"
+                    value={secret}
+                    onChange={(e) => setSecret(e.target.value)}
+                    placeholder="whsec_..."
+                    className="text-xs font-mono flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outlined"
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(secret);
+                      setFormError(null);
+                    }}
+                    leftIcon={<Copy className="w-3.5 h-3.5" />}
+                    title="Copy secret"
+                  >
+                    Copy
+                  </Button>
+                </div>
+                <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] flex items-center gap-1 mt-1">
+                  <Shield className="w-3 h-3 text-[var(--md-sys-color-primary)]" />
+                  <span>The request signature is sent in the X-BugTracker-Signature header.</span>
+                </p>
               </div>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={secret}
-                  onChange={(e) => setSecret(e.target.value)}
-                  placeholder="whsec_..."
-                  className="w-full h-10 px-3.5 pr-10 rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)]/40 text-xs font-mono text-[var(--md-sys-color-on-surface)] focus:border-[var(--md-sys-color-primary)] focus:outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard.writeText(secret);
-                    setFormError(null);
-                  }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--md-sys-color-outline)] hover:text-[var(--md-sys-color-on-surface)] cursor-pointer"
-                  title="Copy secret"
-                >
-                  <Copy className="w-4 h-4" />
-                </button>
+            ) : (
+              <div className="p-3 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/30 text-xs text-[var(--md-sys-color-on-surface-variant)] flex items-start gap-2.5">
+                <Shield className="w-4 h-4 shrink-0 text-[var(--md-sys-color-primary)] mt-0.5" />
+                <span>
+                  {format === 'discord'
+                    ? 'Discord incoming webhooks authenticate using the secret token embedded in the webhook URL. Event payloads are automatically formatted into Discord rich embeds.'
+                    : 'Slack incoming webhooks authenticate using the secret token in the webhook URL. Event payloads are automatically formatted into native Slack attachments.'}
+                </span>
               </div>
-              <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] flex items-center gap-1 mt-1">
-                <Shield className="w-3 h-3 text-[var(--md-sys-color-primary)]" />
-                <span>The request signature is sent in the X-BugTracker-Signature header.</span>
-              </p>
-            </div>
+            )}
 
             {/* Event Topics Selection */}
             <div className="space-y-2">

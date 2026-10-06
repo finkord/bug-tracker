@@ -6,6 +6,7 @@ import {
   IsArray,
   IsBoolean,
   IsUrl,
+  IsEnum,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -20,6 +21,16 @@ export class CreateWebhookDto {
   @IsUrl({ require_tld: false, require_protocol: true }, { message: 'URL must be a valid HTTP or HTTPS address' })
   @IsNotEmpty()
   url: string;
+
+  @ApiPropertyOptional({
+    example: 'generic',
+    description: 'Payload format type (generic, discord, slack). Auto-detected from URL if omitted.',
+    enum: ['generic', 'discord', 'slack'],
+    default: 'generic',
+  })
+  @IsOptional()
+  @IsEnum(['generic', 'discord', 'slack'])
+  format?: 'generic' | 'discord' | 'slack';
 
   @ApiPropertyOptional({ example: 'whsec_a1b2c3d4e5f6', description: 'HMAC signature secret. Auto-generated if omitted.' })
   @IsOptional()

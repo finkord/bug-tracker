@@ -187,7 +187,7 @@ describe('LocalAuthService', () => {
   });
 
   describe('login', () => {
-    it('should throw UnauthorizedException when user does not exist', async () => {
+    it('should throw UnauthorizedException and record rate limit attempt when user does not exist', async () => {
       // Arrange
       const inputDto: LoginDto = {
         email: 'unknown@company.com',
@@ -199,6 +199,7 @@ describe('LocalAuthService', () => {
       await expect(service.login(inputDto, '127.0.0.1')).rejects.toThrow(
         UnauthorizedException,
       );
+      expect(mockLoginRateLimiter.recordFailedAttempt).toHaveBeenCalledWith('unknown@company.com');
     });
 
     it('should throw UnauthorizedException when account is blocked', async () => {

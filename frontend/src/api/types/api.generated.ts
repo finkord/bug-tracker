@@ -924,7 +924,8 @@ export interface paths {
         delete: operations["ProjectsController_deleteComponent"];
         options?: never;
         head?: never;
-        patch?: never;
+        /** Update project component */
+        patch: operations["ProjectsController_updateComponent"];
         trace?: never;
     };
     "/api/v1/projects/{id}/versions": {
@@ -2280,29 +2281,39 @@ export interface components {
              * @description Temporary 2FA challenge token returned from initial login step
              * @example eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
              */
-            tempToken: string;
+            tempToken?: string;
+            /**
+             * @description Alias for tempToken (legacy / mobile client compatibility)
+             * @example eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+             */
+            challengeToken?: string;
             /**
              * @description 6-digit time-based one-time passcode from authenticator app
              * @example 123456
              */
-            code: string;
+            code?: string;
+            /**
+             * @description Alias for code (legacy / mobile client compatibility)
+             * @example 123456
+             */
+            totpCode?: string;
         };
         Enable2faDto: {
             /**
              * @description 6-digit confirmation code from authenticator app to enable 2FA
              * @example 123456
              */
-            code: string;
-            /**
-             * @description TOTP base32 secret if provided during activation
-             * @example JBSWY3DPEHPK3PXP
-             */
-            secret?: string;
+            code?: string;
             /**
              * @description Alias for code for legacy clients
              * @example 123456
              */
             totpCode?: string;
+            /**
+             * @description TOTP base32 secret if provided during activation
+             * @example JBSWY3DPEHPK3PXP
+             */
+            secret?: string;
         };
         ForgotPasswordDto: {
             /**
@@ -2489,6 +2500,14 @@ export interface components {
              * @example 1
              */
             leadId?: number;
+        };
+        UpdateComponentDto: {
+            /** @description Updated component name */
+            name?: string;
+            /** @description Updated description */
+            description?: string;
+            /** @description Updated lead user ID */
+            leadId?: Record<string, never>;
         };
         CreateProjectVersionDto: {
             /** @example v1.0.0 */
@@ -2922,6 +2941,13 @@ export interface components {
              */
             url: string;
             /**
+             * @description Payload format type (generic, discord, slack). Auto-detected from URL if omitted.
+             * @default generic
+             * @example generic
+             * @enum {string}
+             */
+            format: "generic" | "discord" | "slack";
+            /**
              * @description HMAC signature secret. Auto-generated if omitted.
              * @example whsec_a1b2c3d4e5f6
              */
@@ -2965,6 +2991,11 @@ export interface components {
             events: string[];
             /** @example true */
             isActive: boolean;
+            /**
+             * @example generic
+             * @enum {string}
+             */
+            format: "generic" | "discord" | "slack";
             /** @example 2026-10-02T10:00:00Z */
             lastTriggeredAt?: Record<string, never>;
             /** @example 0 */
@@ -2987,6 +3018,13 @@ export interface components {
              * @example https://hooks.slack.com/services/T00/B00/XXXX
              */
             url?: string;
+            /**
+             * @description Payload format type (generic, discord, slack). Auto-detected from URL if omitted.
+             * @default generic
+             * @example generic
+             * @enum {string}
+             */
+            format: "generic" | "discord" | "slack";
             /**
              * @description HMAC signature secret. Auto-generated if omitted.
              * @example whsec_a1b2c3d4e5f6
@@ -4487,6 +4525,30 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ProjectsController_updateComponent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                componentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateComponentDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {

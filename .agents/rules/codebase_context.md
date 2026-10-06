@@ -38,6 +38,13 @@ on the BugTracker codebase.
   - **Tables**: FORBIDDEN to hand-craft HTML tables, custom pagination loops, column resizing, or manual virtualizers. MANDATORY: Always use `<DataTable>` from `src/components/ui/DataTable.tsx` (`@tanstack/react-table` + `@tanstack/react-virtual`).
   - **Drag and Drop**: FORBIDDEN to create custom pointer/touch listeners, `requestAnimationFrame` drag loops, manual coordinate math, or custom drag overlays. MANDATORY: Always use `@dnd-kit/core`, `@dnd-kit/sortable`, and `@dnd-kit/utilities` validated against backend FSM workflow transitions (`src/utils/workflowTransitions.ts`).
   - **API Contract & Typing**: FORBIDDEN to hand-write or manually duplicate backend DTOs/schemas into arbitrary frontend interfaces. MANDATORY: Always bind directly to auto-generated OpenAPI contracts in `src/api/types/api.generated.ts` (`components['schemas']`, `paths`, `operations`). Run `npm run api:sync` whenever backend DTOs change.
+- **Authentication & Security Standards (OWASP & RFC 6749)**:
+  - Access Token lifespan: strictly **15 minutes (`15m`)** signed with `JWT_SECRET` and tagged `token_type: 'access'`.
+  - Refresh Token lifespan: strictly **7 days (`7d`)** signed with `JWT_REFRESH_SECRET` and tagged `token_type: 'refresh'`.
+  - Token endpoint returns RFC 6749 compliant format (`tokenType: 'Bearer'`, `expiresIn: 900`).
+  - Zero-Backdoor Security Guarantee: Production code contains zero hardcoded bypass strings or magic tokens (no `valid-captcha-token` or `bypass-*`). Tests use isolated mocks in `*.spec.ts` or Cloudflare official testing keys.
+  - Side-Channel Timing & Credential Enumeration Defense: Non-existent accounts execute constant-time dummy Argon2id hash verification (`DUMMY_ARGON2_HASH`) and increment Redis rate limit counters.
+  - 2FA Brute-Force Rate Limiting: 6-digit TOTP verification is rate-limited via `LoginRateLimiterService` in Redis (5 failed attempts trigger 15-minute lockout).
 - UI colours → **only** `var(--md-sys-color-*)` tokens from `src/index.css`. Never raw Tailwind palette classes.
 - Authorization → enforced at the **backend HTTP boundary** (guards on every mutating endpoint).
 - Never browse `node_modules/`, `dist/`, `.git/`, or `*.lock` files — they are quota sinks.

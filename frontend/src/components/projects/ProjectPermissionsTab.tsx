@@ -8,8 +8,19 @@ import {
   useRemoveActorFromProjectRoleMutation,
   useAssignPermissionSchemeToProjectMutation,
 } from '../../api/queries';
-import { Button, Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../ui';
-import { Avatar } from '../common/Avatar';
+import {
+  Card,
+  Button,
+  Badge,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+  UserPicker,
+  Modal,
+} from '../ui';
+import { UserIdentity } from '../common/UserIdentity';
 import {
   Shield,
   UserPlus,
@@ -18,6 +29,7 @@ import {
   AlertCircle,
   Building2,
   FileCheck2,
+  Users,
 } from 'lucide-react';
 
 interface ProjectPermissionsTabProps {
@@ -42,20 +54,40 @@ export const ProjectPermissionsTab: React.FC<ProjectPermissionsTabProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Add actor modal/form state
-  const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null);
+  // Assign member modal state
+  const [assignModalRole, setAssignModalRole] = useState<{ id: number; name: string } | null>(null);
   const [actorType, setActorType] = useState<'USER' | 'GROUP'>('USER');
   const [selectedUserId, setSelectedUserId] = useState<number | ''>('');
   const [selectedGroupId, setSelectedGroupId] = useState<number | ''>('');
+  const [isAssigning, setIsAssigning] = useState(false);
 
-  const handleAddActor = async (roleId: number) => {
-    if (actorType === 'USER' && !selectedUserId) return;
-    if (actorType === 'GROUP' && !selectedGroupId) return;
+  const handleOpenAssignModal = (roleId: number, roleName: string) => {
+    setAssignModalRole({ id: roleId, name: roleName });
+    setActorType('USER');
+    setSelectedUserId('');
+    setSelectedGroupId('');
+    setError(null);
+  };
+
+  const handleAddActor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!assignModalRole) return;
+    if (actorType === 'USER' && !selectedUserId) {
+      setError('Please choose an engineer to assign');
+      return;
+    }
+    if (actorType === 'GROUP' && !selectedGroupId) {
+      setError('Please choose a directory group to assign');
+      return;
+    }
+
+    setIsAssigning(true);
+    setError(null);
 
     try {
       await addActorMutation.mutateAsync({
         projectId,
-        roleId,
+        roleId: assignModalRole.id,
         payload: {
           actorType,
           userId: actorType === 'USER' ? Number(selectedUserId) : undefined,
@@ -63,20 +95,22 @@ export const ProjectPermissionsTab: React.FC<ProjectPermissionsTabProps> = ({
         },
       });
 
-      setSuccessMsg('Member assigned to role successfully.');
-      setSelectedRoleId(null);
+      setSuccessMsg(`Assigned to ${assignModalRole.name} successfully.`);
+      setAssignModalRole(null);
       setSelectedUserId('');
       setSelectedGroupId('');
       setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to assign actor to role');
+    } finally {
+      setIsAssigning(false);
     }
   };
 
   const handleRemoveActor = async (roleId: number, actorId: number) => {
     try {
       await removeActorMutation.mutateAsync({ projectId, roleId, actorId });
-      setSuccessMsg('Member removed from role.');
+      setSuccessMsg('Member assignment removed.');
       setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to remove member');
@@ -112,7 +146,11 @@ export const ProjectPermissionsTab: React.FC<ProjectPermissionsTabProps> = ({
             <AlertCircle className="w-4 h-4 shrink-0 text-[var(--md-sys-color-error)]" />
             <span>{error}</span>
           </div>
-          <button onClick={() => setError(null)} className="text-xs font-bold hover:underline cursor-pointer">
+          <button
+            type="button"
+            onClick={() => setError(null)}
+            className="text-xs font-bold hover:underline cursor-pointer"
+          >
             Dismiss
           </button>
         </div>
@@ -124,29 +162,38 @@ export const ProjectPermissionsTab: React.FC<ProjectPermissionsTabProps> = ({
             <CheckCircle2 className="w-4 h-4 shrink-0 text-[var(--md-sys-color-success,rgb(16,185,129))]" />
             <span>{successMsg}</span>
           </div>
-          <button onClick={() => setSuccessMsg(null)} className="text-xs font-bold hover:underline cursor-pointer">
+          <button
+            type="button"
+            onClick={() => setSuccessMsg(null)}
+            className="text-xs font-bold hover:underline cursor-pointer"
+          >
             Dismiss
           </button>
         </div>
       )}
 
       {/* Permission Scheme Selector Banner */}
-      <div className="p-4 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <Card
+        variant="outlined"
+        padding="md"
+        rounded="2xl"
+        className="bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+      >
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] flex items-center justify-center shrink-0">
-            <FileCheck2 className="w-4 h-4" />
+          <div className="w-10 h-10 rounded-xl bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] flex items-center justify-center shrink-0">
+            <FileCheck2 className="w-5 h-5" />
           </div>
           <div>
             <h3 className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">
               Active Permission Scheme
             </h3>
             <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
-              Controls operations (Browse, Create, Edit, Log Work, Transition) for this project.
+              Enforces authorization rules (Browse Project, Create Issue, Edit, Transition) across project roles.
             </p>
           </div>
         </div>
 
-        <div className="w-full sm:w-72">
+        <div className="w-full sm:w-72 shrink-0">
           <Select
             value={project.permissionSchemeId ? String(project.permissionSchemeId) : ''}
             onValueChange={(val) => val && handleSchemeChange(Number(val))}
@@ -163,13 +210,13 @@ export const ProjectPermissionsTab: React.FC<ProjectPermissionsTabProps> = ({
             </SelectContent>
           </Select>
         </div>
-      </div>
+      </Card>
 
-      {/* Project Roles & Members Table */}
+      {/* Project Roles & Members Cards */}
       <div className="space-y-4">
         {peopleLoading ? (
           <div className="space-y-3">
-            {[1, 2].map((i) => (
+            {[1, 2, 3].map((i) => (
               <div
                 key={i}
                 className="h-32 rounded-2xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/40 animate-pulse"
@@ -178,13 +225,17 @@ export const ProjectPermissionsTab: React.FC<ProjectPermissionsTabProps> = ({
           </div>
         ) : (
           people.map((roleGroup) => (
-            <div
+            <Card
               key={roleGroup.roleId}
-              className="p-5 rounded-2xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/40 space-y-4"
+              variant="outlined"
+              padding="lg"
+              rounded="2xl"
+              className="bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/40 space-y-4 shadow-xs"
             >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--md-sys-color-outline-variant)]/20 pb-3">
+              {/* Role Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--md-sys-color-outline-variant)]/20 pb-3.5">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-primary)] flex items-center justify-center font-bold text-xs">
+                  <div className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-primary)] flex items-center justify-center font-bold text-xs">
                     <Building2 className="w-4 h-4" />
                   </div>
                   <div>
@@ -192,9 +243,9 @@ export const ProjectPermissionsTab: React.FC<ProjectPermissionsTabProps> = ({
                       <h3 className="text-sm font-black text-[var(--md-sys-color-on-surface)]">
                         {roleGroup.roleName}
                       </h3>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--md-sys-color-surface-container-highest)] font-mono font-bold">
+                      <Badge variant="neutral" size="sm">
                         {roleGroup.users.length} Users, {roleGroup.groups.length} Groups
-                      </span>
+                      </Badge>
                     </div>
                     <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] mt-0.5">
                       {roleGroup.description}
@@ -205,168 +256,82 @@ export const ProjectPermissionsTab: React.FC<ProjectPermissionsTabProps> = ({
                 <Button
                   variant="outline"
                   size="xs"
-                  onClick={() => setSelectedRoleId(selectedRoleId === roleGroup.roleId ? null : roleGroup.roleId)}
+                  onClick={() => handleOpenAssignModal(roleGroup.roleId, roleGroup.roleName)}
                   leftIcon={<UserPlus className="w-3.5 h-3.5" />}
                 >
                   Assign Member
                 </Button>
               </div>
 
-              {/* Add Member Form for this role */}
-              {selectedRoleId === roleGroup.roleId && (
-                <div className="p-3.5 rounded-xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/30 space-y-3">
-                  <p className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">
-                    Assign User or Group to <span className="text-[var(--md-sys-color-primary)]">{roleGroup.roleName}</span>
-                  </p>
-
-                  <div className="flex flex-wrap items-center gap-3">
-                    <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)]/30 text-xs">
-                      <button
-                        type="button"
-                        onClick={() => setActorType('USER')}
-                        className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
-                          actorType === 'USER'
-                            ? 'bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)]'
-                            : 'text-[var(--md-sys-color-on-surface-variant)]'
-                        }`}
-                      >
-                        Individual Engineer
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setActorType('GROUP')}
-                        className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
-                          actorType === 'GROUP'
-                            ? 'bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)]'
-                            : 'text-[var(--md-sys-color-on-surface-variant)]'
-                        }`}
-                      >
-                        Directory Group
-                      </button>
-                    </div>
-
-                    {actorType === 'USER' ? (
-                      <div className="w-56 sm:w-64">
-                        <Select
-                          value={selectedUserId ? String(selectedUserId) : ''}
-                          onValueChange={(val) => setSelectedUserId(val ? Number(val) : '')}
-                        >
-                          <SelectTrigger size="sm" className="h-9 text-xs rounded-xl bg-[var(--md-sys-color-surface)]">
-                            <SelectValue placeholder="Select engineer..." />
-                          </SelectTrigger>
-                          <SelectContent className="max-h-60">
-                            {allUsers.map((u) => (
-                              <SelectItem key={u.id} value={String(u.id)}>
-                                <span className="truncate">{u.fullName} ({u.email})</span>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    ) : (
-                      <div className="w-56 sm:w-64">
-                        <Select
-                          value={selectedGroupId ? String(selectedGroupId) : ''}
-                          onValueChange={(val) => setSelectedGroupId(val ? Number(val) : '')}
-                        >
-                          <SelectTrigger size="sm" className="h-9 text-xs rounded-xl bg-[var(--md-sys-color-surface)]">
-                            <SelectValue placeholder="Select directory group..." />
-                          </SelectTrigger>
-                          <SelectContent className="max-h-60">
-                            {allGroups.map((g) => (
-                              <SelectItem key={g.id} value={String(g.id)}>
-                                <span className="truncate">{g.name} ({g.description || 'Group'})</span>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-
-                    <Button
-                      variant="primary"
-                      size="xs"
-                      onClick={() => handleAddActor(roleGroup.roleId)}
-                    >
-                      Save Assignment
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="xs"
-                      onClick={() => setSelectedRoleId(null)}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* Members Chips / Grid */}
+              {/* Members Content */}
               <div className="space-y-3">
-                {/* Groups assigned */}
+                {/* Directory Groups */}
                 {roleGroup.groups.length > 0 && (
                   <div className="space-y-1.5">
-                    <span className="text-[10px] font-bold text-[var(--md-sys-color-outline)] uppercase">
+                    <span className="text-[10px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
                       Directory Groups
                     </span>
                     <div className="flex flex-wrap gap-2">
                       {roleGroup.groups.map((ga) => (
                         <div
                           key={ga.actorId}
-                          className="px-3 py-1.5 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/30 flex items-center gap-2 text-xs"
+                          className="px-3 py-1.5 rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)]/30 flex items-center gap-2 text-xs"
                         >
-                          <Shield className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
+                          <Shield className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)] shrink-0" />
                           <span className="font-bold text-[var(--md-sys-color-on-surface)]">
                             {ga.group.name}
                           </span>
-                          <button
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="xs"
                             onClick={() => handleRemoveActor(roleGroup.roleId, ga.actorId)}
-                            className="text-[var(--md-sys-color-outline)] hover:text-[var(--md-sys-color-error)] cursor-pointer"
+                            className="p-1 h-auto text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-error)]"
                             title="Remove group assignment"
                           >
                             <Trash2 className="w-3 h-3" />
-                          </button>
+                          </Button>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {/* Individual users */}
+                {/* Individual Engineers */}
                 {roleGroup.users.length > 0 && (
                   <div className="space-y-1.5">
-                    <span className="text-[10px] font-bold text-[var(--md-sys-color-outline)] uppercase">
+                    <span className="text-[10px] font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
                       Individual Engineers
                     </span>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
                       {roleGroup.users.map((ua) => (
                         <div
                           key={ua.actorId}
-                          className="p-2.5 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/20 flex items-center justify-between"
+                          className="p-2.5 rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)]/30 flex items-center justify-between gap-2"
                         >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <Avatar
-                              name={ua.user?.fullName || 'User'}
+                          <div className="min-w-0 flex-1">
+                            <UserIdentity
+                              userId={ua.user?.id || ua.userId}
+                              user={ua.user}
+                              name={ua.user?.fullName || `User #${ua.userId}`}
                               avatarUrl={ua.user?.avatarUrl}
-                              size="sm"
+                              email={ua.user?.email}
+                              size="xs"
+                              showName
+                              showEmail
                             />
-                            <div className="min-w-0">
-                              <p className="text-xs font-bold text-[var(--md-sys-color-on-surface)] truncate">
-                                {ua.user?.fullName || 'Assigned User'}
-                              </p>
-                              <p className="text-[10px] text-[var(--md-sys-color-on-surface-variant)] truncate">
-                                {ua.user?.email || ''}
-                              </p>
-                            </div>
                           </div>
 
-                          <button
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="xs"
                             onClick={() => handleRemoveActor(roleGroup.roleId, ua.actorId)}
-                            className="p-1 text-[var(--md-sys-color-outline)] hover:text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/30 rounded-xl transition-colors cursor-pointer"
+                            className="p-1 h-auto text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/30 shrink-0"
                             title="Remove user assignment"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          </Button>
                         </div>
                       ))}
                     </div>
@@ -375,14 +340,119 @@ export const ProjectPermissionsTab: React.FC<ProjectPermissionsTabProps> = ({
 
                 {roleGroup.users.length === 0 && roleGroup.groups.length === 0 && (
                   <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] italic">
-                    No members assigned to this role yet. Click "Assign Member" above.
+                    No members assigned to this role yet. Click "Assign Member" above to add engineers or groups.
                   </p>
                 )}
               </div>
-            </div>
+            </Card>
           ))
         )}
       </div>
+
+      {/* Assign Member Modal */}
+      <Modal
+        isOpen={Boolean(assignModalRole)}
+        onClose={() => setAssignModalRole(null)}
+        title={`Assign Member to ${assignModalRole?.name || 'Role'}`}
+        description="Select an individual engineer or a directory group to grant this project role."
+        size="md"
+      >
+        <form onSubmit={handleAddActor} className="space-y-4">
+          {error && (
+            <div className="p-3 rounded-xl bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Actor Type Toggle */}
+          <div>
+            <label className="block text-xs font-bold text-[var(--md-sys-color-on-surface)] mb-1.5">
+              Assignment Type
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant={actorType === 'USER' ? 'primary' : 'outlined'}
+                size="sm"
+                onClick={() => setActorType('USER')}
+                leftIcon={<Users className="w-3.5 h-3.5" />}
+                className="justify-center"
+              >
+                Individual Engineer
+              </Button>
+              <Button
+                type="button"
+                variant={actorType === 'GROUP' ? 'primary' : 'outlined'}
+                size="sm"
+                onClick={() => setActorType('GROUP')}
+                leftIcon={<Shield className="w-3.5 h-3.5" />}
+                className="justify-center"
+              >
+                Directory Group
+              </Button>
+            </div>
+          </div>
+
+          {/* Selector */}
+          {actorType === 'USER' ? (
+            <div>
+              <label className="block text-xs font-bold text-[var(--md-sys-color-on-surface)] mb-1">
+                Select Engineer <span className="text-[var(--md-sys-color-error)]">*</span>
+              </label>
+              <UserPicker
+                users={allUsers}
+                value={selectedUserId ? Number(selectedUserId) : null}
+                onChange={(userId) => setSelectedUserId(userId ?? '')}
+                placeholder="Choose engineer..."
+                showAssignToMe
+                className="w-full"
+              />
+            </div>
+          ) : (
+            <div>
+              <label className="block text-xs font-bold text-[var(--md-sys-color-on-surface)] mb-1">
+                Select Directory Group <span className="text-[var(--md-sys-color-error)]">*</span>
+              </label>
+              <Select
+                value={selectedGroupId ? String(selectedGroupId) : ''}
+                onValueChange={(val) => setSelectedGroupId(val ? Number(val) : '')}
+              >
+                <SelectTrigger size="sm" className="h-9 text-xs rounded-xl bg-[var(--md-sys-color-surface)]">
+                  <SelectValue placeholder="Choose directory group..." />
+                </SelectTrigger>
+                <SelectContent className="max-h-60">
+                  {allGroups.map((g) => (
+                    <SelectItem key={g.id} value={String(g.id)}>
+                      <span>{g.name} ({g.description || 'Group'})</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-[var(--md-sys-color-outline-variant)]/30">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setAssignModalRole(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              disabled={isAssigning}
+              leftIcon={<UserPlus className="w-3.5 h-3.5" />}
+            >
+              {isAssigning ? 'Assigning...' : 'Assign to Role'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

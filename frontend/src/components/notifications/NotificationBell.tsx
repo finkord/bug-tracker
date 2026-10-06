@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
   Bell,
+  BellRing,
   Check,
   Clock,
   CheckCheck,
@@ -21,55 +22,79 @@ import { notificationsApi } from '../../api/modules/notifications.api.js';
 import { realtimeSocket } from '../../api/socket.js';
 import type { NotificationItem, NotificationType } from '../../api/types/notifications.types.js';
 
+let sharedAudioCtx: AudioContext | null = null;
+
+function getAudioContext(): AudioContext | null {
+  if (typeof window === 'undefined') return null;
+  const AudioContextClass =
+    window.AudioContext ||
+    (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+  if (!AudioContextClass) return null;
+
+  if (!sharedAudioCtx || sharedAudioCtx.state === 'closed') {
+    sharedAudioCtx = new AudioContextClass();
+  }
+  return sharedAudioCtx;
+}
+
+// Unlock Web Audio context on the first user interaction
+if (typeof window !== 'undefined') {
+  const unlockAudio = () => {
+    const ctx = getAudioContext();
+    if (ctx && ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+  };
+  window.addEventListener('click', unlockAudio, { once: false });
+  window.addEventListener('keydown', unlockAudio, { once: false });
+}
+
 /**
  * Synthesizes a two-tone alert chime via Web Audio API without external audio asset downloads.
- * Tone 1: 587.33 Hz (D5) for 80ms
- * Tone 2: 880.00 Hz (A5) for 150ms with exponential gain decay
+ * Tone 1: 587.33 Hz (D5) for 90ms
+ * Tone 2: 880.00 Hz (A5) for 160ms with exponential gain decay
  */
 export function playNotificationChime(): void {
   try {
     const isSoundEnabled = localStorage.getItem('bugtracker_sound_alerts_enabled');
     if (isSoundEnabled === 'false') return;
 
-    const AudioContextClass =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    if (!AudioContextClass) return;
+    const ctx = getAudioContext();
+    if (!ctx) return;
 
-    const ctx = new AudioContextClass();
+    const executeTones = () => {
+      const now = ctx.currentTime;
+
+      // Tone 1: 587.33 Hz (D5) for 90ms
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(587.33, now);
+      gain1.gain.setValueAtTime(0.2, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.09);
+
+      // Tone 2: 880.00 Hz (A5) for 160ms starting at now + 0.09
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(880.00, now + 0.09);
+      gain2.gain.setValueAtTime(0.2, now + 0.09);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(now + 0.09);
+      osc2.stop(now + 0.25);
+    };
+
     if (ctx.state === 'suspended') {
-      ctx.resume().catch(() => {});
+      ctx.resume().then(executeTones).catch(() => {});
+    } else {
+      executeTones();
     }
-
-    const now = ctx.currentTime;
-
-    // Tone 1: 587.33 Hz (D5) for 80ms
-    const osc1 = ctx.createOscillator();
-    const gain1 = ctx.createGain();
-    osc1.type = 'sine';
-    osc1.frequency.setValueAtTime(587.33, now);
-    gain1.gain.setValueAtTime(0.12, now);
-    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
-    osc1.connect(gain1);
-    gain1.connect(ctx.destination);
-    osc1.start(now);
-    osc1.stop(now + 0.08);
-
-    // Tone 2: 880.00 Hz (A5) for 150ms starting at now + 0.08
-    const osc2 = ctx.createOscillator();
-    const gain2 = ctx.createGain();
-    osc2.type = 'sine';
-    osc2.frequency.setValueAtTime(880.00, now + 0.08);
-    gain2.gain.setValueAtTime(0.12, now + 0.08);
-    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.23);
-    osc2.connect(gain2);
-    gain2.connect(ctx.destination);
-    osc2.start(now + 0.08);
-    osc2.stop(now + 0.23);
-
-    setTimeout(() => {
-      ctx.close().catch(() => {});
-    }, 300);
   } catch {
     // Graceful fallback if AudioContext is blocked or unsupported
   }
@@ -82,16 +107,28 @@ export const NotificationBell: React.FC = () => {
   const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
     return localStorage.getItem('bugtracker_sound_alerts_enabled') !== 'false';
   });
+  const [isRinging, setIsRinging] = useState<boolean>(false);
+  const previousUnreadCountRef = useRef<number | null>(null);
+  const ringTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+
+  const triggerRingingAlert = () => {
+    setIsRinging(true);
+    playNotificationChime();
+    if (ringTimeoutRef.current) clearTimeout(ringTimeoutRef.current);
+    ringTimeoutRef.current = setTimeout(() => {
+      setIsRinging(false);
+    }, 1200);
+  };
 
   const toggleSound = () => {
     setSoundEnabled((prev) => {
       const next = !prev;
       localStorage.setItem('bugtracker_sound_alerts_enabled', String(next));
       if (next) {
-        playNotificationChime();
+        triggerRingingAlert();
       }
       return next;
     });
@@ -104,7 +141,21 @@ export const NotificationBell: React.FC = () => {
     refetchInterval: 30000,
   });
 
-  const unreadCount = countData?.unreadCount ?? 0;
+  const unreadCount = countData?.unreadCount ?? countData?.count ?? 0;
+
+  // Detect unread count increases from background polling and trigger audio/visual alert
+  useEffect(() => {
+    const rawCount = countData?.unreadCount ?? countData?.count;
+    if (rawCount !== undefined) {
+      if (
+        previousUnreadCountRef.current !== null &&
+        rawCount > previousUnreadCountRef.current
+      ) {
+        triggerRingingAlert();
+      }
+      previousUnreadCountRef.current = rawCount;
+    }
+  }, [countData]);
 
   // 2. Fetch notifications list
   const { data: notificationsData, isLoading } = useQuery({
@@ -115,14 +166,20 @@ export const NotificationBell: React.FC = () => {
 
   const notifications = notificationsData?.items ?? [];
 
-  // 3. Realtime socket listener with audio chime
+  // 3. Realtime socket listener with audio chime and ringing animation
   useEffect(() => {
     const unsubscribe = realtimeSocket.onNotificationNew(() => {
+      // Optimistically increment unread count immediately so the icon and badge update instantly
+      queryClient.setQueryData(['notifications', 'unread-count'], (old: any) => {
+        const current = old?.unreadCount ?? old?.count ?? 0;
+        return { count: current + 1, unreadCount: current + 1 };
+      });
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
-      playNotificationChime();
+      triggerRingingAlert();
     });
     return () => {
       unsubscribe();
+      if (ringTimeoutRef.current) clearTimeout(ringTimeoutRef.current);
     };
   }, [queryClient]);
 
@@ -263,18 +320,36 @@ export const NotificationBell: React.FC = () => {
     return `${diffDay}d ago`;
   };
 
+  const hasUnread = unreadCount > 0 || isRinging;
+
   return (
     <div className="relative inline-block text-left" ref={dropdownRef}>
       {/* Trigger Bell Button */}
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="relative w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer transition-colors border border-[var(--md-sys-color-outline-variant)]/30 bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]"
-        title="Inbox (Press I to toggle)"
+        className={`relative w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer transition-all border ${
+          hasUnread
+            ? 'border-[var(--md-sys-color-primary)]/50 bg-[var(--md-sys-color-primary-container)]/20 text-[var(--md-sys-color-primary)] hover:bg-[var(--md-sys-color-primary-container)]/30 shadow-2xs'
+            : 'border-[var(--md-sys-color-outline-variant)]/30 bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]'
+        }`}
+        title={
+          unreadCount > 0
+            ? `Inbox: ${unreadCount} unread ${unreadCount === 1 ? 'notification' : 'notifications'} (Press I to toggle)`
+            : 'Inbox (Press I to toggle)'
+        }
         aria-label="Notifications Inbox"
       >
-        <Bell className="w-4 h-4" />
-        {unreadCount > 0 && (
+        {hasUnread ? (
+          <BellRing
+            className={`w-4 h-4 text-[var(--md-sys-color-primary)] ${
+              isRinging ? 'animate-bell-ring' : ''
+            }`}
+          />
+        ) : (
+          <Bell className="w-4 h-4" />
+        )}
+        {hasUnread && (
           <>
             {/* Unread indicator red dot */}
             <span
@@ -283,7 +358,7 @@ export const NotificationBell: React.FC = () => {
             />
             {/* Badge counter */}
             <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[var(--md-sys-color-error)] text-[var(--md-sys-color-on-error)] text-[10px] font-bold flex items-center justify-center border-2 border-[var(--md-sys-color-surface)] shadow-xs animate-in zoom-in-75 duration-200">
-              {unreadCount > 99 ? '99+' : unreadCount}
+              {unreadCount > 99 ? '99+' : (unreadCount || 1)}
             </span>
           </>
         )}
@@ -299,7 +374,7 @@ export const NotificationBell: React.FC = () => {
                 Inbox
               </span>
               {unreadCount > 0 && (
-                <span className="px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)]">
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] shadow-2xs">
                   {unreadCount} unread
                 </span>
               )}
@@ -403,35 +478,52 @@ export const NotificationBell: React.FC = () => {
             ) : (
               notifications.map((item, idx) => {
                 const isFocused = idx === focusedIndex;
+                const isItemUnread = !item.isRead;
                 return (
                   <div
                     key={item.id}
                     onClick={() => handleItemClick(item)}
                     onMouseEnter={() => setFocusedIndex(idx)}
                     className={`group relative p-3 flex items-start gap-2.5 cursor-pointer transition-colors ${
+                      isItemUnread ? 'border-l-3 border-l-[var(--md-sys-color-primary)]' : ''
+                    } ${
                       isFocused
                         ? 'bg-[var(--md-sys-color-surface-container-highest)]'
-                        : item.isRead
-                          ? 'hover:bg-[var(--md-sys-color-surface-container-high)]/60'
-                          : 'bg-[var(--md-sys-color-surface-container-low)] hover:bg-[var(--md-sys-color-surface-container-high)]'
+                        : isItemUnread
+                          ? 'bg-[var(--md-sys-color-primary-container)]/10 hover:bg-[var(--md-sys-color-primary-container)]/20'
+                          : 'hover:bg-[var(--md-sys-color-surface-container-high)]/60'
                     }`}
                   >
-                    {/* Unread indicator */}
-                    {!item.isRead && (
-                      <span className="absolute left-1 top-4 w-1.5 h-1.5 rounded-full bg-[var(--md-sys-color-primary)]" />
-                    )}
-
                     {/* Icon or Avatar */}
-                    <div className="shrink-0 mt-0.5 w-7 h-7 rounded-lg bg-[var(--md-sys-color-surface-container-highest)] flex items-center justify-center border border-[var(--md-sys-color-outline-variant)]/20">
+                    <div
+                      className={`shrink-0 mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center border transition-colors ${
+                        isItemUnread
+                          ? 'bg-[var(--md-sys-color-primary-container)]/40 border-[var(--md-sys-color-primary)]/40 text-[var(--md-sys-color-primary)] shadow-2xs'
+                          : 'bg-[var(--md-sys-color-surface-container-highest)] border-[var(--md-sys-color-outline-variant)]/20 text-[var(--md-sys-color-on-surface-variant)]'
+                      }`}
+                    >
                       {getNotificationIcon(item.type)}
                     </div>
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-1">
-                        <span className={`text-xs truncate ${!item.isRead ? 'font-semibold text-[var(--md-sys-color-on-surface)]' : 'text-[var(--md-sys-color-on-surface-variant)]'}`}>
-                          {item.title}
-                        </span>
+                      <div className="flex items-center justify-between gap-1.5">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span
+                            className={`text-xs truncate ${
+                              isItemUnread
+                                ? 'font-bold text-[var(--md-sys-color-on-surface)]'
+                                : 'text-[var(--md-sys-color-on-surface-variant)]'
+                            }`}
+                          >
+                            {item.title}
+                          </span>
+                          {isItemUnread && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] uppercase tracking-wider shrink-0 leading-none">
+                              New
+                            </span>
+                          )}
+                        </div>
                         <span className="text-[10px] shrink-0 text-[var(--md-sys-color-outline)]">
                           {formatTimestamp(item.createdAt)}
                         </span>
@@ -443,7 +535,7 @@ export const NotificationBell: React.FC = () => {
 
                     {/* Action buttons (hover / focus) */}
                     <div className="shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {!item.isRead && (
+                      {isItemUnread && (
                         <button
                           type="button"
                           onClick={(e) => {

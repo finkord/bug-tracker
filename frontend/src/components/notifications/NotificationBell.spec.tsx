@@ -114,4 +114,13 @@ describe('NotificationBell Component', () => {
 
     expect(localStorage.getItem('bugtracker_sound_alerts_enabled')).toBe('true');
   });
+
+  it('renders standard Bell when unreadCount is 0', async () => {
+    vi.mocked(notificationsApi.getUnreadCount).mockResolvedValueOnce({ unreadCount: 0 });
+    renderComponent();
+
+    const bellBtn = await screen.findByLabelText('Notifications Inbox');
+    expect(bellBtn).toBeInTheDocument();
+    expect(screen.queryByText('3')).not.toBeInTheDocument();
+  });
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ProjectSettingsPage } from './ProjectSettingsPage';
 
@@ -108,6 +108,24 @@ vi.mock('../api/queries', () => ({
   useAddActorToProjectRoleMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useRemoveActorFromProjectRoleMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useAssignPermissionSchemeToProjectMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useProjectWebhooksQuery: () => ({
+    data: [
+      {
+        id: 1,
+        name: 'Deployment Ping',
+        url: 'https://example.com/wh',
+        format: 'generic',
+        events: ['*'],
+        isActive: true,
+        failureCount: 0,
+      },
+    ],
+    isLoading: false,
+  }),
+  useCreateWebhookMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useUpdateWebhookMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useDeleteWebhookMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useTestWebhookMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
 describe('ProjectSettingsPage', () => {
@@ -164,5 +182,31 @@ describe('ProjectSettingsPage', () => {
     expect(screen.getByRole('heading', { name: /People, Roles & Permission Scheme/i })).toBeInTheDocument();
     expect(screen.getByText(/Active Permission Scheme/i)).toBeInTheDocument();
     expect(screen.getByText('Administrators')).toBeInTheDocument();
+  });
+
+  it('renders project header with entity avatar, key badge, and project lead', () => {
+    render(
+      <MemoryRouter initialEntries={['/projects/1/settings']}>
+        <Routes>
+          <Route path="/projects/:id/settings" element={<ProjectSettingsPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('heading', { name: /BugTracker Core/i })).toBeInTheDocument();
+    expect(screen.getByText(/Lead: Chief Architect/i)).toBeInTheDocument();
+  });
+
+  it('navigates via sub-path URL to webhooks tab', () => {
+    render(
+      <MemoryRouter initialEntries={['/projects/1/settings/webhooks']}>
+        <Routes>
+          <Route path="/projects/:id/settings/:tab" element={<ProjectSettingsPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('heading', { name: /Outbound Webhooks/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /New Webhook/i })).toBeInTheDocument();
   });
 });

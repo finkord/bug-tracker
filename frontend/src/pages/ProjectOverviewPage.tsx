@@ -4,14 +4,17 @@ import {
   useProjectsQuery,
   useIssuesQuery,
   useProjectSprintsQuery,
+  useTeamsQuery,
+  useProjectComponentsQuery,
+  useProjectVersionsQuery,
   useAssignIssueToMeMutation,
   useUpdateIssueStatusMutation,
 } from '../api/queries';
 import { IssueDetailsModal } from '../components/kanban/IssueDetailsModal';
 import { IssueContextMenu } from '../components/common/IssueContextMenu';
 import { ProjectReleasesModal } from '../components/releases/ProjectReleasesModal';
-import { Avatar } from '../components/common/Avatar';
-import { Badge, EntityAvatar } from '../components/ui/index.js';
+import { UserIdentity } from '../components/common/UserIdentity';
+import { Card, Button, Badge, EntityAvatar } from '../components/ui/index.js';
 import { NotFoundPage } from './NotFoundPage';
 import { useAuth } from '../store';
 import type { IssueItem, IssuePriority, IssueStatus, SprintItem } from '../api/client';
@@ -26,6 +29,11 @@ import {
   Activity,
   Flame,
   Tag,
+  Users2,
+  FolderTree,
+  ChevronRight,
+  Shield,
+  Search,
 } from 'lucide-react';
 
 const mapPriorityVariant = (
@@ -86,7 +94,7 @@ export const ProjectOverviewPage: React.FC = () => {
     try {
       await assignMutation.mutateAsync(issueId);
     } catch {
-      // Ignored
+      // Handled by query mutation state
     }
   };
 
@@ -94,7 +102,7 @@ export const ProjectOverviewPage: React.FC = () => {
     try {
       await updateStatusMutation.mutateAsync({ issueId, status });
     } catch {
-      // Ignored
+      // Handled by query mutation state
     }
   };
 
@@ -118,8 +126,16 @@ export const ProjectOverviewPage: React.FC = () => {
     effectiveProjectId ? { projectId: effectiveProjectId, limit: 50 } : undefined,
   );
 
-  // Sprints query
+  // Sprints, Teams, Components, Versions queries
   const { data: sprints = [] } = useProjectSprintsQuery(effectiveProjectId);
+  const { data: teams = [] } = useTeamsQuery(effectiveProjectId);
+  const { data: components = [] } = useProjectComponentsQuery(effectiveProjectId);
+  const { data: versions = [] } = useProjectVersionsQuery(effectiveProjectId);
+
+  const unreleasedVersions = useMemo(
+    () => versions.filter((v) => v.status === 'UNRELEASED'),
+    [versions],
+  );
 
   const issues = issuesData?.items ?? [];
 
@@ -143,7 +159,7 @@ export const ProjectOverviewPage: React.FC = () => {
 
   if (projectsLoading) {
     return (
-      <div className="w-full p-8 flex items-center justify-center text-sm text-[var(--md-sys-color-on-surface-variant)]">
+      <div className="w-full p-12 flex items-center justify-center text-xs text-[var(--md-sys-color-on-surface-variant)] animate-pulse">
         Loading project overview...
       </div>
     );
@@ -163,94 +179,117 @@ export const ProjectOverviewPage: React.FC = () => {
   return (
     <div className="w-full px-4 sm:px-6 lg:px-8 py-5 flex-1 flex flex-col min-w-0 space-y-6 animate-in fade-in duration-200">
       {/* ─── Hero Header Card ─── */}
-      <div className="p-5 sm:p-6 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/25 shadow-2xs space-y-4">
+      <Card
+        variant="outlined"
+        padding="lg"
+        rounded="2xl"
+        className="bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/30 shadow-2xs space-y-4"
+      >
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex items-start gap-3.5 min-w-0 flex-1">
+          <div className="flex items-start gap-4 min-w-0 flex-1">
             <EntityAvatar
               name={project?.name || ''}
               projectKey={project?.key}
               avatarUrl={project?.avatarUrl}
               size="lg"
             />
-            <div className="space-y-1 min-w-0">
+            <div className="space-y-1.5 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="font-mono text-xs font-bold text-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/40 px-2 py-0.5 rounded-lg">
+                <Badge variant="neutral" size="sm" className="font-mono uppercase font-bold tracking-wider">
                   {project?.key}
-                </span>
+                </Badge>
                 <span className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
                   Created {project?.createdAt ? new Date(project.createdAt).toLocaleDateString() : 'Recently'}
                 </span>
               </div>
-              <h1 className="text-xl sm:text-2xl font-bold text-[var(--md-sys-color-on-surface)] tracking-tight">
+              <h1 className="text-xl sm:text-2xl font-black text-[var(--md-sys-color-on-surface)] tracking-tight">
                 {project?.name}
               </h1>
               <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] leading-relaxed max-w-2xl">
-                {project?.description || 'No description provided for this project.'}
+                {project?.description || 'No description provided for this project workspace.'}
               </p>
             </div>
           </div>
 
           {/* Quick Jump Buttons */}
-          <div className="flex items-center gap-2 shrink-0">
-            <Link
-              to={`/projects/${projectKey}/board`}
-              className="px-3 py-1.5 rounded-xl bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] hover:brightness-110 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs"
-            >
-              <Kanban className="w-3.5 h-3.5" />
-              <span>Board</span>
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <Link to={`/projects/${projectKey}/board`}>
+              <Button
+                variant="primary"
+                size="sm"
+                leftIcon={<Kanban className="w-3.5 h-3.5" />}
+              >
+                Board
+              </Button>
             </Link>
-            <Link
-              to={`/projects/${projectKey}/backlog`}
-              className="px-3 py-1.5 rounded-xl bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-on-surface)] text-xs font-semibold flex items-center gap-1.5 border border-[var(--md-sys-color-outline-variant)]/25 transition-colors"
-            >
-              <Layers className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
-              <span>Backlog</span>
+            <Link to={`/projects/${projectKey}/backlog`}>
+              <Button
+                variant="outlined"
+                size="sm"
+                leftIcon={<Layers className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />}
+              >
+                Backlog
+              </Button>
             </Link>
-            <button
+            <Button
               type="button"
+              variant="outlined"
+              size="sm"
               onClick={() => setIsReleasesOpen(true)}
-              className="px-3 py-1.5 rounded-xl bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-on-surface)] text-xs font-semibold flex items-center gap-1.5 border border-[var(--md-sys-color-outline-variant)]/25 transition-colors cursor-pointer"
+              leftIcon={<Tag className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />}
             >
-              <Tag className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
-              <span>Releases</span>
-            </button>
-            <Link
-              to={`/projects/${projectKey}/settings`}
-              className="p-1.5 rounded-xl bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] text-xs font-semibold border border-[var(--md-sys-color-outline-variant)]/25 transition-colors"
-              title="Project Settings"
-            >
-              <Settings className="w-4 h-4" />
+              Releases
+            </Button>
+            <Link to={`/projects/${projectKey}/settings`}>
+              <Button
+                variant="ghost"
+                size="sm"
+                leftIcon={<Settings className="w-3.5 h-3.5" />}
+                title="Project Settings"
+              >
+                Settings
+              </Button>
             </Link>
           </div>
         </div>
 
         {/* Lead and Collaborators Strip */}
-        <div className="flex flex-wrap items-center gap-4 pt-3 border-t border-[var(--md-sys-color-outline-variant)]/15 text-xs text-[var(--md-sys-color-on-surface-variant)]">
+        <div className="flex flex-wrap items-center gap-4 pt-3.5 border-t border-[var(--md-sys-color-outline-variant)]/20 text-xs text-[var(--md-sys-color-on-surface-variant)]">
           <div className="flex items-center gap-2">
-            <span className="font-semibold text-[var(--md-sys-color-on-surface)]">Lead:</span>
+            <span className="font-bold text-[var(--md-sys-color-on-surface)]">Lead:</span>
             {project?.lead ? (
-              <div className="flex items-center gap-1.5">
-                <Avatar name={project.lead.fullName || project.lead.email} size="sm" />
-                <span className="font-medium text-[var(--md-sys-color-on-surface)]">{project.lead.fullName}</span>
-                <span className="text-[11px] opacity-70">({project.lead.email})</span>
-              </div>
+              <UserIdentity
+                userId={project.lead.id}
+                user={project.lead}
+                name={project.lead.fullName || project.lead.email}
+                avatarUrl={project.lead.avatarUrl}
+                email={project.lead.email}
+                size="xs"
+                showName
+                showEmail
+              />
             ) : (
               <span className="italic opacity-60">Unassigned</span>
             )}
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* ─── High-Level Progress & Health Grid ─── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Issue Progress Meter */}
-        <div className="p-4 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/25 space-y-2.5">
+        <Card
+          variant="outlined"
+          padding="md"
+          rounded="2xl"
+          className="bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/30 space-y-2.5 shadow-2xs"
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-[var(--md-sys-color-on-surface)] flex items-center gap-1.5">
               <CheckCircle2 className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
               <span>Completion Rate</span>
             </span>
-            <span className="font-mono text-sm font-bold text-[var(--md-sys-color-primary)]">
+            <span className="font-mono text-sm font-black text-[var(--md-sys-color-primary)]">
               {completionPercent}%
             </span>
           </div>
@@ -264,16 +303,21 @@ export const ProjectOverviewPage: React.FC = () => {
             <span>{resolvedIssues} of {totalIssues} completed</span>
             <span>{openIssues} to do • {inProgressIssues} in progress</span>
           </div>
-        </div>
+        </Card>
 
         {/* Time Tracking Meter */}
-        <div className="p-4 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/25 space-y-2.5">
+        <Card
+          variant="outlined"
+          padding="md"
+          rounded="2xl"
+          className="bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/30 space-y-2.5 shadow-2xs"
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-[var(--md-sys-color-on-surface)] flex items-center gap-1.5">
               <Clock className="w-4 h-4 text-[var(--md-sys-color-tertiary)]" />
               <span>Time Logged</span>
             </span>
-            <span className="font-mono text-sm font-bold text-[var(--md-sys-color-tertiary)]">
+            <span className="font-mono text-sm font-black text-[var(--md-sys-color-tertiary)]">
               {totalLoggedHours}h / {totalEstimatedHours}h
             </span>
           </div>
@@ -291,10 +335,15 @@ export const ProjectOverviewPage: React.FC = () => {
               {totalEstimatedHours > totalLoggedHours ? `${totalEstimatedHours - totalLoggedHours}h remaining` : 'On budget'}
             </span>
           </div>
-        </div>
+        </Card>
 
         {/* Priority Breakdown */}
-        <div className="p-4 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/25 space-y-2.5 sm:col-span-2 lg:col-span-1">
+        <Card
+          variant="outlined"
+          padding="md"
+          rounded="2xl"
+          className="bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/30 space-y-2.5 shadow-2xs sm:col-span-2 lg:col-span-1"
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-[var(--md-sys-color-on-surface)] flex items-center gap-1.5">
               <Flame className="w-4 h-4 text-[var(--md-sys-color-error)]" />
@@ -306,23 +355,23 @@ export const ProjectOverviewPage: React.FC = () => {
           </div>
           <div className="flex items-center gap-2 pt-1">
             <div className="flex-1 p-2 rounded-xl bg-[var(--md-sys-color-surface-container-high)] text-center">
-              <div className="font-mono text-xs font-bold text-[var(--md-sys-color-error)]">{criticalCount}</div>
-              <div className="text-[10px] text-[var(--md-sys-color-on-surface-variant)] uppercase font-semibold">Crit</div>
+              <div className="font-mono text-xs font-black text-[var(--md-sys-color-error)]">{criticalCount}</div>
+              <div className="text-[10px] text-[var(--md-sys-color-on-surface-variant)] uppercase font-bold">Crit</div>
             </div>
             <div className="flex-1 p-2 rounded-xl bg-[var(--md-sys-color-surface-container-high)] text-center">
-              <div className="font-mono text-xs font-bold text-[var(--md-sys-color-tertiary)]">{highCount}</div>
-              <div className="text-[10px] text-[var(--md-sys-color-on-surface-variant)] uppercase font-semibold">High</div>
+              <div className="font-mono text-xs font-black text-[var(--md-sys-color-tertiary)]">{highCount}</div>
+              <div className="text-[10px] text-[var(--md-sys-color-on-surface-variant)] uppercase font-bold">High</div>
             </div>
             <div className="flex-1 p-2 rounded-xl bg-[var(--md-sys-color-surface-container-high)] text-center">
-              <div className="font-mono text-xs font-bold text-[var(--md-sys-color-primary)]">{mediumCount}</div>
-              <div className="text-[10px] text-[var(--md-sys-color-on-surface-variant)] uppercase font-semibold">Med</div>
+              <div className="font-mono text-xs font-black text-[var(--md-sys-color-primary)]">{mediumCount}</div>
+              <div className="text-[10px] text-[var(--md-sys-color-on-surface-variant)] uppercase font-bold">Med</div>
             </div>
             <div className="flex-1 p-2 rounded-xl bg-[var(--md-sys-color-surface-container-high)] text-center">
-              <div className="font-mono text-xs font-bold text-[var(--md-sys-color-outline)]">{lowCount}</div>
-              <div className="text-[10px] text-[var(--md-sys-color-on-surface-variant)] uppercase font-semibold">Low</div>
+              <div className="font-mono text-xs font-black text-[var(--md-sys-color-outline)]">{lowCount}</div>
+              <div className="text-[10px] text-[var(--md-sys-color-on-surface-variant)] uppercase font-bold">Low</div>
             </div>
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* ─── Main Grid: Active Sprint & Recent Tickets ─── */}
@@ -330,16 +379,21 @@ export const ProjectOverviewPage: React.FC = () => {
         {/* Left Column (2 Cols): Active Sprint + Recent Issues */}
         <div className="lg:col-span-2 space-y-6">
           {/* Active Sprint Launchpad */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/25 space-y-3">
+          <Card
+            variant="outlined"
+            padding="lg"
+            rounded="2xl"
+            className="bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/30 space-y-3.5 shadow-2xs"
+          >
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold text-[var(--md-sys-color-on-surface)] flex items-center gap-2">
+              <h2 className="text-sm font-black text-[var(--md-sys-color-on-surface)] flex items-center gap-2">
                 <Activity className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
                 <span>Active Sprint</span>
               </h2>
               {activeSprint && (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)]">
+                <Badge variant="primary" size="sm">
                   ACTIVE
-                </span>
+                </Badge>
               )}
             </div>
 
@@ -356,7 +410,7 @@ export const ProjectOverviewPage: React.FC = () => {
                   )}
                 </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[var(--md-sys-color-outline-variant)]/15 text-xs text-[var(--md-sys-color-on-surface-variant)]">
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-[var(--md-sys-color-outline-variant)]/20 text-xs text-[var(--md-sys-color-on-surface-variant)]">
                   <div className="flex items-center gap-2">
                     <Calendar className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
                     <span>
@@ -375,7 +429,7 @@ export const ProjectOverviewPage: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <div className="py-4 text-center space-y-2">
+              <div className="py-5 text-center space-y-2">
                 <p className="text-xs text-[var(--md-sys-color-on-surface-variant)]">
                   No active sprint currently running for this project.
                 </p>
@@ -384,18 +438,28 @@ export const ProjectOverviewPage: React.FC = () => {
                   className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--md-sys-color-primary)] hover:underline"
                 >
                   <span>Plan and start a sprint in Backlog</span>
-                  <ArrowRight className="w-3 h-3" />
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
             )}
-          </div>
+          </Card>
 
           {/* Recent Issues List */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/25 space-y-3">
+          <Card
+            variant="outlined"
+            padding="lg"
+            rounded="2xl"
+            className="bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/30 space-y-3.5 shadow-2xs"
+          >
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold text-[var(--md-sys-color-on-surface)]">
-                Recent Issues
-              </h2>
+              <div>
+                <h2 className="text-sm font-black text-[var(--md-sys-color-on-surface)]">
+                  Recent Issues
+                </h2>
+                <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
+                  Latest tasks and tickets active in this workspace
+                </p>
+              </div>
               <Link
                 to={`/search?jql=${encodeURIComponent(`project = "${projectKey}"`)}`}
                 className="text-xs font-semibold text-[var(--md-sys-color-primary)] hover:underline flex items-center gap-1"
@@ -406,23 +470,23 @@ export const ProjectOverviewPage: React.FC = () => {
             </div>
 
             {issuesLoading ? (
-              <div className="py-6 text-center text-xs text-[var(--md-sys-color-on-surface-variant)]">
+              <div className="py-8 text-center text-xs text-[var(--md-sys-color-on-surface-variant)] animate-pulse">
                 Loading recent tickets...
               </div>
             ) : issues.length === 0 ? (
-              <div className="py-6 text-center text-xs text-[var(--md-sys-color-on-surface-variant)]">
+              <div className="py-8 text-center text-xs text-[var(--md-sys-color-on-surface-variant)] italic">
                 No issues filed for this project yet.
               </div>
             ) : (
               <div className="space-y-1.5">
-                {issues.slice(0, 7).map((issue) => (
+                {issues.slice(0, 8).map((issue) => (
                   <div
                     key={issue.id}
                     onContextMenu={(e) => handleContextMenu(e, issue)}
                     onClick={() => setSelectedIssueId(issue.id)}
                     className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)]/20 cursor-pointer transition-colors group"
                   >
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       <a
                         href={`/issues/${issue.key}`}
                         onClick={(e) => {
@@ -430,16 +494,30 @@ export const ProjectOverviewPage: React.FC = () => {
                           e.preventDefault();
                           setSelectedIssueId(issue.id);
                         }}
-                        className="font-mono text-[11px] font-bold text-[var(--md-sys-color-primary)] hover:underline shrink-0 bg-[var(--md-sys-color-primary-container)]/50 px-1.5 py-0.5 rounded"
+                        className="font-mono text-[11px] font-black text-[var(--md-sys-color-primary)] hover:underline shrink-0 bg-[var(--md-sys-color-primary-container)]/50 px-2 py-0.5 rounded-lg"
                       >
                         {issue.key}
                       </a>
-                      <span className="text-xs font-medium text-[var(--md-sys-color-on-surface)] group-hover:text-[var(--md-sys-color-primary)] transition-colors truncate">
+                      <span className="text-xs font-semibold text-[var(--md-sys-color-on-surface)] group-hover:text-[var(--md-sys-color-primary)] transition-colors truncate">
                         {issue.title}
                       </span>
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
+                      {issue.assignee ? (
+                        <UserIdentity
+                          userId={issue.assignee.id}
+                          user={issue.assignee}
+                          name={issue.assignee.fullName || 'User'}
+                          avatarUrl={issue.assignee.avatarUrl}
+                          size="xs"
+                        />
+                      ) : (
+                        <span className="text-[10px] text-[var(--md-sys-color-on-surface-variant)]/60 italic hidden sm:inline">
+                          Unassigned
+                        </span>
+                      )}
+
                       <Badge variant={mapPriorityVariant(issue.priority)} size="sm">
                         {issue.priority}
                       </Badge>
@@ -451,76 +529,191 @@ export const ProjectOverviewPage: React.FC = () => {
                 ))}
               </div>
             )}
-          </div>
+          </Card>
         </div>
 
         {/* Right Column (1 Col): Project Details & Fast Links */}
         <div className="space-y-6">
-          {/* Quick Views Navigation */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/25 space-y-3">
-            <h2 className="text-sm font-bold text-[var(--md-sys-color-on-surface)]">
-              Project Views
-            </h2>
+          {/* Release Milestone & Deployment Readiness Card */}
+          <Card
+            variant="outlined"
+            padding="md"
+            rounded="2xl"
+            className="bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/30 space-y-3.5 shadow-2xs"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-black text-[var(--md-sys-color-on-surface)] flex items-center gap-2">
+                  <Tag className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
+                  <span>Release Milestone</span>
+                </h2>
+                <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] mt-0.5">
+                  Deployment milestone & version readiness
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="xs"
+                onClick={() => setIsReleasesOpen(true)}
+                className="text-xs font-semibold text-[var(--md-sys-color-primary)]"
+              >
+                View All
+              </Button>
+            </div>
+
+            {unreleasedVersions.length > 0 ? (
+              <div className="p-3 rounded-xl bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/20 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold text-xs text-[var(--md-sys-color-on-surface)]">
+                      {unreleasedVersions[0].name}
+                    </span>
+                    <Badge variant="neutral" size="sm">
+                      Unreleased
+                    </Badge>
+                  </div>
+                  {unreleasedVersions[0].releaseDate && (
+                    <span className="text-[10px] text-[var(--md-sys-color-on-surface-variant)]">
+                      Target: {unreleasedVersions[0].releaseDate}
+                    </span>
+                  )}
+                </div>
+
+                {unreleasedVersions[0].description && (
+                  <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] line-clamp-2">
+                    {unreleasedVersions[0].description}
+                  </p>
+                )}
+
+                <div className="pt-1.5 border-t border-[var(--md-sys-color-outline-variant)]/10 flex items-center justify-between text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
+                  <span>
+                    {unreleasedVersions[0].completedIssues || 0} of {unreleasedVersions[0].totalIssues || 0} issues
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setIsReleasesOpen(true)}
+                    className="font-semibold text-[var(--md-sys-color-primary)] hover:underline inline-flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>Release Hub</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="p-3.5 rounded-xl bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/20 text-center space-y-2 py-4">
+                <p className="text-xs text-[var(--md-sys-color-on-surface-variant)]">
+                  No upcoming versions scheduled.
+                </p>
+                <Button
+                  type="button"
+                  variant="outlined"
+                  size="xs"
+                  onClick={() => setIsReleasesOpen(true)}
+                  leftIcon={<Tag className="w-3 h-3 text-[var(--md-sys-color-primary)]" />}
+                >
+                  Manage Releases
+                </Button>
+              </div>
+            )}
+          </Card>
+
+          {/* Project Details & Directory Info */}
+          <Card
+            variant="outlined"
+            padding="md"
+            rounded="2xl"
+            className="bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/30 space-y-4 shadow-2xs text-xs"
+          >
+            <div>
+              <h2 className="text-sm font-black text-[var(--md-sys-color-on-surface)]">
+                Leadership & Directory
+              </h2>
+              <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] mt-0.5">
+                Ownership and workspace configuration summary
+              </p>
+            </div>
+
+            {/* Lead Section */}
+            <div className="p-3 rounded-xl bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/20 space-y-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)] block">
+                Project Lead
+              </span>
+              {project?.lead ? (
+                <UserIdentity
+                  userId={project.lead.id}
+                  user={project.lead}
+                  name={project.lead.fullName || project.lead.email}
+                  avatarUrl={project.lead.avatarUrl}
+                  email={project.lead.email}
+                  size="sm"
+                  showName
+                  showEmail
+                />
+              ) : (
+                <span className="text-xs italic text-[var(--md-sys-color-on-surface-variant)]">Unassigned</span>
+              )}
+            </div>
+
+            {/* Quick Metrics Directory */}
             <div className="space-y-1.5">
               <Link
-                to={`/projects/${projectKey}/board`}
-                className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container-highest)] text-xs font-semibold text-[var(--md-sys-color-on-surface)] transition-colors group"
+                to={`/projects/${projectKey}/settings/teams`}
+                className="flex items-center justify-between p-2 rounded-xl hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] transition group"
               >
-                <div className="flex items-center gap-2.5">
-                  <Kanban className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
-                  <span>Kanban Board</span>
+                <div className="flex items-center gap-2">
+                  <Users2 className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
+                  <span className="text-xs font-semibold text-[var(--md-sys-color-on-surface)]">Scrum Teams</span>
                 </div>
-                <ArrowRight className="w-3.5 h-3.5 opacity-40 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
-              </Link>
-              <Link
-                to={`/projects/${projectKey}/backlog`}
-                className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container-highest)] text-xs font-semibold text-[var(--md-sys-color-on-surface)] transition-colors group"
-              >
-                <div className="flex items-center gap-2.5">
-                  <Layers className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
-                  <span>Backlog & Sprints</span>
+                <div className="flex items-center gap-1">
+                  <span className="font-mono font-bold text-xs text-[var(--md-sys-color-on-surface)]">{teams.length}</span>
+                  <ChevronRight className="w-3 h-3 opacity-40 group-hover:opacity-100 transition" />
                 </div>
-                <ArrowRight className="w-3.5 h-3.5 opacity-40 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
               </Link>
-              <Link
-                to={`/projects/${projectKey}/settings`}
-                className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container-highest)] text-xs font-semibold text-[var(--md-sys-color-on-surface)] transition-colors group"
-              >
-                <div className="flex items-center gap-2.5">
-                  <Settings className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
-                  <span>Project Settings</span>
-                </div>
-                <ArrowRight className="w-3.5 h-3.5 opacity-40 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
-              </Link>
-            </div>
-          </div>
 
-          {/* Project Details Info */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/25 space-y-3 text-xs">
-            <h2 className="text-sm font-bold text-[var(--md-sys-color-on-surface)]">
-              Project Details
-            </h2>
-            <div className="space-y-2 text-[var(--md-sys-color-on-surface-variant)]">
-              <div className="flex items-center justify-between">
-                <span>Key</span>
-                <span className="font-mono font-bold text-[var(--md-sys-color-primary)]">{project?.key}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Lead</span>
-                <span className="font-medium text-[var(--md-sys-color-on-surface)]">
-                  {project?.lead?.fullName || 'None'}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Total Issues</span>
-                <span className="font-semibold text-[var(--md-sys-color-on-surface)]">{totalIssues}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Total Sprints</span>
-                <span className="font-semibold text-[var(--md-sys-color-on-surface)]">{sprints.length}</span>
-              </div>
+              <Link
+                to={`/projects/${projectKey}/settings/components`}
+                className="flex items-center justify-between p-2 rounded-xl hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] transition group"
+              >
+                <div className="flex items-center gap-2">
+                  <FolderTree className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
+                  <span className="text-xs font-semibold text-[var(--md-sys-color-on-surface)]">Components</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="font-mono font-bold text-xs text-[var(--md-sys-color-on-surface)]">{components.length}</span>
+                  <ChevronRight className="w-3 h-3 opacity-40 group-hover:opacity-100 transition" />
+                </div>
+              </Link>
+
+              <Link
+                to={`/projects/${projectKey}/settings/versions`}
+                className="flex items-center justify-between p-2 rounded-xl hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] transition group"
+              >
+                <div className="flex items-center gap-2">
+                  <Tag className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
+                  <span className="text-xs font-semibold text-[var(--md-sys-color-on-surface)]">Releases</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="font-mono font-bold text-xs text-[var(--md-sys-color-on-surface)]">{versions.length}</span>
+                  <ChevronRight className="w-3 h-3 opacity-40 group-hover:opacity-100 transition" />
+                </div>
+              </Link>
+
+              <Link
+                to={`/search?jql=${encodeURIComponent(`project = "${projectKey}"`)}`}
+                className="flex items-center justify-between p-2 rounded-xl hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] transition group"
+              >
+                <div className="flex items-center gap-2">
+                  <Search className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
+                  <span className="text-xs font-semibold text-[var(--md-sys-color-on-surface)]">Total Issues</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="font-mono font-bold text-xs text-[var(--md-sys-color-on-surface)]">{totalIssues}</span>
+                  <ChevronRight className="w-3 h-3 opacity-40 group-hover:opacity-100 transition" />
+                </div>
+              </Link>
             </div>
-          </div>
+          </Card>
         </div>
       </div>
 

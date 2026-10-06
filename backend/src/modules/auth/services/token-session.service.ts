@@ -7,6 +7,10 @@ import { UsersService } from '../../users/users.service.js';
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
+  tokenType: string;
+  expiresIn: number;
+  token_type?: string;
+  expires_in?: number;
   user: {
     id: number;
     fullName: string;
@@ -33,13 +37,15 @@ export class TokenSessionService {
   ) {}
 
   /**
-   * Generates JWT Access Token (8 hours) and Refresh Token (7 days) with Zero-Trust claims.
+   * Generates short-lived JWT Access Token (15 minutes) and Refresh Token (7 days) with Zero-Trust claims
+   * and RFC 6749 OAuth 2.0 compliant response format.
    */
   async generateTokens(user: User): Promise<AuthTokens> {
     const isAdmin = user.systemRole === SystemRole.ADMIN;
-    const groups = [user.systemRole.toLowerCase(), 'all-users'];
+    const roleStr = user.systemRole ? user.systemRole.toLowerCase() : 'user';
+    const groups = [roleStr, 'all-users'];
 
-    const payload = {
+    const basePayload = {
       sub: user.id,
       email: user.email,
       role: user.systemRole,
@@ -48,12 +54,39 @@ export class TokenSessionService {
       tokenVersion: user.tokenVersion || 0,
     };
 
-    const accessToken = this.jwtService.sign(payload, { expiresIn: '8h' });
-    const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
+    const accessExpiresIn =
+      (this.configService.get<string>('JWT_EXPIRES_IN', '15m') as unknown as import('jsonwebtoken').SignOptions['expiresIn']) ||
+      '15m';
+    const refreshExpiresIn =
+      (this.configService.get<string>('JWT_REFRESH_EXPIRES_IN', '7d') as unknown as import('jsonwebtoken').SignOptions['expiresIn']) ||
+      '7d';
+
+    const accessSecret = this.configService.get<string>(
+      'JWT_SECRET',
+      'super_secret_jwt_access_key_change_in_production_min_32_chars',
+    );
+    const refreshSecret = this.configService.get<string>(
+      'JWT_REFRESH_SECRET',
+      'super_secret_jwt_refresh_key_change_in_production_min_32_chars',
+    );
+
+    // Cryptographic secret separation and token typing (OWASP & RFC 6749)
+    const accessToken = this.jwtService.sign(
+      { ...basePayload, token_type: 'access' },
+      { secret: accessSecret, expiresIn: accessExpiresIn },
+    );
+    const refreshToken = this.jwtService.sign(
+      { ...basePayload, token_type: 'refresh' },
+      { secret: refreshSecret, expiresIn: refreshExpiresIn },
+    );
 
     return {
       accessToken,
       refreshToken,
+      tokenType: 'Bearer',
+      expiresIn: 900,
+      token_type: 'Bearer',
+      expires_in: 900,
       user: {
         id: user.id,
         fullName: user.fullName,
@@ -73,16 +106,27 @@ export class TokenSessionService {
   }
 
   /**
-   * Refreshes JWT tokens using a valid refresh token.
+   * Refreshes JWT tokens using a valid refresh token verified with JWT_REFRESH_SECRET.
    */
   async refreshTokens(refreshToken: string): Promise<AuthTokens> {
     try {
-      const payload = this.jwtService.verify(refreshToken, {
-        secret: this.configService.get<string>(
-          'JWT_SECRET',
-          'super_secret_jwt_access_key_change_in_production_min_32_chars',
-        ),
+      const refreshSecret = this.configService.get<string>(
+        'JWT_REFRESH_SECRET',
+        'super_secret_jwt_refresh_key_change_in_production_min_32_chars',
+      );
+
+      const payload = this.jwtService.verify<{
+        sub: number;
+        tokenVersion?: number;
+        token_type?: string;
+      }>(refreshToken, {
+        secret: refreshSecret,
       });
+
+      // Prevent token substitution / confusion attacks
+      if (payload.token_type !== 'refresh') {
+        throw new UnauthorizedException('Invalid token type');
+      }
 
       const user = await this.usersService.findById(payload.sub);
       if (!user || user.isBlocked) {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, Sun, Moon } from 'lucide-react';
+import { Shield, Sun, Moon, Laptop } from 'lucide-react';
 import { useTheme } from '../../store';
 
 /**
@@ -27,14 +27,22 @@ export const PublicNavbar: React.FC = () => {
         <button
           type="button"
           onClick={toggleTheme}
-          title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
-          aria-label="Toggle theme"
+          title={
+            theme === 'system'
+              ? 'Theme: System (Auto) — click for Light'
+              : theme === 'light'
+                ? 'Theme: Light — click for Dark'
+                : 'Theme: Dark — click for System'
+          }
+          aria-label={`Toggle theme (currently ${theme})`}
           className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] flex items-center justify-center transition-all cursor-pointer shadow-2xs active:scale-95"
         >
-          {theme === 'dark' ? (
-            <Sun className="w-4 h-4 text-[var(--md-sys-color-warning)]" />
-          ) : (
+          {theme === 'system' ? (
+            <Laptop className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
+          ) : theme === 'dark' ? (
             <Moon className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
+          ) : (
+            <Sun className="w-4 h-4 text-[var(--md-sys-color-warning)]" />
           )}
         </button>
 

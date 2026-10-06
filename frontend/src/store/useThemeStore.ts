@@ -63,7 +63,7 @@ const getStoredTheme = (): Theme => {
 
 export const useThemeStore = create<ThemeState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       theme: getStoredTheme(),
       effectiveTheme: resolveEffectiveTheme(getStoredTheme()),
       toggleTheme: () =>

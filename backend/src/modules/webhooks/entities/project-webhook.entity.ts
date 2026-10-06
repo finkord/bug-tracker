@@ -39,6 +39,9 @@ export class ProjectWebhook {
   @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive: boolean;
 
+  @Column({ type: 'varchar', length: 20, default: 'generic' })
+  format: 'generic' | 'discord' | 'slack';
+
   @Column({ name: 'last_triggered_at', type: 'timestamp', nullable: true })
   lastTriggeredAt: Date | null;
 

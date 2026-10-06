@@ -23,7 +23,7 @@ import { ProjectsService } from './projects.service.js';
 import { CreateProjectDto } from './dto/create-project.dto.js';
 import { UpdateProjectDto } from './dto/update-project.dto.js';
 import { CreateQuickFilterDto, UpdateQuickFilterDto } from './dto/quick-filter.dto.js';
-import { CreateComponentDto } from './dto/component.dto.js';
+import { CreateComponentDto, UpdateComponentDto } from './dto/component.dto.js';
 import {
   CreateProjectVersionDto,
   UpdateProjectVersionDto,
@@ -206,6 +206,17 @@ export class ProjectsController {
     @Body() dto: CreateComponentDto,
   ) {
     return this.projectsService.createComponent(id, dto);
+  }
+
+  @Patch(':id/components/:componentId')
+  @RequireProjectPermission(ProjectPermission.ADMINISTER_PROJECTS)
+  @ApiOperation({ summary: 'Update project component' })
+  async updateComponent(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('componentId', ParseIntPipe) componentId: number,
+    @Body() dto: UpdateComponentDto,
+  ) {
+    return this.projectsService.updateComponent(id, componentId, dto);
   }
 
   @Delete(':id/components/:componentId')

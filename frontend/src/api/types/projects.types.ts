@@ -64,6 +64,7 @@ export interface ProjectComponentItem {
 }
 
 export type CreateComponentPayload = components['schemas']['CreateComponentDto'];
+export type UpdateComponentPayload = components['schemas']['UpdateComponentDto'];
 
 
 export type ProjectVersionStatus = 'UNRELEASED' | 'RELEASED' | 'ARCHIVED';

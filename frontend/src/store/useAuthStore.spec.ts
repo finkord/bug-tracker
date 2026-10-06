@@ -12,7 +12,9 @@ describe('useThemeStore', () => {
     expect(useThemeStore.getState().theme).toBe('dark');
   });
 
-  it('should toggle theme', () => {
+  it('should toggle theme through three states (dark -> system -> light -> dark)', () => {
+    useThemeStore.getState().toggleTheme();
+    expect(useThemeStore.getState().theme).toBe('system');
     useThemeStore.getState().toggleTheme();
     expect(useThemeStore.getState().theme).toBe('light');
     useThemeStore.getState().toggleTheme();

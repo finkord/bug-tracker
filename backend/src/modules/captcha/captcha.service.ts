@@ -75,44 +75,17 @@ export class CaptchaService {
       };
     }
 
-    // 2. Development and automated testing token bypass
-    const nodeEnv = this.configService.get<string>('NODE_ENV', 'development');
-    if (nodeEnv === 'development' || nodeEnv === 'test') {
-      if (
-        trimmedToken === 'valid-captcha-token' ||
-        trimmedToken === 'test-token' ||
-        trimmedToken.startsWith('bypass-')
-      ) {
-        this.logger.debug(`Bypassing CAPTCHA check with development test token: ${trimmedToken}`);
-        return {
-          success: true,
-          action: expectedAction,
-          challengeTs: new Date().toISOString(),
-          hostname: 'localhost',
-        };
-      }
-    }
-
-    // 3. Resolve Secret Key
+    // 2. Resolve Secret Key
     const secretKey =
       this.configService.get<string>('TURNSTILE_SECRET') ||
       this.configService.get<string>('CAPTCHA_SECRET_KEY');
 
     if (!secretKey || secretKey === 'placeholder_turnstile_secret_key') {
-      if (nodeEnv === 'production') {
-        this.logger.error('Turnstile secret key is not configured in production mode. Failing closed.');
-        return {
-          success: false,
-          errorCodes: ['missing-input-secret'],
-          failureReason: 'Turnstile secret key is not configured',
-        };
-      }
-      this.logger.warn('Turnstile secret key not set in non-production. Accepting formatted token.');
+      this.logger.error('Turnstile secret key is not configured. Failing closed.');
       return {
-        success: true,
-        action: expectedAction,
-        challengeTs: new Date().toISOString(),
-        hostname: 'localhost',
+        success: false,
+        errorCodes: ['missing-input-secret'],
+        failureReason: 'Turnstile secret key is not configured',
       };
     }
 

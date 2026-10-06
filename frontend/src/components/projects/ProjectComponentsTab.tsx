@@ -4,12 +4,14 @@ import type { UserProfile, ProjectComponentItem } from '../../api/client';
 import {
   useProjectComponentsQuery,
   useCreateProjectComponentMutation,
+  useUpdateProjectComponentMutation,
   useDeleteProjectComponentMutation,
 } from '../../api/queries';
-import { Button, Input, Modal, ConfirmDialog, UserPicker, DataTable } from '../ui';
+import { Button, Input, Textarea, Modal, ConfirmDialog, UserPicker, DataTable } from '../ui';
 import { UserIdentity } from '../common/UserIdentity';
 import {
   Plus,
+  Pencil,
   Trash2,
   AlertCircle,
   FolderTree,
@@ -26,9 +28,11 @@ export const ProjectComponentsTab: React.FC<ProjectComponentsTabProps> = ({
 }) => {
   const { data: components = [], isLoading } = useProjectComponentsQuery(projectId);
   const createMutation = useCreateProjectComponentMutation();
+  const updateMutation = useUpdateProjectComponentMutation();
   const deleteMutation = useDeleteProjectComponentMutation();
 
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingComponent, setEditingComponent] = useState<ProjectComponentItem | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [leadId, setLeadId] = useState<number | ''>('');
@@ -36,7 +40,25 @@ export const ProjectComponentsTab: React.FC<ProjectComponentsTabProps> = ({
   const [loading, setLoading] = useState(false);
   const [componentToDelete, setComponentToDelete] = useState<{ id: number; name: string } | null>(null);
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const handleOpenCreate = () => {
+    setEditingComponent(null);
+    setName('');
+    setDescription('');
+    setLeadId('');
+    setError(null);
+    setModalOpen(true);
+  };
+
+  const handleOpenEdit = (comp: ProjectComponentItem) => {
+    setEditingComponent(comp);
+    setName(comp.name);
+    setDescription(comp.description || '');
+    setLeadId(comp.leadId ?? '');
+    setError(null);
+    setModalOpen(true);
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
       setError('Component name is required');
@@ -47,26 +69,34 @@ export const ProjectComponentsTab: React.FC<ProjectComponentsTabProps> = ({
     setError(null);
 
     try {
-      await createMutation.mutateAsync({
-        projectId,
-        data: {
-          name: name.trim(),
-          description: description.trim() || undefined,
-          leadId: leadId ? Number(leadId) : undefined,
-        },
-        payload: {
-          name: name.trim(),
-          description: description.trim() || undefined,
-          leadId: leadId ? Number(leadId) : undefined,
-        },
-      });
+      if (editingComponent) {
+        await updateMutation.mutateAsync({
+          projectId,
+          componentId: editingComponent.id,
+          payload: {
+            name: name.trim(),
+            description: description.trim() || undefined,
+            leadId: leadId ? Number(leadId) : null,
+          },
+        });
+      } else {
+        await createMutation.mutateAsync({
+          projectId,
+          payload: {
+            name: name.trim(),
+            description: description.trim() || undefined,
+            leadId: leadId ? Number(leadId) : undefined,
+          },
+        });
+      }
 
+      setModalOpen(false);
+      setEditingComponent(null);
       setName('');
       setDescription('');
       setLeadId('');
-      setModalOpen(false);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to create component');
+      setError(err instanceof Error ? err.message : 'Failed to save component');
     } finally {
       setLoading(false);
     }
@@ -103,7 +133,7 @@ export const ProjectComponentsTab: React.FC<ProjectComponentsTabProps> = ({
       accessorKey: 'description',
       header: 'Description',
       cell: ({ row }) => (
-        <span className="text-[var(--md-sys-color-on-surface-variant)]">
+        <span className="text-[var(--md-sys-color-on-surface-variant)] text-xs">
           {row.original.description || <span className="italic opacity-60">No description</span>}
         </span>
       ),
@@ -130,17 +160,29 @@ export const ProjectComponentsTab: React.FC<ProjectComponentsTabProps> = ({
     },
     {
       id: 'actions',
-      header: () => <div className="text-right"></div>,
+      header: 'Actions',
       cell: ({ row }) => (
-        <div className="flex justify-end">
-          <button
+        <div className="flex items-center justify-start gap-1">
+          <Button
             type="button"
+            variant="ghost"
+            size="xs"
+            onClick={() => handleOpenEdit(row.original)}
+            className="p-1.5 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)]"
+            title="Edit component"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="xs"
             onClick={() => handleDelete(row.original.id, row.original.name)}
-            className="p-1.5 rounded-lg text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/30 transition cursor-pointer"
+            className="p-1.5 text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/30"
             title="Delete component"
           >
             <Trash2 className="w-3.5 h-3.5" />
-          </button>
+          </Button>
         </div>
       ),
     },
@@ -162,7 +204,7 @@ export const ProjectComponentsTab: React.FC<ProjectComponentsTabProps> = ({
         <Button
           variant="primary"
           size="sm"
-          onClick={() => setModalOpen(true)}
+          onClick={handleOpenCreate}
           leftIcon={<Plus className="w-4 h-4" />}
           className="shrink-0"
         >
@@ -181,15 +223,19 @@ export const ProjectComponentsTab: React.FC<ProjectComponentsTabProps> = ({
         emptyDescription="Create components to group issues by architectural subsystem or area of responsibility."
       />
 
-      {/* Add Component Modal */}
+      {/* Add / Edit Component Modal */}
       <Modal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        title="Add Project Component"
-        description="Define a new subsystem module for issue categorization."
+        title={editingComponent ? 'Edit Project Component' : 'Add Project Component'}
+        description={
+          editingComponent
+            ? `Update subsystem details and component lead for "${editingComponent.name}".`
+            : 'Define a new subsystem module for issue categorization.'
+        }
         size="md"
       >
-        <form onSubmit={handleCreate} className="space-y-4">
+        <form onSubmit={handleSave} className="space-y-4">
           {error && (
             <div className="p-3 rounded-xl bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -211,15 +257,12 @@ export const ProjectComponentsTab: React.FC<ProjectComponentsTabProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-[var(--md-sys-color-on-surface)] mb-1">
-              Description
-            </label>
-            <textarea
+            <Textarea
+              label="Description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Purpose or technical domain of this component..."
-              rows={2}
-              className="w-full p-2.5 text-xs rounded-xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] placeholder-[var(--md-sys-color-on-surface-variant)]/60 focus:outline-none focus:ring-2 focus:ring-[var(--md-sys-color-primary)]/40"
+              rows={3}
             />
           </div>
 
@@ -242,7 +285,7 @@ export const ProjectComponentsTab: React.FC<ProjectComponentsTabProps> = ({
               Cancel
             </Button>
             <Button type="submit" variant="primary" size="sm" disabled={loading}>
-              {loading ? 'Creating...' : 'Create Component'}
+              {loading ? 'Saving...' : editingComponent ? 'Save Changes' : 'Create Component'}
             </Button>
           </div>
         </form>

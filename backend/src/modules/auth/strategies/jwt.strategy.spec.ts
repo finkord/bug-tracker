@@ -156,4 +156,18 @@ describe('JwtStrategy Security Hardening', () => {
       new UnauthorizedException('Account has not been activated via email'),
     );
   });
+
+  it('should reject refresh tokens presented to access token endpoints (token confusion defense)', async () => {
+    const payload = {
+      sub: 42,
+      email: 'test@example.com',
+      role: 'DEVELOPER',
+      token_type: 'refresh',
+      tokenVersion: 2,
+    };
+
+    await expect(strategy.validate(payload)).rejects.toThrow(
+      new UnauthorizedException('Invalid access token type'),
+    );
+  });
 });

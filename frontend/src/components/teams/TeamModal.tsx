@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { TeamItem, UserProfile } from '../../api/client';
 import {
   useCreateTeamMutation,
   useUpdateTeamMutation,
   useUploadTeamAvatarMutation,
 } from '../../api/queries';
-import { Input, FormModal, UserPicker, AvatarPicker, type AvatarPickerValue } from '../ui';
+import { Input, Textarea, FormModal, UserPicker, AvatarPicker, type AvatarPickerValue } from '../ui';
 
 interface TeamModalProps {
   isOpen: boolean;
@@ -27,18 +27,18 @@ export const TeamModal: React.FC<TeamModalProps> = ({
   const updateMutation = useUpdateTeamMutation();
   const uploadAvatarMutation = useUploadTeamAvatarMutation();
 
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [leadId, setLeadId] = useState<number | ''>('');
-  const [sprintCapacityHours, setSprintCapacityHours] = useState<number>(160);
+  const [name, setName] = useState(team?.name || '');
+  const [description, setDescription] = useState(team?.description || '');
+  const [leadId, setLeadId] = useState<number | ''>(team?.leadId ?? '');
+  const [sprintCapacityHours, setSprintCapacityHours] = useState<number>(
+    Number(team?.sprintCapacityHours) || 160,
+  );
   const [avatarValue, setAvatarValue] = useState<AvatarPickerValue | null>(null);
 
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const [prevTeamId, setPrevTeamId] = useState<number | undefined | null>(team ? team.id : undefined);
-  if (team?.id !== prevTeamId) {
-    setPrevTeamId(team ? team.id : undefined);
+  useEffect(() => {
     if (team) {
       setName(team.name || '');
       setDescription(team.description || '');
@@ -50,7 +50,8 @@ export const TeamModal: React.FC<TeamModalProps> = ({
       setLeadId('');
       setSprintCapacityHours(160);
     }
-  }
+    setError(null);
+  }, [team, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -152,15 +153,12 @@ export const TeamModal: React.FC<TeamModalProps> = ({
 
       {/* Description */}
       <div>
-        <label className="block text-xs font-bold text-[var(--md-sys-color-on-surface)] mb-1">
-          Description
-        </label>
-        <textarea
+        <Textarea
+          label="Description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Purpose, domain, or focus of this team..."
           rows={2}
-          className="w-full p-2.5 text-xs rounded-xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] placeholder-[var(--md-sys-color-on-surface-variant)]/60 focus:outline-none focus:ring-2 focus:ring-[var(--md-sys-color-primary)]/40"
         />
       </div>
 

@@ -21,6 +21,9 @@ import { TwoFactorAuthService } from './two-factor-auth.service.js';
 import { LoginRateLimiterService } from './login-rate-limiter.service.js';
 import { ARGON2_OPTIONS } from '../constants/argon2.constants.js';
 
+const DUMMY_ARGON2_HASH =
+  '$argon2id$v=19$m=65536,t=3,p=4$c29tZXJhbmRvbXNhbHQxMjM$c29tZXJhbmRvbXBhc3N3b3JkaGFzaHZhbHVlMTIzNDU2Nzg';
+
 @Injectable()
 export class LocalAuthService {
   private readonly logger = new Logger(LocalAuthService.name);
@@ -203,8 +206,16 @@ The BugTracker Team`;
   ): Promise<AuthTokens | { require2fa: true; tempToken: string; message: string }> {
     const user = await this.usersService.findByEmail(dto.email);
 
-    // 1. User not found
+    // 1. User not found (mitigate user enumeration & timing attacks via constant-time dummy verification)
     if (!user) {
+      try {
+        await argon2.verify(DUMMY_ARGON2_HASH, dto.password);
+      } catch {
+        // Dummy verification completed to ensure constant time
+      }
+
+      await this.loginRateLimiter.recordFailedAttempt(dto.email);
+
       await this.securityAuditService.recordLoginAttempt({
         attemptedEmail: dto.email,
         ipAddress,

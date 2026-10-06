@@ -25,6 +25,9 @@ export class WebhookResponseDto {
   @ApiProperty({ example: true })
   isActive: boolean;
 
+  @ApiProperty({ example: 'generic', enum: ['generic', 'discord', 'slack'] })
+  format: string;
+
   @ApiPropertyOptional({ example: '2026-10-02T10:00:00Z' })
   lastTriggeredAt: Date | null;
 

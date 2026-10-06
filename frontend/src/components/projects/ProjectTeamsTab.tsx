@@ -130,22 +130,26 @@ export const ProjectTeamsTab: React.FC<ProjectTeamsTabProps> = ({
 
                   {/* Actions dropdown/buttons */}
                   <div className="flex items-center gap-1">
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="xs"
                       onClick={() => setEditingTeam(team)}
-                      className="p-1.5 rounded-lg text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)] transition cursor-pointer"
+                      className="p-1.5 text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)]"
                       title="Edit team settings"
                     >
                       <Pencil className="w-3.5 h-3.5" />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="xs"
                       onClick={() => handleDeleteTeam(team)}
-                      className="p-1.5 rounded-lg text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/30 transition cursor-pointer"
+                      className="p-1.5 text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/30"
                       title="Delete team"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    </Button>
                   </div>
                 </div>
 

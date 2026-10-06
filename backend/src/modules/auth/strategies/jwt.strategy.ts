@@ -13,6 +13,7 @@ export interface JwtPayload {
   role: string;
   is2faPending?: boolean;
   tokenType?: string;
+  token_type?: string;
   tokenVersion?: number;
 }
 
@@ -44,10 +45,19 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: JwtPayload): Promise<User> {
     // 1. Immediately reject temporary 2FA challenge tokens to prevent 2FA bypass
-    if (payload.is2faPending || payload.tokenType === '2fa_challenge') {
+    if (
+      payload.is2faPending ||
+      payload.tokenType === '2fa_challenge' ||
+      payload.token_type === '2fa_challenge'
+    ) {
       throw new UnauthorizedException(
         'Two-factor authentication challenge pending. Please complete 2FA verification.',
       );
+    }
+
+    // 2. Reject refresh tokens or other non-access tokens presented at protected boundaries (OWASP token typing)
+    if (payload.token_type && payload.token_type !== 'access') {
+      throw new UnauthorizedException('Invalid access token type');
     }
 
     const sessionKey = `${JwtStrategy.SESSION_PREFIX}${payload.sub}`;

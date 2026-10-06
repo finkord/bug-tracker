@@ -38,8 +38,8 @@ interface OAuthAuthenticatedRequest extends Request {
   user?: User;
 }
 
-const ACCESS_TOKEN_COOKIE_MAX_AGE_MS = 8 * 60 * 60 * 1000;
-const REFRESH_TOKEN_COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+const ACCESS_TOKEN_COOKIE_MAX_AGE_MS = 15 * 60 * 1000; // 15 minutes (aligned with JWT access token lifespan)
+const REFRESH_TOKEN_COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 @ApiTags('Authentication & Security')
 @Controller('auth')
@@ -133,7 +133,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Refresh JWT access token using valid refresh token',
-    description: 'Issues a fresh 8-hour access token without requiring user to re-enter credentials.',
+    description: 'Issues a fresh 15-minute access token without requiring user to re-enter credentials.',
   })
   async refresh(
     @Req() req: Request,

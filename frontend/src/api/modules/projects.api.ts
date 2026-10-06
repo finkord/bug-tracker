@@ -8,6 +8,7 @@ import type {
   UpdateQuickFilterPayload,
   ProjectComponentItem,
   CreateComponentPayload,
+  UpdateComponentPayload,
 } from '../types/projects.types.js';
 
 export const projectsApi = {
@@ -58,6 +59,16 @@ export const projectsApi = {
   createProjectComponent: (projectId: number, payload: CreateComponentPayload) =>
     request<ProjectComponentItem>(`/projects/${projectId}/components`, {
       method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  updateProjectComponent: (
+    projectId: number,
+    componentId: number,
+    payload: UpdateComponentPayload,
+  ) =>
+    request<ProjectComponentItem>(`/projects/${projectId}/components/${componentId}`, {
+      method: 'PATCH',
       body: JSON.stringify(payload),
     }),
 

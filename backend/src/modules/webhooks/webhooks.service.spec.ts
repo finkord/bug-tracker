@@ -226,6 +226,82 @@ describe('WebhooksService', () => {
       global.fetch = originalFetch;
     });
 
+    it('should format payload with Discord embeds when webhook format is discord', async () => {
+      const originalFetch = global.fetch;
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+      } as Response);
+      global.fetch = fetchMock;
+
+      const discordWebhook: ProjectWebhook = {
+        ...mockWebhook,
+        id: 11,
+        url: 'https://discord.com/api/webhooks/1234/abcd',
+        format: 'discord',
+      } as ProjectWebhook;
+
+      mockWebhookRepo.find.mockResolvedValue([discordWebhook]);
+
+      await service.dispatch(1, 'issue.created', {
+        key: 'MOBT-10',
+        title: 'Crash on login',
+        status: 'OPEN',
+        priority: 'HIGH',
+      });
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        discordWebhook.url,
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.stringContaining('"embeds":'),
+        }),
+      );
+
+      const parsedBody = JSON.parse(fetchMock.mock.calls[0][1].body);
+      expect(parsedBody.embeds).toBeDefined();
+      expect(parsedBody.embeds[0].title).toContain('Issue Created: [MOBT-10]');
+
+      global.fetch = originalFetch;
+    });
+
+    it('should format payload with Slack attachments when webhook format is slack', async () => {
+      const originalFetch = global.fetch;
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+      } as Response);
+      global.fetch = fetchMock;
+
+      const slackWebhook: ProjectWebhook = {
+        ...mockWebhook,
+        id: 12,
+        url: 'https://hooks.slack.com/services/T00/B00/XXXX',
+        format: 'slack',
+      } as ProjectWebhook;
+
+      mockWebhookRepo.find.mockResolvedValue([slackWebhook]);
+
+      await service.dispatch(1, 'status.changed', {
+        key: 'MOBT-10',
+        status: 'IN_PROGRESS',
+      });
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        slackWebhook.url,
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.stringContaining('"attachments":'),
+        }),
+      );
+
+      const parsedBody = JSON.parse(fetchMock.mock.calls[0][1].body);
+      expect(parsedBody.attachments).toBeDefined();
+      expect(parsedBody.attachments[0].title).toContain('Status Transitioned');
+
+      global.fetch = originalFetch;
+    });
+
     it('should enqueue retry in Redis if initial delivery fails', async () => {
       const originalFetch = global.fetch;
       global.fetch = vi.fn().mockRejectedValue(new Error('Network offline'));

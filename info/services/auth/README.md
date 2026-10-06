@@ -6,33 +6,80 @@ This service provides enterprise-grade authentication, identity management, zero
 
 ## 1. Architectural Overview
 
-The authentication service is designed as a **Modular Monolith** component within NestJS 12 (Node.js v24 LTS runtime), strictly following Domain-Driven Design (DDD) layering:
+The authentication service is designed as a **Modular Monolith** component within NestJS 12 (Node.js v24 LTS runtime), strictly adhering to Domain-Driven Design (DDD), OWASP Top 10 guidelines, and RFC 6749 (OAuth 2.0 Authorization Framework) standards:
 
-```
-[ HTTP Requests ]
-        │
-        ▼
-[ Global Pipes & Guards ] (ValidationPipe, ThrottlerGuard, JwtAuthGuard, RolesGuard)
-        │
-        ▼
-[ Controllers ] (AuthController, UsersController, SecurityAuditController)
-        │
-        ▼
-[ Domain Services ] (AuthService, UsersService, SecurityAuditService, CaptchaService)
-        │
-        ▼
-[ Data Access / TypeORM ] (User Entity, LoginAuditLog Entity)
-        │
-        ▼
-[ Infrastructure ] (PostgreSQL 15, Redis 7, Mailpit SMTP, GitHub OAuth2)
+```mermaid
+flowchart TD
+    subgraph ClientLayer["Presentation & Client Layer (React 19 / Vite)"]
+        UI["Web UI Components<br/>(LoginForm, RegisterForm, TwoFactorModal)"]
+        HTTP["HTTP Client (api/http.ts)<br/>credentials: include (httpOnly Cookies)"]
+        UI --> HTTP
+    end
+
+    subgraph BoundaryLayer["Security Gateway & Boundary Layer (NestJS 12)"]
+        Pipes["ValidationPipe<br/>(class-validator DTO whitelist)"]
+        Guards["Security Guards<br/>(JwtAuthGuard, RolesGuard)"]
+        Controller["AuthController<br/>(/api/v1/auth/*)"]
+        HTTP --> Pipes --> Controller
+        HTTP -.-> Guards -.-> Controller
+    end
+
+    subgraph ServiceLayer["Authentication Domain Services"]
+        Facade["AuthService (Facade)"]
+        Controller --> Facade
+
+        LocalAuth["LocalAuthService<br/>- Argon2id Password Hashing<br/>- Timing Attack Protection (DUMMY_ARGON2_HASH)<br/>- 24h Activation Token Generation"]
+        TwoFactor["TwoFactorAuthService<br/>- RFC 6238 TOTP Validation<br/>- QR Code Generation (otpauth URI)<br/>- Staging vs Live Secret Verification<br/>- Rate-Limited Attempt Tracking"]
+        TokenSession["TokenSessionService<br/>- RFC 6749 Standard Token Generation<br/>- Access Token: JWT_SECRET (15m, token_type: access)<br/>- Refresh Token: JWT_REFRESH_SECRET (7d, token_type: refresh)<br/>- Session Revocation (token_version increment)"]
+        OAuth["OAuthService & OAuthCodeStoreService<br/>- Passport GitHub & Google Identity Linking<br/>- Single-Use Exchange Code (60s TTL)"]
+        PasswordReset["PasswordResetService<br/>- 15m Single-Use Crypto Reset Token<br/>- Anti-Enumeration Generic Responses<br/>- Session Revocation on Reset"]
+        RateLimiter["LoginRateLimiterService<br/>- Distributed Sliding Window Limiter<br/>- 5 Failed Attempts / 15m Lockout"]
+        Captcha["CaptchaService<br/>- Cloudflare Turnstile Verification<br/>- Fail-Closed Zero-Backdoor Policy"]
+        Audit["SecurityAuditService<br/>- Forensic Login Attempt Logging<br/>- Device Session Tracking"]
+
+        Facade --> LocalAuth
+        Facade --> TwoFactor
+        Facade --> TokenSession
+        Facade --> OAuth
+        Facade --> PasswordReset
+
+        LocalAuth --> RateLimiter
+        LocalAuth --> Captcha
+        LocalAuth --> Audit
+        TwoFactor --> RateLimiter
+        TwoFactor --> Audit
+        PasswordReset --> RateLimiter
+    end
+
+    subgraph DataLayer["Persistence & Infrastructure Layer"]
+        Redis[("Redis 7<br/>- auth:attempts:email<br/>- auth:lockout:email<br/>- oauth:code:code (60s TTL)<br/>- user:session:id (5m cache)<br/>- auth:activation:token (5m dedup)")]
+        Postgres[("PostgreSQL 15<br/>- users table (Argon2id hashes, secrets, token_version)<br/>- login_audit_logs table (IP, User-Agent, status)")]
+        RateLimiter --> Redis
+        OAuth --> Redis
+        TokenSession --> Postgres
+        LocalAuth --> Postgres
+        Audit --> Postgres
+    end
+
+    subgraph ExternalLayer["External Identity & Security Providers"]
+        Cloudflare["Cloudflare Turnstile API<br/>(https://challenges.cloudflare.com)"]
+        IdPs["External Identity Providers<br/>(GitHub & Google OAuth2)"]
+        Mailpit["Mailpit SMTP Service<br/>(Local SMTP Port 1025)"]
+
+        Captcha --> Cloudflare
+        OAuth --> IdPs
+        LocalAuth --> Mailpit
+        PasswordReset --> Mailpit
+    end
 ```
 
 ### Key Architectural Characteristics
 * **Zero-Trust Input Validation:** Every incoming request body is strictly parsed and sanitized by `ValidationPipe({ whitelist: true, transform: true })` using declarative `class-validator` DTOs.
-* **Modern Password Security:** Enforces Argon2id (the winner of the Password Hashing Competition) over legacy bcrypt, protecting against GPU/ASIC brute-force attacks.
-* **Time-Based One-Time Passwords (TOTP):** Full RFC 6238 implementation allowing users to pair Google Authenticator, Microsoft Authenticator, or Authy via QR codes.
-* **Forensic Audit Logging:** Every single authentication attempt (success, bad password, account lock, 2FA challenge, 2FA failure, OAuth login) is recorded with client IP, User-Agent, and timestamps.
-* **Stateless JWT with Defense-in-Depth:** Short-lived access tokens (15 minutes) paired with longer refresh tokens (7 days). Sensitive user attributes (`passwordHash`, `twoFactorSecret`, tokens) are stripped automatically during JSON serialization via custom `toJSON()` implementation.
+* **Modern Password Security:** Enforces Argon2id (RFC 9106 recommended parameters) over legacy bcrypt, protecting against GPU/ASIC brute-force attacks.
+* **Time-Based One-Time Passwords (TOTP):** Full RFC 6238 implementation allowing users to pair Google Authenticator, Microsoft Authenticator, or Authy via QR codes with rate-limited brute-force lockout.
+* **Cryptographic Secret Separation & Token Typing (RFC 6749):** Access tokens (15 minutes) signed with `JWT_SECRET` and tagged `token_type: 'access'`; Refresh tokens (7 days) signed with `JWT_REFRESH_SECRET` and tagged `token_type: 'refresh'`.
+* **Timing Attack & Enumeration Neutralization:** In `LocalAuthService.login`, unknown accounts trigger constant-time verification with `DUMMY_ARGON2_HASH` and record attempts in rate limiting.
+* **Forensic Audit Logging:** Every authentication attempt (success, bad password, account lock, 2FA challenge, 2FA failure, OAuth login) is recorded with client IP, User-Agent, status, and failure reasons in PostgreSQL.
 
 ---
 
@@ -55,18 +102,25 @@ backend/src/
     ├── auth/                             # Core Authentication Domain
     │   ├── auth.controller.ts            # REST routes for auth, 2FA, password reset, OAuth
     │   ├── auth.module.ts                # Auth module definition and provider wiring
-    │   ├── auth.service.ts               # Core authentication business logic & crypto operations
+    │   ├── auth.service.ts               # Core authentication facade orchestration
+    │   ├── services/                     # Decoupled domain services
+    │   │   ├── local-auth.service.ts     # Registration, activation, password login, timing defense
+    │   │   ├── two-factor-auth.service.ts# RFC 6238 TOTP 2FA onboarding, verification, rate limiting
+    │   │   ├── token-session.service.ts  # RFC 6749 JWT token issuance, secret separation, revocation
+    │   │   ├── oauth.service.ts          # External identity linking (Google, GitHub)
+    │   │   ├── oauth-code-store.service.ts# Redis-backed single-use OAuth exchange code store
+    │   │   ├── password-reset.service.ts # 15-minute token password recovery and session invalidation
+    │   │   └── login-rate-limiter.service.ts # Distributed sliding-window brute-force rate limiter
     │   ├── dto/                          # Data Transfer Objects with validation rules
     │   │   ├── login.dto.ts              # Login credentials payload
-    │   │   ├── oauth-mock.dto.ts         # Simulated OAuth payload for demo & automated testing
     │   │   ├── password-reset.dto.ts     # Forgot password & Reset password payloads
-    │   │   ├── register.dto.ts           # Registration payload with password regex & CAPTCHA
+    │   │   ├── register.dto.ts           # Registration payload with password regex & Turnstile token
     │   │   ├── set-password.dto.ts       # Set/update password payload (for OAuth or existing users)
     │   │   └── verify-2fa.dto.ts         # TOTP verification and enablement payloads
     │   └── strategies/
     │       ├── github.strategy.ts        # Passport GitHub OAuth2 strategy (passport-github2)
     │       ├── google.strategy.ts        # Passport Google OAuth2 strategy (passport-google-oauth20)
-    │       └── jwt.strategy.ts           # Passport JWT Bearer token validation strategy
+    │       └── jwt.strategy.ts           # Passport JWT Bearer token validation strategy (token_type check)
     ├── users/                            # User Account Management Domain
     │   ├── entities/
     │   │   └── user.entity.ts            # TypeORM Entity for 'users' table
@@ -81,7 +135,7 @@ backend/src/
     │   └── security-audit.service.ts     # Audit log writer and paginated querying
     └── captcha/                          # Bot Prevention Domain
         ├── captcha.module.ts             # Captcha module definition
-        └── captcha.service.ts            # Cloudflare Turnstile / reCAPTCHA API verification
+        └── captcha.service.ts            # Cloudflare Turnstile API verification (fail-closed)
 ```
 
 ---
@@ -232,7 +286,7 @@ Provides a tamper-evident forensic log of all login attempts.
   * Dynamic theme synchronization via `useTheme()`: renders `theme: 'light'` (clean white widget) in light mode and `theme: 'dark'` (clipped 1px high-contrast border) in dark mode.
   * Synchronous lifecycle cleanup: utilizes `useLayoutEffect` to trigger `window.turnstile.remove(widgetId)` before React unmounts DOM containers, preventing orphaned widget warnings.
   * Content Security Policy (CSP): `<meta>` tag in `index.html` permits `https://challenges.cloudflare.com` for `script-src`, `frame-src`, and `connect-src`, and allows `'unsafe-eval'` required by Turnstile's challenge runner.
-* **Development Testing:** Recognizes explicit test tokens (`valid-captcha-token`, `test-token`, `bypass-*`) in `development` and `test` environments.
+* **Production Hardening (Zero Backdoors):** Production code strictly excludes hardcoded bypass tokens (`valid-captcha-token`, `bypass-*`). Verification is strictly executed against Cloudflare's endpoint, using official Cloudflare testing sitekeys (`1x00000000000000000000AA` / `1x0000000000000000000000000000000AA`) in automated workflows and isolated mocks solely within unit test suites (`*.spec.ts`).
 
 ### 3. Email Account Activation
 * **Token Generation:** 32-byte cryptographically secure random token via `crypto.randomBytes(32).toString('hex')`.
@@ -485,7 +539,7 @@ GOOGLE_CALLBACK_URL=http://localhost:3000/api/v1/auth/google/callback
 
 To verify all security mechanisms end-to-end, execute this 7-step walkthrough utilizing the Swagger UI ([http://localhost:3000/api/docs](http://localhost:3000/api/docs)) and Mailpit Web UI ([http://localhost:8025](http://localhost:8025)):
 
-1. **Step 1 (Password Policy):** In Swagger, call `POST /auth/register` with password `"weak"`. Show the rejection with HTTP 400. Then register with `"SecurePassword!2026"` and `captchaToken: "valid-captcha-token"`. Show the success response.
+1. **Step 1 (Password Policy):** In Swagger, call `POST /auth/register` with password `"weak"`. Show the rejection with HTTP 400. Then register with `"SecurePassword!2026"` and valid Turnstile `captchaToken`. Show the success response.
 2. **Step 2 (CAPTCHA):** Call `POST /auth/register` with an empty or missing `captchaToken`. Show rejection with HTTP 400 (`"CAPTCHA token is required"`).
 3. **Step 3 (Email Activation):** Open Mailpit at `http://localhost:8025`. Show the activation email. Copy the `activationToken` and execute `GET /auth/activate?token=...` in Swagger. Show `"Account successfully activated"`. Call it again to demonstrate single-use token invalidation.
 4. **Step 4 (Brute-Force & Lockout):** In Swagger, call `POST /auth/login` with an incorrect password 5 consecutive times. On the 5th attempt, show the `"Account locked for 15 minutes"` message. Call `GET /admin/security/login-logs` as Admin and demonstrate the forensic audit log entries.

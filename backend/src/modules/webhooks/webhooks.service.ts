@@ -80,6 +80,175 @@ export class WebhooksService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
+   * Resolves target webhook format with auto-detection.
+   */
+  resolveWebhookFormat(url: string, explicitFormat?: string): 'generic' | 'discord' | 'slack' {
+    if (explicitFormat && ['generic', 'discord', 'slack'].includes(explicitFormat)) {
+      return explicitFormat as 'generic' | 'discord' | 'slack';
+    }
+    const lower = url.toLowerCase();
+    if (lower.includes('discord.com/api/webhooks') || lower.includes('discordapp.com/api/webhooks')) {
+      return 'discord';
+    }
+    if (lower.includes('hooks.slack.com')) {
+      return 'slack';
+    }
+    return 'generic';
+  }
+
+  /**
+   * Formats outgoing payload body and HTTP headers according to webhook target platform.
+   */
+  private formatPayload(webhook: ProjectWebhook, envelope: WebhookEnvelope): { body: string; headers: Record<string, string> } {
+    const format = webhook.format || this.resolveWebhookFormat(webhook.url);
+
+    if (format === 'discord') {
+      const data = envelope.data || {};
+      let title = `BugTracker Event: ${envelope.event}`;
+      let description = data.description || data.message || '';
+      let color = 0x71717a;
+
+      switch (envelope.event) {
+        case 'ping':
+          title = 'BugTracker Webhook Ping';
+          description = 'Ping connection test received successfully from BugTracker outbound webhook engine.';
+          color = 0x0284c7;
+          break;
+        case 'issue.created':
+          title = `Issue Created: [${data.key || 'Issue'}] ${data.title || ''}`;
+          color = 0x22c55e;
+          break;
+        case 'issue.updated':
+          title = `Issue Updated: [${data.key || 'Issue'}] ${data.title || ''}`;
+          color = 0x3b82f6;
+          break;
+        case 'status.changed':
+          title = `Status Transitioned: [${data.key || 'Issue'}] to ${data.status || 'Updated'}`;
+          color = 0xf59e0b;
+          break;
+        case 'comment.created':
+          title = `Comment Added on [${data.issueKey || data.key || 'Issue'}]`;
+          description = data.comment?.body || data.body || description;
+          color = 0x6366f1;
+          break;
+        case 'issue.deleted':
+          title = `Issue Deleted: [${data.key || 'Issue'}]`;
+          color = 0xef4444;
+          break;
+      }
+
+      const fields: Array<{ name: string; value: string; inline: boolean }> = [];
+      if (data.status) fields.push({ name: 'Status', value: String(data.status), inline: true });
+      if (data.priority) fields.push({ name: 'Priority', value: String(data.priority), inline: true });
+      if (data.type) fields.push({ name: 'Type', value: String(data.type), inline: true });
+      if (data.assignee?.fullName || data.assigneeName) {
+        fields.push({ name: 'Assignee', value: String(data.assignee?.fullName || data.assigneeName), inline: true });
+      }
+
+      const discordBody = {
+        embeds: [
+          {
+            title: title.slice(0, 256),
+            description: (description || 'No additional details provided').slice(0, 2048),
+            color,
+            fields: fields.slice(0, 25),
+            footer: { text: 'BugTracker Outbound Webhooks' },
+            timestamp: envelope.timestamp,
+          },
+        ],
+      };
+
+      return {
+        body: JSON.stringify(discordBody),
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'BugTracker-Webhook/1.0',
+        },
+      };
+    }
+
+    if (format === 'slack') {
+      const data = envelope.data || {};
+      let title = `BugTracker Event: ${envelope.event}`;
+      let text = data.description || data.message || '';
+      let color = '#71717a';
+
+      switch (envelope.event) {
+        case 'ping':
+          title = 'BugTracker Webhook Ping';
+          text = 'Ping connection test received successfully from BugTracker outbound webhook engine.';
+          color = '#0284c7';
+          break;
+        case 'issue.created':
+          title = `Issue Created: [${data.key || 'Issue'}] ${data.title || ''}`;
+          color = '#22c55e';
+          break;
+        case 'issue.updated':
+          title = `Issue Updated: [${data.key || 'Issue'}] ${data.title || ''}`;
+          color = '#3b82f6';
+          break;
+        case 'status.changed':
+          title = `Status Transitioned: [${data.key || 'Issue'}] to ${data.status || 'Updated'}`;
+          color = '#f59e0b';
+          break;
+        case 'comment.created':
+          title = `Comment Added on [${data.issueKey || data.key || 'Issue'}]`;
+          text = data.comment?.body || data.body || text;
+          color = '#6366f1';
+          break;
+        case 'issue.deleted':
+          title = `Issue Deleted: [${data.key || 'Issue'}]`;
+          color = '#ef4444';
+          break;
+      }
+
+      const fields: Array<{ title: string; value: string; short: boolean }> = [];
+      if (data.status) fields.push({ title: 'Status', value: String(data.status), short: true });
+      if (data.priority) fields.push({ title: 'Priority', value: String(data.priority), short: true });
+      if (data.type) fields.push({ title: 'Type', value: String(data.type), short: true });
+      if (data.assignee?.fullName || data.assigneeName) {
+        fields.push({ title: 'Assignee', value: String(data.assignee?.fullName || data.assigneeName), short: true });
+      }
+
+      const slackBody = {
+        attachments: [
+          {
+            color,
+            title: title.slice(0, 256),
+            text: (text || 'No additional details provided').slice(0, 2048),
+            fields: fields.slice(0, 25),
+            footer: 'BugTracker Outbound Webhooks',
+            ts: Math.floor(new Date(envelope.timestamp).getTime() / 1000),
+          },
+        ],
+      };
+
+      return {
+        body: JSON.stringify(slackBody),
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'BugTracker-Webhook/1.0',
+        },
+      };
+    }
+
+    // Default Generic JSON payload with HMAC-SHA256 signature
+    const genericBody = JSON.stringify(envelope);
+    const signature = this.signPayload(webhook.secret, genericBody);
+
+    return {
+      body: genericBody,
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'BugTracker-Webhook/1.0',
+        'X-BugTracker-Signature': `sha256=${signature}`,
+        'X-BugTracker-Event': envelope.event,
+        'X-BugTracker-Delivery': envelope.id,
+      },
+    };
+  }
+
+  /**
    * Registers a new outbound webhook for a project.
    */
   async create(projectId: number, dto: CreateWebhookDto): Promise<ProjectWebhook> {
@@ -90,6 +259,7 @@ export class WebhooksService implements OnModuleInit, OnModuleDestroy {
 
     const secret = dto.secret?.trim() || this.generateSecret();
     const events = dto.events && dto.events.length > 0 ? dto.events : ['*'];
+    const format = this.resolveWebhookFormat(dto.url, dto.format);
 
     const webhook = this.webhookRepository.create({
       projectId,
@@ -97,6 +267,7 @@ export class WebhooksService implements OnModuleInit, OnModuleDestroy {
       url: dto.url.trim(),
       secret,
       events,
+      format,
       isActive: dto.isActive !== undefined ? dto.isActive : true,
     });
 
@@ -133,7 +304,15 @@ export class WebhooksService implements OnModuleInit, OnModuleDestroy {
     const webhook = await this.findOne(projectId, id);
 
     if (dto.name !== undefined) webhook.name = dto.name.trim();
-    if (dto.url !== undefined) webhook.url = dto.url.trim();
+    if (dto.url !== undefined) {
+      webhook.url = dto.url.trim();
+      if (!dto.format) {
+        webhook.format = this.resolveWebhookFormat(webhook.url);
+      }
+    }
+    if (dto.format !== undefined) {
+      webhook.format = this.resolveWebhookFormat(webhook.url, dto.format);
+    }
     if (dto.secret !== undefined && dto.secret.trim()) webhook.secret = dto.secret.trim();
     if (dto.events !== undefined) webhook.events = dto.events;
     if (dto.isActive !== undefined) webhook.isActive = dto.isActive;
@@ -165,8 +344,7 @@ export class WebhooksService implements OnModuleInit, OnModuleDestroy {
       },
     };
 
-    const body = JSON.stringify(envelope);
-    const signature = this.signPayload(webhook.secret, body);
+    const { body, headers } = this.formatPayload(webhook, envelope);
     const startTime = Date.now();
 
     try {
@@ -175,13 +353,7 @@ export class WebhooksService implements OnModuleInit, OnModuleDestroy {
 
       const response = await fetch(webhook.url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'User-Agent': 'BugTracker-Webhook/1.0',
-          'X-BugTracker-Signature': `sha256=${signature}`,
-          'X-BugTracker-Event': 'ping',
-          'X-BugTracker-Delivery': envelope.id,
-        },
+        headers,
         body,
         signal: controller.signal,
       });
@@ -270,8 +442,7 @@ export class WebhooksService implements OnModuleInit, OnModuleDestroy {
    * Performs an HTTP POST delivery attempt. On failure, schedules Redis retry if attempts remain.
    */
   private async deliver(webhook: ProjectWebhook, envelope: WebhookEnvelope, attempt: number): Promise<boolean> {
-    const body = JSON.stringify(envelope);
-    const signature = this.signPayload(webhook.secret, body);
+    const { body, headers } = this.formatPayload(webhook, envelope);
 
     try {
       const controller = new AbortController();
@@ -279,13 +450,7 @@ export class WebhooksService implements OnModuleInit, OnModuleDestroy {
 
       const response = await fetch(webhook.url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'User-Agent': 'BugTracker-Webhook/1.0',
-          'X-BugTracker-Signature': `sha256=${signature}`,
-          'X-BugTracker-Event': envelope.event,
-          'X-BugTracker-Delivery': envelope.id,
-        },
+        headers,
         body,
         signal: controller.signal,
       });

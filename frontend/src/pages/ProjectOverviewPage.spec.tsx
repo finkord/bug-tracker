@@ -57,6 +57,7 @@ vi.mock('../api/queries', () => ({
   useProjectsQuery: () => ({ data: [mockProject], isLoading: false }),
   useIssuesQuery: () => ({ data: { items: mockIssues, total: 2 }, isLoading: false }),
   useProjectSprintsQuery: () => ({ data: mockSprints, isLoading: false }),
+  useTeamsQuery: () => ({ data: [], isLoading: false }),
   useIssueDetailQuery: () => ({ data: mockIssues[0], isLoading: false }),
   useUpdateIssueStatusMutation: () => ({ mutateAsync: vi.fn() }),
   useUpdateIssueMutation: () => ({ mutateAsync: vi.fn() }),
@@ -152,5 +153,14 @@ describe('ProjectOverviewPage Component', () => {
 
     // IssueDetailsModal should be invoked
     expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('renders leadership and workspace directory navigation links', () => {
+    renderComponent();
+
+    expect(screen.getByText('Leadership & Directory')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /scrum teams/i })).toHaveAttribute('href', '/projects/PHX/settings/teams');
+    expect(screen.getByRole('link', { name: /components/i })).toHaveAttribute('href', '/projects/PHX/settings/components');
+    expect(screen.getByRole('link', { name: /releases/i })).toHaveAttribute('href', '/projects/PHX/settings/versions');
   });
 });

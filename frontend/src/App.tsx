@@ -325,7 +325,23 @@ export const App: React.FC = () => {
                 }
               />
               <Route
+                path="/projects/:projectId/settings/:tab"
+                element={
+                  <ProtectedRoute>
+                    <ProjectSettingsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/projects/:id/settings"
+                element={
+                  <ProtectedRoute>
+                    <ProjectSettingsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/projects/:id/settings/:tab"
                 element={
                   <ProtectedRoute>
                     <ProjectSettingsPage />

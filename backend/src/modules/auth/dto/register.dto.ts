@@ -48,9 +48,8 @@ export class RegisterDto {
   password: string;
 
   @ApiProperty({
-    example: 'valid-captcha-token',
-    description:
-      'Bot protection token verified by CaptchaService. Use "valid-captcha-token" in dev mode.',
+    example: '0.cf-turnstile-response-token',
+    description: 'Cloudflare Turnstile bot protection response token',
   })
   @IsString()
   @IsNotEmpty({ message: 'CAPTCHA token is required' })

@@ -85,6 +85,7 @@ describe('NotificationsService', () => {
     it('should return unread notification count', async () => {
       const res = await service.getUnreadCount(10);
       expect(res.count).toBe(5);
+      expect(res.unreadCount).toBe(5);
     });
   });
 

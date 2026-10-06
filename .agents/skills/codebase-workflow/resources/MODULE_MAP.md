@@ -34,6 +34,7 @@
 | `services/password-reset.service.ts`           | Forgot/reset password flow                          |
 | `services/token-session.service.ts`            | JWT access + refresh token issuance / revocation    |
 | `services/two-factor-auth.service.ts`          | TOTP 2FA enable/disable/verify                      |
+| `services/login-rate-limiter.service.ts`       | Redis sliding-window brute-force rate limiter       |
 | `strategies/jwt.strategy.ts`                   | Passport JWT strategy (httpOnly cookie extraction)  |
 | `strategies/google.strategy.ts`                | Passport Google OAuth2 strategy                     |
 | `strategies/github.strategy.ts`                | Passport GitHub OAuth2 strategy                     |

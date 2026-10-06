@@ -145,11 +145,15 @@ export const QuickSearchModal: React.FC<QuickSearchModalProps> = ({
       {
         id: 'action-toggle-theme',
         type: 'action',
-        label: 'Toggle dark / light theme',
+        label: 'Switch theme (System / Light / Dark)',
         icon: <SunMoon className="w-4 h-4" />,
         onExecute: () => {
           const currentTheme = useThemeStore.getState().theme;
-          const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+          let nextTheme: 'light' | 'dark' | 'system' = 'light';
+          if (currentTheme === 'system') nextTheme = 'light';
+          else if (currentTheme === 'light') nextTheme = 'dark';
+          else nextTheme = 'system';
+
           toggleTheme();
           if (user) {
             api.updatePreferences({ theme: nextTheme }).catch(() => {});

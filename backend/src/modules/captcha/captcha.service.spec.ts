@@ -35,32 +35,9 @@ describe('CaptchaService', () => {
     });
   });
 
-  describe('development & testing bypass', () => {
-    it('should allow valid-captcha-token in development', async () => {
+  describe('secret key enforcement', () => {
+    it('should fail closed if secret key is missing', async () => {
       mockConfigService.get.mockImplementation((key: string, defaultValue?: string) => {
-        if (key === 'NODE_ENV') return 'development';
-        return defaultValue;
-      });
-
-      const result = await service.validateToken('valid-captcha-token', '127.0.0.1');
-      expect(result).toBe(true);
-    });
-
-    it('should allow bypass- prefixed tokens in test environment', async () => {
-      mockConfigService.get.mockImplementation((key: string, defaultValue?: string) => {
-        if (key === 'NODE_ENV') return 'test';
-        return defaultValue;
-      });
-
-      const result = await service.validateToken('bypass-test-123', '127.0.0.1');
-      expect(result).toBe(true);
-    });
-  });
-
-  describe('production secret key enforcement', () => {
-    it('should fail closed in production if secret key is missing', async () => {
-      mockConfigService.get.mockImplementation((key: string, defaultValue?: string) => {
-        if (key === 'NODE_ENV') return 'production';
         if (key === 'TURNSTILE_SECRET' || key === 'CAPTCHA_SECRET_KEY') return undefined;
         return defaultValue;
       });
@@ -70,9 +47,8 @@ describe('CaptchaService', () => {
       expect(result.errorCodes).toContain('missing-input-secret');
     });
 
-    it('should fail closed in production if secret key is placeholder', async () => {
+    it('should fail closed if secret key is placeholder', async () => {
       mockConfigService.get.mockImplementation((key: string, defaultValue?: string) => {
-        if (key === 'NODE_ENV') return 'production';
         if (key === 'TURNSTILE_SECRET') return 'placeholder_turnstile_secret_key';
         return defaultValue;
       });

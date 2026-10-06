@@ -87,7 +87,7 @@ export class NotificationsService {
   /**
    * Returns count of active unread notifications for badges.
    */
-  async getUnreadCount(userId: number): Promise<{ count: number }> {
+  async getUnreadCount(userId: number): Promise<{ count: number; unreadCount: number }> {
     const count = await this.notificationRepository
       .createQueryBuilder('n')
       .where('n.userId = :userId', { userId })
@@ -97,7 +97,7 @@ export class NotificationsService {
       })
       .getCount();
 
-    return { count };
+    return { count, unreadCount: count };
   }
 
   /**
