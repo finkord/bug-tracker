@@ -1444,13 +1444,18 @@ export class SeedService {
 
         for (let i = 3; i <= count; i++) {
           const sprintName = i === 3 ? 'Sprint 3 (Upcoming)' : `Sprint ${i}`;
+          const startDateObj = new Date(Date.UTC(2026, 8, 1));
+          startDateObj.setUTCDate(startDateObj.getUTCDate() + (i - 3) * 14);
+          const endDateObj = new Date(startDateObj);
+          endDateObj.setUTCDate(endDateObj.getUTCDate() + 13);
+
           const sN = this.sprintRepository.create({
             projectId: proj.id,
             name: sprintName,
             goal: `${proj.name} milestone ${i} enhancements, enterprise scalability, and maintenance`,
             status: SprintStatus.PLANNED,
-            startDate: `2026-09-${String(1 + (i - 3) * 14).padStart(2, '0')}`,
-            endDate: `2026-09-${String(14 + (i - 3) * 14).padStart(2, '0')}`,
+            startDate: startDateObj.toISOString().slice(0, 10),
+            endDate: endDateObj.toISOString().slice(0, 10),
           });
           const savedSN = await this.sprintRepository.save(sN);
           sprintMap[key][sprintName] = savedSN.id;
@@ -1607,9 +1612,9 @@ export class SeedService {
         additionalIssues.push(issue);
       }
 
-      // Save in batches of 50
-      for (let i = 0; i < additionalIssues.length; i += 50) {
-        const chunk = additionalIssues.slice(i, i + 50);
+      // Save in batches of 200 for high-throughput insertion
+      for (let i = 0; i < additionalIssues.length; i += 200) {
+        const chunk = additionalIssues.slice(i, i + 200);
         const savedChunk = await this.issueRepository.save(chunk);
         for (const saved of savedChunk) {
           const compKey = `${saved.project?.key || Object.keys(projects).find((k) => projects[k].id === saved.projectId)}-${saved.issueNum}`;

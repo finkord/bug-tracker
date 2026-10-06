@@ -7,7 +7,7 @@ import {
   MessageBody,
   ConnectedSocket,
 } from '@nestjs/websockets';
-import { Logger } from '@nestjs/common';
+import { Logger, Injectable, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Server, Socket } from 'socket.io';
@@ -38,6 +38,7 @@ export interface BroadcastIssuePayload {
   securityLevelId?: number | null;
 }
 
+@Injectable()
 @WebSocketGateway({
   cors: {
     origin: process.env.FRONTEND_URL || 'http://localhost:5173',
@@ -54,11 +55,11 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private static readonly SESSION_CACHE_TTL_SECONDS = 300;
 
   constructor(
-    private readonly jwtService: JwtService,
-    private readonly configService: ConfigService,
-    private readonly usersService: UsersService,
-    private readonly redisService: RedisService,
-    private readonly permissionEvaluator: PermissionEvaluatorService,
+    @Inject(JwtService) private readonly jwtService: JwtService,
+    @Inject(ConfigService) private readonly configService: ConfigService,
+    @Inject(UsersService) private readonly usersService: UsersService,
+    @Inject(RedisService) private readonly redisService: RedisService,
+    @Inject(PermissionEvaluatorService) private readonly permissionEvaluator: PermissionEvaluatorService,
     @InjectRepository(Issue)
     private readonly issueRepository: Repository<Issue>,
   ) {}
