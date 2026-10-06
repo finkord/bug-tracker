@@ -77,6 +77,12 @@ To eliminate fragmented duplicate styles and ensure unified Material 3 token con
   - Zero-data presentation with icon container, headline, description, and primary action button.
 * **`ConfirmDialog`** ([`frontend/src/components/ui/ConfirmDialog.tsx`](../../frontend/src/components/ui/ConfirmDialog.tsx)):
   - Accessible modal dialog for confirmations, destructive operations, and sprint rollovers.
+* **`Tabs` & `ScrollableTabsContainer`** ([`frontend/src/components/ui/Tabs.tsx`](../../frontend/src/components/ui/Tabs.tsx)):
+  - Canonical tab primitives (`Tabs`, `TabsList`, `TabsTrigger`, `TabsContent`, `ScrollableTabsContainer`, `useScrollableTabs`) with M3 expressive styling (`pills` and `underline` variants). Features interactive left/right chevron navigation buttons, visual overflow edge gradient masks, auto-scroll centering for the active tab, and non-passive mouse-wheel horizontal translation with vertical page scroll suppression.
+* **`Textarea`** ([`frontend/src/components/ui/Textarea.tsx`](../../frontend/src/components/ui/Textarea.tsx)):
+  - Canonical multiline text input adhering strictly to Material Design 3 Expressive guidelines. Features tokenized styling (`surface-container-highest`, `outline-variant`, `rounded-xl`), error state handling, helper text, and flexible default rows.
+* **`Select`** ([`frontend/src/components/ui/Select.tsx`](../../frontend/src/components/ui/Select.tsx)):
+  - Canonical select dropdown wrapping Radix UI Select. Adheres to M3 Expressive floating menu specifications: `rounded-2xl`, `bg-[var(--md-sys-color-surface-container)]`, `border-[var(--md-sys-color-outline-variant)]/50`, `shadow-2xl`, and active item highlight with `secondary-container` tonal fill.
 * **`SearchInput`** ([`frontend/src/components/ui/SearchInput.tsx`](../../frontend/src/components/ui/SearchInput.tsx)):
   - Search input with clear button, debounce hooks, and keyboard shortcut hint badges.
 

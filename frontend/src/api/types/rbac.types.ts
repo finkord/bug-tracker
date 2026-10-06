@@ -39,16 +39,22 @@ export interface PermissionSchemeItem {
   grants?: PermissionGrantItem[];
 }
 
+export interface IssueSecurityGrantItem {
+  id: number;
+  securityLevelId?: number;
+  grantType: string;
+  roleId?: number | null;
+  groupId?: number | null;
+  role?: ProjectRoleItem | null;
+  group?: GroupItem | null;
+}
+
 export interface IssueSecurityLevelItem {
   id: number;
+  schemeId?: number;
   name: string;
   description: string | null;
-  grants?: Array<{
-    id: number;
-    grantType: string;
-    role?: ProjectRoleItem | null;
-    group?: GroupItem | null;
-  }>;
+  grants?: IssueSecurityGrantItem[];
 }
 
 export interface IssueSecuritySchemeItem {
@@ -56,6 +62,7 @@ export interface IssueSecuritySchemeItem {
   name: string;
   description: string | null;
   defaultLevelId: number | null;
+  isDefault?: boolean;
   levels?: IssueSecurityLevelItem[];
 }
 

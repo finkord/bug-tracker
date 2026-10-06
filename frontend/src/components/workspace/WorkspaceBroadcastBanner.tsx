@@ -73,7 +73,7 @@ export const WorkspaceBroadcastBanner: React.FC = () => {
   return (
     <>
       <div
-        className={`flex-1 flex items-center gap-2 text-xs font-semibold px-2.5 py-1.5 rounded-xl min-w-0 overflow-hidden select-none ${bar} ${
+        className={`w-full flex items-center gap-2.5 text-xs font-medium px-3 sm:px-4 py-1.5 border-b border-[var(--md-sys-color-outline-variant)]/20 shrink-0 select-none z-20 ${bar} ${
           broadcast.severity === 'critical' ? 'animate-pulse' : ''
         }`}
         role="status"

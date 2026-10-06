@@ -7,6 +7,7 @@ import { useGlobalKeyboardShortcuts } from './hooks/useGlobalKeyboardShortcuts.j
 import { useScrollRestoration } from './hooks/useScrollRestoration.js';
 import { SessionExpiredModal } from './components/common/SessionExpiredModal.js';
 import { WorkspaceHeader } from './components/workspace/WorkspaceHeader.js';
+import { WorkspaceBroadcastBanner } from './components/workspace/WorkspaceBroadcastBanner.js';
 import { Sidebar } from './components/common/Sidebar.js';
 import { Footer } from './components/common/Footer.js';
 import { ProtectedRoute, AdminRoute, PublicOnlyRoute } from './components/common/ProtectedRoute.js';
@@ -62,8 +63,26 @@ const MyIssuesPage = React.lazy(() =>
 const TimeTrackingPage = React.lazy(() =>
   import('./pages/TimeTrackingPage').then((m) => ({ default: m.TimeTrackingPage })),
 );
-const AdminDashboardPage = React.lazy(() =>
-  import('./pages/AdminDashboardPage').then((m) => ({ default: m.AdminDashboardPage })),
+const AdminLayout = React.lazy(() =>
+  import('./pages/admin/AdminLayout').then((m) => ({ default: m.AdminLayout })),
+);
+const AdminUsersPage = React.lazy(() =>
+  import('./pages/admin/AdminUsersPage').then((m) => ({ default: m.AdminUsersPage })),
+);
+const AdminTeamsPage = React.lazy(() =>
+  import('./pages/admin/AdminTeamsPage').then((m) => ({ default: m.AdminTeamsPage })),
+);
+const AdminRbacPage = React.lazy(() =>
+  import('./pages/admin/AdminRbacPage').then((m) => ({ default: m.AdminRbacPage })),
+);
+const AdminSecurityLogsPage = React.lazy(() =>
+  import('./pages/admin/AdminSecurityLogsPage').then((m) => ({ default: m.AdminSecurityLogsPage })),
+);
+const AdminProjectsPage = React.lazy(() =>
+  import('./pages/admin/AdminProjectsPage').then((m) => ({ default: m.AdminProjectsPage })),
+);
+const AdminAnnouncementsPage = React.lazy(() =>
+  import('./pages/admin/AdminAnnouncementsPage').then((m) => ({ default: m.AdminAnnouncementsPage })),
 );
 const ProjectSettingsPage = React.lazy(() =>
   import('./pages/ProjectSettingsPage').then((m) => ({ default: m.ProjectSettingsPage })),
@@ -108,6 +127,9 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             !user ? 'mt-1 sm:mt-2 md:mt-3' : ''
           }`}
         >
+          {/* Global Broadcast Announcement Banner inside main page area */}
+          <WorkspaceBroadcastBanner />
+
           {/* Mobile Top Strip for Guest Navigation (md:hidden) */}
           {!user && (
             <div className="md:hidden sticky top-0 z-30 px-4 h-14 shrink-0 flex items-center justify-between border-b border-[var(--md-sys-color-outline-variant)]/15 bg-[var(--md-sys-color-surface-container-low)]/90 backdrop-blur-md">
@@ -310,39 +332,27 @@ export const App: React.FC = () => {
                 }
               />
 
-              {/* Admin Console Routes */}
+              {/* Admin Console Nested Sub-Routes */}
               <Route
                 path="/admin"
                 element={
                   <AdminRoute>
-                    <AdminDashboardPage defaultTab="users" />
+                    <AdminLayout />
                   </AdminRoute>
                 }
-              />
-              <Route
-                path="/admin/dashboard"
-                element={
-                  <AdminRoute>
-                    <AdminDashboardPage defaultTab="users" />
-                  </AdminRoute>
-                }
-              />
-              <Route
-                path="/admin/rbac"
-                element={
-                  <AdminRoute>
-                    <AdminDashboardPage defaultTab="rbac" />
-                  </AdminRoute>
-                }
-              />
-              <Route
-                path="/admin/security-logs"
-                element={
-                  <AdminRoute>
-                    <AdminDashboardPage defaultTab="security" />
-                  </AdminRoute>
-                }
-              />
+              >
+                <Route index element={<Navigate to="/admin/users" replace />} />
+                <Route path="users" element={<AdminUsersPage />} />
+                <Route path="teams" element={<AdminTeamsPage />} />
+                <Route path="rbac" element={<AdminRbacPage />} />
+                <Route path="security" element={<AdminSecurityLogsPage />} />
+                <Route path="projects" element={<AdminProjectsPage />} />
+                <Route path="announcements" element={<AdminAnnouncementsPage />} />
+
+                {/* Backward Compatibility Aliases */}
+                <Route path="dashboard" element={<Navigate to="/admin/users" replace />} />
+                <Route path="security-logs" element={<Navigate to="/admin/security" replace />} />
+              </Route>
 
               {/* Fallback */}
               <Route path="*" element={<Navigate to="/" replace />} />

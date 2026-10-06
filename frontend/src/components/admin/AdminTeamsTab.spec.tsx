@@ -17,6 +17,7 @@ vi.mock('../../api/queries/useTeamsQuery.js', () => ({
 
 vi.mock('../../api/queries/index.js', () => ({
   useProjectsQuery: vi.fn(),
+  useUserDetailQuery: vi.fn(() => ({ data: null })),
 }));
 
 vi.mock('../../api/queries/useUsersQuery.js', () => ({

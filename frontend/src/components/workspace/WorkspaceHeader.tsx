@@ -3,7 +3,6 @@ import { Menu, PanelLeft } from 'lucide-react';
 import { useAuth, useSidebar } from '../../store';
 import { HeaderBreadcrumbs } from './HeaderBreadcrumbs';
 import { WorkspaceGlobalSearch } from './WorkspaceGlobalSearch';
-import { WorkspaceBroadcastBanner } from './WorkspaceBroadcastBanner';
 import { WorkspaceCreateIssueAction } from './WorkspaceCreateIssueAction';
 import { NotificationBell } from '../notifications/NotificationBell';
 import { Tooltip } from '../ui/Tooltip';
@@ -53,10 +52,6 @@ export const WorkspaceHeader: React.FC = () => {
         </Tooltip>
 
         <HeaderBreadcrumbs />
-
-        <div className="hidden xl:block ml-2 min-w-0">
-          <WorkspaceBroadcastBanner />
-        </div>
       </div>
 
       {/* Center Column: Quick Search Command Pill (shrink-0, centered) */}

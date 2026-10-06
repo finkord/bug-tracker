@@ -97,11 +97,48 @@ export function useRemoveUserFromGroupMutation() {
   });
 }
 
+export function useDeleteGroupMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (groupId: number) => api.deleteGroup(groupId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: rbacQueries.groups().queryKey });
+      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
+    },
+  });
+}
+
 export function useCreateProjectRoleMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: { name: string; description?: string; isDefault?: boolean }) =>
       api.createProjectRole(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: rbacQueries.roles().queryKey });
+    },
+  });
+}
+
+export function useUpdateProjectRoleMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      roleId,
+      payload,
+    }: {
+      roleId: number;
+      payload: { name?: string; description?: string; isDefault?: boolean };
+    }) => api.updateProjectRole(roleId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: rbacQueries.roles().queryKey });
+    },
+  });
+}
+
+export function useDeleteProjectRoleMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (roleId: number) => api.deleteProjectRole(roleId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: rbacQueries.roles().queryKey });
     },
@@ -115,6 +152,98 @@ export function useCreatePermissionSchemeMutation() {
       api.createPermissionScheme(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: rbacQueries.permissionSchemes().queryKey });
+    },
+  });
+}
+
+export function useDeletePermissionSchemeMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (schemeId: number) => api.deletePermissionScheme(schemeId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: rbacQueries.permissionSchemes().queryKey });
+    },
+  });
+}
+
+export function useCreateSecuritySchemeMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: { name: string; description?: string }) =>
+      api.createSecurityScheme(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: rbacQueries.securitySchemes().queryKey });
+    },
+  });
+}
+
+export function useDeleteSecuritySchemeMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (schemeId: number) => api.deleteSecurityScheme(schemeId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: rbacQueries.securitySchemes().queryKey });
+    },
+  });
+}
+
+export function useAddSecurityLevelMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ schemeId, payload }: { schemeId: number; payload: { name: string; description?: string } }) =>
+      api.addSecurityLevel(schemeId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: rbacQueries.securitySchemes().queryKey });
+    },
+  });
+}
+
+export function useDeleteSecurityLevelMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ schemeId, levelId }: { schemeId: number; levelId: number }) =>
+      api.deleteSecurityLevel(schemeId, levelId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: rbacQueries.securitySchemes().queryKey });
+    },
+  });
+}
+
+export function useSetDefaultSecurityLevelMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ schemeId, defaultLevelId }: { schemeId: number; defaultLevelId: number | null }) =>
+      api.setDefaultSecurityLevel(schemeId, defaultLevelId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: rbacQueries.securitySchemes().queryKey });
+    },
+  });
+}
+
+export function useAddSecurityGrantMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      schemeId,
+      levelId,
+      payload,
+    }: {
+      schemeId: number;
+      levelId: number;
+      payload: { grantType: string; roleId?: number; groupId?: number };
+    }) => api.addSecurityGrant(schemeId, levelId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: rbacQueries.securitySchemes().queryKey });
+    },
+  });
+}
+
+export function useDeleteSecurityGrantMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (grantId: number) => api.deleteSecurityGrant(grantId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: rbacQueries.securitySchemes().queryKey });
     },
   });
 }

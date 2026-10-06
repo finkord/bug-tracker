@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { TeamItem, UserProfile } from '../../api/client';
 import { useTeamsQuery, useDeleteTeamMutation } from '../../api/queries';
 import { Button, ConfirmDialog, EntityAvatar } from '../ui/index.js';
-import { Avatar } from '../common/Avatar.js';
+import { UserIdentity } from '../common/UserIdentity';
 import { TeamModal } from '../teams/TeamModal';
 import { TeamRosterModal } from '../teams/TeamRosterModal';
 import {
@@ -156,15 +156,16 @@ export const ProjectTeamsTab: React.FC<ProjectTeamsTabProps> = ({
                       Team Lead
                     </span>
                     {team.lead ? (
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <Avatar
+                      <div className="mt-1">
+                        <UserIdentity
+                          userId={team.lead.id}
+                          user={team.lead}
                           name={team.lead.fullName || 'Lead'}
                           avatarUrl={team.lead.avatarUrl}
+                          email={team.lead.email}
                           size="xs"
+                          showName
                         />
-                        <span className="font-semibold text-[var(--md-sys-color-on-surface)] truncate text-[11px]">
-                          {team.lead.fullName}
-                        </span>
                       </div>
                     ) : (
                       <span className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]/70 italic mt-1 block">
@@ -188,10 +189,13 @@ export const ProjectTeamsTab: React.FC<ProjectTeamsTabProps> = ({
                   <div className="flex items-center gap-1.5">
                     <div className="flex -space-x-1.5 overflow-hidden">
                       {(team.members || []).slice(0, 4).map((m) => (
-                        <Avatar
+                        <UserIdentity
                           key={m.id}
+                          userId={m.userId}
+                          user={m.user}
                           name={m.user?.fullName || 'User'}
                           avatarUrl={m.user?.avatarUrl}
+                          email={m.user?.email}
                           size="xs"
                           className="ring-2 ring-[var(--md-sys-color-surface)]"
                         />

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useInRouterContext } from 'react-router-dom';
 import * as PopoverPrimitive from '@radix-ui/react-popover';
 import { Avatar } from './Avatar.js';
 import { Badge, Button } from '../ui/index.js';
@@ -27,7 +27,11 @@ export interface UserProfilePopoverProps {
   className?: string;
 }
 
-export const UserProfilePopover: React.FC<UserProfilePopoverProps> = ({
+interface UserProfilePopoverInternalProps extends UserProfilePopoverProps {
+  onNavigate: (path: string) => void;
+}
+
+const UserProfilePopoverContent: React.FC<UserProfilePopoverInternalProps> = ({
   user: initialUser,
   userId: explicitUserId,
   children,
@@ -35,12 +39,16 @@ export const UserProfilePopover: React.FC<UserProfilePopoverProps> = ({
   side = 'bottom',
   sideOffset = 6,
   className,
+  onNavigate,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const navigate = useNavigate();
 
   const targetId = explicitUserId || initialUser?.id;
-  const { data: fetchedUser } = useUserDetailQuery(isOpen && targetId ? targetId : undefined);
+  const queryResult =
+    typeof useUserDetailQuery === 'function'
+      ? useUserDetailQuery(isOpen && targetId ? targetId : undefined)
+      : undefined;
+  const fetchedUser = queryResult?.data;
 
   // Combine initial user data with live-queried user details
   const activeUser = {
@@ -60,13 +68,13 @@ export const UserProfilePopover: React.FC<UserProfilePopoverProps> = ({
   const handleViewIssues = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsOpen(false);
-    navigate(`/search?assigneeId=${targetId}`);
+    onNavigate(`/search?assigneeId=${targetId}`);
   };
 
   const handleViewProfile = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsOpen(false);
-    navigate(`/users/${targetId}`);
+    onNavigate(`/users/${targetId}`);
   };
 
   return (
@@ -98,43 +106,42 @@ export const UserProfilePopover: React.FC<UserProfilePopoverProps> = ({
               name={activeUser.fullName}
               avatarUrl={activeUser.avatarUrl}
               size="lg"
-              className="w-12 h-12 shrink-0 ring-2 ring-[var(--md-sys-color-surface)]"
+              className="border-2 border-[var(--md-sys-color-surface)] shadow-sm shrink-0"
             />
-            <div className="min-w-0 flex-1">
+            <div className="flex-1 min-w-0 pt-0.5">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <h4 className="text-sm font-bold text-[var(--md-sys-color-on-surface)] truncate leading-tight">
+                <h4 className="font-bold text-sm text-[var(--md-sys-color-on-surface)] truncate">
                   {activeUser.fullName}
                 </h4>
                 {activeUser.systemRole === 'ADMIN' && (
-                  <Badge variant="primary" size="sm" className="text-[9px] px-1.5 py-0 uppercase">
+                  <Badge variant="primary" size="sm" className="h-4.5 px-1.5 text-[9px]">
                     Admin
                   </Badge>
                 )}
               </div>
 
               {activeUser.jobTitle ? (
-                <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] flex items-center gap-1 mt-0.5 truncate">
+                <div className="flex items-center gap-1 text-[11px] text-[var(--md-sys-color-on-surface-variant)] mt-0.5">
                   <Briefcase className="w-3 h-3 shrink-0 text-[var(--md-sys-color-primary)]" />
-                  <span>{activeUser.jobTitle}</span>
-                </p>
+                  <span className="truncate">{activeUser.jobTitle}</span>
+                </div>
               ) : (
-                <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] flex items-center gap-1 mt-0.5 truncate">
-                  <ShieldCheck className="w-3 h-3 shrink-0 text-[var(--md-sys-color-outline)]" />
-                  <span>{activeUser.systemRole === 'ADMIN' ? 'Administrator' : 'Team Member'}</span>
-                </p>
+                <div className="flex items-center gap-1 text-[11px] text-[var(--md-sys-color-outline)] mt-0.5">
+                  <ShieldCheck className="w-3 h-3 shrink-0" />
+                  <span>Team Contributor</span>
+                </div>
               )}
             </div>
           </div>
 
-          {/* Details Section */}
-          <div className="space-y-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)] bg-[var(--md-sys-color-surface-container)] p-2.5 rounded-xl border border-[var(--md-sys-color-outline-variant)]/40 mb-3.5">
+          {/* Meta Details List */}
+          <div className="space-y-2 py-2.5 my-2.5 border-y border-[var(--md-sys-color-outline-variant)]/30 text-xs text-[var(--md-sys-color-on-surface-variant)]">
             {activeUser.email && (
-              <div className="flex items-center gap-2 truncate">
-                <Mail className="w-3.5 h-3.5 shrink-0 text-[var(--md-sys-color-primary)]" />
+              <div className="flex items-center gap-2">
+                <Mail className="w-3.5 h-3.5 shrink-0 text-[var(--md-sys-color-outline)]" />
                 <a
                   href={`mailto:${activeUser.email}`}
-                  className="hover:underline text-[var(--md-sys-color-on-surface)] truncate"
-                  onClick={(e) => e.stopPropagation()}
+                  className="truncate hover:text-[var(--md-sys-color-primary)] hover:underline font-mono text-[11px]"
                 >
                   {activeUser.email}
                 </a>
@@ -182,4 +189,24 @@ export const UserProfilePopover: React.FC<UserProfilePopoverProps> = ({
       </PopoverPrimitive.Portal>
     </PopoverPrimitive.Root>
   );
+};
+
+const RoutedProfilePopover: React.FC<UserProfilePopoverProps> = (props) => {
+  const navigate = useNavigate();
+  return <UserProfilePopoverContent {...props} onNavigate={navigate} />;
+};
+
+const UnroutedProfilePopover: React.FC<UserProfilePopoverProps> = (props) => {
+  const fallbackNavigate = (path: string) => {
+    window.location.href = path;
+  };
+  return <UserProfilePopoverContent {...props} onNavigate={fallbackNavigate} />;
+};
+
+export const UserProfilePopover: React.FC<UserProfilePopoverProps> = (props) => {
+  const inRouter = useInRouterContext();
+  if (inRouter) {
+    return <RoutedProfilePopover {...props} />;
+  }
+  return <UnroutedProfilePopover {...props} />;
 };

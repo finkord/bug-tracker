@@ -36,6 +36,7 @@ export interface ProjectWithMetrics {
     id: number;
     fullName: string | null;
     email: string | null;
+    avatarUrl?: string | null;
   } | null;
   totalIssues: number;
   openIssues: number;
@@ -54,6 +55,7 @@ interface RawProjectRow {
   lead_id?: string | number | null;
   lead_fullName?: string | null;
   lead_email?: string | null;
+  lead_avatarUrl?: string | null;
   totalIssues?: string | number;
   openIssues?: string | number;
   wip_limits?: Record<string, number> | null;
@@ -121,6 +123,7 @@ export class ProjectsService {
         'lead.id AS "lead_id"',
         'lead.fullName AS "lead_fullName"',
         'lead.email AS "lead_email"',
+        'lead.avatarUrl AS "lead_avatarUrl"',
         'COUNT(issue.id) AS "totalIssues"',
         `COUNT(CASE WHEN issue.status IN ('OPEN', 'IN_PROGRESS', 'CODE_REVIEW', 'TESTING') THEN 1 END) AS "openIssues"`,
       ]);
@@ -132,6 +135,7 @@ export class ProjectsService {
     const raw: RawProjectRow[] = await qb
       .groupBy('project.id')
       .addGroupBy('lead.id')
+      .addGroupBy('lead.avatarUrl')
       .orderBy('project.createdAt', 'DESC')
       .getRawMany<RawProjectRow>();
 
@@ -147,6 +151,7 @@ export class ProjectsService {
             id: Number(r.lead_id),
             fullName: r.lead_fullName ?? null,
             email: r.lead_email ?? null,
+            avatarUrl: r.lead_avatarUrl ?? null,
           }
         : null,
       totalIssues: Number(r.totalIssues || 0),

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { Group } from '../entities/group.entity.js';
 import { UserGroup } from '../entities/user-group.entity.js';
 import { ProjectRole } from '../entities/project-role.entity.js';
@@ -53,6 +53,27 @@ export class RbacService {
       relations: {
         userGroups: {
           user: true,
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        isSystem: true,
+        createdAt: true,
+        updatedAt: true,
+        userGroups: {
+          id: true,
+          userId: true,
+          groupId: true,
+          createdAt: true,
+          user: {
+            id: true,
+            email: true,
+            fullName: true,
+            avatarUrl: true,
+            systemRole: true,
+          },
         },
       },
       order: { name: 'ASC' },
@@ -121,6 +142,23 @@ export class RbacService {
     await this.permissionEvaluator?.invalidatePermissions(undefined, userId);
   }
 
+  async deleteGroup(id: number): Promise<void> {
+    const group = await this.groupRepository.findOne({ where: { id } });
+    if (!group) throw new NotFoundException('Group not found');
+
+    const protectedGroups = ['administrators', 'admin', 'admins'];
+    if (group.isSystem || protectedGroups.includes(group.name.toLowerCase().trim())) {
+      throw new BadRequestException('System directory groups (administrators) cannot be deleted');
+    }
+
+    await this.userGroupRepository.delete({ groupId: id });
+    await this.roleActorRepository.delete({ groupId: id });
+    await this.grantRepository.delete({ groupId: id });
+    await this.securityGrantRepository.delete({ groupId: id });
+    await this.groupRepository.delete(id);
+    await this.permissionEvaluator?.invalidatePermissions();
+  }
+
   // ================= PROJECT ROLES =================
   async getProjectRoles(): Promise<ProjectRole[]> {
     return this.projectRoleRepository.find({ order: { id: 'ASC' } });
@@ -133,6 +171,50 @@ export class RbacService {
     }
     const role = this.projectRoleRepository.create({ name, description, isDefault });
     return this.projectRoleRepository.save(role);
+  }
+
+  async updateProjectRole(
+    id: number,
+    payload: { name?: string; description?: string; isDefault?: boolean },
+  ): Promise<ProjectRole> {
+    const role = await this.projectRoleRepository.findOne({ where: { id } });
+    if (!role) throw new NotFoundException('Project role not found');
+
+    if (payload.name && payload.name.trim() !== role.name) {
+      const existing = await this.projectRoleRepository.findOne({ where: { name: payload.name.trim() } });
+      if (existing && existing.id !== id) {
+        throw new BadRequestException(`Role "${payload.name}" already exists`);
+      }
+      role.name = payload.name.trim();
+    }
+
+    if (payload.description !== undefined) {
+      role.description = payload.description;
+    }
+
+    if (payload.isDefault !== undefined) {
+      role.isDefault = payload.isDefault;
+    }
+
+    return this.projectRoleRepository.save(role);
+  }
+
+  async deleteProjectRole(id: number): Promise<void> {
+    const role = await this.projectRoleRepository.findOne({ where: { id } });
+    if (!role) throw new NotFoundException('Project role not found');
+
+    const protectedRoles = ['administrator', 'member', 'viewer'];
+    if (protectedRoles.includes(role.name.toLowerCase().trim())) {
+      throw new BadRequestException(
+        `Baseline system role "${role.name}" cannot be deleted`,
+      );
+    }
+
+    await this.roleActorRepository.delete({ roleId: id });
+    await this.grantRepository.delete({ roleId: id });
+    await this.securityGrantRepository.delete({ roleId: id });
+    await this.projectRoleRepository.delete(id);
+    await this.permissionEvaluator?.invalidatePermissions();
   }
 
   // ================= PROJECT ACTORS (PEOPLE PER PROJECT) =================
@@ -231,6 +313,28 @@ export class RbacService {
     return this.schemeRepository.save(scheme);
   }
 
+  async deletePermissionScheme(id: number): Promise<void> {
+    const scheme = await this.schemeRepository.findOne({ where: { id } });
+    if (!scheme) throw new NotFoundException('Permission scheme not found');
+
+    if (scheme.isDefault) {
+      throw new BadRequestException('The default permission scheme cannot be deleted');
+    }
+
+    const boundProjectsCount = await this.projectRepository.count({
+      where: { permissionSchemeId: id },
+    });
+    if (boundProjectsCount > 0) {
+      throw new BadRequestException(
+        `Cannot delete permission scheme: assigned to ${boundProjectsCount} project(s). Reassign them first.`,
+      );
+    }
+
+    await this.grantRepository.delete({ schemeId: id });
+    await this.schemeRepository.delete(id);
+    await this.permissionEvaluator?.invalidatePermissions();
+  }
+
   async addPermissionGrant(
     schemeId: number,
     payload: {
@@ -287,5 +391,192 @@ export class RbacService {
       },
       order: { id: 'ASC' },
     });
+  }
+
+  async createSecurityScheme(name: string, description?: string): Promise<IssueSecurityScheme> {
+    const existing = await this.securitySchemeRepository.findOne({ where: { name } });
+    if (existing) {
+      throw new BadRequestException(`Security scheme "${name}" already exists`);
+    }
+
+    const scheme = this.securitySchemeRepository.create({
+      name,
+      description,
+    });
+    const saved = await this.securitySchemeRepository.save(scheme);
+
+    const defaultLevel = this.securityLevelRepository.create({
+      schemeId: saved.id,
+      name: 'Default',
+      description: 'Default issue security level',
+    });
+    const savedLevel = await this.securityLevelRepository.save(defaultLevel);
+
+    saved.defaultLevelId = savedLevel.id;
+    await this.securitySchemeRepository.save(saved);
+
+    const result = await this.securitySchemeRepository.findOne({
+      where: { id: saved.id },
+      relations: {
+        levels: {
+          grants: {
+            role: true,
+            group: true,
+          },
+        },
+      },
+    });
+    if (!result) throw new NotFoundException('Created security scheme not found');
+    return result;
+  }
+
+  async deleteSecurityScheme(id: number): Promise<void> {
+    const scheme = await this.securitySchemeRepository.findOne({ where: { id } });
+    if (!scheme) throw new NotFoundException('Issue security scheme not found');
+
+    if (scheme.name === 'Default Issue Security Scheme' || scheme.id === 1) {
+      throw new BadRequestException('The default issue security scheme cannot be deleted');
+    }
+
+    const boundProjectsCount = await this.projectRepository.count({
+      where: { securitySchemeId: id },
+    });
+    if (boundProjectsCount > 0) {
+      throw new BadRequestException(
+        `Cannot delete issue security scheme: assigned to ${boundProjectsCount} project(s). Reassign them first.`,
+      );
+    }
+
+    const levels = await this.securityLevelRepository.find({ where: { schemeId: id } });
+    for (const lvl of levels) {
+      await this.securityGrantRepository.delete({ securityLevelId: lvl.id });
+    }
+    await this.securityLevelRepository.delete({ schemeId: id });
+    await this.securitySchemeRepository.delete(id);
+  }
+
+  async addSecurityLevel(
+    schemeId: number,
+    payload: { name: string; description?: string },
+  ): Promise<IssueSecurityLevel> {
+    const scheme = await this.securitySchemeRepository.findOne({ where: { id: schemeId } });
+    if (!scheme) throw new NotFoundException('Issue security scheme not found');
+
+    const trimmedName = payload.name.trim();
+    const existing = await this.securityLevelRepository.findOne({
+      where: { schemeId, name: trimmedName },
+    });
+    if (existing) {
+      throw new BadRequestException(`Security level "${trimmedName}" already exists in this scheme`);
+    }
+
+    const level = this.securityLevelRepository.create({
+      schemeId,
+      name: trimmedName,
+      description: payload.description?.trim() || null,
+    });
+    return this.securityLevelRepository.save(level);
+  }
+
+  async deleteSecurityLevel(schemeId: number, levelId: number): Promise<void> {
+    const scheme = await this.securitySchemeRepository.findOne({ where: { id: schemeId } });
+    if (!scheme) throw new NotFoundException('Issue security scheme not found');
+
+    const level = await this.securityLevelRepository.findOne({
+      where: { id: levelId, schemeId },
+    });
+    if (!level) throw new NotFoundException('Security level not found in this scheme');
+
+    if (scheme.defaultLevelId === levelId) {
+      throw new BadRequestException('Cannot delete the default security level. Please designate another default level first.');
+    }
+
+    await this.securityGrantRepository.delete({ securityLevelId: levelId });
+    await this.securityLevelRepository.delete(levelId);
+  }
+
+  async setDefaultSecurityLevel(schemeId: number, defaultLevelId: number | null): Promise<IssueSecurityScheme> {
+    const scheme = await this.securitySchemeRepository.findOne({ where: { id: schemeId } });
+    if (!scheme) throw new NotFoundException('Issue security scheme not found');
+
+    if (defaultLevelId !== null) {
+      const level = await this.securityLevelRepository.findOne({
+        where: { id: defaultLevelId, schemeId },
+      });
+      if (!level) throw new NotFoundException('Designated security level does not belong to this scheme');
+    }
+
+    scheme.defaultLevelId = defaultLevelId;
+    await this.securitySchemeRepository.save(scheme);
+
+    const updated = await this.securitySchemeRepository.findOne({
+      where: { id: schemeId },
+      relations: {
+        levels: {
+          grants: {
+            role: true,
+            group: true,
+          },
+        },
+      },
+    });
+    if (!updated) throw new NotFoundException('Issue security scheme not found');
+    return updated;
+  }
+
+  async addSecurityGrant(
+    schemeId: number,
+    levelId: number,
+    payload: {
+      grantType: PermissionGrantType;
+      roleId?: number;
+      groupId?: number;
+    },
+  ): Promise<IssueSecurityGrant> {
+    const level = await this.securityLevelRepository.findOne({
+      where: { id: levelId, schemeId },
+    });
+    if (!level) throw new NotFoundException('Security level not found in this scheme');
+
+    const roleId = payload.grantType === PermissionGrantType.ROLE ? (payload.roleId ?? null) : null;
+    const groupId = payload.grantType === PermissionGrantType.GROUP ? (payload.groupId ?? null) : null;
+
+    if (payload.grantType === PermissionGrantType.ROLE && !roleId) {
+      throw new BadRequestException('Role ID is required for ROLE grant type');
+    }
+    if (payload.grantType === PermissionGrantType.GROUP && !groupId) {
+      throw new BadRequestException('Group ID is required for GROUP grant type');
+    }
+
+    const existing = await this.securityGrantRepository.findOne({
+      where: {
+        securityLevelId: levelId,
+        grantType: payload.grantType,
+        roleId: roleId === null ? IsNull() : roleId,
+        groupId: groupId === null ? IsNull() : groupId,
+      },
+    });
+    if (existing) {
+      throw new BadRequestException('This grant already exists for this security level');
+    }
+
+    const grant = this.securityGrantRepository.create({
+      securityLevelId: levelId,
+      grantType: payload.grantType,
+      roleId,
+      groupId,
+    });
+    const saved = await this.securityGrantRepository.save(grant);
+    const loaded = await this.securityGrantRepository.findOne({
+      where: { id: saved.id },
+      relations: { role: true, group: true },
+    });
+    return loaded || saved;
+  }
+
+  async deleteSecurityGrant(grantId: number): Promise<void> {
+    const grant = await this.securityGrantRepository.findOne({ where: { id: grantId } });
+    if (!grant) throw new NotFoundException('Security grant not found');
+    await this.securityGrantRepository.delete(grantId);
   }
 }

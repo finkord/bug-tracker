@@ -1,14 +1,14 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import type { ColumnDef, SortingState, OnChangeFn } from '@tanstack/react-table';
-import type { IssueItem, IssuePriority, IssueStatus, IssueType } from '../../api/client';
+import type { IssueItem, IssueStatus, IssueType } from '../../api/client';
 import {
   Badge,
   StatusBadge,
   PriorityBadge,
   DataTable,
 } from '../ui';
-import { Avatar } from '../common/Avatar';
+import { UserIdentity } from '../common/UserIdentity';
 import { IssueContextMenu } from '../common/IssueContextMenu';
 import { useAssignIssueToMeMutation } from '../../api/queries';
 import { useAuth } from '../../store';
@@ -19,7 +19,6 @@ import {
   Sparkles,
   Zap,
   Flame,
-  AlertCircle,
   ExternalLink,
 } from 'lucide-react';
 
@@ -216,15 +215,17 @@ export const SearchResultsTable: React.FC<SearchResultsTableProps> = ({
       size: 140,
       cell: ({ row }) =>
         row.original.assignee ? (
-          <div className="flex items-center gap-2">
-            <Avatar
-              name={row.original.assignee.fullName || 'User'}
+          <div onClick={(e) => e.stopPropagation()}>
+            <UserIdentity
+              userId={row.original.assignee.id}
+              user={row.original.assignee}
+              name={row.original.assignee.fullName}
               avatarUrl={row.original.assignee.avatarUrl}
+              email={row.original.assignee.email}
               size="xs"
+              showName
+              nameClassName="max-w-[100px]"
             />
-            <span className="text-xs font-medium text-[var(--md-sys-color-on-surface-variant)] truncate max-w-[100px]">
-              {row.original.assignee.fullName || 'User'}
-            </span>
           </div>
         ) : (
           <span className="text-xs text-[var(--md-sys-color-on-surface-variant)]/60 italic">

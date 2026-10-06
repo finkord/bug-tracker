@@ -581,3 +581,62 @@ body.is-dragging-ticket {
   outline: none !important;
   box-shadow: none !important;
 }
+
+/* ========================================================================= */
+/* Sidebar Collapsed State Flyout Smooth Entrance & Exit Animations          */
+/* ========================================================================= */
+@keyframes sidebarSlideIn {
+  0% {
+    transform: translateX(-100%);
+    box-shadow: none;
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@keyframes sidebarSlideOut {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-100%);
+    box-shadow: none;
+  }
+}
+
+@keyframes sidebarRailExpand {
+  0% {
+    width: 60px;
+    box-shadow: none;
+  }
+  100% {
+    width: 240px;
+  }
+}
+
+@keyframes sidebarRailCollapse {
+  0% {
+    width: 240px;
+  }
+  100% {
+    width: 60px;
+    box-shadow: none;
+  }
+}
+
+.animate-sidebar-slide-in {
+  animation: sidebarSlideIn 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-sidebar-slide-out {
+  animation: sidebarSlideOut 150ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+.animate-sidebar-rail-expand {
+  animation: sidebarRailExpand 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-sidebar-rail-collapse {
+  animation: sidebarRailCollapse 150ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}

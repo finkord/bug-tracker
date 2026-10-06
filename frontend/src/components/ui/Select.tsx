@@ -49,11 +49,11 @@ export const SelectContent = React.forwardRef<
     <SelectPrimitive.Content
       ref={ref}
       position={position}
-      sideOffset={4}
+      sideOffset={6}
       className={cn(
-        'relative z-50 min-w-[8rem] overflow-hidden rounded-xl',
-        'bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)]',
-        'border border-[var(--md-sys-color-outline-variant)] shadow-xl',
+        'relative z-50 min-w-[8rem] overflow-hidden rounded-2xl',
+        'bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)]',
+        'border border-[var(--md-sys-color-outline-variant)]/50 shadow-2xl backdrop-blur-md',
         'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
         position === 'popper' &&
           'data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1',
@@ -62,7 +62,7 @@ export const SelectContent = React.forwardRef<
       {...props}
     >
       <SelectPrimitive.ScrollUpButton className="flex items-center justify-center h-6 bg-[var(--md-sys-color-surface-container)] cursor-default">
-        <ChevronUp className="w-3.5 h-3.5" />
+        <ChevronUp className="w-3.5 h-3.5 text-[var(--md-sys-color-on-surface-variant)]" />
       </SelectPrimitive.ScrollUpButton>
       <SelectPrimitive.Viewport
         className={cn(
@@ -74,7 +74,7 @@ export const SelectContent = React.forwardRef<
         {children}
       </SelectPrimitive.Viewport>
       <SelectPrimitive.ScrollDownButton className="flex items-center justify-center h-6 bg-[var(--md-sys-color-surface-container)] cursor-default">
-        <ChevronDown className="w-3.5 h-3.5" />
+        <ChevronDown className="w-3.5 h-3.5 text-[var(--md-sys-color-on-surface-variant)]" />
       </SelectPrimitive.ScrollDownButton>
     </SelectPrimitive.Content>
   </SelectPrimitive.Portal>
@@ -100,8 +100,9 @@ export const SelectItem = React.forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      'relative flex w-full cursor-pointer select-none items-center rounded-lg py-2 pl-3 pr-8 text-xs font-medium outline-none transition-colors',
-      'focus:bg-[var(--md-sys-color-surface-container-highest)] focus:text-[var(--md-sys-color-on-surface)]',
+      'relative flex w-full cursor-pointer select-none items-center rounded-xl py-2 pl-3 pr-8 text-xs font-medium outline-none transition-colors',
+      'hover:bg-[var(--md-sys-color-surface-container-highest)] focus:bg-[var(--md-sys-color-surface-container-highest)] focus:text-[var(--md-sys-color-on-surface)]',
+      'data-[state=checked]:bg-[var(--md-sys-color-secondary-container)] data-[state=checked]:text-[var(--md-sys-color-on-secondary-container)] data-[state=checked]:font-semibold',
       'data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
       className,
     )}

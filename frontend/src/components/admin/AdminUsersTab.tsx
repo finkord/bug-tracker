@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
-import type { ColumnDef } from '@tanstack/react-table';
-import { api, type SystemRole, type UserProfile } from '../../api/client.js';
+import React, { useState, useMemo, useCallback } from 'react';
+import type { ColumnDef, SortingState } from '@tanstack/react-table';
+import { api, type UserProfile } from '../../api/client.js';
 import {
   useUsersQuery,
   useAdminStatsQuery,
@@ -10,13 +10,18 @@ import {
   useAdminActivateUserMutation,
   useAdminResetUser2FaMutation,
   useDeleteUserMutation,
+  useGroupsQuery,
+  useAddUserToGroupMutation,
+  useRemoveUserFromGroupMutation,
 } from '../../api/queries';
 import { Avatar } from '../common/Avatar.js';
+import { UserProfilePopover } from '../common/UserProfilePopover.js';
 import {
   Button,
   Badge,
   Card,
   Input,
+  Modal,
   Select,
   SelectTrigger,
   SelectValue,
@@ -38,6 +43,8 @@ import {
   Trash2,
   UserCheck,
   Briefcase,
+  Copy,
+  Check,
 } from 'lucide-react';
 
 export const AdminUsersTab: React.FC = () => {
@@ -47,6 +54,9 @@ export const AdminUsersTab: React.FC = () => {
   const [userStatusFilter, setUserStatusFilter] = useState<'ALL' | 'ACTIVE' | 'BLOCKED' | 'PENDING'>('ALL');
   const [userPage, setUserPage] = useState(1);
   const limit = 25;
+
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [copiedEmailId, setCopiedEmailId] = useState<number | null>(null);
 
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -58,6 +68,9 @@ export const AdminUsersTab: React.FC = () => {
   const [jobTitleModalOpen, setJobTitleModalOpen] = useState(false);
   const [userToEditJob, setUserToEditJob] = useState<UserProfile | null>(null);
   const [newJobTitle, setNewJobTitle] = useState('');
+
+  const [groupModalOpen, setGroupModalOpen] = useState(false);
+  const [userForGroupEdit, setUserForGroupEdit] = useState<UserProfile | null>(null);
 
   // Queries
   const { data: statsData = null } = useAdminStatsQuery();
@@ -91,23 +104,23 @@ export const AdminUsersTab: React.FC = () => {
   const reset2FaMutation = useAdminResetUser2FaMutation();
   const deleteMutation = useDeleteUserMutation();
 
+  const { data: groups = [] } = useGroupsQuery();
+  const addUserToGroupMutation = useAddUserToGroupMutation();
+  const removeUserFromGroupMutation = useRemoveUserFromGroupMutation();
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setUserPage(1);
     setActiveSearch(userSearch);
   };
 
-  const handleRoleChange = async (userId: number, newRole: SystemRole) => {
-    try {
-      await roleMutation.mutateAsync({ id: userId, role: newRole });
-      setActionSuccess('User role updated successfully');
-      setTimeout(() => setActionSuccess(null), 3000);
-    } catch (err: unknown) {
-      setErrorMessage(err instanceof Error ? err.message : 'Failed to update role');
-    }
+  const handleOpenGroupAssignment = (user: UserProfile) => {
+    setUserForGroupEdit(user);
+    setGroupModalOpen(true);
   };
 
-  const handleToggleBlock = async (userId: number, currentlyBlocked: boolean) => {
+
+  const handleToggleBlock = useCallback(async (userId: number, currentlyBlocked: boolean) => {
     try {
       if (currentlyBlocked) {
         await unblockMutation.mutateAsync(userId);
@@ -120,9 +133,9 @@ export const AdminUsersTab: React.FC = () => {
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : 'Failed to update block status');
     }
-  };
+  }, [unblockMutation, blockMutation]);
 
-  const handleActivateUser = async (userId: number) => {
+  const handleActivateUser = useCallback(async (userId: number) => {
     try {
       await activateMutation.mutateAsync(userId);
       setActionSuccess('User account manually activated');
@@ -130,9 +143,9 @@ export const AdminUsersTab: React.FC = () => {
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : 'Failed to activate user account');
     }
-  };
+  }, [activateMutation]);
 
-  const handleReset2Fa = async (userId: number) => {
+  const handleReset2Fa = useCallback(async (userId: number) => {
     try {
       await reset2FaMutation.mutateAsync(userId);
       setActionSuccess('Two-factor authentication reset for user');
@@ -140,7 +153,7 @@ export const AdminUsersTab: React.FC = () => {
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : 'Failed to reset 2FA');
     }
-  };
+  }, [reset2FaMutation]);
 
   const handleSendResetPassword = async (email: string) => {
     try {
@@ -181,7 +194,7 @@ export const AdminUsersTab: React.FC = () => {
         role: userToEditJob.systemRole,
         jobTitle: newJobTitle.trim(),
       });
-      setActionSuccess('Job title / work discipline updated successfully.');
+      setActionSuccess('Job title updated successfully.');
       setJobTitleModalOpen(false);
       setUserToEditJob(null);
       setTimeout(() => setActionSuccess(null), 3000);
@@ -193,22 +206,58 @@ export const AdminUsersTab: React.FC = () => {
   const columns = useMemo<ColumnDef<UserProfile>[]>(() => [
     {
       id: 'identity',
+      accessorFn: (u) => u.fullName,
       header: 'User Identity',
       cell: ({ row }) => {
         const u = row.original;
         return (
           <div className="flex items-center gap-3">
-            <Avatar
-              name={u.fullName}
-              avatarUrl={u.avatarUrl || undefined}
-              size="sm"
-            />
-            <div>
-              <div className="font-bold text-[var(--md-sys-color-on-surface)] text-xs">
-                {u.fullName}
-              </div>
-              <div className="text-[var(--md-sys-color-on-surface-variant)] text-[11px] font-mono">
-                {u.email}
+            <UserProfilePopover user={u}>
+              <button
+                type="button"
+                className="cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] rounded-full transition-transform hover:scale-105"
+                title="View user profile"
+              >
+                <Avatar
+                  name={u.fullName}
+                  avatarUrl={u.avatarUrl || undefined}
+                  size="sm"
+                />
+              </button>
+            </UserProfilePopover>
+
+            <div className="flex flex-col min-w-0">
+              <UserProfilePopover user={u}>
+                <button
+                  type="button"
+                  className="font-bold text-[var(--md-sys-color-on-surface)] text-xs hover:text-[var(--md-sys-color-primary)] hover:underline text-left cursor-pointer transition-colors truncate"
+                  title="View user profile"
+                >
+                  {u.fullName}
+                </button>
+              </UserProfilePopover>
+
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="text-[var(--md-sys-color-on-surface-variant)] text-[11px] font-mono truncate max-w-[200px]">
+                  {u.email}
+                </span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigator.clipboard.writeText(u.email);
+                    setCopiedEmailId(u.id);
+                    setTimeout(() => setCopiedEmailId(null), 2000);
+                  }}
+                  className="p-0.5 rounded text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] hover:bg-[var(--md-sys-color-surface-container-highest)] cursor-pointer transition-colors"
+                  title={copiedEmailId === u.id ? 'Copied to clipboard!' : 'Copy email to clipboard'}
+                >
+                  {copiedEmailId === u.id ? (
+                    <Check className="w-3 h-3 text-[var(--md-sys-color-success)]" />
+                  ) : (
+                    <Copy className="w-3 h-3" />
+                  )}
+                </button>
               </div>
             </div>
           </div>
@@ -217,7 +266,8 @@ export const AdminUsersTab: React.FC = () => {
     },
     {
       id: 'jobTitle',
-      header: 'Discipline / Job Title',
+      accessorFn: (u) => u.jobTitle || '',
+      header: 'Job Title',
       cell: ({ row }) => {
         const u = row.original;
         return (
@@ -239,8 +289,9 @@ export const AdminUsersTab: React.FC = () => {
       },
     },
     {
-      id: 'role',
-      header: 'System Authority',
+      id: 'groups',
+      header: 'Directory Groups & Authority',
+      enableSorting: false,
       cell: ({ row }) => {
         const u = row.original;
         const isRoot = Boolean(
@@ -250,33 +301,74 @@ export const AdminUsersTab: React.FC = () => {
             u.email.toLowerCase() === import.meta.env.VITE_INITIAL_ADMIN_EMAIL.toLowerCase()),
         );
 
-        return isRoot ? (
-          <div title="Root Administrator accounts cannot be demoted">
-            <Badge variant="primary" size="sm">
-              <Lock className="w-3 h-3 mr-1" />
-              Root Admin
-            </Badge>
-          </div>
-        ) : (
-          <div className="w-28">
-            <Select
-              value={u.systemRole}
-              onValueChange={(val) => handleRoleChange(u.id, val as SystemRole)}
+        // Sort groups so 'administrators' always appears first
+        const userGroups = groups
+          .filter((g) => g.userGroups?.some((ug) => ug.userId === u.id))
+          .sort((a, b) => {
+            const aAdmin = a.name.toLowerCase().trim() === 'administrators';
+            const bAdmin = b.name.toLowerCase().trim() === 'administrators';
+            if (aAdmin && !bAdmin) return -1;
+            if (!aAdmin && bAdmin) return 1;
+            return a.name.localeCompare(b.name);
+          });
+
+        return (
+          <div className="flex items-center gap-1.5 flex-wrap max-w-sm">
+            {userGroups.length === 0 ? (
+              <span className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] italic">
+                None
+              </span>
+            ) : (
+              userGroups.slice(0, 3).map((g) => {
+                const isAdmin = g.name.toLowerCase().trim() === 'administrators';
+                return (
+                  <Badge
+                    key={g.id}
+                    variant={isAdmin ? 'primary' : 'neutral'}
+                    size="sm"
+                    className={`font-mono text-[10px] ${isAdmin ? 'font-semibold shadow-2xs' : ''
+                      }`}
+                    title={
+                      isAdmin
+                        ? isRoot
+                          ? 'Root Administrator (Protected from demotion/deletion)'
+                          : 'Platform Administrator (Full Admin Center access)'
+                        : `Directory Group: ${g.name}`
+                    }
+                  >
+                    {isAdmin && (
+                      isRoot ? (
+                        <Lock className="w-3 h-3 mr-1" />
+                      ) : (
+                        <Shield className="w-3 h-3 mr-1" />
+                      )
+                    )}
+                    {isAdmin && isRoot ? 'administrators (Root)' : g.name}
+                  </Badge>
+                );
+              })
+            )}
+            {userGroups.length > 3 && (
+              <Badge variant="neutral" size="sm" className="text-[10px]">
+                +{userGroups.length - 3}
+              </Badge>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleOpenGroupAssignment(u)}
+              className="h-6 w-6 p-0 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)]"
+              title="Manage directory groups and administrator access"
             >
-              <SelectTrigger className="h-7 text-xs font-medium rounded-lg">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ADMIN">Admin</SelectItem>
-                <SelectItem value="USER">User</SelectItem>
-              </SelectContent>
-            </Select>
+              <Users className="w-3 h-3" />
+            </Button>
           </div>
         );
       },
     },
     {
       id: 'status',
+      accessorFn: (u) => (u.isBlocked ? 'Blocked' : u.isActivated ? 'Active' : 'Pending'),
       header: 'Account Status',
       cell: ({ row }) => {
         const u = row.original;
@@ -306,6 +398,7 @@ export const AdminUsersTab: React.FC = () => {
     },
     {
       id: '2fa',
+      accessorKey: 'twoFactorEnabled',
       header: '2FA Security',
       cell: ({ row }) => {
         const u = row.original;
@@ -333,7 +426,8 @@ export const AdminUsersTab: React.FC = () => {
     },
     {
       id: 'actions',
-      header: () => <div className="text-right">Administrative Actions</div>,
+      header: () => <div className="w-full pr-1">Administrative Actions</div>,
+      enableSorting: false,
       cell: ({ row }) => {
         const u = row.original;
         const isRoot = Boolean(
@@ -344,40 +438,41 @@ export const AdminUsersTab: React.FC = () => {
         );
 
         return (
-          <div className="flex items-center justify-end space-x-1 whitespace-nowrap">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleSendResetPassword(u.email)}
-              className="h-7 px-2 text-xs text-[var(--md-sys-color-on-surface-variant)]"
-              title="Dispatch password reset email"
-            >
-              <RotateCcw className="w-3.5 h-3.5 mr-1" />
-              Reset Pwd
-            </Button>
-
-            {isRoot ? (
+          <div className="flex items-center justify-end gap-1.5 whitespace-nowrap">
+            <div className="w-[125px] flex justify-end">
               <Button
                 variant="ghost"
                 size="sm"
-                disabled
-                className="h-7 px-2 text-xs opacity-40 cursor-not-allowed text-[var(--md-sys-color-on-surface-variant)]"
-                title="Root administrator accounts cannot be blocked or deleted"
+                onClick={() => handleSendResetPassword(u.email)}
+                className="h-7 px-2 text-xs text-[var(--md-sys-color-on-surface-variant)]"
+                title="Dispatch password reset email"
               >
-                <Lock className="w-3.5 h-3.5 mr-1" />
-                Protected
+                <RotateCcw className="w-3.5 h-3.5 mr-1" />
+                Reset Password
               </Button>
-            ) : (
-              <>
+            </div>
+
+            <div className="w-[88px] flex justify-center">
+              {isRoot ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled
+                  className="h-7 w-[84px] px-1 text-xs opacity-50 cursor-not-allowed text-[var(--md-sys-color-on-surface-variant)]"
+                  title="Root administrator accounts cannot be blocked or deleted"
+                >
+                  <Lock className="w-3.5 h-3.5 mr-1" />
+                  Protected
+                </Button>
+              ) : (
                 <Button
                   variant={u.isBlocked ? 'outline' : 'ghost'}
                   size="sm"
                   onClick={() => handleToggleBlock(u.id, u.isBlocked)}
-                  className={`h-7 px-2 text-xs ${
-                    u.isBlocked
-                      ? 'text-[var(--md-sys-color-success)]'
-                      : 'text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]'
-                  }`}
+                  className={`h-7 w-[84px] px-1 text-xs ${u.isBlocked
+                    ? 'text-[var(--md-sys-color-success)]'
+                    : 'text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]'
+                    }`}
                 >
                   {u.isBlocked ? (
                     <>
@@ -391,7 +486,21 @@ export const AdminUsersTab: React.FC = () => {
                     </>
                   )}
                 </Button>
+              )}
+            </div>
 
+            <div className="w-7 h-7 flex items-center justify-center shrink-0">
+              {isRoot ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled
+                  className="h-7 w-7 p-0 opacity-25 cursor-not-allowed text-[var(--md-sys-color-on-surface-variant)]"
+                  title="Root administrator accounts cannot be deleted"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              ) : (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -404,13 +513,13 @@ export const AdminUsersTab: React.FC = () => {
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </Button>
-              </>
-            )}
+              )}
+            </div>
           </div>
         );
       },
     },
-  ], [handleRoleChange, handleActivateUser, handleReset2Fa, handleToggleBlock]);
+  ], [handleActivateUser, handleReset2Fa, handleToggleBlock, groups, copiedEmailId]);
 
   return (
     <div className="space-y-6 w-full animate-in fade-in duration-200">
@@ -524,9 +633,9 @@ export const AdminUsersTab: React.FC = () => {
 
           <div className="w-full sm:w-48">
             <Select
-              value={userRoleFilter}
+              value={userRoleFilter || 'ALL'}
               onValueChange={(v) => {
-                setUserRoleFilter(v);
+                setUserRoleFilter(v === 'ALL' ? '' : v);
                 setUserPage(1);
               }}
             >
@@ -534,7 +643,7 @@ export const AdminUsersTab: React.FC = () => {
                 <SelectValue placeholder="All Roles" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Roles</SelectItem>
+                <SelectItem value="ALL">All Roles</SelectItem>
                 <SelectItem value="ADMIN">Administrator</SelectItem>
                 <SelectItem value="USER">Standard User</SelectItem>
               </SelectContent>
@@ -545,7 +654,7 @@ export const AdminUsersTab: React.FC = () => {
             <Select
               value={userStatusFilter}
               onValueChange={(v) => {
-                setUserStatusFilter(v as any);
+                setUserStatusFilter(v as 'ALL' | 'ACTIVE' | 'BLOCKED' | 'PENDING');
                 setUserPage(1);
               }}
             >
@@ -572,6 +681,8 @@ export const AdminUsersTab: React.FC = () => {
         columns={columns}
         data={users}
         getRowId={(u) => String(u.id)}
+        sorting={sorting}
+        onSortingChange={setSorting}
         page={userPage}
         pageSize={limit}
         total={totalUsers}
@@ -600,8 +711,8 @@ export const AdminUsersTab: React.FC = () => {
         <FormModal
           isOpen={jobTitleModalOpen}
           onClose={() => setJobTitleModalOpen(false)}
-          title="Update Coworker Job Title"
-          description="Assign professional discipline label decoupled from system permissions"
+          title="Update Job Title"
+          description="Assign professional title decoupled from system permissions"
           size="sm"
           onSubmit={handleSaveJobTitle}
           submitLabel="Save Title"
@@ -609,7 +720,7 @@ export const AdminUsersTab: React.FC = () => {
         >
           <div>
             <label className="block text-xs font-bold text-[var(--md-sys-color-on-surface-variant)] uppercase mb-1">
-              Discipline / Job Title
+              Job Title
             </label>
             <Input
               value={newJobTitle}
@@ -619,6 +730,130 @@ export const AdminUsersTab: React.FC = () => {
             />
           </div>
         </FormModal>
+      )}
+
+      {/* Group Assignment Modal */}
+      {groupModalOpen && userForGroupEdit && (
+        <Modal
+          isOpen={groupModalOpen}
+          onClose={() => {
+            setGroupModalOpen(false);
+            setUserForGroupEdit(null);
+          }}
+          title={`Directory Groups: ${userForGroupEdit.fullName}`}
+          description="Assign or remove security directory group memberships for this coworker"
+        >
+          <div className="space-y-3 pt-2">
+            {groups.length === 0 ? (
+              <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] py-4 text-center">
+                No directory groups defined in system.
+              </p>
+            ) : (
+              <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                {groups.map((group) => {
+                  const isMember = group.userGroups?.some((ug) => ug.userId === userForGroupEdit.id);
+                  const isRoot = Boolean(
+                    userForGroupEdit.isRoot ||
+                    userForGroupEdit.email.toLowerCase() === 'admin@bugtracker.local'
+                  );
+                  const isAdminGroup = ['administrators', 'admin', 'admins'].includes(
+                    group.name.toLowerCase().trim(),
+                  );
+                  const isProtectedRootAdmin = isRoot && isAdminGroup;
+
+                  return (
+                    <div
+                      key={group.id}
+                      className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${isAdminGroup
+                        ? 'bg-[var(--md-sys-color-primary-container)]/15 border-[var(--md-sys-color-primary)]/30'
+                        : 'bg-[var(--md-sys-color-surface-container)] border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-outline-variant)]'
+                        }`}
+                    >
+                      <div className="flex-1 min-w-0 pr-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">
+                            {group.name}
+                          </span>
+                          {isAdminGroup ? (
+                            <Badge variant="primary" size="sm" className="text-[10px] font-semibold flex items-center gap-1">
+                              <Shield className="w-3 h-3 mr-0.5" />
+                              Admin Authority
+                            </Badge>
+                          ) : group.isSystem ? (
+                            <Badge variant="neutral" size="sm" className="text-[10px]">
+                              System
+                            </Badge>
+                          ) : null}
+                        </div>
+                        <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] mt-0.5 line-clamp-1">
+                          {isAdminGroup
+                            ? 'Confers full platform administrative authority over the Admin Center and system governance'
+                            : group.description || 'Organizational directory group'}
+                        </p>
+                      </div>
+
+                      <Button
+                        variant={isMember ? 'outline' : 'filled'}
+                        size="sm"
+                        disabled={
+                          isProtectedRootAdmin ||
+                          addUserToGroupMutation.isPending ||
+                          removeUserFromGroupMutation.isPending
+                        }
+                        onClick={async () => {
+                          try {
+                            if (isMember) {
+                              await removeUserFromGroupMutation.mutateAsync({
+                                groupId: group.id,
+                                userId: userForGroupEdit.id,
+                              });
+                              setActionSuccess(`Removed ${userForGroupEdit.fullName} from ${group.name}`);
+                            } else {
+                              await addUserToGroupMutation.mutateAsync({
+                                groupId: group.id,
+                                userId: userForGroupEdit.id,
+                              });
+                              setActionSuccess(`Added ${userForGroupEdit.fullName} to ${group.name}`);
+                            }
+                            setTimeout(() => setActionSuccess(null), 3000);
+                          } catch (err: unknown) {
+                            setErrorMessage(err instanceof Error ? err.message : 'Failed to update group membership');
+                          }
+                        }}
+                        className={`text-xs ${isMember
+                          ? 'text-[var(--md-sys-color-error)] border-[var(--md-sys-color-error)]/40 hover:bg-[var(--md-sys-color-error-container)]'
+                          : ''
+                          }`}
+                      >
+                        {isProtectedRootAdmin ? (
+                          <span title="Root admin cannot be removed from administrators">Locked (Root)</span>
+                        ) : isAdminGroup ? (
+                          isMember ? 'Revoke Admin' : 'Grant Admin'
+                        ) : isMember ? (
+                          'Leave Group'
+                        ) : (
+                          'Join Group'
+                        )}
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <div className="flex justify-end pt-3 border-t border-[var(--md-sys-color-outline-variant)]/20">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setGroupModalOpen(false);
+                  setUserForGroupEdit(null);
+                }}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   );

@@ -10,7 +10,7 @@ import {
 import { useProjectsQuery } from '../../api/queries/index.js';
 import { useUsersQuery } from '../../api/queries/useUsersQuery.js';
 import type { TeamItem, TeamMemberRole } from '../../api/types/teams.types.js';
-import { Avatar } from '../common/Avatar.js';
+import { UserIdentity } from '../common/UserIdentity';
 import {
   Card,
   Button,
@@ -18,6 +18,13 @@ import {
   Modal,
   ConfirmDialog,
   SearchInput,
+  Textarea,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  UserPicker,
 } from '../ui/index.js';
 import {
   Users,
@@ -309,18 +316,24 @@ export const AdminTeamsTab: React.FC = () => {
           </div>
 
           {/* Project Filter */}
-          <select
-            value={selectedProjectId}
-            onChange={(e) => setSelectedProjectId(e.target.value)}
-            className="px-3 py-2 text-xs rounded-2xl bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]/40 focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] font-medium"
-          >
-            <option value="">All Projects</option>
-            {projects.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name} ({p.key})
-              </option>
-            ))}
-          </select>
+          <div className="w-full sm:w-56 shrink-0">
+            <Select
+              value={selectedProjectId || 'ALL'}
+              onValueChange={(val) => setSelectedProjectId(val === 'ALL' ? '' : val)}
+            >
+              <SelectTrigger size="md" className="h-10 rounded-2xl bg-[var(--md-sys-color-surface-container)]">
+                <SelectValue placeholder="All Projects" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Projects</SelectItem>
+                {projects.map((p) => (
+                  <SelectItem key={p.id} value={String(p.id)}>
+                    {p.name} ({p.key})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <Button
@@ -442,16 +455,15 @@ export const AdminTeamsTab: React.FC = () => {
                       Team Lead:
                     </span>
                     {team.lead ? (
-                      <div className="flex items-center gap-2">
-                        <Avatar
-                          avatarUrl={team.lead.avatarUrl}
-                          name={team.lead.fullName || team.lead.email}
-                          size="xs"
-                        />
-                        <span className="font-bold text-[var(--md-sys-color-on-surface)]">
-                          {team.lead.fullName || team.lead.email}
-                        </span>
-                      </div>
+                      <UserIdentity
+                        userId={team.lead.id}
+                        user={team.lead}
+                        name={team.lead.fullName || team.lead.email}
+                        avatarUrl={team.lead.avatarUrl}
+                        email={team.lead.email}
+                        size="xs"
+                        showName
+                      />
                     ) : (
                       <span className="text-[var(--md-sys-color-outline)] italic">
                         No team lead assigned
@@ -483,37 +495,37 @@ export const AdminTeamsTab: React.FC = () => {
                         <label className="block text-[11px] font-semibold text-[var(--md-sys-color-on-surface-variant)] mb-1">
                           Select User
                         </label>
-                        <select
-                          value={memberUserId}
-                          onChange={(e) =>
-                            setMemberUserId(e.target.value ? Number(e.target.value) : '')
-                          }
-                          className="w-full px-3 py-2 text-xs rounded-xl bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]/40 focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] font-medium"
-                        >
-                          <option value="">-- Choose coworker --</option>
-                          {availableUsers.map((u) => (
-                            <option key={u.id} value={u.id}>
-                              {u.fullName || u.email} ({u.email})
-                            </option>
-                          ))}
-                        </select>
+                        <UserPicker
+                          value={typeof memberUserId === 'number' ? memberUserId : null}
+                          onChange={(userId) => setMemberUserId(userId ?? '')}
+                          users={availableUsers}
+                          placeholder="Search and choose coworker..."
+                          allowUnassigned={false}
+                          showAssignToMe={false}
+                          size="sm"
+                          triggerClassName="h-9"
+                        />
                       </div>
 
                       <div className="sm:col-span-4">
                         <label className="block text-[11px] font-semibold text-[var(--md-sys-color-on-surface-variant)] mb-1">
                           Scrum Role
                         </label>
-                        <select
+                        <Select
                           value={memberRole}
-                          onChange={(e) => setMemberRole(e.target.value as TeamMemberRole)}
-                          className="w-full px-3 py-2 text-xs rounded-xl bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]/40 focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] font-medium"
+                          onValueChange={(val) => setMemberRole(val as TeamMemberRole)}
                         >
-                          {Object.entries(ROLE_LABELS).map(([roleKey, roleTitle]) => (
-                            <option key={roleKey} value={roleKey}>
-                              {roleTitle}
-                            </option>
-                          ))}
-                        </select>
+                          <SelectTrigger size="sm" className="h-9 rounded-xl bg-[var(--md-sys-color-surface-container-high)] text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(ROLE_LABELS).map(([roleKey, roleTitle]) => (
+                              <SelectItem key={roleKey} value={roleKey}>
+                                {roleTitle}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       <div className="sm:col-span-2">
@@ -559,17 +571,17 @@ export const AdminTeamsTab: React.FC = () => {
                           key={member.id}
                           className="flex items-center justify-between p-2.5 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/20"
                         >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <Avatar
-                              avatarUrl={member.user?.avatarUrl}
+                          <div className="min-w-0">
+                            <UserIdentity
+                              userId={member.userId}
+                              user={member.user}
                               name={member.user?.fullName || member.user?.email || 'Member'}
+                              avatarUrl={member.user?.avatarUrl}
+                              email={member.user?.email}
                               size="sm"
+                              showName
                             />
-                            <div className="min-w-0">
-                              <p className="text-xs font-bold text-[var(--md-sys-color-on-surface)] truncate">
-                                {member.user?.fullName || member.user?.email}
-                              </p>
-                              <div className="flex items-center gap-1.5 mt-0.5">
+                              <div className="flex items-center gap-1.5 mt-1 ml-9">
                                 <Badge
                                   variant={ROLE_BADGE_VARIANTS[member.role] || 'neutral'}
                                   size="sm"
@@ -582,7 +594,6 @@ export const AdminTeamsTab: React.FC = () => {
                                 </span>
                               </div>
                             </div>
-                          </div>
 
                           <button
                             type="button"
@@ -633,12 +644,11 @@ export const AdminTeamsTab: React.FC = () => {
             <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] mb-1">
               Description
             </label>
-            <textarea
-              rows={2}
+            <Textarea
               value={newDesc}
               onChange={(e) => setNewDesc(e.target.value)}
               placeholder="Brief description of the team's focus and charter..."
-              className="w-full px-3.5 py-2 text-xs rounded-2xl bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]/40 focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] font-medium resize-none"
+              className="w-full text-xs"
             />
           </div>
 
@@ -647,36 +657,37 @@ export const AdminTeamsTab: React.FC = () => {
               <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] mb-1">
                 Associated Project *
               </label>
-              <select
-                required
-                value={newProjectId || ''}
-                onChange={(e) => setNewProjectId(Number(e.target.value))}
-                className="w-full px-3.5 py-2.5 text-xs rounded-2xl bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]/40 focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] font-medium"
+              <Select
+                value={newProjectId ? String(newProjectId) : ''}
+                onValueChange={(val) => setNewProjectId(Number(val))}
               >
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} ({p.key})
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger size="sm" className="h-10 rounded-xl bg-[var(--md-sys-color-surface-container)] text-xs">
+                  <SelectValue placeholder="Select project..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {projects.map((p) => (
+                    <SelectItem key={p.id} value={String(p.id)}>
+                      {p.name} ({p.key})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] mb-1">
                 Team Lead (Optional)
               </label>
-              <select
-                value={newLeadId || ''}
-                onChange={(e) => setNewLeadId(e.target.value ? Number(e.target.value) : undefined)}
-                className="w-full px-3.5 py-2.5 text-xs rounded-2xl bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]/40 focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] font-medium"
-              >
-                <option value="">-- No Lead Assigned --</option>
-                {users.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.fullName || u.email}
-                  </option>
-                ))}
-              </select>
+              <UserPicker
+                value={newLeadId || null}
+                onChange={(userId) => setNewLeadId(userId || undefined)}
+                users={users}
+                placeholder="Search and select team lead..."
+                allowUnassigned
+                showAssignToMe={false}
+                size="sm"
+                triggerClassName="h-10"
+              />
             </div>
           </div>
 
@@ -745,11 +756,11 @@ export const AdminTeamsTab: React.FC = () => {
             <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] mb-1">
               Description
             </label>
-            <textarea
-              rows={2}
+            <Textarea
               value={editDesc}
               onChange={(e) => setEditDesc(e.target.value)}
-              className="w-full px-3.5 py-2 text-xs rounded-2xl bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]/40 focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] font-medium resize-none"
+              placeholder="Brief description of the team's focus and charter..."
+              className="w-full text-xs"
             />
           </div>
 
@@ -758,18 +769,16 @@ export const AdminTeamsTab: React.FC = () => {
               <label className="block text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] mb-1">
                 Team Lead (Optional)
               </label>
-              <select
-                value={editLeadId || ''}
-                onChange={(e) => setEditLeadId(e.target.value ? Number(e.target.value) : undefined)}
-                className="w-full px-3.5 py-2.5 text-xs rounded-2xl bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)]/40 focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] font-medium"
-              >
-                <option value="">-- No Lead Assigned --</option>
-                {users.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.fullName || u.email}
-                  </option>
-                ))}
-              </select>
+              <UserPicker
+                value={editLeadId || null}
+                onChange={(userId) => setEditLeadId(userId || undefined)}
+                users={users}
+                placeholder="Search and select team lead..."
+                allowUnassigned
+                showAssignToMe={false}
+                size="sm"
+                triggerClassName="h-10"
+              />
             </div>
 
             <div>

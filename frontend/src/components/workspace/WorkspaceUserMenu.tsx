@@ -94,7 +94,7 @@ export const WorkspaceUserMenu: React.FC<WorkspaceUserMenuProps> = ({
 
         {(user.isAdmin || user.systemRole === 'ADMIN') && (
           <DropdownMenuItem
-            onClick={() => navigate('/admin')}
+            onClick={() => navigate('/admin/users')}
             className="flex items-center gap-2 cursor-pointer font-semibold text-[var(--md-sys-color-primary)]"
           >
             <Shield className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />

@@ -11,17 +11,29 @@ vi.mock('../../api/queries', () => ({
   useSecuritySchemesQuery: vi.fn(),
   useUsersQuery: vi.fn(),
   useCreateGroupMutation: vi.fn(),
+  useDeleteGroupMutation: vi.fn(),
   useAddUserToGroupMutation: vi.fn(),
   useRemoveUserFromGroupMutation: vi.fn(),
   useCreateProjectRoleMutation: vi.fn(),
+  useUpdateProjectRoleMutation: vi.fn(),
+  useDeleteProjectRoleMutation: vi.fn(),
   useCreatePermissionSchemeMutation: vi.fn(),
+  useDeletePermissionSchemeMutation: vi.fn(),
   useAddPermissionGrantMutation: vi.fn(),
   useRemovePermissionGrantMutation: vi.fn(),
+  useCreateSecuritySchemeMutation: vi.fn(),
+  useDeleteSecuritySchemeMutation: vi.fn(),
+  useUserDetailQuery: vi.fn(),
 }));
 
 describe('AdminRbacTab Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+
+    vi.mocked(queries.useUserDetailQuery).mockReturnValue({
+      data: null,
+      isLoading: false,
+    } as unknown as ReturnType<typeof queries.useUserDetailQuery>);
 
     vi.mocked(queries.useGroupsQuery).mockReturnValue({
       data: [
@@ -66,6 +78,9 @@ describe('AdminRbacTab Component', () => {
     vi.mocked(queries.useCreateGroupMutation).mockReturnValue({
       mutateAsync: vi.fn(),
     } as unknown as ReturnType<typeof queries.useCreateGroupMutation>);
+    vi.mocked(queries.useDeleteGroupMutation).mockReturnValue({
+      mutateAsync: vi.fn(),
+    } as unknown as ReturnType<typeof queries.useDeleteGroupMutation>);
     vi.mocked(queries.useAddUserToGroupMutation).mockReturnValue({
       mutateAsync: vi.fn(),
     } as unknown as ReturnType<typeof queries.useAddUserToGroupMutation>);
@@ -75,6 +90,24 @@ describe('AdminRbacTab Component', () => {
     vi.mocked(queries.useCreateProjectRoleMutation).mockReturnValue({
       mutateAsync: vi.fn(),
     } as unknown as ReturnType<typeof queries.useCreateProjectRoleMutation>);
+    vi.mocked(queries.useUpdateProjectRoleMutation).mockReturnValue({
+      mutateAsync: vi.fn(),
+    } as unknown as ReturnType<typeof queries.useUpdateProjectRoleMutation>);
+    vi.mocked(queries.useDeleteProjectRoleMutation).mockReturnValue({
+      mutateAsync: vi.fn(),
+    } as unknown as ReturnType<typeof queries.useDeleteProjectRoleMutation>);
+    vi.mocked(queries.useCreatePermissionSchemeMutation).mockReturnValue({
+      mutateAsync: vi.fn(),
+    } as unknown as ReturnType<typeof queries.useCreatePermissionSchemeMutation>);
+    vi.mocked(queries.useDeletePermissionSchemeMutation).mockReturnValue({
+      mutateAsync: vi.fn(),
+    } as unknown as ReturnType<typeof queries.useDeletePermissionSchemeMutation>);
+    vi.mocked(queries.useCreateSecuritySchemeMutation).mockReturnValue({
+      mutateAsync: vi.fn(),
+    } as unknown as ReturnType<typeof queries.useCreateSecuritySchemeMutation>);
+    vi.mocked(queries.useDeleteSecuritySchemeMutation).mockReturnValue({
+      mutateAsync: vi.fn(),
+    } as unknown as ReturnType<typeof queries.useDeleteSecuritySchemeMutation>);
   });
 
   it('renders directly with sub-pills without any duplicate page h1 header banner', () => {

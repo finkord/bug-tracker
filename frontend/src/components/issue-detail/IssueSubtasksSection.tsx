@@ -5,7 +5,7 @@ import {
   useUpdateIssueStatusMutation,
   useCreateIssueMutation,
 } from '../../api/queries/index.js';
-import { Avatar } from '../common/Avatar.js';
+import { UserIdentity } from '../common/UserIdentity';
 import { Card, Button, Badge } from '../ui/index.js';
 import { GitCommitHorizontal, Plus, Check, CornerDownRight } from 'lucide-react';
 
@@ -158,7 +158,9 @@ export const IssueSubtasksSection: React.FC<IssueSubtasksSectionProps> = ({
                     {subtask.status.replace('_', ' ')}
                   </Badge>
                   {subtask.assignee && (
-                    <Avatar
+                    <UserIdentity
+                      userId={subtask.assignee.id}
+                      user={subtask.assignee}
                       name={subtask.assignee.fullName}
                       avatarUrl={subtask.assignee.avatarUrl}
                       size="xs"

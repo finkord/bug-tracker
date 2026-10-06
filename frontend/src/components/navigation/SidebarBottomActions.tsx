@@ -83,19 +83,29 @@ export const SidebarBottomActions: React.FC<SidebarBottomActionsProps> = ({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className={`w-full flex items-center rounded-lg transition-colors cursor-pointer select-none text-left ${
-            collapsed
+          className={`w-full flex items-center rounded-lg transition-colors cursor-pointer select-none text-left ${collapsed
               ? 'h-9 w-9 mx-auto justify-center hover:bg-[var(--md-sys-color-surface-container-high)]'
-              : 'h-10 px-2 gap-2.5 hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)]'
-          }`}
+              : 'h-10 px-2.5 gap-2.5 hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)]'
+            }`}
           aria-label="User settings and account menu"
         >
-          <Avatar
-            name={displayName}
-            avatarUrl={user.avatarUrl}
-            size="sm"
-            role={user.systemRole}
-          />
+          {collapsed ? (
+            <Avatar
+              name={displayName}
+              avatarUrl={user.avatarUrl}
+              size="compact"
+              role={user.systemRole}
+            />
+          ) : (
+            <div className="w-4 h-4 flex items-center justify-center shrink-0">
+              <Avatar
+                name={displayName}
+                avatarUrl={user.avatarUrl}
+                size="compact"
+                role={user.systemRole}
+              />
+            </div>
+          )}
           {!collapsed && (
             <>
               <div className="flex-1 min-w-0">
@@ -160,7 +170,7 @@ export const SidebarBottomActions: React.FC<SidebarBottomActionsProps> = ({
             onClick={() => {
               setIsProfileOpen(false);
               onOpenChange?.(false);
-              navigate('/admin');
+              navigate('/admin/users');
               onNavigate?.();
             }}
             className="flex items-center gap-2 px-2 py-1.5 rounded-xl cursor-pointer font-semibold text-[var(--md-sys-color-primary)] hover:bg-[var(--md-sys-color-primary-container)]/20"
@@ -184,9 +194,8 @@ export const SidebarBottomActions: React.FC<SidebarBottomActionsProps> = ({
   ) : null;
 
   return (
-    <div className={`shrink-0 border-t border-[var(--md-sys-color-outline-variant)]/15 flex flex-col gap-1 ${
-      collapsed ? 'p-1.5' : 'px-2 py-2'
-    }`}>
+    <div className={`shrink-0 border-t border-[var(--md-sys-color-outline-variant)]/15 flex flex-col gap-1 ${collapsed ? 'p-1.5' : 'px-2 py-2'
+      }`}>
       {/* Theme Toggle Utility */}
       <div className="flex items-center w-full">
         {collapsed ? (
@@ -208,15 +217,15 @@ export const SidebarBottomActions: React.FC<SidebarBottomActionsProps> = ({
           <button
             type="button"
             onClick={handleToggleTheme}
-            className="w-full h-8 px-2 flex items-center gap-2 rounded-lg text-xs font-medium text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)] transition-colors cursor-pointer"
+            className="w-full h-[34px] px-2.5 flex items-center gap-2.5 rounded-lg text-left text-[13px] font-medium text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)] transition-colors select-none cursor-pointer"
             aria-label="Toggle theme"
           >
             {theme === 'dark' ? (
-              <Sun className="w-3.5 h-3.5 text-[var(--md-sys-color-warning)]" />
+              <Sun className="w-4 h-4 shrink-0 text-[var(--md-sys-color-warning)]" />
             ) : (
-              <Moon className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
+              <Moon className="w-4 h-4 shrink-0 text-[var(--md-sys-color-primary)]" />
             )}
-            <span className="truncate">{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
+            <span className="truncate leading-none">{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
           </button>
         )}
       </div>

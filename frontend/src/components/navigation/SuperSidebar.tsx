@@ -9,7 +9,7 @@ import { SidebarNavList } from './SidebarNavList';
 import { SidebarBottomActions } from './SidebarBottomActions';
 import { SidebarMobileDrawer } from './SidebarMobileDrawer';
 
-interface SuperSidebarProps {}
+interface SuperSidebarProps { }
 
 /**
  * Super-Sidebar root navigation container.
@@ -34,6 +34,7 @@ export const SuperSidebar: React.FC<SuperSidebarProps> = () => {
 
   // Hover peek flyout state for collapsed icon rail
   const [isHovered, setIsHovered] = React.useState(false);
+  const [isClosing, setIsClosing] = React.useState(false);
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const asideRef = React.useRef<HTMLElement>(null);
   const enterTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -45,9 +46,12 @@ export const SuperSidebar: React.FC<SuperSidebarProps> = () => {
       clearTimeout(leaveTimerRef.current);
       leaveTimerRef.current = null;
     }
-    enterTimerRef.current = setTimeout(() => {
-      setIsHovered(true);
-    }, 100);
+    setIsClosing(false);
+    if (!isHovered) {
+      enterTimerRef.current = setTimeout(() => {
+        setIsHovered(true);
+      }, 60);
+    }
   };
 
   const handleMouseLeave = (e?: React.MouseEvent) => {
@@ -64,9 +68,13 @@ export const SuperSidebar: React.FC<SuperSidebarProps> = () => {
     if (leaveTimerRef.current) {
       clearTimeout(leaveTimerRef.current);
     }
-    leaveTimerRef.current = setTimeout(() => {
-      setIsHovered(false);
-    }, 150);
+    if (isHovered) {
+      setIsClosing(true);
+      leaveTimerRef.current = setTimeout(() => {
+        setIsClosing(false);
+        setIsHovered(false);
+      }, 150);
+    }
   };
 
   const handleMenuOpenChange = (open: boolean) => {
@@ -76,20 +84,24 @@ export const SuperSidebar: React.FC<SuperSidebarProps> = () => {
         clearTimeout(leaveTimerRef.current);
         leaveTimerRef.current = null;
       }
+      setIsClosing(false);
       setIsHovered(true);
     } else {
       if (leaveTimerRef.current) {
         clearTimeout(leaveTimerRef.current);
       }
+      setIsClosing(true);
       leaveTimerRef.current = setTimeout(() => {
+        setIsClosing(false);
         setIsHovered(false);
-      }, 200);
+      }, 150);
     }
   };
 
   // Close flyout immediately whenever route, modal, or persistent collapsed state changes
   useEffect(() => {
     setIsHovered(false);
+    setIsClosing(false);
     setIsMenuOpen(false);
     if (enterTimerRef.current) {
       clearTimeout(enterTimerRef.current);
@@ -108,7 +120,7 @@ export const SuperSidebar: React.FC<SuperSidebarProps> = () => {
     };
   }, []);
 
-  const isFlyout = collapsed && isHovered;
+  const isFlyout = collapsed && (isHovered || isClosing);
   const effectiveCollapsed = collapseMode === 'rail' && collapsed && !isFlyout;
 
   // Global keyboard shortcut to toggle sidebar collapse ('[' key)
@@ -210,32 +222,30 @@ export const SuperSidebar: React.FC<SuperSidebarProps> = () => {
     <>
       {/* ─── Desktop Super-Sidebar (Layout Flow Placeholder + Floating Flyout) ─── */}
       <div
-        className={`hidden md:block shrink-0 relative transition-[width] duration-200 ease-in-out ${
-          isFlyout ? '' : 'overflow-hidden'
-        } ${
-          collapsed
+        className={`hidden md:block shrink-0 relative transition-[width] duration-200 ease-in-out ${isFlyout ? '' : 'overflow-hidden'
+          } ${collapsed
             ? collapseMode === 'hidden'
               ? 'w-0'
               : 'w-[60px]'
             : 'w-60'
-        }`}
+          }`}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
-        {/* Invisible edge trigger strip and centered indicator pill when collapsed to 0px */}
+        {/* Generous edge trigger strip and centered indicator pill when collapsed to 0px */}
         {collapsed && collapseMode === 'hidden' && !isAnyModalOpen && !isFlyout && (
           <div
             data-testid="sidebar-hover-trigger"
-            className="fixed left-0 top-0 h-screen w-3.5 z-20 cursor-pointer group flex items-center"
+            className="fixed left-0 top-0 h-screen w-6 z-20 cursor-pointer group flex items-center"
             onMouseEnter={handleMouseEnter}
             aria-label="Hover to reveal sidebar"
           >
             {/* Centered Edge Indicator Pill */}
             <div
               data-testid="sidebar-hover-tab"
-              className="absolute left-0 top-1/2 -translate-y-1/2 -ml-0.5 w-3.5 h-12 rounded-r-full bg-[var(--md-sys-color-surface-container-high)] group-hover:bg-[var(--md-sys-color-primary-container)] border-y border-r border-[var(--md-sys-color-outline-variant)]/40 shadow-xs flex items-center justify-center transition-all duration-200 group-hover:w-4.5 group-hover:shadow-md"
+              className="absolute left-0 top-1/2 -translate-y-1/2 -ml-0.5 w-4.5 h-16 rounded-r-xl bg-[var(--md-sys-color-surface-container-high)]/90 backdrop-blur-xs group-hover:bg-[var(--md-sys-color-primary-container)] border-y border-r border-[var(--md-sys-color-outline-variant)]/40 shadow-xs flex items-center justify-center transition-all duration-200 ease-out group-hover:w-6 group-hover:shadow-md cursor-pointer"
             >
-              <ChevronRight className="w-2.5 h-2.5 text-[var(--md-sys-color-on-surface-variant)] group-hover:text-[var(--md-sys-color-primary)] transition-transform duration-200 group-hover:translate-x-0.5" />
+              <ChevronRight className="w-3.5 h-3.5 text-[var(--md-sys-color-on-surface-variant)] group-hover:text-[var(--md-sys-color-primary)] transition-transform duration-200 ease-out group-hover:translate-x-0.5" />
             </div>
           </div>
         )}
@@ -244,21 +254,26 @@ export const SuperSidebar: React.FC<SuperSidebarProps> = () => {
           ref={asideRef}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
-          className={`flex flex-col h-screen select-none overflow-hidden transition-[width,box-shadow] duration-200 ease-in-out ${
-            isFlyout
-              ? 'fixed left-0 top-0 w-60 z-40 shadow-2xl bg-[var(--md-sys-color-surface-container)] border-r border-[var(--md-sys-color-outline-variant)]/40'
+          className={`flex flex-col h-screen select-none overflow-hidden transition-[box-shadow] duration-200 ease-in-out ${isFlyout
+              ? `fixed left-0 top-0 w-60 z-40 shadow-2xl bg-[var(--md-sys-color-surface-container)] border-r border-[var(--md-sys-color-outline-variant)]/40 ${collapseMode === 'hidden'
+                ? isClosing
+                  ? 'animate-sidebar-slide-out'
+                  : 'animate-sidebar-slide-in'
+                : isClosing
+                  ? 'animate-sidebar-rail-collapse'
+                  : 'animate-sidebar-rail-expand'
+              }`
               : collapsed
                 ? collapseMode === 'hidden'
                   ? 'w-0 pointer-events-none bg-[var(--md-sys-color-surface-container-low)]'
                   : 'w-[60px] bg-[var(--md-sys-color-surface-container-low)]'
                 : 'w-60 bg-[var(--md-sys-color-surface-container-low)]'
-          }`}
+            }`}
           aria-label="Main Navigation"
         >
           <div
-            className={`flex flex-col h-full shrink-0 ${
-              collapseMode === 'hidden' ? 'w-60 min-w-[240px]' : 'w-full'
-            }`}
+            className={`flex flex-col h-full shrink-0 ${collapseMode === 'hidden' ? 'w-60 min-w-[240px]' : 'w-full'
+              }`}
           >
             {/* Row 1: Brand Header Logo & Name (44px, matching WorkspaceHeader) */}
             <SidebarBrandHeader

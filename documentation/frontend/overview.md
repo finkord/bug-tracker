@@ -38,7 +38,8 @@ frontend/src/
 │   ├── workspace/         # WorkspaceHeader, ProjectSwitcher, QuickSearchModal (cmdk)
 │   └── public/            # Landing navbar, hero elements
 ├── hooks/                 # Custom React hooks (useIssueModalUrl, useDebounce, etc.)
-├── pages/                 # 19 Route views (lazy-loaded via React.lazy)
+├── pages/                 # Route views and sub-routes (lazy-loaded via React.lazy)
+│   └── admin/             # Modular Admin Center sub-routes & horizontal navigation tabs
 ├── store/                 # Zustand store slices (authStore, sidebarStore, themeStore)
 ├── types/                 # Shared TypeScript interfaces & DTO models
 ├── utils/                 # Utilities (date.ts, files.ts, workflowTransitions.ts)

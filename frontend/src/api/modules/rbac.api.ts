@@ -5,6 +5,8 @@ import type {
   PermissionSchemeItem,
   PermissionGrantItem,
   IssueSecuritySchemeItem,
+  IssueSecurityLevelItem,
+  IssueSecurityGrantItem,
   ProjectRoleGrouped,
   UserGroupMemberItem,
   ProjectRoleActorItem,
@@ -31,12 +33,31 @@ export const rbacApi = {
       method: 'DELETE',
     }),
 
+  deleteGroup: (groupId: number) =>
+    request<{ success: boolean; message: string }>(`/rbac/groups/${groupId}`, {
+      method: 'DELETE',
+    }),
+
   getProjectRoles: () => request<ProjectRoleItem[]>('/rbac/roles'),
 
   createProjectRole: (payload: { name: string; description?: string; isDefault?: boolean }) =>
     request<ProjectRoleItem>('/rbac/roles', {
       method: 'POST',
       body: JSON.stringify(payload),
+    }),
+
+  updateProjectRole: (
+    roleId: number,
+    payload: { name?: string; description?: string; isDefault?: boolean },
+  ) =>
+    request<ProjectRoleItem>(`/rbac/roles/${roleId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    }),
+
+  deleteProjectRole: (roleId: number) =>
+    request<{ success: boolean; message: string }>(`/rbac/roles/${roleId}`, {
+      method: 'DELETE',
     }),
 
   getPermissionSchemes: () => request<PermissionSchemeItem[]>('/rbac/permission-schemes'),
@@ -47,6 +68,11 @@ export const rbacApi = {
     request<PermissionSchemeItem>('/rbac/permission-schemes', {
       method: 'POST',
       body: JSON.stringify(payload),
+    }),
+
+  deletePermissionScheme: (schemeId: number) =>
+    request<{ success: boolean; message: string }>(`/rbac/permission-schemes/${schemeId}`, {
+      method: 'DELETE',
     }),
 
   addPermissionGrant: (
@@ -69,6 +95,49 @@ export const rbacApi = {
     }),
 
   getSecuritySchemes: () => request<IssueSecuritySchemeItem[]>('/rbac/security-schemes'),
+
+  createSecurityScheme: (payload: { name: string; description?: string }) =>
+    request<IssueSecuritySchemeItem>('/rbac/security-schemes', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  deleteSecurityScheme: (schemeId: number) =>
+    request<{ success: boolean; message: string }>(`/rbac/security-schemes/${schemeId}`, {
+      method: 'DELETE',
+    }),
+
+  addSecurityLevel: (schemeId: number, payload: { name: string; description?: string }) =>
+    request<IssueSecurityLevelItem>(`/rbac/security-schemes/${schemeId}/levels`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  deleteSecurityLevel: (schemeId: number, levelId: number) =>
+    request<{ success: boolean; message: string }>(`/rbac/security-schemes/${schemeId}/levels/${levelId}`, {
+      method: 'DELETE',
+    }),
+
+  setDefaultSecurityLevel: (schemeId: number, defaultLevelId: number | null) =>
+    request<IssueSecuritySchemeItem>(`/rbac/security-schemes/${schemeId}/default-level`, {
+      method: 'PUT',
+      body: JSON.stringify({ defaultLevelId }),
+    }),
+
+  addSecurityGrant: (
+    schemeId: number,
+    levelId: number,
+    payload: { grantType: string; roleId?: number; groupId?: number },
+  ) =>
+    request<IssueSecurityGrantItem>(`/rbac/security-schemes/${schemeId}/levels/${levelId}/grants`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  deleteSecurityGrant: (grantId: number) =>
+    request<{ success: boolean; message: string }>(`/rbac/security-schemes/levels/grants/${grantId}`, {
+      method: 'DELETE',
+    }),
 
   getProjectPeople: (projectId: number) =>
     request<ProjectRoleGrouped[]>(`/projects/${projectId}/rbac/people`),

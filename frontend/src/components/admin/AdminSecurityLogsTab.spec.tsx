@@ -121,4 +121,46 @@ describe('AdminSecurityLogsTab', () => {
     expect(screen.getByText('alice@company.com')).toBeInTheDocument();
     expect(screen.queryByText('bob@company.com')).not.toBeInTheDocument();
   });
+
+  it('provides copy email action and CSV export button', () => {
+    vi.mocked(queries.useLoginAuditLogsQuery).mockReturnValue({
+      data: {
+        items: [
+          {
+            id: 'log-1',
+            attemptedEmail: 'auditor@example.com',
+            ipAddress: '192.168.1.1',
+            status: 'SUCCESS',
+            failureReason: null,
+            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+            createdAt: '2026-09-30T07:00:00Z',
+          },
+        ],
+        total: 1,
+        page: 1,
+        limit: 25,
+      },
+      isLoading: false,
+      isFetching: false,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof queries.useLoginAuditLogsQuery>);
+
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: writeTextMock,
+      },
+    });
+
+    render(<AdminSecurityLogsTab />);
+
+    const copyBtn = screen.getByLabelText('Copy attempted email');
+    expect(copyBtn).toBeInTheDocument();
+    fireEvent.click(copyBtn);
+    expect(writeTextMock).toHaveBeenCalledWith('auditor@example.com');
+
+    const exportBtn = screen.getByRole('button', { name: /Export CSV/i });
+    expect(exportBtn).toBeInTheDocument();
+  });
 });
+

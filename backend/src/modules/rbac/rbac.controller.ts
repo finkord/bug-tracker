@@ -73,6 +73,15 @@ export class RbacController {
     return { success: true, message: 'User removed from group' };
   }
 
+  @Delete('rbac/groups/:id')
+  @UseGuards(RolesGuard)
+  @Roles(SystemRole.ADMIN)
+  @ApiOperation({ summary: 'Delete directory group' })
+  async deleteGroup(@Param('id', ParseIntPipe) id: number) {
+    await this.rbacService.deleteGroup(id);
+    return { success: true, message: 'Group deleted successfully' };
+  }
+
   // ================= PROJECT ROLES =================
   @Get('rbac/roles')
   @ApiOperation({ summary: 'List globally defined project roles' })
@@ -88,6 +97,26 @@ export class RbacController {
     @Body() dto: { name: string; description?: string; isDefault?: boolean },
   ) {
     return this.rbacService.createProjectRole(dto.name, dto.description, dto.isDefault);
+  }
+
+  @Put('rbac/roles/:id')
+  @UseGuards(RolesGuard)
+  @Roles(SystemRole.ADMIN)
+  @ApiOperation({ summary: 'Update global project role' })
+  async updateProjectRole(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: { name?: string; description?: string; isDefault?: boolean },
+  ) {
+    return this.rbacService.updateProjectRole(id, dto);
+  }
+
+  @Delete('rbac/roles/:id')
+  @UseGuards(RolesGuard)
+  @Roles(SystemRole.ADMIN)
+  @ApiOperation({ summary: 'Delete global project role' })
+  async deleteProjectRole(@Param('id', ParseIntPipe) id: number) {
+    await this.rbacService.deleteProjectRole(id);
+    return { success: true, message: 'Project role deleted successfully' };
   }
 
   // ================= PERMISSION SCHEMES =================
@@ -109,6 +138,15 @@ export class RbacController {
   @ApiOperation({ summary: 'Create new permission scheme' })
   async createPermissionScheme(@Body() dto: { name: string; description?: string }) {
     return this.rbacService.createPermissionScheme(dto.name, dto.description);
+  }
+
+  @Delete('rbac/permission-schemes/:id')
+  @UseGuards(RolesGuard)
+  @Roles(SystemRole.ADMIN)
+  @ApiOperation({ summary: 'Delete permission scheme' })
+  async deletePermissionScheme(@Param('id', ParseIntPipe) id: number) {
+    await this.rbacService.deletePermissionScheme(id);
+    return { success: true, message: 'Permission scheme deleted successfully' };
   }
 
   @Post('rbac/permission-schemes/:id/grants')
@@ -144,6 +182,83 @@ export class RbacController {
   @ApiOperation({ summary: 'List issue security schemes' })
   async getSecuritySchemes() {
     return this.rbacService.getSecuritySchemes();
+  }
+
+  @Post('rbac/security-schemes')
+  @UseGuards(RolesGuard)
+  @Roles(SystemRole.ADMIN)
+  @ApiOperation({ summary: 'Create issue security scheme' })
+  async createSecurityScheme(@Body() dto: { name: string; description?: string }) {
+    return this.rbacService.createSecurityScheme(dto.name, dto.description);
+  }
+
+  @Delete('rbac/security-schemes/:id')
+  @UseGuards(RolesGuard)
+  @Roles(SystemRole.ADMIN)
+  @ApiOperation({ summary: 'Delete issue security scheme' })
+  async deleteSecurityScheme(@Param('id', ParseIntPipe) id: number) {
+    await this.rbacService.deleteSecurityScheme(id);
+    return { success: true, message: 'Issue security scheme deleted successfully' };
+  }
+
+  @Post('rbac/security-schemes/:id/levels')
+  @UseGuards(RolesGuard)
+  @Roles(SystemRole.ADMIN)
+  @ApiOperation({ summary: 'Add a security level to an issue security scheme' })
+  async addSecurityLevel(
+    @Param('id', ParseIntPipe) schemeId: number,
+    @Body() dto: { name: string; description?: string },
+  ) {
+    return this.rbacService.addSecurityLevel(schemeId, dto);
+  }
+
+  @Delete('rbac/security-schemes/:id/levels/:levelId')
+  @UseGuards(RolesGuard)
+  @Roles(SystemRole.ADMIN)
+  @ApiOperation({ summary: 'Delete a security level from an issue security scheme' })
+  async deleteSecurityLevel(
+    @Param('id', ParseIntPipe) schemeId: number,
+    @Param('levelId', ParseIntPipe) levelId: number,
+  ) {
+    await this.rbacService.deleteSecurityLevel(schemeId, levelId);
+    return { success: true, message: 'Security level deleted successfully' };
+  }
+
+  @Put('rbac/security-schemes/:id/default-level')
+  @UseGuards(RolesGuard)
+  @Roles(SystemRole.ADMIN)
+  @ApiOperation({ summary: 'Set the default security level for an issue security scheme' })
+  async setDefaultSecurityLevel(
+    @Param('id', ParseIntPipe) schemeId: number,
+    @Body() dto: { defaultLevelId: number | null },
+  ) {
+    return this.rbacService.setDefaultSecurityLevel(schemeId, dto.defaultLevelId);
+  }
+
+  @Post('rbac/security-schemes/:id/levels/:levelId/grants')
+  @UseGuards(RolesGuard)
+  @Roles(SystemRole.ADMIN)
+  @ApiOperation({ summary: 'Add an actor grant to a security level' })
+  async addSecurityGrant(
+    @Param('id', ParseIntPipe) schemeId: number,
+    @Param('levelId', ParseIntPipe) levelId: number,
+    @Body()
+    dto: {
+      grantType: PermissionGrantType;
+      roleId?: number;
+      groupId?: number;
+    },
+  ) {
+    return this.rbacService.addSecurityGrant(schemeId, levelId, dto);
+  }
+
+  @Delete('rbac/security-schemes/levels/grants/:grantId')
+  @UseGuards(RolesGuard)
+  @Roles(SystemRole.ADMIN)
+  @ApiOperation({ summary: 'Remove an actor grant from a security level' })
+  async deleteSecurityGrant(@Param('grantId', ParseIntPipe) grantId: number) {
+    await this.rbacService.deleteSecurityGrant(grantId);
+    return { success: true, message: 'Security grant removed successfully' };
   }
 
   // ================= PROJECT RBAC & PEOPLE =================

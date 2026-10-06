@@ -308,11 +308,13 @@ export class UsersService {
       );
     }
 
-    return this.update(id, {
+    const updated = await this.update(id, {
       isBlocked: false,
       failedLoginAttempts: 0,
       lockedUntil: null,
     });
+    await this.invalidateSystemStatsCache();
+    return updated;
   }
 
   /**
@@ -342,6 +344,7 @@ export class UsersService {
 
     const updatedUser = await this.update(id, updates);
     await this.syncUserGroupsWithRole(id, role);
+    await this.invalidateSystemStatsCache();
     return updatedUser;
   }
 
@@ -361,21 +364,25 @@ export class UsersService {
    * Activates user account directly without email link (Admin action).
    */
   async activateUser(id: number): Promise<User> {
-    return this.update(id, {
+    const updated = await this.update(id, {
       isActivated: true,
       activationToken: null,
       activationTokenExpiresAt: null,
     });
+    await this.invalidateSystemStatsCache();
+    return updated;
   }
 
   /**
    * Resets 2FA secret and disables 2FA for an account (Admin action).
    */
   async reset2Fa(id: number): Promise<User> {
-    return this.update(id, {
+    const updated = await this.update(id, {
       twoFactorEnabled: false,
       twoFactorSecret: null,
     });
+    await this.invalidateSystemStatsCache();
+    return updated;
   }
 
   /**

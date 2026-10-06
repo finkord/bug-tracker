@@ -1,17 +1,15 @@
 import React, { useState } from 'react';
-import type { IssueItem, IssueType, IssuePriority, IssueStatus } from '../../api/client.js';
+import type { IssueItem, IssueType, IssueStatus } from '../../api/client.js';
 import type { SprintDefinition } from '../../types/agile.js';
-import { Avatar } from '../common/Avatar.js';
+import { UserIdentity } from '../common/UserIdentity';
 import { IssueContextMenu } from '../common/IssueContextMenu';
-import { StatusBadge, PriorityBadge, Dropdown, Tooltip } from '../ui';
+import { StatusBadge, PriorityBadge, Dropdown } from '../ui';
 import {
   GripVertical,
   Bug,
   CheckSquare,
   Sparkles,
   Zap,
-  Flame,
-  AlertCircle,
   Clock,
   MoreVertical,
   ArrowDown,
@@ -251,16 +249,16 @@ const AgileIssueRowComponent: React.FC<AgileIssueRowProps> = ({
         )}
 
         {/* Assignee Avatar */}
-        <div className="shrink-0">
+        <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
           {issue.assignee ? (
-            <Tooltip content={issue.assignee.fullName}>
-              <Avatar
-                name={issue.assignee.fullName}
-                avatarUrl={issue.assignee.avatarUrl}
-                role={issue.assignee.systemRole}
-                size="xs"
-              />
-            </Tooltip>
+            <UserIdentity
+              userId={issue.assignee.id}
+              user={issue.assignee}
+              name={issue.assignee.fullName}
+              avatarUrl={issue.assignee.avatarUrl}
+              email={issue.assignee.email}
+              size="xs"
+            />
           ) : (
             <div
               className="w-5 h-5 rounded-full bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-outline)] text-[9px] font-medium flex items-center justify-center border border-dashed border-[var(--md-sys-color-outline)]"

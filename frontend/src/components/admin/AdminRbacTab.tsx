@@ -18,6 +18,7 @@ import {
   useCreateGroupMutation,
   useAddUserToGroupMutation,
   useRemoveUserFromGroupMutation,
+  useDeleteGroupMutation,
 } from '../../api/queries';
 import type { GroupItem } from '../../api/client';
 import { Tabs, TabsList, TabsTrigger } from '../ui';
@@ -50,6 +51,7 @@ export const AdminRbacTab: React.FC = () => {
   const createGroupMutation = useCreateGroupMutation();
   const addUserToGroupMutation = useAddUserToGroupMutation();
   const removeUserFromGroupMutation = useRemoveUserFromGroupMutation();
+  const deleteGroupMutation = useDeleteGroupMutation();
 
   const loading = groupsLoading || rolesLoading || schemesLoading || securityLoading || usersLoading;
 
@@ -69,8 +71,20 @@ export const AdminRbacTab: React.FC = () => {
       const created = await createGroupMutation.mutateAsync({ name, description });
       setSuccessMsg(`Group "${created.name}" created successfully.`);
       setSelectedGroupId(created.id);
+      setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to create group');
+    }
+  };
+
+  const handleDeleteGroup = async (groupId: number) => {
+    try {
+      await deleteGroupMutation.mutateAsync(groupId);
+      setSuccessMsg('Directory group deleted successfully.');
+      setSelectedGroupId(null);
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to delete directory group');
     }
   };
 
@@ -78,6 +92,7 @@ export const AdminRbacTab: React.FC = () => {
     try {
       await addUserToGroupMutation.mutateAsync({ groupId, userId });
       setSuccessMsg('User added to group.');
+      setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to add user to group');
     }
@@ -89,6 +104,7 @@ export const AdminRbacTab: React.FC = () => {
         userIds.map((userId) => addUserToGroupMutation.mutateAsync({ groupId, userId })),
       );
       setSuccessMsg(`Successfully added ${userIds.length} member${userIds.length === 1 ? '' : 's'} to group.`);
+      setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to add members to group');
     }
@@ -98,6 +114,7 @@ export const AdminRbacTab: React.FC = () => {
     try {
       await removeUserFromGroupMutation.mutateAsync({ groupId, userId });
       setSuccessMsg('User removed from group.');
+      setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to remove user');
     }
@@ -219,6 +236,7 @@ export const AdminRbacTab: React.FC = () => {
             onAddUserToGroup={handleAddUserToGroup}
             onRemoveUserFromGroup={handleRemoveUserFromGroup}
             onBatchAddUsers={handleBatchAddUsersToGroup}
+            onDeleteGroup={handleDeleteGroup}
           />
         )}
 

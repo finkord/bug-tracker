@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 export interface AvatarProps {
   name: string;
   avatarUrl?: string | null;
-  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'xs' | 'compact' | 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
   role?: string;
   showTooltip?: boolean;
@@ -11,6 +11,7 @@ export interface AvatarProps {
 
 const sizeClasses = {
   xs: 'w-5 h-5 text-[10px]',
+  compact: 'w-6 h-6 text-[11px]',
   sm: 'w-7 h-7 text-xs',
   md: 'w-9 h-9 text-sm',
   lg: 'w-12 h-12 text-base font-semibold',

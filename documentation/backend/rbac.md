@@ -106,11 +106,19 @@ Layer 2: Project-Scoped Roles (ProjectRoleActor)
 |---|---|---|---|
 | `GET` | `/schemes` | List all permission schemes | Admin (`Roles('ADMIN')`) |
 | `POST` | `/schemes` | Create a new permission scheme | Admin (`Roles('ADMIN')`) |
+| `DELETE` | `/permission-schemes/:id` | Delete a custom permission scheme (safeguards default scheme and projects bound) | Admin (`Roles('ADMIN')`) |
 | `GET` | `/groups` | List all user groups | JWT (`JwtAuthGuard`) |
 | `POST` | `/groups` | Create an organizational group | Admin (`Roles('ADMIN')`) |
+| `DELETE` | `/groups/:id` | Delete an organizational group (safeguards `administrators` directory group) | Admin (`Roles('ADMIN')`) |
 | `POST` | `/groups/:id/members` | Add a user to a group | Admin (`Roles('ADMIN')`) |
 | `DELETE` | `/groups/:id/members/:userId`| Remove a user from a group (protects root admins) | Admin (`Roles('ADMIN')`) |
 | `GET` | `/roles` | List all available project roles | JWT (`JwtAuthGuard`) |
+| `POST` | `/roles` | Create a new project role | Admin (`Roles('ADMIN')`) |
+| `PUT` | `/roles/:id` | Update project role name, description, or default workspace flag (`isDefault`) | Admin (`Roles('ADMIN')`) |
+| `DELETE` | `/roles/:id` | Delete a custom project role (safeguards baseline roles: Administrator, Member, Viewer) | Admin (`Roles('ADMIN')`) |
+| `GET` | `/security-schemes` | List all issue security schemes with levels | JWT (`JwtAuthGuard`) |
+| `POST` | `/security-schemes` | Create a new issue security scheme (auto-creates default security level) | Admin (`Roles('ADMIN')`) |
+| `DELETE` | `/security-schemes/:id` | Delete an issue security scheme (safeguards default scheme and projects bound) | Admin (`Roles('ADMIN')`) |
 | `GET` | `/projects/:id/rbac/people` | Retrieve project members and their assigned roles | `ProjectPermission.BROWSE_PROJECTS` |
 | `POST` | `/projects/:id/rbac/roles/:roleId/actors` | Assign user or group to project role | `ProjectPermission.ADMINISTER_PROJECTS` |
 | `DELETE` | `/projects/:id/rbac/roles/:roleId/actors` | Remove user or group from project role | `ProjectPermission.ADMINISTER_PROJECTS` |

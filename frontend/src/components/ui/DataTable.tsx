@@ -56,6 +56,8 @@ export interface DataTableProps<TData, TValue = unknown> {
   rowClassName?: (row: TData, index: number) => string;
 }
 
+const DEFAULT_EMPTY_SORTING: SortingState = [];
+
 export function DataTable<TData, TValue = unknown>({
   columns,
   data,
@@ -86,15 +88,18 @@ export function DataTable<TData, TValue = unknown>({
   headerClassName,
   rowClassName,
 }: DataTableProps<TData, TValue>) {
+  const [internalSorting, setInternalSorting] = React.useState<SortingState>(DEFAULT_EMPTY_SORTING);
+  const activeSorting = sorting ?? internalSorting;
   const isServerSorting = Boolean(onSortingChange);
+  const handleSortingChange = onSortingChange ?? setInternalSorting;
 
   const table = useReactTable({
     data,
     columns,
     state: {
-      sorting: sorting ?? [],
+      sorting: activeSorting,
     },
-    onSortingChange,
+    onSortingChange: handleSortingChange,
     getCoreRowModel: getCoreRowModel(),
     ...(isServerSorting ? { manualSorting: true } : { getSortedRowModel: getSortedRowModel() }),
     getRowId: getRowId ? (row, index) => getRowId(row, index) : undefined,

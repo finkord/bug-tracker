@@ -7,7 +7,7 @@ import {
   useDeleteProjectComponentMutation,
 } from '../../api/queries';
 import { Button, Input, Modal, ConfirmDialog, UserPicker, DataTable } from '../ui';
-import { Avatar } from '../common/Avatar';
+import { UserIdentity } from '../common/UserIdentity';
 import {
   Plus,
   Trash2,
@@ -113,16 +113,15 @@ export const ProjectComponentsTab: React.FC<ProjectComponentsTabProps> = ({
       header: 'Component Lead',
       cell: ({ row }) =>
         row.original.lead ? (
-          <div className="flex items-center gap-1.5">
-            <Avatar
-              name={row.original.lead.fullName || 'Lead'}
-              avatarUrl={row.original.lead.avatarUrl}
-              size="xs"
-            />
-            <span className="font-semibold text-[var(--md-sys-color-on-surface)] truncate">
-              {row.original.lead.fullName}
-            </span>
-          </div>
+          <UserIdentity
+            userId={row.original.lead.id}
+            user={row.original.lead}
+            name={row.original.lead.fullName || 'Lead'}
+            avatarUrl={row.original.lead.avatarUrl}
+            email={row.original.lead.email}
+            size="xs"
+            showName
+          />
         ) : (
           <span className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]/70 italic">
             Unassigned
