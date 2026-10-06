@@ -240,8 +240,8 @@ export const ProfileSessionsCard: React.FC = () => {
         onConfirm={handleRevokeAllSessions}
         title="Sign Out All Devices?"
         description="This will immediately invalidate all session tokens across all devices including this current browser. You will need to sign back in."
-        confirmText="Sign Out All Devices"
-        confirmVariant="danger"
+        confirmLabel="Sign Out All Devices"
+        variant="danger"
       />
 
       <ConfirmDialog
@@ -250,18 +250,22 @@ export const ProfileSessionsCard: React.FC = () => {
         onConfirm={handleRevokeOthers}
         title="Revoke Other Sessions?"
         description="This will invalidate all other device sessions and refresh tokens while keeping this browser signed in."
-        confirmText="Revoke Other Sessions"
-        confirmVariant="danger"
+        confirmLabel="Revoke Other Sessions"
+        variant="danger"
       />
 
       <ConfirmDialog
         isOpen={selectedSessionToRevoke !== null}
         onClose={() => setSelectedSessionToRevoke(null)}
-        onConfirm={() => selectedSessionToRevoke && handleRevokeSingle(selectedSessionToRevoke)}
+        onConfirm={() => {
+          if (selectedSessionToRevoke) {
+            return handleRevokeSingle(selectedSessionToRevoke);
+          }
+        }}
         title="Revoke Device Session?"
         description="Are you sure you want to terminate this session? The device will be signed out immediately."
-        confirmText="Revoke Session"
-        confirmVariant="danger"
+        confirmLabel="Revoke Session"
+        variant="danger"
       />
     </Card>
   );

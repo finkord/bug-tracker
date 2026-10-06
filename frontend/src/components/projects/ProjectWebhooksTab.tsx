@@ -169,7 +169,10 @@ export const ProjectWebhooksTab: React.FC<ProjectWebhooksTabProps> = ({ projectI
     try {
       await updateMutation.mutateAsync({
         id: webhook.id,
-        payload: { isActive: !webhook.isActive },
+        payload: {
+          isActive: !webhook.isActive,
+          format: webhook.format || 'generic',
+        },
       });
     } catch {
       // Handled by query client
@@ -327,7 +330,7 @@ export const ProjectWebhooksTab: React.FC<ProjectWebhooksTabProps> = ({ projectI
                               ? 'secondary'
                               : (webhook as any).format === 'slack'
                               ? 'neutral'
-                              : 'tonal'
+                              : 'secondary'
                           }
                           size="sm"
                           className="capitalize"

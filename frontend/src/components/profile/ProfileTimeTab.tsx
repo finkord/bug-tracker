@@ -143,7 +143,7 @@ export const ProfileTimeTab: React.FC = () => {
       <LogWorkModal
         isOpen={isLogModalOpen}
         onClose={() => setIsLogModalOpen(false)}
-        onSuccess={() => setIsLogModalOpen(false)}
+        onWorkLogged={() => setIsLogModalOpen(false)}
       />
     </div>
   );

@@ -101,7 +101,6 @@ export const GroupsManagerTab: React.FC<GroupsManagerTabProps> = ({
             email={ug.user?.email}
             avatarUrl={ug.user?.avatarUrl}
             jobTitle={ug.user?.jobTitle}
-            systemRole={ug.user?.systemRole}
             size="sm"
             showName
           />

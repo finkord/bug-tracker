@@ -311,9 +311,9 @@ export const ProjectPermissionsTab: React.FC<ProjectPermissionsTabProps> = ({
                         >
                           <div className="min-w-0 flex-1">
                             <UserIdentity
-                              userId={ua.user?.id || ua.userId}
+                              userId={ua.user?.id || ua.actorId}
                               user={ua.user}
-                              name={ua.user?.fullName || `User #${ua.userId}`}
+                              name={ua.user?.fullName || `User #${ua.actorId}`}
                               avatarUrl={ua.user?.avatarUrl}
                               email={ua.user?.email}
                               size="xs"

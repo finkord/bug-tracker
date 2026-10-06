@@ -262,8 +262,10 @@ export const ProjectGeneralTab: React.FC<ProjectGeneralTabProps> = ({
           </div>
 
           <div>
+            <label className="block text-xs font-bold text-[var(--md-sys-color-on-surface)] mb-1">
+              Description
+            </label>
             <Textarea
-              label="Description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe the scope, architecture, or roadmap of this project workspace..."

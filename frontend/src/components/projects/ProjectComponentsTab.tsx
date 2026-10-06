@@ -257,8 +257,10 @@ export const ProjectComponentsTab: React.FC<ProjectComponentsTabProps> = ({
           </div>
 
           <div>
+            <label className="block text-xs font-bold text-[var(--md-sys-color-on-surface)] mb-1">
+              Description
+            </label>
             <Textarea
-              label="Description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Purpose or technical domain of this component..."

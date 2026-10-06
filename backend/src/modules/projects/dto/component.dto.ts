@@ -31,7 +31,7 @@ export class UpdateComponentDto {
   @IsString()
   description?: string;
 
-  @ApiPropertyOptional({ description: 'Updated lead user ID' })
+  @ApiPropertyOptional({ description: 'Updated lead user ID', type: Number, nullable: true })
   @IsOptional()
   @IsInt()
   leadId?: number | null;

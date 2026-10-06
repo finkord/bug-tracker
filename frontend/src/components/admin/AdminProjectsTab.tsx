@@ -32,7 +32,7 @@ import {
 
 export const AdminProjectsTab: React.FC = () => {
   const { data: projects = [], isLoading: loading } = useProjectsQuery();
-  const { data: usersData } = useUsersQuery(1, 100);
+  const { data: usersData } = useUsersQuery({ page: 1, limit: 100 });
   const allUsers = usersData?.items || [];
 
   const createProjectMutation = useCreateProjectMutation();
@@ -64,7 +64,6 @@ export const AdminProjectsTab: React.FC = () => {
         name: newProjectName.trim(),
         key: newProjectKey.trim().toUpperCase(),
         description: newProjectDesc.trim() || undefined,
-        leadId: newProjectLeadId || undefined,
       });
 
       setCreateModalOpen(false);

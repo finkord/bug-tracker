@@ -153,8 +153,10 @@ export const TeamModal: React.FC<TeamModalProps> = ({
 
       {/* Description */}
       <div>
+        <label className="block text-xs font-bold text-[var(--md-sys-color-on-surface)] mb-1">
+          Description
+        </label>
         <Textarea
-          label="Description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Purpose, domain, or focus of this team..."

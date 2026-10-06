@@ -64,7 +64,9 @@ export interface ProjectComponentItem {
 }
 
 export type CreateComponentPayload = components['schemas']['CreateComponentDto'];
-export type UpdateComponentPayload = components['schemas']['UpdateComponentDto'];
+export type UpdateComponentPayload = Omit<components['schemas']['UpdateComponentDto'], 'leadId'> & {
+  leadId?: number | null;
+};
 
 
 export type ProjectVersionStatus = 'UNRELEASED' | 'RELEASED' | 'ARCHIVED';
