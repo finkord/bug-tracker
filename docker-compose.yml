@@ -66,15 +66,15 @@ services:
       INITIAL_ADMIN_NAME: ${INITIAL_ADMIN_NAME:-"System Administrator"}
 
       # External Identity Providers (OAuth2 / OIDC) & Bot Protection
-      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-Ov23liowrXkQH7XphlcP}
-      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-5ca11b790717d78b6cc2e9fdbab955bf2b3d0419}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
       GITHUB_CALLBACK_URL: ${GITHUB_CALLBACK_URL:-http://localhost/api/v1/auth/github/callback}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-133097189796-jmtng0dmfhmabetq39e8qc8vdebqn4ad.apps.googleusercontent.com}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-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}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-http://localhost/api/v1/auth/google/callback}
       CAPTCHA_PROVIDER: ${CAPTCHA_PROVIDER:-turnstile}
-      CAPTCHA_SECRET_KEY: ${CAPTCHA_SECRET_KEY:-0x4AAAAAAFBDW7slniLnmgtBJZ0F_4ZezO8}
-      TURNSTILE_SECRET: ${TURNSTILE_SECRET:-0x4AAAAAAFBDW7slniLnmgtBJZ0F_4ZezO8}
+      CAPTCHA_SECRET_KEY: ${CAPTCHA_SECRET_KEY:-}
+      TURNSTILE_SECRET: ${TURNSTILE_SECRET:-}
       TURNSTILE_HOSTNAMES: ${TURNSTILE_HOSTNAMES:-localhost,127.0.0.1}
     networks:
       - bugtracker-network
@@ -85,7 +85,7 @@ services:
       context: .
       dockerfile: ./nginx/Dockerfile.prod
       args:
-        VITE_TURNSTILE_SITE_KEY: ${VITE_TURNSTILE_SITE_KEY:-0x4AAAAAAFBDW7LqZnzsV119}
+        VITE_TURNSTILE_SITE_KEY: ${VITE_TURNSTILE_SITE_KEY:-}
     container_name: bugtracker-frontend
     restart: unless-stopped
     ports:
