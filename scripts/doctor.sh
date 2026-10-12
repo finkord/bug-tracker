@@ -76,16 +76,16 @@ echo ""
 # 2. Environment Configuration
 printf "  ${BOLD}2. Environment Configuration${RESET}\n"
 
-if [ -f "backend/.env" ]; then
-  pass "backend/.env" "Present"
+if [ -f ".env" ]; then
+  pass ".env (Local Development)" "Present"
 else
-  warn "backend/.env" "Missing! Run 'make env' to create from template"
+  warn ".env (Local Development)" "Missing! Run 'make env' to create from template"
 fi
 
-if [ -f "frontend/.env" ]; then
-  pass "frontend/.env" "Present"
+if [ -f ".env.production" ]; then
+  pass ".env.production (Docker/Prod)" "Present"
 else
-  warn "frontend/.env" "Missing! Run 'make env' to create from template"
+  warn ".env.production (Docker/Prod)" "Missing! Run 'make env' to create from template"
 fi
 
 echo ""

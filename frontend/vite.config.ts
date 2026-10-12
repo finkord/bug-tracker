@@ -9,12 +9,12 @@ export default defineConfig(({ mode }) => {
   const rootDir = path.resolve(import.meta.dirname, '..');
   const backendDir = path.resolve(import.meta.dirname, '../backend');
 
-  // Single Source of Truth: load administrator credentials from environment files
-  const backendEnv = loadEnv(mode, backendDir, ['INITIAL_ADMIN_', 'VITE_']);
+  // Single Source of Truth: load variables from repository root .env and local overrides
   const rootEnv = loadEnv(mode, rootDir, ['INITIAL_ADMIN_', 'VITE_']);
   const frontendEnv = loadEnv(mode, process.cwd(), ['INITIAL_ADMIN_', 'VITE_']);
+  const backendEnv = loadEnv(mode, backendDir, ['INITIAL_ADMIN_', 'VITE_']);
 
-  const merged = { ...rootEnv, ...backendEnv, ...frontendEnv };
+  const merged = { ...backendEnv, ...frontendEnv, ...rootEnv };
   const adminEmail =
     process.env.INITIAL_ADMIN_EMAIL ||
     merged.INITIAL_ADMIN_EMAIL ||
@@ -28,6 +28,7 @@ export default defineConfig(({ mode }) => {
     'AdminPassword123!';
 
   return {
+    envDir: rootDir,
     plugins: [react(), tailwindcss()],
     define: {
       'import.meta.env.VITE_INITIAL_ADMIN_EMAIL': JSON.stringify(mode === 'development' ? adminEmail : ''),

@@ -87,15 +87,15 @@ help:
 # 2. Setup & Environment
 # ------------------------------------------------------------------------------
 env:
-	@if [ ! -f backend/.env ]; then \
-		echo "Creating backend/.env from backend/.env.example..."; \
-		cp backend/.env.example backend/.env; \
+	@if [ ! -f .env ]; then \
+		echo "Creating .env from .env.example..."; \
+		cp .env.example .env; \
 	fi
-	@if [ ! -f frontend/.env ]; then \
-		echo "Creating frontend/.env from frontend/.env.example..."; \
-		cp frontend/.env.example frontend/.env; \
+	@if [ ! -f .env.production ]; then \
+		echo "Creating .env.production from .env.production.example..."; \
+		cp .env.production.example .env.production; \
 	fi
-	@echo "Environment files verified."
+	@echo "Environment configuration files verified."
 
 doctor:
 	@./scripts/doctor.sh

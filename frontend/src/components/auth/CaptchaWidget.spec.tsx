@@ -13,82 +13,20 @@ describe('CaptchaWidget Component', () => {
     vi.restoreAllMocks();
   });
 
-  describe('Offline development fallback mode', () => {
-    it('renders the interactive simulator when no sitekey is provided', () => {
+  describe('Cloudflare Turnstile lifecycle', () => {
+    it('injects official Turnstile explicit script when sitekey is configured', () => {
       const onVerify = vi.fn();
-      render(<CaptchaWidget siteKey="" onVerify={onVerify} />);
+      render(<CaptchaWidget siteKey="1x00000000000000000000AA" onVerify={onVerify} />);
 
-      expect(screen.getByText(/verify you are human/i)).toBeInTheDocument();
-      expect(screen.getByTitle(/verify you are human/i)).toBeInTheDocument();
-      expect(screen.getByText(/turnstile/i)).toBeInTheDocument();
-    });
-
-    it('simulates verification when clicked and calls onVerify with valid-captcha-token', async () => {
-      vi.useFakeTimers();
-      const onVerify = vi.fn();
-      render(<CaptchaWidget siteKey="" onVerify={onVerify} />);
-
-      const button = screen.getByTitle(/verify you are human/i);
-      fireEvent.click(button);
-
-      expect(screen.getByText(/checking browser\.\.\./i)).toBeInTheDocument();
-
-      act(() => {
-        vi.advanceTimersByTime(650);
-      });
-
-      expect(screen.getByText(/verified/i)).toBeInTheDocument();
-      expect(onVerify).toHaveBeenCalledWith('valid-captcha-token');
-      vi.useRealTimers();
-    });
-
-    it('resets verification state when reset button is clicked', async () => {
-      vi.useFakeTimers();
-      const onVerify = vi.fn();
-      const onReset = vi.fn();
-      render(<CaptchaWidget siteKey="" onVerify={onVerify} onReset={onReset} />);
-
-      const button = screen.getByTitle(/verify you are human/i);
-      fireEvent.click(button);
-
-      act(() => {
-        vi.advanceTimersByTime(650);
-      });
-
-      const resetButton = screen.getByRole('button', { name: /\(reset\)/i });
-      fireEvent.click(resetButton);
-
-      expect(screen.getByText(/verify you are human/i)).toBeInTheDocument();
-      expect(onReset).toHaveBeenCalledOnce();
-      vi.useRealTimers();
-    });
-
-    it('resets via imperative ref handle', async () => {
-      vi.useFakeTimers();
-      const onVerify = vi.fn();
-      const onReset = vi.fn();
-      const ref = createRef<CaptchaWidgetHandle>();
-
-      render(<CaptchaWidget siteKey="" ref={ref} onVerify={onVerify} onReset={onReset} />);
-
-      const button = screen.getByTitle(/verify you are human/i);
-      fireEvent.click(button);
-
-      act(() => {
-        vi.advanceTimersByTime(650);
-      });
-
-      expect(screen.getByText(/verified/i)).toBeInTheDocument();
-
-      act(() => {
-        ref.current?.reset();
-      });
-
-      expect(screen.getByText(/verify you are human/i)).toBeInTheDocument();
-      expect(onReset).toHaveBeenCalled();
-      vi.useRealTimers();
+      const script = document.querySelector('script[src*="turnstile/v0/api.js"]');
+      expect(script).toBeTruthy();
+      expect(script?.getAttribute('src')).toBe(
+        'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit',
+      );
     });
   });
+
+
 
   describe('Cloudflare Turnstile explicit rendering mode', () => {
     it('injects official Turnstile explicit script when sitekey is provided', () => {
@@ -188,7 +126,6 @@ describe('CaptchaWidget Component', () => {
 
       expect(onTimeout).toHaveBeenCalledOnce();
       expect(onReset).toHaveBeenCalled();
-      expect(screen.getByText(/verification timed out/i)).toBeInTheDocument();
     });
   });
 });

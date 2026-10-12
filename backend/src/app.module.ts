@@ -54,7 +54,7 @@ import { TeamsModule } from './modules/teams/teams.module.js';
 
 @Module({
   imports: [
-    // Global environment configuration
+    // Global environment configuration: resolves .env from current directory or parent directory
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env', '../.env'],
