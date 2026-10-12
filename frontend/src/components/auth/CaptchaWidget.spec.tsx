@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
-import { createRef } from 'react';
-import { CaptchaWidget, type CaptchaWidgetHandle } from './CaptchaWidget';
+import { render, screen, act } from '@testing-library/react';
+import { CaptchaWidget } from './CaptchaWidget';
 
 describe('CaptchaWidget Component', () => {
   beforeEach(() => {

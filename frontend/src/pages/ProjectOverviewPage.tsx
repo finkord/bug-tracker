@@ -32,7 +32,6 @@ import {
   Users2,
   FolderTree,
   ChevronRight,
-  Shield,
   Search,
 } from 'lucide-react';
 

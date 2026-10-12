@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../../api/client';
 import { ShieldCheck, Copy, Check, KeyRound } from 'lucide-react';
 import { Modal } from '../ui/Modal';
@@ -19,13 +19,7 @@ export const TwoFactorModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (isOpen) {
-      loadSecret();
-    }
-  }, [isOpen]);
-
-  const loadSecret = async () => {
+  const loadSecret = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -38,7 +32,13 @@ export const TwoFactorModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      loadSecret();
+    }
+  }, [isOpen, loadSecret]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(secret);

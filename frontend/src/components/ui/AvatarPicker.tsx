@@ -93,7 +93,7 @@ export const AvatarPicker: React.FC<AvatarPickerProps> = ({
         previewUrl: initialAvatarUrl || null,
       });
     }
-  }, [initialAvatarUrl, allowPresets]);
+  }, [initialAvatarUrl, allowPresets, onChange]);
 
   useEffect(() => {
     return () => {

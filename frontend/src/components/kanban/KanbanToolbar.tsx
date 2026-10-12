@@ -17,7 +17,6 @@ import {
   SearchInput,
 } from '../ui';
 import {
-  Search,
   RefreshCw,
   Layers,
   BookmarkPlus,
@@ -26,7 +25,6 @@ import {
   Users2,
   Users,
   Milestone,
-  X,
   SlidersHorizontal,
   Bug,
   CheckSquare,

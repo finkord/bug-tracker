@@ -22,8 +22,6 @@ import {
   UserCheck,
   UserX,
   Layers,
-  Search,
-  X,
   RotateCcw,
 } from 'lucide-react';
 import { FilterMultiSelectPopover, type FilterMultiSelectOption } from './FilterMultiSelectPopover';
@@ -69,7 +67,7 @@ export const BasicFilterBar: React.FC<BasicFilterBarProps> = ({
   onFiltersChange,
   onSearchQueryChange,
   onClearFilters,
-  onSwitchToJql,
+  onSwitchToJql: _onSwitchToJql,
 }) => {
   const handleFieldChange = <K extends keyof BasicFilterCriteria>(field: K, value: BasicFilterCriteria[K]) => {
     onFiltersChange({

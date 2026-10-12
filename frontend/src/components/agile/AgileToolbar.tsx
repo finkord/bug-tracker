@@ -18,11 +18,9 @@ import {
 import {
   Layers,
   Kanban,
-  Search,
   RefreshCw,
   Plus,
   TrendingDown,
-  X,
   User,
   UserX,
   AlertTriangle,
