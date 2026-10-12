@@ -11,16 +11,19 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
     configService: ConfigService,
     private readonly authService: AuthService,
   ) {
+    const clientID =
+      configService?.get<string>?.('GITHUB_CLIENT_ID') || process.env.GITHUB_CLIENT_ID || '';
+    const clientSecret =
+      configService?.get<string>?.('GITHUB_CLIENT_SECRET') || process.env.GITHUB_CLIENT_SECRET || '';
+    const callbackURL =
+      configService?.get<string>?.('GITHUB_CALLBACK_URL') ||
+      process.env.GITHUB_CALLBACK_URL ||
+      '';
+
     super({
-      clientID: configService?.get<string>?.('GITHUB_CLIENT_ID') || process.env.GITHUB_CLIENT_ID || 'dev_github_client_id',
-      clientSecret:
-        configService?.get<string>?.('GITHUB_CLIENT_SECRET') ||
-        process.env.GITHUB_CLIENT_SECRET ||
-        'dev_github_client_secret',
-      callbackURL:
-        configService?.get<string>?.('GITHUB_CALLBACK_URL') ||
-        process.env.GITHUB_CALLBACK_URL ||
-        'http://localhost/api/v1/auth/github/callback',
+      clientID,
+      clientSecret,
+      callbackURL,
       scope: ['user:email'],
     });
   }

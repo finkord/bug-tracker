@@ -20,7 +20,7 @@ export { AuthTokens };
  * - TwoFactorAuthService (TOTP generation, QR code, 2FA challenge & verification)
  * - PasswordResetService (Tokenized password recovery, password updates)
  * - TokenSessionService (JWT token generation, refresh, session invalidation)
- * - OAuthService (GitHub, Google, and mock OAuth federation)
+ * - OAuthService (GitHub, Google OAuth federation)
  */
 @Injectable()
 export class AuthService {

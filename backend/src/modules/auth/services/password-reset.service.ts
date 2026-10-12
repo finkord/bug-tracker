@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException, UnauthorizedException, Logger, Optional } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { MailerService } from '@nestjs-modules/mailer';
 import crypto from 'node:crypto';
 import * as argon2 from 'argon2';
@@ -19,6 +20,7 @@ export class PasswordResetService {
     private readonly usersService: UsersService,
     private readonly mailerService: MailerService,
     private readonly securityAuditService: SecurityAuditService,
+    private readonly configService: ConfigService,
     @Optional()
     private readonly loginRateLimiter?: LoginRateLimiterService,
   ) {}
@@ -41,7 +43,8 @@ export class PasswordResetService {
       resetPasswordExpiresAt: resetExpiresAt,
     });
 
-    const resetUrl = `http://localhost:5173/reset-password?token=${resetToken}`;
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:5173');
+    const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
 
     const textContent = `Hello ${user.fullName},
 

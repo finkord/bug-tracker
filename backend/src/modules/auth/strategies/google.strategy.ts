@@ -11,16 +11,19 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     configService: ConfigService,
     private readonly authService: AuthService,
   ) {
+    const clientID =
+      configService?.get<string>?.('GOOGLE_CLIENT_ID') || process.env.GOOGLE_CLIENT_ID || '';
+    const clientSecret =
+      configService?.get<string>?.('GOOGLE_CLIENT_SECRET') || process.env.GOOGLE_CLIENT_SECRET || '';
+    const callbackURL =
+      configService?.get<string>?.('GOOGLE_CALLBACK_URL') ||
+      process.env.GOOGLE_CALLBACK_URL ||
+      '';
+
     super({
-      clientID: configService?.get<string>?.('GOOGLE_CLIENT_ID') || process.env.GOOGLE_CLIENT_ID || 'dev_google_client_id',
-      clientSecret:
-        configService?.get<string>?.('GOOGLE_CLIENT_SECRET') ||
-        process.env.GOOGLE_CLIENT_SECRET ||
-        'dev_google_client_secret',
-      callbackURL:
-        configService?.get<string>?.('GOOGLE_CALLBACK_URL') ||
-        process.env.GOOGLE_CALLBACK_URL ||
-        'http://localhost/api/v1/auth/google/callback',
+      clientID,
+      clientSecret,
+      callbackURL,
       scope: ['email', 'profile'],
     });
   }
