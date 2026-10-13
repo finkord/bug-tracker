@@ -226,61 +226,51 @@ export const SidebarProjectSwitcher: React.FC<SidebarProjectSwitcherProps> = ({
     </DropdownMenuContent>
   );
 
-  if (collapsed) {
-    return (
-      <div className="shrink-0 px-3 flex items-center justify-center">
-        <DropdownMenu open={isOpen} onOpenChange={handleOpenChange}>
+  return (
+    <div className="shrink-0 px-3 flex items-center">
+      <DropdownMenu open={isOpen} onOpenChange={handleOpenChange}>
+        <Tooltip content={collapsed ? projectName : undefined} side="right" sideOffset={8}>
           <DropdownMenuTrigger asChild>
-            <Tooltip content={projectName} side="right" sideOffset={8}>
-              <button
-                type="button"
-                className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] flex items-center justify-center transition-all cursor-pointer border border-[var(--md-sys-color-outline-variant)]/40 shadow-2xs overflow-hidden shrink-0"
-                aria-label="Switch active project"
-              >
+            <button
+              type="button"
+              className={`h-9 flex items-center rounded-xl bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] transition-all duration-200 cursor-pointer border border-[var(--md-sys-color-outline-variant)]/30 overflow-hidden shrink-0 ${
+                collapsed ? 'w-9' : 'w-full pr-2'
+              }`}
+              aria-label="Switch active project"
+            >
+              {/* 36x36px avatar slot strictly matching the collapsed rail X=30px center line */}
+              <div className="w-9 h-9 shrink-0 flex items-center justify-center">
                 <EntityAvatar
                   name={projectName}
                   projectKey={activeProject?.key}
                   avatarUrl={activeProject?.avatarUrl}
                   size="xs"
                 />
-              </button>
-            </Tooltip>
-          </DropdownMenuTrigger>
-          {dropdownContent}
-        </DropdownMenu>
-      </div>
-    );
-  }
+              </div>
 
-  return (
-    <div className="shrink-0 px-3 flex items-center">
-      <DropdownMenu open={isOpen} onOpenChange={handleOpenChange}>
-        <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            className="w-full h-9 flex items-center justify-between rounded-xl bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] transition-all cursor-pointer border border-[var(--md-sys-color-outline-variant)]/30 overflow-hidden pr-2 shrink-0"
-            aria-label="Switch active project"
-          >
-            {/* 36x36px avatar slot strictly matching the collapsed rail X=30px center line */}
-            <div className="w-9 h-9 shrink-0 flex items-center justify-center">
-              <EntityAvatar
-                name={projectName}
-                projectKey={activeProject?.key}
-                avatarUrl={activeProject?.avatarUrl}
-                size="xs"
+              {/* Collapsing project text & chevron without layout shift */}
+              <div
+                className={`text-left min-w-0 transition-all duration-200 ease-in-out ${
+                  collapsed
+                    ? 'w-0 opacity-0 ml-0 pointer-events-none'
+                    : 'flex-1 ml-1.5 opacity-100'
+                }`}
+              >
+                <p className="text-xs font-semibold truncate leading-tight text-[var(--md-sys-color-on-surface)]">
+                  {projectName}
+                </p>
+                <p className="text-[9px] font-mono text-[var(--md-sys-color-on-surface-variant)] truncate leading-none mt-0.5">
+                  {projectKey}
+                </p>
+              </div>
+              <ChevronsUpDown
+                className={`w-3.5 h-3.5 opacity-60 shrink-0 text-[var(--md-sys-color-on-surface-variant)] transition-all duration-200 ${
+                  collapsed ? 'w-0 opacity-0 ml-0 pointer-events-none' : 'ml-1'
+                }`}
               />
-            </div>
-            <div className="text-left min-w-0 flex-1 ml-1.5">
-              <p className="text-xs font-semibold truncate leading-tight text-[var(--md-sys-color-on-surface)]">
-                {projectName}
-              </p>
-              <p className="text-[9px] font-mono text-[var(--md-sys-color-on-surface-variant)] truncate leading-none mt-0.5">
-                {projectKey}
-              </p>
-            </div>
-            <ChevronsUpDown className="w-3.5 h-3.5 opacity-60 shrink-0 ml-1 text-[var(--md-sys-color-on-surface-variant)]" />
-          </button>
-        </DropdownMenuTrigger>
+            </button>
+          </DropdownMenuTrigger>
+        </Tooltip>
         {dropdownContent}
       </DropdownMenu>
     </div>

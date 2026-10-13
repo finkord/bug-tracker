@@ -97,43 +97,41 @@ export const SidebarBottomActions: React.FC<SidebarBottomActionsProps> = ({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className={`w-full flex items-center rounded-xl transition-colors cursor-pointer select-none text-left shrink-0 ${
+          className={`h-9 flex items-center rounded-xl transition-all duration-200 cursor-pointer select-none text-left shrink-0 overflow-hidden ${
             collapsed
-              ? 'h-9 w-9 mx-auto justify-center hover:bg-[var(--md-sys-color-surface-container-high)]'
-              : 'h-9 hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] pr-2'
+              ? 'w-9 hover:bg-[var(--md-sys-color-surface-container-high)]'
+              : 'w-full hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] pr-2'
           }`}
           aria-label="User settings and account menu"
         >
-          {collapsed ? (
+          {/* Strictly anchored 36x36px avatar slot matching X=30px center line */}
+          <div className="w-9 h-9 shrink-0 flex items-center justify-center">
             <Avatar
               name={displayName}
               avatarUrl={user.avatarUrl}
               size="compact"
               role={user.systemRole}
             />
-          ) : (
-            <div className="w-9 h-9 shrink-0 flex items-center justify-center">
-              <Avatar
-                name={displayName}
-                avatarUrl={user.avatarUrl}
-                size="compact"
-                role={user.systemRole}
-              />
-            </div>
-          )}
-          {!collapsed && (
-            <>
-              <div className="flex-1 min-w-0 ml-1.5">
-                <p className="text-xs font-semibold truncate leading-tight text-[var(--md-sys-color-on-surface)]">
-                  {displayName}
-                </p>
-                <p className="text-[10px] text-[var(--md-sys-color-on-surface-variant)] truncate leading-tight mt-0.5">
-                  {user.systemRole || 'MEMBER'}
-                </p>
-              </div>
-              <ChevronsUpDown className="w-3.5 h-3.5 opacity-60 text-[var(--md-sys-color-on-surface-variant)] shrink-0 ml-1" />
-            </>
-          )}
+          </div>
+          <div
+            className={`min-w-0 transition-all duration-200 ease-in-out ${
+              collapsed
+                ? 'w-0 opacity-0 ml-0 pointer-events-none'
+                : 'flex-1 ml-1.5 opacity-100'
+            }`}
+          >
+            <p className="text-xs font-semibold truncate leading-tight text-[var(--md-sys-color-on-surface)]">
+              {displayName}
+            </p>
+            <p className="text-[10px] text-[var(--md-sys-color-on-surface-variant)] truncate leading-tight mt-0.5">
+              {user.systemRole || 'MEMBER'}
+            </p>
+          </div>
+          <ChevronsUpDown
+            className={`w-3.5 h-3.5 opacity-60 text-[var(--md-sys-color-on-surface-variant)] shrink-0 transition-all duration-200 ${
+              collapsed ? 'w-0 opacity-0 ml-0 pointer-events-none' : 'ml-1'
+            }`}
+          />
         </button>
       </DropdownMenuTrigger>
 
@@ -226,7 +224,7 @@ export const SidebarBottomActions: React.FC<SidebarBottomActionsProps> = ({
             <button
               type="button"
               onClick={handleToggleTheme}
-              className="w-9 h-9 mx-auto rounded-xl flex items-center justify-center text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)] transition-colors cursor-pointer shrink-0"
+              className="w-9 h-9 rounded-xl flex items-center justify-center text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)] transition-colors cursor-pointer shrink-0"
               aria-label={`Toggle theme (currently ${theme})`}
             >
               {theme === 'system' ? (

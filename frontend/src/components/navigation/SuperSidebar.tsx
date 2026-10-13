@@ -271,10 +271,7 @@ export const SuperSidebar: React.FC<SuperSidebarProps> = () => {
             }`}
           aria-label="Main Navigation"
         >
-          <div
-            className={`flex flex-col h-full shrink-0 ${collapseMode === 'hidden' ? 'w-60 min-w-[240px]' : 'w-full'
-              }`}
-          >
+          <div className="flex flex-col h-full shrink-0 w-60 min-w-[240px]">
             {/* Row 1: Brand Header Logo & Name (44px, matching WorkspaceHeader) */}
             <SidebarBrandHeader
               collapsed={effectiveCollapsed}

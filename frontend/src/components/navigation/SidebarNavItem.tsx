@@ -38,59 +38,54 @@ export const SidebarNavItem: React.FC<SidebarNavItemProps> = ({
     ? location.pathname === item.path
     : location.pathname.startsWith(item.path);
 
-  if (collapsed) {
-    const railContent = (
+  const isRailWithMicroLabel = collapsed && showCollapsedLabels;
+
+  return (
+    <Tooltip content={collapsed ? item.label : undefined} side="right" sideOffset={8}>
       <NavLink
         to={item.path}
         end={item.exact}
         onClick={onNavigate}
-        className={`w-9 h-9 mx-auto rounded-xl flex ${
-          showCollapsedLabels ? 'flex-col justify-center' : 'items-center justify-center'
-        } transition-all group select-none shrink-0 ${
+        className={`h-9 flex items-center rounded-xl transition-all duration-200 select-none text-[13px] shrink-0 overflow-hidden ${
+          collapsed ? 'w-9' : 'w-full pr-2.5'
+        } ${
           isActive
             ? 'bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] font-semibold shadow-2xs'
-            : 'text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)]'
+            : 'text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)] font-medium'
         }`}
         aria-label={item.label}
       >
-        <Icon className="w-4 h-4 shrink-0" />
-        {showCollapsedLabels && (
-          <span className="text-[9px] leading-tight mt-0.5 font-medium truncate max-w-[32px]">
-            {item.shortLabel}
-          </span>
-        )}
-      </NavLink>
-    );
-
-    return (
-      <Tooltip content={item.label} side="right" sideOffset={8}>
-        {railContent}
-      </Tooltip>
-    );
-  }
-
-  return (
-    <NavLink
-      to={item.path}
-      end={item.exact}
-      onClick={onNavigate}
-      className={`w-full h-9 flex items-center rounded-xl transition-colors select-none text-[13px] pr-2.5 shrink-0 ${
-        isActive
-          ? 'bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] font-semibold shadow-2xs'
-          : 'text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)] font-medium'
-      }`}
-    >
-      {/* 36x36px icon slot strictly matching the collapsed rail X=30px center line */}
-      <div className="w-9 h-9 shrink-0 flex items-center justify-center">
-        <Icon
-          className={`w-4 h-4 shrink-0 ${
-            isActive
-              ? 'text-[var(--md-sys-color-primary)]'
-              : 'text-[var(--md-sys-color-on-surface-variant)] group-hover:text-[var(--md-sys-color-on-surface)]'
+        {/* Strictly anchored 36x36px icon slot permanently aligned at X=30px center line */}
+        <div
+          className={`w-9 h-9 shrink-0 flex ${
+            isRailWithMicroLabel ? 'flex-col justify-center' : 'items-center justify-center'
           }`}
-        />
-      </div>
-      <span className="truncate flex-1 leading-none ml-1.5">{item.label}</span>
-    </NavLink>
+        >
+          <Icon
+            className={`w-4 h-4 shrink-0 transition-colors ${
+              isActive
+                ? 'text-[var(--md-sys-color-primary)]'
+                : 'text-[var(--md-sys-color-on-surface-variant)] group-hover:text-[var(--md-sys-color-on-surface)]'
+            }`}
+          />
+          {isRailWithMicroLabel && (
+            <span className="text-[9px] leading-tight mt-0.5 font-medium truncate max-w-[32px]">
+              {item.shortLabel}
+            </span>
+          )}
+        </div>
+
+        {/* Smoothly collapsing text label without layout shift */}
+        <span
+          className={`whitespace-nowrap truncate leading-none transition-all duration-200 ease-in-out ${
+            collapsed
+              ? 'w-0 opacity-0 ml-0 pointer-events-none'
+              : 'flex-1 ml-1.5 opacity-100'
+          }`}
+        >
+          {item.label}
+        </span>
+      </NavLink>
+    </Tooltip>
   );
 };

@@ -173,11 +173,17 @@ export const SidebarNavList: React.FC<SidebarNavListProps> = ({
       {/* ─── 1. Active Project Scope (Top Level - Linear Style) ─── */}
       {isProjectTier && (
         <div className="flex flex-col gap-1">
-          {!collapsed && (
-            <div className="px-2 pt-1.5 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)]/60 flex items-center justify-between">
+          <div
+            className={`px-2 overflow-hidden transition-all duration-200 ease-in-out ${
+              collapsed
+                ? 'max-h-0 opacity-0 py-0 pointer-events-none'
+                : 'max-h-8 opacity-100 pt-1.5 pb-0.5'
+            }`}
+          >
+            <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)]/60 flex items-center justify-between truncate">
               <span className="truncate">{activeProject?.name || 'Project Views'}</span>
             </div>
-          )}
+          </div>
           {projectNavItems.map((item) => (
             <SidebarNavItem
               key={item.label}
@@ -199,11 +205,17 @@ export const SidebarNavList: React.FC<SidebarNavListProps> = ({
 
       {/* ─── 2. Personal Section ─── */}
       <div className="flex flex-col gap-1">
-        {!collapsed && (
-          <div className="px-2 pt-1.5 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)]/60">
+        <div
+          className={`px-2 overflow-hidden transition-all duration-200 ease-in-out ${
+            collapsed
+              ? 'max-h-0 opacity-0 py-0 pointer-events-none'
+              : 'max-h-8 opacity-100 pt-1.5 pb-0.5'
+          }`}
+        >
+          <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)]/60">
             Personal
           </div>
-        )}
+        </div>
         {personalNavItems.map((item) => (
           <SidebarNavItem
             key={item.label}
@@ -222,11 +234,17 @@ export const SidebarNavList: React.FC<SidebarNavListProps> = ({
             <div className="border-t border-[var(--md-sys-color-outline-variant)]/20 mx-1" />
           </div>
           <div className="flex flex-col gap-1">
-            {!collapsed && (
-              <div className="px-2 pt-1.5 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)]/60">
+            <div
+              className={`px-2 overflow-hidden transition-all duration-200 ease-in-out ${
+                collapsed
+                  ? 'max-h-0 opacity-0 py-0 pointer-events-none'
+                  : 'max-h-8 opacity-100 pt-1.5 pb-0.5'
+              }`}
+            >
+              <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)]/60">
                 Team & Time
               </div>
-            )}
+            </div>
             {timesheetNavItems.map((item) => (
               <SidebarNavItem
                 key={item.label}

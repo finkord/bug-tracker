@@ -91,7 +91,9 @@ export const SidebarBrandHeader: React.FC<SidebarBrandHeaderProps> = ({
       <NavLink
         to="/"
         onClick={onNavigate}
-        className="w-full h-9 flex items-center rounded-xl group select-none transition-colors"
+        className={`h-9 flex items-center rounded-xl group select-none transition-all duration-200 overflow-hidden ${
+          collapsed ? 'w-9' : 'w-full'
+        }`}
         title="BugTracker Workspace"
       >
         {/* Fixed 36x36px icon slot centered at X=30px */}
@@ -103,10 +105,10 @@ export const SidebarBrandHeader: React.FC<SidebarBrandHeaderProps> = ({
           </div>
         </div>
 
-        {/* Fancy Gradient or Themed Typography */}
+        {/* Fancy Gradient or Themed Typography without layout shift */}
         <span
-          className={`tracking-tight whitespace-nowrap truncate transition-opacity duration-200 ml-1.5 ${
-            collapsed ? 'opacity-0 w-0 pointer-events-none' : 'opacity-100 flex-1 pr-1'
+          className={`tracking-tight whitespace-nowrap truncate transition-all duration-200 ease-in-out ${
+            collapsed ? 'opacity-0 w-0 pointer-events-none ml-0' : 'opacity-100 flex-1 pr-1 ml-1.5'
           } ${config.textStyle}`}
         >
           BugTracker
