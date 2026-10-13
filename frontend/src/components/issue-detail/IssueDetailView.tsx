@@ -395,7 +395,6 @@ export const IssueDetailView: React.FC<IssueDetailViewProps> = ({
             onUpdateFields={handleUpdateIssue}
             onOpenLogWorkModal={() => setLogWorkOpen(true)}
             onViewWorklogsTab={() => handleSwitchActivityTab('worklogs')}
-            onViewDevelopmentTab={() => handleSwitchActivityTab('development')}
           />
         </div>
       </div>

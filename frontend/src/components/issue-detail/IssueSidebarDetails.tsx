@@ -23,8 +23,6 @@ import {
   SlidersHorizontal,
   Clock,
   Plus,
-  GitBranch,
-  ArrowRight,
 } from 'lucide-react';
 import {
   useAssigneesQuery,
@@ -50,7 +48,6 @@ interface IssueSidebarDetailsProps {
   }>) => Promise<void>;
   onOpenLogWorkModal?: () => void;
   onViewWorklogsTab?: () => void;
-  onViewDevelopmentTab?: () => void;
 }
 
 export const IssueSidebarDetails: React.FC<IssueSidebarDetailsProps> = ({
@@ -62,7 +59,6 @@ export const IssueSidebarDetails: React.FC<IssueSidebarDetailsProps> = ({
   onUpdateFields,
   onOpenLogWorkModal,
   onViewWorklogsTab,
-  onViewDevelopmentTab,
 }) => {
   const [updatingField, setUpdatingField] = useState<string | null>(null);
 
@@ -410,23 +406,6 @@ export const IssueSidebarDetails: React.FC<IssueSidebarDetailsProps> = ({
               )}
             </div>
           </div>
-
-          {/* Development / Git Integration Shortcut */}
-          {onViewDevelopmentTab && (
-            <div className="pt-2 border-t border-[var(--md-sys-color-outline-variant)]/30">
-              <button
-                type="button"
-                onClick={onViewDevelopmentTab}
-                className="w-full flex items-center justify-between p-2 rounded-xl bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/40 text-xs transition-colors cursor-pointer group"
-              >
-                <div className="flex items-center gap-2">
-                  <GitBranch className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
-                  <span className="font-semibold text-[var(--md-sys-color-on-surface)]">Development & Git</span>
-                </div>
-                <ArrowRight className="w-3.5 h-3.5 text-[var(--md-sys-color-on-surface-variant)] group-hover:text-[var(--md-sys-color-primary)] group-hover:translate-x-0.5 transition-transform" />
-              </button>
-            </div>
-          )}
 
           {/* Dates */}
           <div className="pt-2 border-t border-[var(--md-sys-color-outline-variant)]/30 space-y-1.5 text-[11px]">
