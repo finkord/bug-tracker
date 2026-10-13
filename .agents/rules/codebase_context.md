@@ -46,6 +46,23 @@ on the BugTracker codebase.
   - Side-Channel Timing & Credential Enumeration Defense: Non-existent accounts execute constant-time dummy Argon2id hash verification (`DUMMY_ARGON2_HASH`) and increment Redis rate limit counters.
   - 2FA Brute-Force Rate Limiting: 6-digit TOTP verification is rate-limited via `LoginRateLimiterService` in Redis (5 failed attempts trigger 15-minute lockout).
 - UI colours → **only** `var(--md-sys-color-*)` tokens from `src/index.css`. Never raw Tailwind palette classes.
+- **Prohibition of Superficial Analysis & Symptom Patching (Root-Cause First)**:
+  - FORBIDDEN:
+    - Lazy symptom patching: never slap workarounds, ad-hoc selectors, or band-aids on top of architectural flaws.
+    - Inattention and haste: never copy-paste or write code without auditing existing domain models, project conventions, and available components.
+    - Blindly trusting legacy code: never assume an existing screen placement, endpoint, or data flow is correct just because it exists in the codebase.
+  - MANDATORY:
+    - Always analyze the fundamental business domain (Jira standards, entity relationships, project scopes) before touching code.
+    - If a feature is structurally misplaced (e.g. project-scoped data residing on a detached global screen), address the root architectural flaw by moving it to its proper domain hierarchy, not by adding hacks.
+- **Architectural Alignment Before Code Execution**:
+  - FORBIDDEN: Silently performing architectural refactorings, route alterations, or layout reorganizations without prior explanation.
+  - MANDATORY: When diagnosing systemic flaws or restructuring screens/routes, the agent MUST first present the root-cause analysis, propose the target architecture, and obtain user confirmation before writing or modifying code.
+- **Prohibition of Native HTML Form Elements & Custom Controls**:
+  - FORBIDDEN: Hand-crafting raw HTML `<select>`, `<option>`, `<input>`, or raw buttons when design system equivalents exist.
+  - MANDATORY: Always use unified components from `src/components/ui/` (`<Dropdown>`, `<SelectField>`, `<Button>`, `<Input>`, `<Modal>`, `<DataTable>`).
+- **Domain-First Jira Scoping (Project-Centric Architecture)**:
+  - FORBIDDEN: Detaching project-scoped business features (boards, backlogs, sprints, team timesheets/worklogs, project settings) into un-scoped global pages or "utility" buckets.
+  - MANDATORY: Project-bound domain features must reside strictly within the active project hierarchy (`/projects/:projectId/...`). Global views are reserved solely for cross-project aggregation (e.g. enterprise executive overviews) and must never substitute project-level workflows.
 - Authorization → enforced at the **backend HTTP boundary** (guards on every mutating endpoint).
 - Never browse `node_modules/`, `dist/`, `.git/`, or `*.lock` files — they are quota sinks.
 - **Pre-delivery self-check**: Run `oxlint` + `tsc --noEmit` on modified files before declaring work done.
