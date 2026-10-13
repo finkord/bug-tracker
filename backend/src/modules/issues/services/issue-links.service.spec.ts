@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { IssueLinksService } from './issue-links.service.js';
 import { Issue } from '../entities/issue.entity.js';
-import { IssueLink, IssueLinkType } from '../entities/issue-link.entity.js';
+import { IssueLinkType } from '../entities/issue-link.entity.js';
 
 describe('IssueLinksService', () => {
   let service: IssueLinksService;

@@ -35,7 +35,7 @@ export class ResetPasswordDto {
   @Matches(/(?=.*\d)/, {
     message: 'Password must contain at least one numeric digit',
   })
-  @Matches(/(?=.*[@$!%*?&^#()_+\-=\[\]{};':"\\|,.<>\/])/, {
+  @Matches(/(?=.*[@$!%*?&^#()_+\-=[\]{};':"\\|,.<>/])/, {
     message: 'Password must contain at least one special character/symbol',
   })
   newPassword: string;

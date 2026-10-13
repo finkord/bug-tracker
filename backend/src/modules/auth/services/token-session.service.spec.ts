@@ -26,7 +26,7 @@ describe('TokenSessionService', () => {
 
   beforeEach(() => {
     mockJwtService = {
-      sign: vi.fn().mockImplementation((payload, options) => {
+      sign: vi.fn().mockImplementation((payload) => {
         return `signed_${payload.token_type}_token`;
       }),
       verify: vi.fn(),

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThanOrEqual, In, Not } from 'typeorm';
+import { Repository, MoreThanOrEqual, Not } from 'typeorm';
 import {
   LoginAuditLog,
   LoginAttemptStatus,

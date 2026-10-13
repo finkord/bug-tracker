@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber, Min, IsOptional, IsString } from 'class-validator';
+import { IsNumber, Min, IsOptional, IsString } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class LogWorkDto {

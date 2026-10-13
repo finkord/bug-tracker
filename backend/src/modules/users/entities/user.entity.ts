@@ -129,9 +129,9 @@ export class User {
   toJSON() {
     const {
       passwordHash,
-      twoFactorSecret,
-      activationToken,
-      resetPasswordToken,
+      twoFactorSecret: _twoFactorSecret,
+      activationToken: _activationToken,
+      resetPasswordToken: _resetPasswordToken,
       ...safeUser
     } = this;
     return {

@@ -1,10 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
 import { RbacService } from './rbac.service.js';
 import { ProjectRole } from '../entities/project-role.entity.js';
 import { Group } from '../entities/group.entity.js';
-import { PermissionScheme } from '../entities/permission-scheme.entity.js';
-import { IssueSecurityScheme } from '../entities/issue-security-scheme.entity.js';
 
 describe('RbacService Enterprise CRUD & Safeguards', () => {
   let service: RbacService;

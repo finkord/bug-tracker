@@ -4,13 +4,11 @@ import { IssueWorklogService } from './issue-worklog.service.js';
 import { Issue, IssueStatus, IssuePriority, IssueType } from '../entities/issue.entity.js';
 import { Worklog } from '../entities/worklog.entity.js';
 import { User, SystemRole } from '../../users/entities/user.entity.js';
-import { ProjectPermission } from '../../rbac/entities/permission-grant.entity.js';
 
 describe('IssueWorklogService', () => {
   let service: IssueWorklogService;
   let mockIssueRepo: any;
   let mockWorklogRepo: any;
-  let mockUserRepo: any;
   let mockDataSource: any;
   let mockEventsGateway: any;
   let mockPermissionEvaluator: any;
@@ -80,10 +78,6 @@ describe('IssueWorklogService', () => {
       save: vi.fn((entity) => Promise.resolve(entity)),
       find: vi.fn(),
       createQueryBuilder: vi.fn(),
-    };
-
-    mockUserRepo = {
-      find: vi.fn(),
     };
 
     mockEventsGateway = {

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { NotFoundException, ForbiddenException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { IssueCommentsService } from './issue-comments.service.js';
 import { Issue } from '../entities/issue.entity.js';
 import { Comment } from '../entities/comment.entity.js';

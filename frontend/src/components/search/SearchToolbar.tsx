@@ -282,6 +282,10 @@ export const SearchToolbar: React.FC<SearchToolbarProps> = ({
           <BookmarkPlus className="w-3.5 h-3.5" />
           <span>Save View</span>
         </button>
+
+        <div className="hidden sm:inline-flex items-center px-2.5 py-1 rounded-full bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/40 text-xs font-medium text-[var(--md-sys-color-on-surface-variant)] shrink-0">
+          <span>{totalResults} {totalResults === 1 ? 'issue' : 'issues'}</span>
+        </div>
       </div>
 
       {/* Right: Mode Toggle (JQL), View Layout Switcher, Export, Refresh */}
