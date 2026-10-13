@@ -726,6 +726,23 @@ describe('IssueCoreService', () => {
 
       await expect(service.updateSprint(10, 999)).rejects.toThrow(NotFoundException);
     });
+
+    it('should reject assigning an Epic to a sprint', async () => {
+      mockIssueRepo.findOne.mockResolvedValue(Object.assign(new Issue(), mockIssue, { issueType: IssueType.EPIC }));
+      await expect(service.updateSprint(10, 5)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should cascade sprintId to child subtasks when parent sprint changes', async () => {
+      mockIssueRepo.findOne.mockResolvedValue(Object.assign(new Issue(), mockIssue, { issueType: IssueType.STORY }));
+      mockSprintRepo.findOne.mockResolvedValue({ id: 5, projectId: 1, name: 'Sprint 1', status: 'ACTIVE' });
+
+      await service.updateSprint(10, 5);
+
+      expect(mockIssueRepo.update).toHaveBeenCalledWith(
+        { parentId: 10, issueType: IssueType.SUBTASK },
+        { sprintId: 5 },
+      );
+    });
   });
 
   describe('bulkUpdate', () => {

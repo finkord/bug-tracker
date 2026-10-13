@@ -2,7 +2,19 @@ import React, { useState, useEffect } from 'react';
 import type { SprintDefinition } from '../../types/agile';
 import { useTeamsQuery } from '../../api/queries/useTeamsQuery.js';
 import { Calendar, Sparkles, Play } from 'lucide-react';
-import { Input, FormModal, Tabs, TabsList, TabsTrigger } from '../ui';
+import {
+  Input,
+  FormModal,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+  Textarea,
+} from '../ui';
 
 interface SprintFormModalProps {
   isOpen: boolean;
@@ -101,6 +113,13 @@ export const SprintFormModal: React.FC<SprintFormModalProps> = ({
       return;
     }
 
+    if (startDate && endDate) {
+      if (new Date(startDate) >= new Date(endDate)) {
+        setError('Sprint end date must be after start date.');
+        return;
+      }
+    }
+
     const sprintStatus =
       mode === 'start'
         ? 'ACTIVE'
@@ -151,7 +170,6 @@ export const SprintFormModal: React.FC<SprintFormModalProps> = ({
           placeholder="e.g. Sprint 2 - Core Engine"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          required
         />
 
         {/* Team and Capacity Row */}
@@ -161,18 +179,22 @@ export const SprintFormModal: React.FC<SprintFormModalProps> = ({
               <label className="block text-xs font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)] mb-1.5">
                 Assigned Scrum Team
               </label>
-              <select
-                value={teamId || ''}
-                onChange={(e) => handleTeamChange(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-2xl bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)] text-xs text-[var(--md-sys-color-on-surface)] focus:outline-none focus:ring-2 focus:ring-[var(--md-sys-color-primary)] font-medium"
+              <Select
+                value={teamId ? String(teamId) : 'NONE'}
+                onValueChange={(val) => handleTeamChange(val === 'NONE' ? '' : val)}
               >
-                <option value="">-- No Scrum Team Assigned --</option>
-                {teams.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name} ({t.sprintCapacityHours}h default)
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger size="sm" className="rounded-2xl text-xs bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]">
+                  <SelectValue placeholder="No Scrum Team Assigned" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="NONE">-- No Scrum Team Assigned --</SelectItem>
+                  {teams.map((t) => (
+                    <SelectItem key={t.id} value={String(t.id)}>
+                      {t.name} ({t.sprintCapacityHours}h default)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <Input
@@ -241,18 +263,16 @@ export const SprintFormModal: React.FC<SprintFormModalProps> = ({
 
         {/* Sprint Goal */}
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)] mb-1.5">
+          <label htmlFor="sprint-goal-textarea" className="block text-xs font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)] mb-1.5">
             Sprint Goal
           </label>
-          <div className="relative">
-            <textarea
-              rows={3}
-              placeholder="What are the key deliverables, milestones, or objectives for this sprint?"
-              value={goal}
-              onChange={(e) => setGoal(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-2xl bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)] text-xs text-[var(--md-sys-color-on-surface)] focus:outline-none focus:ring-2 focus:ring-[var(--md-sys-color-primary)] resize-none"
-            />
-          </div>
+          <Textarea
+            id="sprint-goal-textarea"
+            rows={3}
+            placeholder="What are the key deliverables, milestones, or objectives for this sprint?"
+            value={goal}
+            onChange={(e) => setGoal(e.target.value)}
+          />
         </div>
 
     </FormModal>

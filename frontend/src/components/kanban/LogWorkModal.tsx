@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api, type IssueItem } from '../../api/client';
-import { Clock, Calendar, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
-import { Modal, Button, SelectField } from '../ui';
+import { Clock, Calendar, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Modal, Button, SelectField, Textarea } from '../ui';
 
 interface LogWorkModalProps {
   isOpen: boolean;
@@ -294,19 +294,16 @@ export const LogWorkModal: React.FC<LogWorkModalProps> = ({
         </div>
 
         <div>
-          <label className="block text-[11px] font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider mb-1">
+          <label htmlFor="log-work-desc" className="block text-[11px] font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider mb-1">
             Work Description (Optional)
           </label>
-          <div className="relative">
-            <FileText className="absolute left-3 top-2.5 w-4 h-4 text-[var(--md-sys-color-on-surface-variant)]" />
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-              placeholder="What tasks or bug fixes did you accomplish?"
-              className="w-full text-xs pl-9 pr-3 py-2 rounded-xl bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] resize-none"
-            />
-          </div>
+          <Textarea
+            id="log-work-desc"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={3}
+            placeholder="What tasks or bug fixes did you accomplish?"
+          />
         </div>
 
         <div className="flex items-center justify-end gap-2 pt-3 border-t border-[var(--md-sys-color-outline-variant)]">

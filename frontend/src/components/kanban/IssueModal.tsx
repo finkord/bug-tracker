@@ -35,6 +35,7 @@ import {
   Tabs,
   TabsList,
   TabsTrigger,
+  Textarea,
   type UserPickerUser,
 } from '../ui';
 import { MarkdownContent } from '../common/MarkdownContent';
@@ -452,12 +453,12 @@ export const IssueModal: React.FC<IssueModalProps> = ({
           </div>
 
           {descTab === 'write' ? (
-            <textarea
+            <Textarea
               rows={4}
               placeholder="Describe the defect, reproduction steps, expected vs actual behavior, or checklists (- [ ] task)... (Press Ctrl+Enter to submit)"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] text-sm focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] resize-y font-mono"
+              className="font-mono text-sm"
             />
           ) : (
             <div className="w-full min-h-[108px] p-3.5 rounded-xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-sm">

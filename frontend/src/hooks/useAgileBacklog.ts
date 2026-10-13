@@ -223,6 +223,18 @@ export function useAgileBacklog(selectedProjectId: number | null) {
   // Issue manipulation via relational sprintId
   const handleMoveToSprint = async (issueId: number, sprintId: number | null) => {
     try {
+      queryClient.setQueryData<PaginatedIssuesResponse>(issueKeys.list(issueFilter), (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          items: old.items.map((i) => {
+            if (i.id === issueId || i.parentId === issueId) {
+              return { ...i, sprintId };
+            }
+            return i;
+          }),
+        };
+      });
       await updateSprintOnIssueMutation.mutateAsync({ id: issueId, sprintId });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to move issue');

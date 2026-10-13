@@ -73,6 +73,19 @@ export class SprintsService {
   }
 
   /**
+   * Helper to ensure sprint start date is strictly before end date.
+   */
+  private validateSprintDates(startDate?: string | null, endDate?: string | null): void {
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      if (start >= end) {
+        throw new BadRequestException('Sprint end date must be after start date');
+      }
+    }
+  }
+
+  /**
    * Creates a new sprint in planned status within a project.
    */
   async createSprint(projectId: number, dto: CreateSprintDto): Promise<Sprint> {
@@ -80,6 +93,9 @@ export class SprintsService {
     if (!project) {
       throw new NotFoundException(`Project #${projectId} not found`);
     }
+
+    this.validateSprintDates(dto.startDate, dto.endDate);
+
     const sprint = this.sprintRepository.create({
       projectId,
       name: dto.name.trim(),
@@ -98,6 +114,11 @@ export class SprintsService {
    */
   async updateSprint(id: number, dto: UpdateSprintDto): Promise<Sprint> {
     const sprint = await this.getSprintById(id);
+
+    const nextStartDate = dto.startDate !== undefined ? dto.startDate : sprint.startDate;
+    const nextEndDate = dto.endDate !== undefined ? dto.endDate : sprint.endDate;
+    this.validateSprintDates(nextStartDate, nextEndDate);
+
     if (dto.name !== undefined) sprint.name = dto.name.trim();
     if (dto.goal !== undefined) sprint.goal = dto.goal?.trim() || null;
     if (dto.startDate !== undefined) sprint.startDate = dto.startDate || null;
@@ -109,13 +130,32 @@ export class SprintsService {
   }
 
   /**
-   * Starts a sprint, setting its status to ACTIVE.
+   * Starts a sprint, setting its status to ACTIVE with single active sprint enforcement.
    */
   async startSprint(id: number): Promise<Sprint> {
     const sprint = await this.getSprintById(id);
     if (sprint.status === SprintStatus.COMPLETED) {
       throw new BadRequestException('Cannot start an already completed sprint');
     }
+
+    // Scrum rule: only one active sprint per project (or per assigned team)
+    const existingActiveWhere: any = {
+      projectId: sprint.projectId,
+      status: SprintStatus.ACTIVE,
+    };
+    if (sprint.teamId) {
+      existingActiveWhere.teamId = sprint.teamId;
+    }
+    const existingActiveSprint = await this.sprintRepository.findOne({
+      where: existingActiveWhere,
+    });
+
+    if (existingActiveSprint && existingActiveSprint.id !== sprint.id) {
+      throw new BadRequestException(
+        `Sprint "${existingActiveSprint.name}" is already active in this project. Complete it before starting a new sprint.`,
+      );
+    }
+
     sprint.status = SprintStatus.ACTIVE;
     if (!sprint.startDate) {
       sprint.startDate = new Date().toISOString().split('T')[0];
@@ -124,23 +164,55 @@ export class SprintsService {
   }
 
   /**
-   * Completes a sprint, moving unresolved issues to next sprint or backlog.
+   * Completes a sprint, moving unresolved issues and their subtasks to next sprint or backlog.
    */
   async completeSprint(id: number, dto: CompleteSprintDto): Promise<Sprint> {
     const sprint = await this.getSprintById(id);
     sprint.status = SprintStatus.COMPLETED;
     const savedSprint = await this.sprintRepository.save(sprint);
     const targetSprintId: number | null = dto.transferSprintId || null;
-    await this.issueRepository
-      .createQueryBuilder()
-      .update(Issue)
-      .set({ sprintId: targetSprintId })
-      .where('projectId = :projectId', { projectId: sprint.projectId })
-      .andWhere('sprintId = :sprintId', { sprintId: id })
-      .andWhere('status NOT IN (:...completedStatuses)', {
-        completedStatuses: [IssueStatus.RESOLVED, IssueStatus.CLOSED],
-      })
-      .execute();
+
+    // 1. Find incomplete issues in this sprint
+    const sprintIssues = await this.issueRepository.find({
+      where: {
+        projectId: sprint.projectId,
+        sprintId: id,
+      },
+      select: { id: true, status: true },
+    });
+
+    const incompleteParentIds = sprintIssues
+      .filter((i) => i.status !== IssueStatus.RESOLVED && i.status !== IssueStatus.CLOSED)
+      .map((i) => i.id);
+
+    // 2. Transfer incomplete issues and cascade to their unresolved subtasks
+    if (incompleteParentIds.length > 0) {
+      await this.issueRepository
+        .createQueryBuilder()
+        .update(Issue)
+        .set({ sprintId: targetSprintId })
+        .where('projectId = :projectId', { projectId: sprint.projectId })
+        .andWhere(
+          '(id IN (:...incompleteParentIds) OR (parentId IN (:...incompleteParentIds) AND status NOT IN (:...completedStatuses)))',
+          {
+            incompleteParentIds,
+            completedStatuses: [IssueStatus.RESOLVED, IssueStatus.CLOSED],
+          },
+        )
+        .execute();
+    } else {
+      await this.issueRepository
+        .createQueryBuilder()
+        .update(Issue)
+        .set({ sprintId: targetSprintId })
+        .where('projectId = :projectId', { projectId: sprint.projectId })
+        .andWhere('sprintId = :sprintId', { sprintId: id })
+        .andWhere('status NOT IN (:...completedStatuses)', {
+          completedStatuses: [IssueStatus.RESOLVED, IssueStatus.CLOSED],
+        })
+        .execute();
+    }
+
     return savedSprint;
   }
 

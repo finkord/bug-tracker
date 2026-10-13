@@ -497,8 +497,21 @@ export class IssueCoreService {
     if (issueType === IssueType.SUBTASK && !parentId) {
       throw new BadRequestException('Subtasks must have a parent issue');
     }
-    if (issueType === IssueType.EPIC && (parentId || epicId)) {
-      throw new BadRequestException('Epics cannot have a parent or belong to another epic');
+    if (issueType === IssueType.EPIC) {
+      if (parentId || epicId) {
+        throw new BadRequestException('Epics cannot have a parent or belong to another epic');
+      }
+      sprintId = null; // Epics live in Backlog/Roadmap, never directly inside a sprint
+    }
+
+    if (issueType === IssueType.SUBTASK && parentId && !sprintId) {
+      const parentIssue = await this.issueRepository.findOne({
+        where: { id: parentId },
+        select: { id: true, sprintId: true },
+      });
+      if (parentIssue?.sprintId) {
+        sprintId = parentIssue.sprintId;
+      }
     }
 
     let assigneeId: number | null = dto.assigneeId || null;
@@ -702,6 +715,10 @@ export class IssueCoreService {
     if (!issue) {
       throw new NotFoundException(`Issue with ID #${id} not found`);
     }
+    if (issue.issueType === IssueType.EPIC && sprintId !== null) {
+      throw new BadRequestException('Epics cannot be assigned directly to sprints');
+    }
+
     let sprint: Sprint | null = null;
     if (sprintId) {
       sprint = await this.sprintRepository.findOne({
@@ -715,6 +732,13 @@ export class IssueCoreService {
       issue.sprintId = null;
     }
     await this.issueRepository.save(issue);
+
+    if (issue.issueType !== IssueType.SUBTASK) {
+      await this.issueRepository.update(
+        { parentId: issue.id, issueType: IssueType.SUBTASK },
+        { sprintId: issue.sprintId },
+      );
+    }
 
     if (
       sprint &&
@@ -798,6 +822,9 @@ export class IssueCoreService {
       issue.estimatedHours = dto.estimatedHours;
     }
     if (dto.sprintId !== undefined) {
+      if (issue.issueType === IssueType.EPIC && dto.sprintId !== null) {
+        throw new BadRequestException('Epics cannot be assigned directly to sprints');
+      }
       const prevSprint = issue.sprint?.name || 'Backlog';
       if (dto.sprintId) {
         const sprint = await this.sprintRepository.findOne({
@@ -956,6 +983,12 @@ export class IssueCoreService {
     }
 
     await this.issueRepository.save(issue);
+    if (dto.sprintId !== undefined && issue.issueType !== IssueType.SUBTASK) {
+      await this.issueRepository.update(
+        { parentId: issue.id, issueType: IssueType.SUBTASK },
+        { sprintId: issue.sprintId },
+      );
+    }
     const updated = await this.findById(id);
     await this.eventsGateway.broadcastIssueUpdated(updated);
 

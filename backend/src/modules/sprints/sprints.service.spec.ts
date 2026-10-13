@@ -106,11 +106,16 @@ describe('SprintsService', () => {
 
   describe('createSprint', () => {
     it('should create and save a new sprint', async () => {
-      const inputDto = { name: 'Sprint 2', goal: 'Next deliverables' };
+      const inputDto = { name: 'Sprint 2', goal: 'Next deliverables', startDate: '2026-09-01', endDate: '2026-09-14' };
       const actualSprint = await service.createSprint(1, inputDto);
       expect(actualSprint.name).toBe('Sprint 2');
       expect(actualSprint.status).toBe(SprintStatus.PLANNED);
       expect(mockSprintRepository.save).toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException if endDate is before startDate', async () => {
+      const inputDto = { name: 'Sprint 2', startDate: '2026-09-15', endDate: '2026-09-01' };
+      await expect(service.createSprint(1, inputDto)).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -121,6 +126,11 @@ describe('SprintsService', () => {
       expect(actualSprint.name).toBe('Sprint 1 - Release');
       expect(mockSprintRepository.save).toHaveBeenCalled();
     });
+
+    it('should throw BadRequestException if updated endDate is before startDate', async () => {
+      vi.mocked(mockSprintRepository.findOne!).mockResolvedValueOnce(mockSprint);
+      await expect(service.updateSprint(10, { endDate: '2026-08-01' })).rejects.toThrow(BadRequestException);
+    });
   });
 
   describe('startSprint', () => {
@@ -129,9 +139,20 @@ describe('SprintsService', () => {
       vi.mocked(mockSprintRepository.findOne!).mockResolvedValueOnce(mockCompletedSprint);
       await expect(service.startSprint(10)).rejects.toThrow(BadRequestException);
     });
+
+    it('should throw BadRequestException if another sprint is already active in the project', async () => {
+      const mockPlannedSprint = { ...mockSprint, id: 12, name: 'Sprint 3', status: SprintStatus.PLANNED };
+      vi.mocked(mockSprintRepository.findOne!)
+        .mockResolvedValueOnce(mockPlannedSprint)
+        .mockResolvedValueOnce({ ...mockSprint, id: 10, name: 'Sprint 1', status: SprintStatus.ACTIVE });
+      await expect(service.startSprint(12)).rejects.toThrow(BadRequestException);
+    });
+
     it('should mark sprint as active and set default startDate if null', async () => {
       const mockPlannedSprint = { ...mockSprint, status: SprintStatus.PLANNED, startDate: null };
-      vi.mocked(mockSprintRepository.findOne!).mockResolvedValueOnce(mockPlannedSprint);
+      vi.mocked(mockSprintRepository.findOne!)
+        .mockResolvedValueOnce(mockPlannedSprint)
+        .mockResolvedValueOnce(null);
       const actualSprint = await service.startSprint(10);
       expect(actualSprint.status).toBe(SprintStatus.ACTIVE);
       expect(actualSprint.startDate).toBeDefined();
