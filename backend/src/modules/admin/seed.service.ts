@@ -784,20 +784,24 @@ export class SeedService {
       sprint: string | null;
       reporterKey: string;
       assigneeKey: string | null;
+      epicKey?: string;
+      parentKey?: string;
+      epicColor?: string;
     }> = [
       // ================= UI TEAM TICKETS =================
       {
         projectKey: 'UI',
         issueNum: 1,
-        title: 'Refactor Kanban column layout for ultra-wide monitors',
-        description: 'Implement responsive flexbox wrapping and scroll snapping for Kanban swimlane columns on 4K and ultrawide viewports.',
-        issueType: IssueType.IMPROVEMENT,
-        status: IssueStatus.CLOSED,
-        priority: IssuePriority.MEDIUM,
-        estimatedHours: 8,
-        sprint: 'Sprint 1 (Completed)',
+        title: 'Design System & Expressive Workspace UI Architecture',
+        description: 'Comprehensive design system overhaul implementing Material Design 3 Expressive tokens, unified UI primitives, and responsive layout guidelines.',
+        issueType: IssueType.EPIC,
+        status: IssueStatus.IN_PROGRESS,
+        priority: IssuePriority.HIGH,
+        estimatedHours: 40,
+        sprint: null,
         reporterKey: 'volodymyr',
         assigneeKey: 'sonya',
+        epicColor: '#6554C0',
       },
       {
         projectKey: 'UI',
@@ -811,6 +815,21 @@ export class SeedService {
         sprint: 'Sprint 1 (Completed)',
         reporterKey: 'sophia',
         assigneeKey: 'lucas',
+        epicKey: 'UI-1',
+      },
+      {
+        projectKey: 'UI',
+        issueNum: 3,
+        title: 'Design token contrast ratio validation for dark mode',
+        description: 'Ensure all primary and surface colors strictly adhere to WCAG AAA contrast requirements under dark theme.',
+        issueType: IssueType.STORY,
+        status: IssueStatus.IN_PROGRESS,
+        priority: IssuePriority.HIGH,
+        estimatedHours: 12,
+        sprint: 'Sprint 2 (Active)',
+        reporterKey: 'volodymyr',
+        assigneeKey: 'lucas',
+        epicKey: 'UI-1',
       },
       {
         projectKey: 'UI',
@@ -934,15 +953,16 @@ export class SeedService {
       {
         projectKey: 'CORE',
         issueNum: 1,
-        title: 'Optimize database index for login audit query performance',
-        description: 'Add composite B-tree index on (user_id, created_at DESC) in login_audit_logs to prevent slow sequential scans.',
-        issueType: IssueType.IMPROVEMENT,
-        status: IssueStatus.RESOLVED,
-        priority: IssuePriority.HIGH,
-        estimatedHours: 6,
-        sprint: 'Sprint 1 (Completed)',
+        title: 'Authentication & Security Infrastructure Overhaul',
+        description: 'Hardened identity tier implementing RFC 6749 OAuth2, Argon2id side-channel defense, and Redis sliding-window brute force protection.',
+        issueType: IssueType.EPIC,
+        status: IssueStatus.IN_PROGRESS,
+        priority: IssuePriority.CRITICAL,
+        estimatedHours: 40,
+        sprint: null,
         reporterKey: 'alex',
         assigneeKey: 'marcus',
+        epicColor: '#0052CC',
       },
       {
         projectKey: 'CORE',
@@ -956,6 +976,7 @@ export class SeedService {
         sprint: 'Sprint 2 (Active)',
         reporterKey: 'rachel',
         assigneeKey: 'taras',
+        epicKey: 'CORE-1',
       },
       {
         projectKey: 'CORE',
@@ -969,6 +990,7 @@ export class SeedService {
         sprint: 'Sprint 2 (Active)',
         reporterKey: 'alex',
         assigneeKey: 'marcus',
+        epicKey: 'CORE-1',
       },
       {
         projectKey: 'CORE',
@@ -1060,6 +1082,20 @@ export class SeedService {
         sprint: null, // Backlog
         reporterKey: 'liam',
         assigneeKey: 'marcus',
+      },
+      {
+        projectKey: 'CORE',
+        issueNum: 11,
+        title: 'Add Redis distributed lock unit tests for token rotation',
+        description: 'Verify token rotation concurrency under 50 simultaneous worker threads with zero double-spend or lock starvation.',
+        issueType: IssueType.SUBTASK,
+        status: IssueStatus.IN_PROGRESS,
+        priority: IssuePriority.HIGH,
+        estimatedHours: 4,
+        sprint: 'Sprint 2 (Active)',
+        reporterKey: 'alex',
+        assigneeKey: 'taras',
+        parentKey: 'CORE-2',
       },
 
       // ================= MONOPS TEAM TICKETS =================
@@ -1472,6 +1508,8 @@ export class SeedService {
       const reporter = users[item.reporterKey] || Object.values(users)[0];
       const assignee = item.assigneeKey ? users[item.assigneeKey] : null;
       const targetSprintId = item.sprint ? sprintMap[item.projectKey]?.[item.sprint] || null : null;
+      const targetEpicId = item.epicKey && result[item.epicKey] ? result[item.epicKey].id : null;
+      const targetParentId = item.parentKey && result[item.parentKey] ? result[item.parentKey].id : null;
 
       const issue = this.issueRepository.create({
         projectId: project.id,
@@ -1485,6 +1523,9 @@ export class SeedService {
         estimatedHours: item.estimatedHours,
         loggedHours: 0,
         sprintId: targetSprintId,
+        epicId: targetEpicId,
+        epicColor: item.epicColor || null,
+        parentId: targetParentId,
         reporterId: reporter.id,
         reporter,
         assigneeId: assignee ? assignee.id : null,

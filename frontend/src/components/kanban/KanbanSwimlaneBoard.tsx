@@ -12,7 +12,7 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import type { IssueItem, IssueStatus, IssuePriority, AssigneeUser } from '../../api/client';
+import type { IssueItem, IssueStatus, IssuePriority, IssueType, AssigneeUser } from '../../api/client';
 import type { KanbanSettings } from '../../types/kanban.js';
 import { KANBAN_COLUMNS } from '../../types/kanban.js';
 import { IssueCard } from './IssueCard.js';
@@ -43,7 +43,7 @@ export interface KanbanSwimlaneBoardProps {
   onSwimlaneDrop?: (
     issueId: number,
     nextStatus: IssueStatus,
-    patch?: { assigneeId?: number | null; parentId?: number | null; priority?: IssuePriority },
+    patch?: { assigneeId?: number | null; parentId?: number | null; epicId?: number | null; priority?: IssuePriority },
   ) => void;
   onAssignToMe: (issueId: number) => void;
   onQuickAddInStatus?: (status: IssueStatus, assigneeId?: number | null) => void;
@@ -67,7 +67,8 @@ interface AssigneeSwimlaneGroup extends BaseSwimlaneGroup {
 interface EpicSwimlaneGroup extends BaseSwimlaneGroup {
   type: 'epic';
   parentId: number | null;
-  parentIssue: IssueItem | null;
+  epicId?: number | null;
+  parentIssue: { id: number; key: string; title: string; issueType?: IssueType; color?: string | null } | null;
 }
 
 interface ExpediteSwimlaneGroup extends BaseSwimlaneGroup {
@@ -260,19 +261,22 @@ export const KanbanSwimlaneBoard: React.FC<KanbanSwimlaneBoardProps> = ({
       };
 
       for (const issue of issues) {
-        if (issue.parentId && issue.parent) {
-          if (!parentMap.has(issue.parentId)) {
-            parentMap.set(issue.parentId, {
+        const ep = issue.epic || (issue.parentId && issue.parent ? issue.parent : null);
+        const epId = issue.epicId || issue.parentId;
+        if (epId && ep) {
+          if (!parentMap.has(epId)) {
+            parentMap.set(epId, {
               type: 'epic',
-              key: `epic-${issue.parentId}`,
-              title: `${issue.parent.key}: ${issue.parent.title || 'Untitled Epic'}`,
-              subtitle: `Epic container #${issue.parentId}`,
-              parentId: issue.parentId,
-              parentIssue: issue.parent,
+              key: `epic-${epId}`,
+              title: `${ep.key}: ${ep.title || 'Untitled Epic'}`,
+              subtitle: `Epic container #${epId}`,
+              parentId: epId,
+              epicId: epId,
+              parentIssue: ep,
               issues: [],
             });
           }
-          parentMap.get(issue.parentId)!.issues.push(issue);
+          parentMap.get(epId)!.issues.push(issue);
         } else {
           standaloneGroup.issues.push(issue);
         }
@@ -442,12 +446,12 @@ export const KanbanSwimlaneBoard: React.FC<KanbanSwimlaneBoardProps> = ({
           onAssigneeAndStatusChange(issueId, targetGroup.assigneeId, targetStatus);
         }
       } else if (targetGroup.type === 'epic') {
-        const isSameParent = (targetIssue.parentId ?? null) === targetGroup.parentId;
+        const isSameEpic = (targetIssue.epicId ?? targetIssue.parentId ?? null) === (targetGroup.epicId ?? targetGroup.parentId);
         const isSameStatus = targetIssue.status === targetStatus;
-        if (isSameParent && isSameStatus) continue;
+        if (isSameEpic && isSameStatus) continue;
 
         if (onSwimlaneDrop) {
-          onSwimlaneDrop(issueId, targetStatus, { parentId: targetGroup.parentId });
+          onSwimlaneDrop(issueId, targetStatus, { epicId: targetGroup.epicId ?? targetGroup.parentId });
         } else {
           onStatusChange(issueId, targetStatus);
         }

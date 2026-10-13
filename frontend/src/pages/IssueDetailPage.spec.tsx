@@ -64,6 +64,8 @@ vi.mock('../api/queries', () => ({
   useUpdateIssueCommentMutation: () => ({ mutateAsync: vi.fn() }),
   useDeleteIssueCommentMutation: () => ({ mutateAsync: vi.fn() }),
   useDeleteWorklogMutation: () => ({ mutateAsync: vi.fn() }),
+  useMyProjectPermissionsQuery: () => ({ data: { permissions: [] }, isLoading: false }),
+  useIssuesQuery: () => ({ data: { items: [] }, isLoading: false }),
   issueKeys: {
     lists: () => ['issues', 'list'],
     details: () => ['issues', 'detail'],

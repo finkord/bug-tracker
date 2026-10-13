@@ -21,9 +21,10 @@ import {
   GripVertical,
   Check,
   GitCommitHorizontal,
-  Layers,
   Box,
   Milestone,
+  Bookmark,
+  CornerDownRight,
 } from 'lucide-react';
 import { Dropdown, PriorityBadge } from '../ui';
 import { useIssueSelectionStore } from '../../store/useIssueSelectionStore';
@@ -137,6 +138,30 @@ const IssueCardComponent: React.FC<IssueCardProps> = ({
           >
             <Sparkles className="w-3 h-3 text-[var(--md-sys-color-success)]" />
             {!isCompact && 'Feature'}
+          </span>
+        );
+      case 'STORY':
+        return (
+          <span
+            title="Story"
+            className={`inline-flex items-center gap-1 font-semibold rounded-full bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)] shrink-0 ${
+              isCompact ? 'p-1 text-[10px]' : 'px-2 py-0.5 text-[10px]'
+            }`}
+          >
+            <Bookmark className="w-3 h-3 text-[var(--md-sys-color-success)]" />
+            {!isCompact && 'Story'}
+          </span>
+        );
+      case 'EPIC':
+        return (
+          <span
+            title="Epic"
+            className={`inline-flex items-center gap-1 font-semibold rounded-full bg-[var(--md-sys-color-tertiary-container)] text-[var(--md-sys-color-on-tertiary-container)] shrink-0 ${
+              isCompact ? 'p-1 text-[10px]' : 'px-2 py-0.5 text-[10px]'
+            }`}
+          >
+            <Zap className="w-3 h-3 text-[var(--md-sys-color-tertiary)]" />
+            {!isCompact && 'Epic'}
           </span>
         );
       case 'IMPROVEMENT':
@@ -304,15 +329,29 @@ const IssueCardComponent: React.FC<IssueCardProps> = ({
           </div>
         </div>
 
-        {/* Metadata Chips Row: Epic, Component, FixVersion */}
-        {(issue.parent || issue.component || issue.fixVersion) && (
+        {/* Metadata Chips Row: Epic, Parent, Component, FixVersion */}
+        {(issue.epic || issue.parent || issue.component || issue.fixVersion) && (
           <div className="flex flex-wrap items-center gap-1 mb-1.5">
+            {issue.epic && (
+              <span
+                className="inline-flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0 truncate max-w-[100px]"
+                style={{
+                  backgroundColor: issue.epic.color ? `${issue.epic.color}22` : 'var(--md-sys-color-tertiary-container)',
+                  color: issue.epic.color || 'var(--md-sys-color-on-tertiary-container)',
+                  border: `1px solid ${issue.epic.color ? `${issue.epic.color}44` : 'var(--md-sys-color-outline-variant)'}`,
+                }}
+                title={`Epic: ${issue.epic.title || issue.epic.key}`}
+              >
+                <Zap className="w-2.5 h-2.5 shrink-0" />
+                <span>{issue.epic.key}</span>
+              </span>
+            )}
             {issue.parent && (
               <span
                 className="inline-flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] whitespace-nowrap shrink-0 truncate max-w-[90px]"
-                title={`Epic: ${issue.parent.title || issue.parent.key}`}
+                title={`Parent: ${issue.parent.title || issue.parent.key}`}
               >
-                <Layers className="w-2.5 h-2.5 shrink-0" />
+                <CornerDownRight className="w-2.5 h-2.5 shrink-0 text-[var(--md-sys-color-primary)]" />
                 <span>{issue.parent.key}</span>
               </span>
             )}
@@ -449,20 +488,34 @@ const IssueCardComponent: React.FC<IssueCardProps> = ({
         </div>
       </div>
 
-      {/* Metadata Chips Row: Sprint, Epic, Component, FixVersion */}
-      {(issue.sprint?.name || issue.parent || issue.component || issue.fixVersion) && (
+      {/* Metadata Chips Row: Sprint, Epic, Parent, Component, FixVersion */}
+      {(issue.sprint?.name || issue.epic || issue.parent || issue.component || issue.fixVersion) && (
         <div className="flex flex-wrap items-center gap-1 mb-2">
           {issue.sprint?.name && (
             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--md-sys-color-tertiary-container)] text-[var(--md-sys-color-on-tertiary-container)] whitespace-nowrap shrink-0 truncate max-w-[120px]">
               {issue.sprint.name}
             </span>
           )}
+          {issue.epic && (
+            <span
+              className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap shrink-0 truncate max-w-[120px]"
+              style={{
+                backgroundColor: issue.epic.color ? `${issue.epic.color}22` : 'var(--md-sys-color-tertiary-container)',
+                color: issue.epic.color || 'var(--md-sys-color-on-tertiary-container)',
+                border: `1px solid ${issue.epic.color ? `${issue.epic.color}44` : 'var(--md-sys-color-outline-variant)'}`,
+              }}
+              title={`Epic: ${issue.epic.title || issue.epic.key}`}
+            >
+              <Zap className="w-2.5 h-2.5 shrink-0" />
+              <span>{issue.epic.title || issue.epic.key}</span>
+            </span>
+          )}
           {issue.parent && (
             <span
               className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] whitespace-nowrap shrink-0 truncate max-w-[120px]"
-              title={`Epic: ${issue.parent.title || issue.parent.key}`}
+              title={`Parent: ${issue.parent.title || issue.parent.key}`}
             >
-              <Layers className="w-2.5 h-2.5 shrink-0" />
+              <CornerDownRight className="w-2.5 h-2.5 shrink-0 text-[var(--md-sys-color-primary)]" />
               <span>{issue.parent.key}</span>
             </span>
           )}

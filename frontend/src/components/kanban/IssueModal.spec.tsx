@@ -38,6 +38,7 @@ vi.mock('../../api/queries', () => ({
   useProjectSprintsQuery: () => ({ data: mockSprints }),
   useProjectComponentsQuery: () => ({ data: mockComponents }),
   useProjectVersionsQuery: () => ({ data: mockVersions }),
+  useIssuesQuery: () => ({ data: { items: [] } }),
 }));
 
 vi.mock('../../api/client', () => ({

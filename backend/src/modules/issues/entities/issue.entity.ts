@@ -16,6 +16,8 @@ import type { Worklog } from './worklog.entity.js';
 import type { IssueSecurityLevel } from '../../rbac/entities/issue-security-level.entity.js';
 
 export enum IssueType {
+  EPIC = 'EPIC',
+  STORY = 'STORY',
   BUG = 'BUG',
   TASK = 'TASK',
   FEATURE = 'FEATURE',
@@ -108,6 +110,22 @@ export class Issue {
   @ManyToOne('Sprint', 'issues', { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'sprint_id' })
   sprint: import('../../sprints/entities/sprint.entity.js').Sprint | null;
+
+  // Epic relationship (for Standard Level 1 issues: STORY, TASK, BUG, FEATURE, IMPROVEMENT)
+  @Index()
+  @Column({ name: 'epic_id', type: 'int', nullable: true })
+  epicId: number | null;
+
+  @ManyToOne('Issue', 'epicIssues', { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'epic_id' })
+  epic: Issue | null;
+
+  @OneToMany('Issue', 'epic')
+  epicIssues: Issue[];
+
+  // Optional epic theme hex color
+  @Column({ name: 'epic_color', type: 'varchar', length: 30, nullable: true })
+  epicColor: string | null;
 
   // Parent-child subtask hierarchy
   @Index()

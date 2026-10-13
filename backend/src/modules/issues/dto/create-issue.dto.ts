@@ -49,10 +49,20 @@ export class CreateIssueDto {
   @IsInt()
   assigneeId?: number | null;
 
-  @ApiPropertyOptional({ example: 42, description: 'Parent issue ID for subtasks' })
+  @ApiPropertyOptional({ example: 42, description: 'Parent issue ID for subtasks', type: Number, nullable: true })
   @IsOptional()
   @IsInt()
   parentId?: number | null;
+
+  @ApiPropertyOptional({ example: 5, description: 'Epic issue ID for stories, tasks, and bugs', type: Number, nullable: true })
+  @IsOptional()
+  @IsInt()
+  epicId?: number | null;
+
+  @ApiPropertyOptional({ example: '#6554C0', description: 'Hex color for Epic', type: String, nullable: true })
+  @IsOptional()
+  @IsString()
+  epicColor?: string | null;
 
   @ApiPropertyOptional({ example: 1, description: 'Component ID or null' })
   @IsOptional()

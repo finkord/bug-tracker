@@ -91,7 +91,7 @@ export interface paths {
         put?: never;
         /**
          * Refresh JWT access token using valid refresh token
-         * @description Issues a fresh 8-hour access token without requiring user to re-enter credentials.
+         * @description Issues a fresh 15-minute access token without requiring user to re-enter credentials.
          */
         post: operations["AuthController_refresh"];
         delete?: never;
@@ -2259,8 +2259,8 @@ export interface components {
              */
             password: string;
             /**
-             * @description Bot protection token verified by CaptchaService. Use "valid-captcha-token" in dev mode.
-             * @example valid-captcha-token
+             * @description Cloudflare Turnstile bot protection response token
+             * @example 0.cf-turnstile-response-token
              */
             captchaToken: string;
         };
@@ -2507,7 +2507,7 @@ export interface components {
             /** @description Updated description */
             description?: string;
             /** @description Updated lead user ID */
-            leadId?: Record<string, never>;
+            leadId?: number | null;
         };
         CreateProjectVersionDto: {
             /** @example v1.0.0 */
@@ -2683,7 +2683,7 @@ export interface components {
              * @default BUG
              * @enum {string}
              */
-            issueType: "BUG" | "TASK" | "FEATURE" | "IMPROVEMENT" | "SUBTASK";
+            issueType: "EPIC" | "STORY" | "BUG" | "TASK" | "FEATURE" | "IMPROVEMENT" | "SUBTASK";
             /**
              * @default MEDIUM
              * @enum {string}
@@ -2713,7 +2713,17 @@ export interface components {
              * @description Parent issue ID for subtasks
              * @example 42
              */
-            parentId?: Record<string, never>;
+            parentId?: number | null;
+            /**
+             * @description Epic issue ID for stories, tasks, and bugs
+             * @example 5
+             */
+            epicId?: number | null;
+            /**
+             * @description Hex color for Epic
+             * @example #6554C0
+             */
+            epicColor?: string | null;
             /**
              * @description Component ID or null
              * @example 1
@@ -2837,7 +2847,7 @@ export interface components {
              * @default BUG
              * @enum {string}
              */
-            issueType: "BUG" | "TASK" | "FEATURE" | "IMPROVEMENT" | "SUBTASK";
+            issueType: "EPIC" | "STORY" | "BUG" | "TASK" | "FEATURE" | "IMPROVEMENT" | "SUBTASK";
             /**
              * @default MEDIUM
              * @enum {string}
@@ -2867,7 +2877,17 @@ export interface components {
              * @description Parent issue ID for subtasks
              * @example 42
              */
-            parentId?: Record<string, never>;
+            parentId?: number | null;
+            /**
+             * @description Epic issue ID for stories, tasks, and bugs
+             * @example 5
+             */
+            epicId?: number | null;
+            /**
+             * @description Hex color for Epic
+             * @example #6554C0
+             */
+            epicColor?: string | null;
             /**
              * @description Component ID or null
              * @example 1
@@ -5218,11 +5238,15 @@ export interface operations {
                 /** @description Filter by priority */
                 priority?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
                 /** @description Filter by type */
-                issueType?: "BUG" | "TASK" | "FEATURE" | "IMPROVEMENT" | "SUBTASK";
+                issueType?: "EPIC" | "STORY" | "BUG" | "TASK" | "FEATURE" | "IMPROVEMENT" | "SUBTASK";
                 /** @description Filter by assignee user ID */
                 assigneeId?: number;
                 /** @description Filter by sprint ID or BACKLOG */
                 sprintId?: string;
+                /** @description Filter by epic ID or NONE */
+                epicId?: string;
+                /** @description Filter by parent issue ID */
+                parentId?: number;
                 /** @description Search term across title and description */
                 search?: string;
                 /** @description JQL search expression */

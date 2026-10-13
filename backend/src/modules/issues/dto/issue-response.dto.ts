@@ -35,6 +35,20 @@ export interface IssueSummaryDto {
   assignee: UserSummaryDto | null;
   commentsCount?: number;
   parentId?: number | null;
+  parent?: {
+    id: number;
+    key: string;
+    title: string;
+    issueType: IssueType;
+  } | null;
+  epicId?: number | null;
+  epic?: {
+    id: number;
+    key: string;
+    title: string;
+    color?: string | null;
+  } | null;
+  epicColor?: string | null;
   subtasksCount?: number;
   componentId?: number | null;
   component?: {
@@ -139,6 +153,7 @@ export interface IssueDetailDto extends IssueSummaryDto {
   links: IssueLinkItemDto[];
   parent?: IssueSummaryDto | null;
   subtasks?: IssueSummaryDto[];
+  epicIssues?: IssueSummaryDto[];
 }
 
 export class TimesheetMemberWorklogDto {

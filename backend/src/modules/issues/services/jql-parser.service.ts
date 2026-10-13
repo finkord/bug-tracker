@@ -329,6 +329,42 @@ export class JqlParserService {
           }
           break;
         }
+
+        case 'epic': {
+          if (operator === 'is' || (operator === '=' && String(value).toUpperCase() === 'EMPTY')) {
+            qb.andWhere('issue.epicId IS NULL');
+          } else if (operator === 'is not' || (operator === '!=' && String(value).toUpperCase() === 'EMPTY')) {
+            qb.andWhere('issue.epicId IS NOT NULL');
+          } else if (operator === '=') {
+            if (/^\d+$/.test(String(value))) {
+              qb.andWhere(`issue.epicId = :${pName}Id`, { [`${pName}Id`]: Number(value) });
+            } else {
+              qb.andWhere(`(LOWER(epic.title) LIKE :${pName}Title OR UPPER(epicProject.key || '-' || epic.issueNum) = UPPER(:${pName}Exact))`, {
+                [`${pName}Title`]: `%${String(value).toLowerCase()}%`,
+                [`${pName}Exact`]: String(value).trim(),
+              });
+            }
+          }
+          break;
+        }
+
+        case 'parent': {
+          if (operator === 'is' || (operator === '=' && String(value).toUpperCase() === 'EMPTY')) {
+            qb.andWhere('issue.parentId IS NULL');
+          } else if (operator === 'is not' || (operator === '!=' && String(value).toUpperCase() === 'EMPTY')) {
+            qb.andWhere('issue.parentId IS NOT NULL');
+          } else if (operator === '=') {
+            if (/^\d+$/.test(String(value))) {
+              qb.andWhere(`issue.parentId = :${pName}Id`, { [`${pName}Id`]: Number(value) });
+            } else {
+              qb.andWhere(`(LOWER(parent.title) LIKE :${pName}Title OR UPPER(parentProject.key || '-' || parent.issueNum) = UPPER(:${pName}Exact))`, {
+                [`${pName}Title`]: `%${String(value).toLowerCase()}%`,
+                [`${pName}Exact`]: String(value).trim(),
+              });
+            }
+          }
+          break;
+        }
       }
     });
 
@@ -356,6 +392,8 @@ export class JqlParserService {
     if (lower === 'assignee' || lower === 'assigneeid') return 'assignee';
     if (lower === 'reporter' || lower === 'reporterid') return 'reporter';
     if (lower === 'sprint' || lower === 'sprintid') return 'sprint';
+    if (lower === 'epic' || lower === 'epicid' || lower === 'epiclink') return 'epic';
+    if (lower === 'parent' || lower === 'parentid') return 'parent';
     if (lower === 'text' || lower === 'summary' || lower === 'description') return 'text';
     if (lower === 'key' || lower === 'issuekey' || lower === 'id') return 'key';
     return lower;

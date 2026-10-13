@@ -24,6 +24,7 @@ import {
   IssueAttachmentsSection,
   IssueSidebarDetails,
   IssueSubtasksSection,
+  IssueEpicChildrenSection,
 } from './index.js';
 import { Card, Button, Modal } from '../ui';
 import {
@@ -310,8 +311,18 @@ export const IssueDetailView: React.FC<IssueDetailViewProps> = ({
             />
           </div>
 
+          {/* Epic Children Section if EPIC */}
+          {issue.issueType === 'EPIC' && (
+            <div id="epic-children-section">
+              <IssueEpicChildrenSection
+                issue={issue}
+                onIssuesChanged={() => fetchIssue()}
+              />
+            </div>
+          )}
+
           {/* Collapsible Subtasks Section */}
-          {!subtasksCollapsed && issue.issueType !== 'SUBTASK' && (
+          {!subtasksCollapsed && issue.issueType !== 'SUBTASK' && issue.issueType !== 'EPIC' && (
             <div id="subtasks-section">
               <IssueSubtasksSection
                 issue={issue}

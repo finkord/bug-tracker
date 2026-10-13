@@ -134,6 +134,7 @@ export const BacklogPage: React.FC = () => {
   // Issue creation modal
   const [isCreateIssueOpen, setIsCreateIssueOpen] = useState<boolean>(false);
   const [createIssueSprintId, setCreateIssueSprintId] = useState<number | null>(null);
+  const [createIssueType, setCreateIssueType] = useState<import('../api/client').IssueType | undefined>(undefined);
   const [sprintToDelete, setSprintToDelete] = useState<{ id: number; name: string } | null>(null);
   const [activeIssue, setActiveIssue] = useState<IssueItem | null>(null);
   const { selectedIds } = useIssueSelectionStore();
@@ -179,7 +180,7 @@ export const BacklogPage: React.FC = () => {
           if (id !== epicId) {
             updateIssueMutation.mutate({
               id,
-              data: { parentId: epicId },
+              data: { epicId: epicId },
             });
           }
         });
@@ -348,6 +349,7 @@ export const BacklogPage: React.FC = () => {
                   }}
                   onCreateEpic={() => {
                     setCreateIssueSprintId(null);
+                    setCreateIssueType('EPIC');
                     setIsCreateIssueOpen(true);
                   }}
                 />
@@ -483,13 +485,16 @@ export const BacklogPage: React.FC = () => {
         onClose={() => {
           setIsCreateIssueOpen(false);
           setCreateIssueSprintId(null);
+          setCreateIssueType(undefined);
         }}
         onIssueSaved={(savedIssue) => {
           setIssues((prev) => [savedIssue, ...prev]);
           setCreateIssueSprintId(null);
+          setCreateIssueType(undefined);
         }}
         defaultProjectId={selectedProjectId}
         defaultSprintId={createIssueSprintId}
+        defaultIssueType={createIssueType}
       />
 
       {/* Floating Bulk Action Bar */}

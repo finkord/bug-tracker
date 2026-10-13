@@ -5,4 +5,5 @@ export * from './IssueSidebarDetails.js';
 export * from './IssueTimeTrackingCard.js';
 export * from './IssueSubtasksSection.js';
 export * from './IssueActivityTabs.js';
+export * from './IssueEpicChildrenSection.js';
 export * from './IssueDetailView.js';

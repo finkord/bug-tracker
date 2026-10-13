@@ -36,6 +36,17 @@ export class ListIssuesQueryDto {
   @IsString()
   sprintId?: string;
 
+  @ApiPropertyOptional({ example: '5', description: 'Filter by epic ID or NONE' })
+  @IsOptional()
+  @IsString()
+  epicId?: string;
+
+  @ApiPropertyOptional({ example: 42, description: 'Filter by parent issue ID' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  parentId?: number;
+
   @ApiPropertyOptional({ example: 'memory', description: 'Search term across title and description' })
   @IsOptional()
   @IsString()

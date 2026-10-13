@@ -32,6 +32,8 @@ import {
   Check,
   Radio,
   Pencil,
+  Zap,
+  CornerDownRight,
 } from 'lucide-react';
 import {
   useAssigneesQuery,
@@ -39,6 +41,7 @@ import {
   useProjectComponentsQuery,
   useProjectVersionsQuery,
   useMyProjectPermissionsQuery,
+  useIssuesQuery,
 } from '../../api/queries/index.js';
 import { IssueTypeIcon } from '../ui/IssueTypeIcon.js';
 import { Avatar } from '../common/Avatar.js';
@@ -60,6 +63,8 @@ interface IssueSidebarDetailsProps {
     componentId: number | null;
     fixVersionId: number | null;
     estimatedHours: number;
+    epicId: number | null;
+    parentId: number | null;
   }>) => Promise<void>;
   onOpenLogWorkModal?: () => void;
   onViewWorklogsTab?: () => void;
@@ -98,14 +103,15 @@ export const IssueSidebarDetails: React.FC<IssueSidebarDetailsProps> = ({
   const { data: components = [] } = useProjectComponentsQuery(issue.projectId);
   const { data: versions = [] } = useProjectVersionsQuery(issue.projectId);
   const { data: projectPermissions } = useMyProjectPermissionsQuery(issue.projectId);
+  const { data: epicsData } = useIssuesQuery({ projectId: issue.projectId, issueType: 'EPIC', limit: 100 });
+  const epics = epicsData?.items ?? [];
 
   const isSystemAdmin = Boolean(currentUser?.isAdmin || currentUser?.systemRole === 'ADMIN');
   const hasProjectAdmin = Boolean(projectPermissions?.ADMINISTER_PROJECTS);
   const hasDeletePermission = Boolean(projectPermissions?.DELETE_ISSUES);
 
   const isReporter = Boolean(
-    currentUser &&
-      (issue.reporter?.id === currentUser.id || issue.reporterId === currentUser.id),
+    currentUser && issue.reporter?.id === currentUser.id,
   );
   const isUnstarted = issue.status === 'OPEN';
   const hasZeroWorklogs = !issue.loggedHours || Number(issue.loggedHours) === 0;
@@ -389,6 +395,67 @@ export const IssueSidebarDetails: React.FC<IssueSidebarDetailsProps> = ({
               </span>
             )}
           </div>
+
+          {/* Epic Link (for non-Epic issues) */}
+          {issue.issueType !== 'EPIC' && (
+            <div className="space-y-1">
+              <span className="text-[var(--md-sys-color-on-surface-variant)] flex items-center gap-1.5 font-medium text-[11px]">
+                <Zap className="w-3.5 h-3.5 text-[var(--md-sys-color-tertiary)]" />
+                Epic Link
+              </span>
+              {onUpdateFields && epics.length > 0 ? (
+                <Select
+                  value={issue.epicId ? String(issue.epicId) : 'none'}
+                  onValueChange={(val) =>
+                    handleFieldChange('epic', () =>
+                      onUpdateFields({ epicId: val === 'none' ? null : Number(val) }),
+                    )
+                  }
+                >
+                  <SelectTrigger size="sm" className="h-8 rounded-xl bg-[var(--md-sys-color-surface-container)] text-xs font-semibold border-[var(--md-sys-color-outline-variant)]/40 w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No Epic</SelectItem>
+                    {epics.map((ep) => (
+                      <SelectItem key={ep.id} value={String(ep.id)}>
+                        {ep.key} - {ep.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <span className="font-medium text-[var(--md-sys-color-on-surface)] block text-xs">
+                  {issue.epic ? (
+                    <a
+                      href={`/issues/${issue.epic.key}`}
+                      className="text-[var(--md-sys-color-primary)] hover:underline font-mono"
+                    >
+                      {issue.epic.key} - {issue.epic.title}
+                    </a>
+                  ) : (
+                    <span className="text-[var(--md-sys-color-on-surface-variant)] italic">No Epic</span>
+                  )}
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Parent Issue (for Subtasks) */}
+          {issue.issueType === 'SUBTASK' && issue.parent && (
+            <div className="space-y-1">
+              <span className="text-[var(--md-sys-color-on-surface-variant)] flex items-center gap-1.5 font-medium text-[11px]">
+                <CornerDownRight className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
+                Parent Issue
+              </span>
+              <a
+                href={`/issues/${issue.parent.key}`}
+                className="font-medium text-xs font-mono text-[var(--md-sys-color-primary)] hover:underline block truncate"
+              >
+                {issue.parent.key} - {issue.parent.title}
+              </a>
+            </div>
+          )}
 
           {/* Component */}
           <div className="space-y-1">

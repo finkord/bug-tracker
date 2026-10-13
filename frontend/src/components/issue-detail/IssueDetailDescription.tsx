@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { IssueItem } from '../../api/types/index.js';
 import { issuesApi } from '../../api/modules/issues.api.js';
 import { MarkdownContent } from '../common/MarkdownContent.js';
 import { Card, Button } from '../ui/index.js';
-import { Edit3, Check, X, FileText, Image, Pencil } from 'lucide-react';
+import { Edit3, Check, X, FileText, Image, Pencil, Zap, CornerDownRight } from 'lucide-react';
 
 interface IssueDetailDescriptionProps {
   issue: IssueItem;
@@ -110,7 +111,52 @@ export const IssueDetailDescription: React.FC<IssueDetailDescriptionProps> = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
+      {/* Jira-style Hierarchy Breadcrumb */}
+      <div className="flex flex-wrap items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)]">
+        <Link
+          to={`/projects/${issue.projectKey || issue.projectId}/board`}
+          className="hover:underline hover:text-[var(--md-sys-color-primary)] font-medium"
+        >
+          {issue.projectName || issue.projectKey}
+        </Link>
+        {issue.epic && (
+          <>
+            <span>/</span>
+            <Link
+              to={`/issues/${issue.epic.key}`}
+              className="inline-flex items-center gap-1 font-semibold hover:underline px-2 py-0.5 rounded-full"
+              style={{
+                backgroundColor: issue.epic.color ? `${issue.epic.color}22` : 'var(--md-sys-color-tertiary-container)',
+                color: issue.epic.color || 'var(--md-sys-color-on-tertiary-container)',
+                border: `1px solid ${issue.epic.color ? `${issue.epic.color}44` : 'var(--md-sys-color-outline-variant)'}`,
+              }}
+              title={`Epic: ${issue.epic.title || issue.epic.key}`}
+            >
+              <Zap className="w-2.5 h-2.5" />
+              <span>{issue.epic.key}</span>
+            </Link>
+          </>
+        )}
+        {issue.parent && (
+          <>
+            <span>/</span>
+            <Link
+              to={`/issues/${issue.parent.key}`}
+              className="inline-flex items-center gap-1 font-medium hover:underline px-2 py-0.5 rounded-full bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)]"
+              title={`Parent: ${issue.parent.title || issue.parent.key}`}
+            >
+              <CornerDownRight className="w-2.5 h-2.5 text-[var(--md-sys-color-primary)]" />
+              <span>{issue.parent.key}</span>
+            </Link>
+          </>
+        )}
+        <span>/</span>
+        <span className="font-mono font-bold text-[var(--md-sys-color-primary)]">
+          {issue.key}
+        </span>
+      </div>
+
       {/* Title Section with Inline Editing */}
       <div className="relative">
         {isEditingTitle ? (

@@ -17,11 +17,11 @@ export const IssueTypeIcon: React.FC<IssueTypeIconProps> = ({
       return <CheckSquare className={`${className} text-[var(--md-sys-color-primary)]`} />;
     case 'STORY':
     case 'FEATURE':
-      return <Bookmark className={`${className} text-[var(--md-sys-color-tertiary)]`} />;
+      return <Bookmark className={`${className} text-[var(--md-sys-color-success)]`} />;
     case 'EPIC':
-      return <Zap className={`${className} text-purple-500`} />;
+      return <Zap className={`${className} text-[var(--md-sys-color-tertiary)]`} />;
     case 'SUBTASK':
-      return <ListTodo className={`${className} text-cyan-500`} />;
+      return <ListTodo className={`${className} text-[var(--md-sys-color-secondary)]`} />;
     default:
       return <CheckSquare className={`${className} text-[var(--md-sys-color-primary)]`} />;
   }

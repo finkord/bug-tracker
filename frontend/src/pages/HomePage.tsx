@@ -472,7 +472,7 @@ export const HomePage: React.FC = () => {
                 <SearchInput
                   placeholder="Filter tickets by title or key..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={setSearchQuery}
                   onClear={() => setSearchQuery('')}
                   size="sm"
                 />

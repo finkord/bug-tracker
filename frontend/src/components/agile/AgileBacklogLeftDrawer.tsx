@@ -1,6 +1,6 @@
 import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
-import type { IssueItem } from '../../api/client';
+import type { IssueItem, ProjectVersionItem } from '../../api/types';
 import { useProjectVersionsQuery } from '../../api/queries';
 import { Badge, Button, Tabs, TabsList, TabsTrigger } from '../ui';
 import {
@@ -74,7 +74,13 @@ const EpicDroppableItem: React.FC<EpicDroppableItemProps> = ({
       }`}
     >
       <div className="flex items-center justify-between gap-1">
-        <span className="font-mono text-[10px] font-bold text-[var(--md-sys-color-primary)]">
+        <span
+          className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider"
+          style={{
+            backgroundColor: epic.epicColor ? `${epic.epicColor}22` : 'var(--md-sys-color-tertiary-container)',
+            color: epic.epicColor || 'var(--md-sys-color-on-tertiary-container)',
+          }}
+        >
           {epic.key}
         </span>
         <span className="text-[10px] text-[var(--md-sys-color-on-surface-variant)] font-mono">
@@ -89,8 +95,11 @@ const EpicDroppableItem: React.FC<EpicDroppableItemProps> = ({
       {/* Progress Bar */}
       <div className="h-1.5 w-full bg-[var(--md-sys-color-surface-container-highest)] rounded-full overflow-hidden">
         <div
-          className="h-full bg-[var(--md-sys-color-primary)] rounded-full transition-all duration-300"
-          style={{ width: `${progressPercent}%` }}
+          className="h-full rounded-full transition-all duration-300"
+          style={{
+            width: `${progressPercent}%`,
+            backgroundColor: epic.epicColor || 'var(--md-sys-color-primary)',
+          }}
         />
       </div>
     </div>
@@ -98,13 +107,7 @@ const EpicDroppableItem: React.FC<EpicDroppableItemProps> = ({
 };
 
 interface VersionDroppableItemProps {
-  ver: {
-    id?: number;
-    name: string;
-    status?: string;
-    releaseDate?: string;
-    description?: string;
-  };
+  ver: ProjectVersionItem;
   verIssues: IssueItem[];
   completedCount: number;
   progressPercent: number;
@@ -286,7 +289,7 @@ export const AgileBacklogLeftDrawer: React.FC<AgileBacklogLeftDrawerProps> = ({
             >
               <span>Issues without Epic</span>
               <span className="text-[10px] font-mono">
-                {issues.filter((i) => !i.parentId && i.issueType !== 'EPIC').length}
+                {issues.filter((i) => !i.epicId && !i.parentId && i.issueType !== 'EPIC').length}
               </span>
             </button>
 
@@ -308,7 +311,7 @@ export const AgileBacklogLeftDrawer: React.FC<AgileBacklogLeftDrawerProps> = ({
               </div>
             ) : (
               epics.map((epic) => {
-                const childIssues = issues.filter((i) => i.parentId === epic.id);
+                const childIssues = issues.filter((i) => i.epicId === epic.id || i.parentId === epic.id);
                 const completedChildCount = childIssues.filter(
                   (i) => i.status === 'RESOLVED' || i.status === 'CLOSED',
                 ).length;

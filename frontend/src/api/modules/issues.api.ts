@@ -30,6 +30,8 @@ export const issuesApi = {
     if (params.sprintId !== undefined && params.sprintId !== null) query.set('sprintId', String(params.sprintId));
     if (params.search) query.set('search', params.search);
     if (params.jql) query.set('jql', params.jql);
+    if (params.epicId !== undefined && params.epicId !== null) query.set('epicId', String(params.epicId));
+    if (params.parentId !== undefined && params.parentId !== null) query.set('parentId', String(params.parentId));
     if (params.page) query.set('page', String(params.page));
     if (params.limit) query.set('limit', String(params.limit));
     if (params.sortBy) query.set('sortBy', params.sortBy);

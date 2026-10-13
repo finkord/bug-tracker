@@ -6,6 +6,7 @@ import {
   useProjectSprintsQuery,
   useProjectComponentsQuery,
   useProjectVersionsQuery,
+  useIssuesQuery,
 } from '../../api/queries';
 import { useAuth } from '../../store';
 import {
@@ -14,6 +15,8 @@ import {
   CheckSquare,
   Sparkles,
   Zap,
+  Bookmark,
+  ListTodo,
   Flame,
   ArrowUpCircle,
   ArrowRightCircle,
@@ -44,6 +47,9 @@ interface IssueModalProps {
   defaultProjectId?: number;
   defaultAssigneeId?: number | null;
   defaultSprintId?: number | null;
+  defaultIssueType?: IssueType;
+  defaultEpicId?: number | null;
+  defaultParentId?: number | null;
 }
 
 export const IssueModal: React.FC<IssueModalProps> = ({
@@ -54,6 +60,9 @@ export const IssueModal: React.FC<IssueModalProps> = ({
   defaultProjectId,
   defaultAssigneeId,
   defaultSprintId,
+  defaultIssueType,
+  defaultEpicId,
+  defaultParentId,
 }) => {
   const { user } = useAuth();
   const { data: projects = [] } = useProjectsQuery();
@@ -67,7 +76,7 @@ export const IssueModal: React.FC<IssueModalProps> = ({
   const [title, setTitle] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [descTab, setDescTab] = useState<'write' | 'preview'>('write');
-  const [issueType, setIssueType] = useState<IssueType>('BUG');
+  const [issueType, setIssueType] = useState<IssueType>(defaultIssueType || 'TASK');
   const [priority, setPriority] = useState<IssuePriority>('MEDIUM');
   const [estimatedHours, setEstimatedHours] = useState<string>('0');
   const [sprintId, setSprintId] = useState<string>(defaultSprintId ? String(defaultSprintId) : '');
@@ -76,12 +85,21 @@ export const IssueModal: React.FC<IssueModalProps> = ({
   const [componentId, setComponentId] = useState<string>('');
   const [fixVersionId, setFixVersionId] = useState<string>('');
   const [labelsInput, setLabelsInput] = useState<string>('');
+  const [epicId, setEpicId] = useState<string>(defaultEpicId ? String(defaultEpicId) : '');
+  const [parentId, setParentId] = useState<string>(defaultParentId ? String(defaultParentId) : '');
+  const [epicColor, setEpicColor] = useState<string>('#6554C0');
   const [createAnother, setCreateAnother] = useState<boolean>(false);
   const [showMoreFields, setShowMoreFields] = useState<boolean>(false);
 
   const { data: projectSprints = [] } = useProjectSprintsQuery(projectId);
   const { data: projectComponents = [] } = useProjectComponentsQuery(projectId);
   const { data: projectVersions = [] } = useProjectVersionsQuery(projectId);
+  const { data: epicsData } = useIssuesQuery({ projectId, issueType: 'EPIC', limit: 50 });
+  const epics = epicsData?.items ?? [];
+  const { data: potentialParentsData } = useIssuesQuery({ projectId, limit: 100 });
+  const potentialParents = (potentialParentsData?.items ?? []).filter(
+    (i) => i.issueType !== 'EPIC' && i.issueType !== 'SUBTASK',
+  );
 
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -112,6 +130,9 @@ export const IssueModal: React.FC<IssueModalProps> = ({
       setComponentId(editingIssue.componentId ? String(editingIssue.componentId) : '');
       setFixVersionId(editingIssue.fixVersionId ? String(editingIssue.fixVersionId) : '');
       setLabelsInput(editingIssue.labels ? editingIssue.labels.join(', ') : '');
+      setEpicId(editingIssue.epicId ? String(editingIssue.epicId) : '');
+      setParentId(editingIssue.parentId ? String(editingIssue.parentId) : '');
+      setEpicColor(editingIssue.epicColor || '#6554C0');
       const hasExtra = Boolean(
         editingIssue.sprintId ||
         (editingIssue.estimatedHours && editingIssue.estimatedHours > 0) ||
@@ -123,7 +144,7 @@ export const IssueModal: React.FC<IssueModalProps> = ({
     } else {
       setTitle('');
       setDescription('');
-      setIssueType('BUG');
+      setIssueType(defaultIssueType || 'TASK');
       setPriority('MEDIUM');
       setEstimatedHours('0');
       setSprintId(defaultSprintId ? String(defaultSprintId) : '');
@@ -132,10 +153,13 @@ export const IssueModal: React.FC<IssueModalProps> = ({
       setComponentId('');
       setFixVersionId('');
       setLabelsInput('');
+      setEpicId(defaultEpicId ? String(defaultEpicId) : '');
+      setParentId(defaultParentId ? String(defaultParentId) : '');
+      setEpicColor('#6554C0');
       setShowMoreFields(Boolean(defaultSprintId));
     }
     setValidationError(null);
-  }, [editingIssue, isOpen, defaultAssigneeId, defaultSprintId]);
+  }, [editingIssue, isOpen, defaultAssigneeId, defaultSprintId, defaultIssueType, defaultEpicId, defaultParentId]);
 
   // Focus title input when modal opens
   useEffect(() => {
@@ -163,6 +187,10 @@ export const IssueModal: React.FC<IssueModalProps> = ({
       setValidationError('Issue title is required.');
       return;
     }
+    if (issueType === 'SUBTASK' && !parentId) {
+      setValidationError('A parent issue is required for subtasks.');
+      return;
+    }
 
     setSubmitting(true);
     setValidationError(null);
@@ -173,6 +201,8 @@ export const IssueModal: React.FC<IssueModalProps> = ({
       const parsedSprintId = sprintId !== '' ? Number(sprintId) : null;
       const parsedComponentId = componentId !== '' ? Number(componentId) : null;
       const parsedFixVersionId = fixVersionId !== '' ? Number(fixVersionId) : null;
+      const parsedEpicId = epicId !== '' ? Number(epicId) : null;
+      const parsedParentId = parentId !== '' ? Number(parentId) : null;
       const labels = labelsInput
         .split(',')
         .map((l) => l.trim())
@@ -190,6 +220,9 @@ export const IssueModal: React.FC<IssueModalProps> = ({
           componentId: parsedComponentId,
           fixVersionId: parsedFixVersionId,
           labels,
+          epicId: issueType === 'EPIC' ? null : parsedEpicId,
+          parentId: issueType === 'SUBTASK' ? parsedParentId : null,
+          epicColor: issueType === 'EPIC' ? epicColor : undefined,
         });
       } else {
         saved = await api.createIssue({
@@ -204,6 +237,9 @@ export const IssueModal: React.FC<IssueModalProps> = ({
           componentId: parsedComponentId,
           fixVersionId: parsedFixVersionId,
           labels,
+          epicId: issueType === 'EPIC' ? null : parsedEpicId,
+          parentId: issueType === 'SUBTASK' ? parsedParentId : null,
+          epicColor: issueType === 'EPIC' ? epicColor : undefined,
         });
       }
 
@@ -278,8 +314,11 @@ export const IssueModal: React.FC<IssueModalProps> = ({
             value={issueType}
             onValueChange={(val) => setIssueType(val as IssueType)}
             options={[
-              { value: 'BUG', label: 'Bug / Defect', icon: <Bug className="w-4 h-4 text-[var(--md-sys-color-error)]" /> },
+              { value: 'STORY', label: 'Story', icon: <Bookmark className="w-4 h-4 text-[var(--md-sys-color-success)]" /> },
               { value: 'TASK', label: 'Standard Task', icon: <CheckSquare className="w-4 h-4 text-[var(--md-sys-color-primary)]" /> },
+              { value: 'BUG', label: 'Bug / Defect', icon: <Bug className="w-4 h-4 text-[var(--md-sys-color-error)]" /> },
+              { value: 'EPIC', label: 'Epic', icon: <Zap className="w-4 h-4 text-[var(--md-sys-color-tertiary)]" /> },
+              { value: 'SUBTASK', label: 'Sub-task', icon: <ListTodo className="w-4 h-4 text-[var(--md-sys-color-secondary)]" /> },
               { value: 'FEATURE', label: 'New Feature', icon: <Sparkles className="w-4 h-4 text-[var(--md-sys-color-success)]" /> },
               { value: 'IMPROVEMENT', label: 'Improvement', icon: <Zap className="w-4 h-4 text-[var(--md-sys-color-tertiary)]" /> },
             ]}
@@ -297,6 +336,68 @@ export const IssueModal: React.FC<IssueModalProps> = ({
             ]}
           />
         </div>
+
+        {/* Hierarchy field: Epic Link for standard issues, Parent Task for subtasks, Epic Color for epics */}
+        {issueType === 'EPIC' && (
+          <div className="space-y-1.5 p-3 rounded-2xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/40">
+            <label className="text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider block">
+              Epic Color Badge
+            </label>
+            <div className="flex items-center gap-2">
+              {['#6554C0', '#0052CC', '#00875A', '#FFAB00', '#DE350B', '#00B8D9'].map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  onClick={() => setEpicColor(color)}
+                  className={`w-6 h-6 rounded-full transition-all cursor-pointer ${
+                    epicColor === color
+                      ? 'ring-2 ring-offset-2 ring-[var(--md-sys-color-primary)] scale-110'
+                      : 'hover:scale-105'
+                  }`}
+                  style={{ backgroundColor: color }}
+                  title={color}
+                />
+              ))}
+              <input
+                type="color"
+                value={epicColor}
+                onChange={(e) => setEpicColor(e.target.value)}
+                className="w-7 h-7 rounded-lg border border-[var(--md-sys-color-outline-variant)] cursor-pointer bg-transparent"
+                title="Custom Color"
+              />
+            </div>
+          </div>
+        )}
+
+        {issueType === 'SUBTASK' && (
+          <SelectField
+            label="Parent Issue *"
+            value={parentId}
+            onValueChange={(val) => setParentId(val)}
+            options={[
+              { value: '', label: 'Select parent issue...' },
+              ...potentialParents.map((p) => ({
+                value: String(p.id),
+                label: `${p.key} - ${p.title}`,
+              })),
+            ]}
+          />
+        )}
+
+        {issueType !== 'EPIC' && issueType !== 'SUBTASK' && epics.length > 0 && (
+          <SelectField
+            label="Epic Link"
+            value={epicId}
+            onValueChange={(val) => setEpicId(val)}
+            options={[
+              { value: '', label: 'No Epic' },
+              ...epics.map((e) => ({
+                value: String(e.id),
+                label: `${e.key} - ${e.title}`,
+              })),
+            ]}
+          />
+        )}
 
         {/* Assignee */}
         <div className="space-y-1">

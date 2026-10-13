@@ -149,9 +149,9 @@ export function useAgileBacklog(selectedProjectId: number | null) {
       if (filters.highPriorityOnly && issue.priority !== 'CRITICAL' && issue.priority !== 'HIGH') return false;
       if (filters.epicId && filters.epicId !== 'ALL') {
         if (filters.epicId === 'NONE') {
-          if (issue.parentId || issue.issueType === 'EPIC') return false;
+          if (issue.epicId || issue.parentId || issue.issueType === 'EPIC') return false;
         } else {
-          if (issue.parentId !== filters.epicId && issue.id !== filters.epicId) return false;
+          if (issue.epicId !== filters.epicId && issue.parentId !== filters.epicId && issue.id !== filters.epicId) return false;
         }
       }
       if (filters.versionId && filters.versionId !== 'ALL') {

@@ -348,6 +348,37 @@ describe('IssueCoreService', () => {
         ),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it('should reject creating subtask without parentId', async () => {
+      mockProjectRepo.findOne.mockResolvedValue(mockProject);
+
+      await expect(
+        service.create(
+          {
+            projectId: 1,
+            title: 'Orphan Subtask',
+            issueType: IssueType.SUBTASK,
+          },
+          mockUser,
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should reject creating epic with parentId or epicId', async () => {
+      mockProjectRepo.findOne.mockResolvedValue(mockProject);
+
+      await expect(
+        service.create(
+          {
+            projectId: 1,
+            title: 'Nested Epic',
+            issueType: IssueType.EPIC,
+            parentId: 5,
+          },
+          mockUser,
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
   });
 
   describe('updateStatus', () => {

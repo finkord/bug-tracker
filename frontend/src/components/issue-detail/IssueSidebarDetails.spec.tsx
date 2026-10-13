@@ -21,6 +21,7 @@ vi.mock('../../api/queries/index.js', () => ({
   useProjectVersionsQuery: vi.fn(() => ({ data: [] })),
   useUserDetailQuery: vi.fn(() => ({ data: null })),
   useMyProjectPermissionsQuery: vi.fn(() => ({ data: { DELETE_ISSUES: true } })),
+  useIssuesQuery: vi.fn(() => ({ data: { items: [] } })),
 }));
 
 const sampleIssue: IssueItem = {

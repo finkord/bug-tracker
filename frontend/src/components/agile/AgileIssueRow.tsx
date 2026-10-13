@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import type { IssueItem, IssueType, IssueStatus } from '../../api/client.js';
 import type { SprintDefinition } from '../../types/agile.js';
 import { UserIdentity } from '../common/UserIdentity';
@@ -16,6 +16,7 @@ import {
   ExternalLink,
   Check,
   GitCommitHorizontal,
+  Bookmark,
 } from 'lucide-react';
 import { useDraggable } from '@dnd-kit/core';
 import { useIssueSelectionStore } from '../../store/useIssueSelectionStore';
@@ -38,9 +39,9 @@ const AgileIssueRowComponent: React.FC<AgileIssueRowProps> = ({
   availableSprints,
   onClick,
   onMoveToSprint,
-  onStatusChange,
-  onAssignToMe,
-  currentUserId,
+  onStatusChange: _onStatusChange,
+  onAssignToMe: _onAssignToMe,
+  currentUserId: _currentUserId,
   orderedIds,
   isDragging = false,
   disableDrag = false,
@@ -97,16 +98,34 @@ const AgileIssueRowComponent: React.FC<AgileIssueRowProps> = ({
 
   const renderTypeIcon = (type: IssueType) => {
     switch (type) {
-      case 'BUG':
+      case 'STORY':
         return (
-          <span title="Bug" className="inline-flex items-center">
-            <Bug className="w-3.5 h-3.5 text-[var(--md-sys-color-error)]" />
+          <span title="Story" className="inline-flex items-center">
+            <Bookmark className="w-3.5 h-3.5 text-[var(--md-sys-color-success)]" />
           </span>
         );
       case 'TASK':
         return (
           <span title="Task" className="inline-flex items-center">
             <CheckSquare className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
+          </span>
+        );
+      case 'BUG':
+        return (
+          <span title="Bug" className="inline-flex items-center">
+            <Bug className="w-3.5 h-3.5 text-[var(--md-sys-color-error)]" />
+          </span>
+        );
+      case 'EPIC':
+        return (
+          <span title="Epic" className="inline-flex items-center">
+            <Zap className="w-3.5 h-3.5 text-[var(--md-sys-color-tertiary)]" />
+          </span>
+        );
+      case 'SUBTASK':
+        return (
+          <span title="Subtask" className="inline-flex items-center">
+            <GitCommitHorizontal className="w-3.5 h-3.5 text-[var(--md-sys-color-secondary)]" />
           </span>
         );
       case 'FEATURE':
@@ -121,10 +140,10 @@ const AgileIssueRowComponent: React.FC<AgileIssueRowProps> = ({
             <Zap className="w-3.5 h-3.5 text-[var(--md-sys-color-tertiary)]" />
           </span>
         );
-      case 'SUBTASK':
+      default:
         return (
-          <span title="Subtask" className="inline-flex items-center">
-            <GitCommitHorizontal className="w-3.5 h-3.5 text-[var(--md-sys-color-secondary)]" />
+          <span title="Task" className="inline-flex items-center">
+            <CheckSquare className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
           </span>
         );
     }
@@ -217,6 +236,21 @@ const AgileIssueRowComponent: React.FC<AgileIssueRowProps> = ({
         >
           {issue.key}
         </a>
+
+        {issue.epic && (
+          <span
+            className="inline-flex items-center gap-1 font-mono text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0"
+            style={{
+              backgroundColor: issue.epic.color ? `${issue.epic.color}22` : 'var(--md-sys-color-tertiary-container)',
+              color: issue.epic.color || 'var(--md-sys-color-on-tertiary-container)',
+              border: `1px solid ${issue.epic.color ? `${issue.epic.color}44` : 'var(--md-sys-color-outline-variant)'}`,
+            }}
+            title={`Epic: ${issue.epic.title || issue.epic.key}`}
+          >
+            <Zap className="w-2.5 h-2.5" />
+            <span className="truncate max-w-[120px]">{issue.epic.title || issue.epic.key}</span>
+          </span>
+        )}
 
         <span className="text-xs font-semibold text-[var(--md-sys-color-on-surface)] group-hover:text-[var(--md-sys-color-primary)] transition-colors truncate select-text">
           {issue.title}

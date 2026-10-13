@@ -101,12 +101,17 @@ export class IssueCoreService {
         where: { id: parentId },
       });
 
-      if (!parent || parent.status === IssueStatus.RESOLVED || parent.status === IssueStatus.CLOSED) {
+      if (
+        !parent ||
+        parent.issueType === IssueType.EPIC ||
+        parent.status === IssueStatus.RESOLVED ||
+        parent.status === IssueStatus.CLOSED
+      ) {
         return;
       }
 
       const subtasks = await this.issueRepository.find({
-        where: { parentId },
+        where: { parentId, issueType: IssueType.SUBTASK },
         select: { id: true, status: true },
       });
 
@@ -175,6 +180,10 @@ export class IssueCoreService {
       .leftJoinAndSelect('issue.reporter', 'reporter')
       .leftJoinAndSelect('issue.assignee', 'assignee')
       .leftJoinAndSelect('issue.sprint', 'sprint')
+      .leftJoinAndSelect('issue.epic', 'epic')
+      .leftJoinAndSelect('epic.project', 'epicProject')
+      .leftJoinAndSelect('issue.parent', 'parent')
+      .leftJoinAndSelect('parent.project', 'parentProject')
       .loadRelationIdAndMap('issue.commentIds', 'issue.comments');
 
     if (user) {
@@ -216,6 +225,16 @@ export class IssueCoreService {
         } else {
           qb.andWhere('issue.sprintId = :sprintId', { sprintId: Number(query.sprintId) });
         }
+      }
+      if (query.epicId) {
+        if (query.epicId.toUpperCase() === 'NONE' || query.epicId === '0') {
+          qb.andWhere('issue.epicId IS NULL');
+        } else {
+          qb.andWhere('issue.epicId = :epicId', { epicId: Number(query.epicId) });
+        }
+      }
+      if (query.parentId) {
+        qb.andWhere('issue.parentId = :parentId', { parentId: Number(query.parentId) });
       }
       if (query.search && query.search.trim()) {
         const rawTerm = query.search.trim();
@@ -287,6 +306,8 @@ export class IssueCoreService {
           reporter: true,
           assignee: true,
           sprint: true,
+          epic: { project: true },
+          parent: { project: true },
           comments: { author: true },
           worklogs: { user: true },
         },
@@ -303,6 +324,10 @@ export class IssueCoreService {
           .leftJoinAndSelect('issue.reporter', 'reporter')
           .leftJoinAndSelect('issue.assignee', 'assignee')
           .leftJoinAndSelect('issue.sprint', 'sprint')
+          .leftJoinAndSelect('issue.epic', 'epic')
+          .leftJoinAndSelect('epic.project', 'epicProject')
+          .leftJoinAndSelect('issue.parent', 'parent')
+          .leftJoinAndSelect('parent.project', 'parentProject')
           .leftJoinAndSelect('issue.comments', 'comments')
           .leftJoinAndSelect('comments.author', 'commentAuthor')
           .leftJoinAndSelect('issue.worklogs', 'worklogs')
@@ -324,6 +349,8 @@ export class IssueCoreService {
           reporter: true,
           assignee: true,
           sprint: true,
+          epic: { project: true },
+          parent: { project: true },
           comments: { author: true },
           worklogs: { user: true },
         },
@@ -356,8 +383,8 @@ export class IssueCoreService {
       order: { id: 'ASC' },
     });
 
-    let parentIssue: Issue | null = null;
-    if (issue.parentId) {
+    let parentIssue: Issue | null = issue.parent || null;
+    if (!parentIssue && issue.parentId) {
       parentIssue = await this.issueRepository.findOne({
         where: { id: issue.parentId },
         relations: {
@@ -369,7 +396,21 @@ export class IssueCoreService {
       });
     }
 
-    return this.mapIssueDetail(issue, attachments, links, subtasks, parentIssue);
+    let epicIssues: Issue[] = [];
+    if (issue.issueType === IssueType.EPIC) {
+      epicIssues = await this.issueRepository.find({
+        where: { epicId: issue.id },
+        relations: {
+          project: true,
+          reporter: true,
+          assignee: true,
+          sprint: true,
+        },
+        order: { id: 'ASC' },
+      });
+    }
+
+    return this.mapIssueDetail(issue, attachments, links, subtasks, parentIssue, epicIssues);
   }
 
   /**
@@ -390,6 +431,28 @@ export class IssueCoreService {
       throw new BadRequestException(`Project #${dto.projectId} does not exist`);
     }
 
+    if (dto.issueType === IssueType.EPIC && (dto.parentId || dto.epicId)) {
+      throw new BadRequestException('Epics cannot have a parent or belong to another epic');
+    }
+    if (dto.issueType === IssueType.SUBTASK && !dto.parentId) {
+      throw new BadRequestException('Subtasks must have a parent issue');
+    }
+
+    let epicId: number | null = null;
+    if (dto.epicId) {
+      const epic = await this.issueRepository.findOne({
+        where: { id: dto.epicId, issueType: IssueType.EPIC },
+        relations: { project: true },
+      });
+      if (!epic) {
+        throw new NotFoundException(`Epic #${dto.epicId} not found`);
+      }
+      if (epic.projectId !== dto.projectId) {
+        throw new BadRequestException(`Epic #${dto.epicId} belongs to a different project`);
+      }
+      epicId = epic.id;
+    }
+
     let parentId: number | null = null;
     if (dto.parentId) {
       const parent = await this.issueRepository.findOne({
@@ -399,13 +462,17 @@ export class IssueCoreService {
       if (!parent) {
         throw new NotFoundException(`Parent issue #${dto.parentId} not found`);
       }
-      if (parent.parentId) {
+      if (parent.parentId || parent.issueType === IssueType.SUBTASK) {
         throw new BadRequestException('Subtasks cannot have nested subtasks');
       }
-      if (parent.projectId !== dto.projectId) {
-        throw new BadRequestException(`Parent issue #${dto.parentId} belongs to a different project`);
+      if (parent.issueType === IssueType.EPIC) {
+        epicId = parent.id;
+      } else {
+        if (parent.projectId !== dto.projectId) {
+          throw new BadRequestException(`Parent issue #${dto.parentId} belongs to a different project`);
+        }
+        parentId = parent.id;
       }
-      parentId = parent.id;
     }
 
     const maxResult = await this.issueRepository
@@ -426,7 +493,13 @@ export class IssueCoreService {
       sprintId = sprint.id;
     }
 
-    const issueType = dto.issueType || (parentId ? IssueType.SUBTASK : IssueType.BUG);
+    const issueType = dto.issueType || (parentId ? IssueType.SUBTASK : IssueType.TASK);
+    if (issueType === IssueType.SUBTASK && !parentId) {
+      throw new BadRequestException('Subtasks must have a parent issue');
+    }
+    if (issueType === IssueType.EPIC && (parentId || epicId)) {
+      throw new BadRequestException('Epics cannot have a parent or belong to another epic');
+    }
 
     let assigneeId: number | null = dto.assigneeId || null;
     if (!assigneeId && dto.componentId) {
@@ -449,6 +522,8 @@ export class IssueCoreService {
       estimatedHours: dto.estimatedHours || 0,
       sprintId,
       parentId,
+      epicId,
+      epicColor: dto.epicColor || null,
       componentId: dto.componentId || null,
       fixVersionId: dto.fixVersionId || null,
       affectsVersionId: dto.affectsVersionId || null,
@@ -833,6 +908,49 @@ export class IssueCoreService {
         issue.labels = dto.labels;
       }
     }
+    if (dto.epicId !== undefined) {
+      if (dto.epicId) {
+        const epic = await this.issueRepository.findOne({
+          where: { id: dto.epicId, issueType: IssueType.EPIC },
+        });
+        if (!epic) {
+          throw new NotFoundException(`Epic #${dto.epicId} not found`);
+        }
+        await this.logHistory(id, 'epic', issue.epicId ? `Epic #${issue.epicId}` : 'None', `Epic #${epic.id}`, user?.id);
+        issue.epicId = epic.id;
+        issue.epic = epic;
+      } else {
+        await this.logHistory(id, 'epic', issue.epicId ? `Epic #${issue.epicId}` : 'None', 'None', user?.id);
+        issue.epicId = null;
+        issue.epic = null;
+      }
+    }
+    if (dto.parentId !== undefined) {
+      if (dto.parentId) {
+        const parent = await this.issueRepository.findOne({
+          where: { id: dto.parentId },
+        });
+        if (!parent) {
+          throw new NotFoundException(`Parent issue #${dto.parentId} not found`);
+        }
+        if (parent.issueType === IssueType.SUBTASK) {
+          throw new BadRequestException('Subtasks cannot have nested subtasks');
+        }
+        if (parent.issueType === IssueType.EPIC) {
+          issue.epicId = parent.id;
+          issue.epic = parent;
+        } else {
+          issue.parentId = parent.id;
+          issue.parent = parent;
+        }
+      } else {
+        issue.parentId = null;
+        issue.parent = null;
+      }
+    }
+    if (dto.epicColor !== undefined) {
+      issue.epicColor = dto.epicColor || null;
+    }
     if (dto.order !== undefined && dto.order !== issue.order) {
       issue.order = dto.order;
     }
@@ -1088,6 +1206,24 @@ export class IssueCoreService {
       assignee: this.mapUserSummary(i.assignee),
       commentsCount: Array.isArray(commentIds) ? commentIds.length : 0,
       parentId: i.parentId ?? null,
+      parent: i.parent
+        ? {
+            id: i.parent.id,
+            key: `${i.parent.project?.key || i.project?.key || 'ISSUE'}-${i.parent.issueNum}`,
+            title: i.parent.title,
+            issueType: i.parent.issueType,
+          }
+        : null,
+      epicId: i.epicId ?? null,
+      epic: i.epic
+        ? {
+            id: i.epic.id,
+            key: `${i.epic.project?.key || i.project?.key || 'ISSUE'}-${i.epic.issueNum}`,
+            title: i.epic.title,
+            color: i.epic.epicColor || null,
+          }
+        : null,
+      epicColor: i.epicColor || null,
       subtasksCount: Array.isArray(i.subtasks) ? i.subtasks.length : undefined,
       componentId: i.componentId ?? null,
       component: i.component
@@ -1117,11 +1253,13 @@ export class IssueCoreService {
     links: IssueLinkItemDto[],
     subtasks: Issue[] = [],
     parent: Issue | null = null,
+    epicIssues: Issue[] = [],
   ): IssueDetailDto {
     return {
       ...this.mapIssueSummary(issue),
       parent: parent ? this.mapIssueSummary(parent) : null,
       subtasks: subtasks.map((s) => this.mapIssueSummary(s)),
+      epicIssues: epicIssues.map((e) => this.mapIssueSummary(e)),
       comments: (issue.comments || []).map((c) => ({
         id: c.id,
         text: c.text,

@@ -114,8 +114,22 @@ export interface IssueItem {
   links?: IssueLinkItem[];
   parentId?: number | null;
   subtasksCount?: number;
-  parent?: IssueItem | null;
+  parent?: {
+    id: number;
+    key: string;
+    title: string;
+    issueType: IssueType;
+  } | null;
+  epicId?: number | null;
+  epic?: {
+    id: number;
+    key: string;
+    title: string;
+    color?: string | null;
+  } | null;
+  epicColor?: string | null;
   subtasks?: IssueItem[];
+  epicIssues?: IssueItem[];
   order?: number;
   createdAt: string;
   updatedAt: string;
@@ -136,6 +150,8 @@ export interface CreateIssuePayload {
   affectsVersionId?: number | null;
   labels?: string[];
   parentId?: number | null;
+  epicId?: number | null;
+  epicColor?: string | null;
   order?: number;
 }
 
@@ -177,6 +193,8 @@ export interface GetIssuesParams {
   sprintId?: string | number;
   search?: string;
   jql?: string;
+  epicId?: number;
+  parentId?: number;
   page?: number;
   limit?: number;
   sortBy?: string;
