@@ -45,9 +45,9 @@ export const IssueDetailHeader: React.FC<IssueDetailHeaderProps> = ({
   const [hasCopiedKey, setHasCopiedKey] = useState(false);
   const [hasCopiedLink, setHasCopiedLink] = useState(false);
 
-  const canDelete =
-    currentUser?.isAdmin ||
-    currentUser?.systemRole === 'ADMIN';
+  // Any authenticated team member, author, or admin can access Delete in the actions menu.
+  // The backend enforces project RBAC (DELETE_ISSUES, ADMINISTER_PROJECTS, reporter grace period).
+  const canDelete = Boolean(currentUser);
 
   const handleCopyKey = async () => {
     try {
