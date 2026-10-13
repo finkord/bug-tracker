@@ -39,7 +39,9 @@ All architecture diagrams are maintained in [`architecture/diagrams/`](architect
 1. **[System Architecture](architecture/diagrams/system_architecture.png)** ([Source](architecture/diagrams/system_architecture.mmd))
 2. **[Database Entity Relationships](architecture/diagrams/database_er.png)** ([Source](architecture/diagrams/database_er.mmd))
 3. **[Authentication & Security Lifecycle](architecture/diagrams/auth_security_flow.png)** ([Source](architecture/diagrams/auth_security_flow.mmd))
-4. **[Onboarding & RBAC Ticket Workflow](architecture/diagrams/onboarding_rbac_workflow.png)** ([Source](architecture/diagrams/onboarding_rbac_workflow.mmd))
+4. **[Agile Real-Time Event Workflow](architecture/diagrams/agile_realtime_workflow.png)** ([Source](architecture/diagrams/agile_realtime_workflow.mmd))
+5. **[Issue Hierarchy & Finite State Machine](architecture/diagrams/issue_hierarchy_workflow.png)** ([Source](architecture/diagrams/issue_hierarchy_workflow.mmd))
+6. **[Onboarding & RBAC Ticket Workflow](architecture/diagrams/onboarding_rbac_workflow.png)** ([Source](architecture/diagrams/onboarding_rbac_workflow.mmd))
 
 ---
 

@@ -7,11 +7,19 @@ erDiagram
     User ||--o{ Worklog : "logs_effort"
     User ||--o{ Attachment : "uploads"
     User ||--o{ UserGroup : "belongs_to"
+    User ||--o{ TeamMember : "member_of"
     User ||--o{ LoginAuditLog : "generates"
 
     Project ||--o{ Sprint : "contains"
     Project ||--o{ Issue : "owns"
+    Project ||--o{ ProjectVersion : "manages_releases"
+    Project ||--o{ ProjectComponent : "categorizes"
     Project ||--o{ ProjectRoleActor : "configures"
+    Project }o--|| PermissionScheme : "governed_by"
+    Project }o--o| IssueSecurityScheme : "secured_by"
+
+    Team ||--o{ TeamMember : "has"
+    Team ||--o{ Sprint : "executes"
 
     Sprint ||--o{ Issue : "schedules"
 
@@ -20,17 +28,27 @@ erDiagram
     Issue ||--o{ Attachment : "attaches"
     Issue ||--o{ IssueLink : "source_of"
     Issue ||--o{ IssueLink : "target_of"
+    Issue ||--o{ Issue : "parent_of_subtask"
+    Issue }o--o| Issue : "child_of_epic"
+    Issue }o--o| ProjectVersion : "fixed_in"
+    Issue }o--o| ProjectComponent : "belongs_to"
+    Issue }o--o| IssueSecurityLevel : "protected_by"
 
     Group ||--o{ UserGroup : "includes"
+    Group ||--o{ PermissionGrant : "granted_via"
+    Group ||--o{ ProjectRoleActor : "participates_as"
+    Group ||--o{ IssueSecurityGrant : "allowed_via"
 
     PermissionScheme ||--o{ PermissionGrant : "defines"
     ProjectRole ||--o{ ProjectRoleActor : "assigned_in"
+    ProjectRole ||--o{ PermissionGrant : "granted_to"
+    ProjectRole ||--o{ IssueSecurityGrant : "allowed_to"
 
     IssueSecurityScheme ||--o{ IssueSecurityLevel : "contains"
     IssueSecurityLevel ||--o{ IssueSecurityGrant : "governs"
 
     User {
-        uuid id PK
+        int id PK
         string email UK
         string fullName
         string systemRole
@@ -39,15 +57,32 @@ erDiagram
     }
 
     Project {
-        uuid id PK
+        int id PK
         string key UK
         string name
-        uuid leadId FK
+        int leadId FK
+        int permissionSchemeId FK
+        int issueSecuritySchemeId FK
+    }
+
+    Team {
+        int id PK
+        int projectId FK
+        string name
+        int sprintCapacityHours
+    }
+
+    TeamMember {
+        int id PK
+        int teamId FK
+        int userId FK
+        string role
     }
 
     Sprint {
-        uuid id PK
-        uuid projectId FK
+        int id PK
+        int projectId FK
+        int teamId FK
         string name
         string status
         timestamp startDate
@@ -55,52 +90,136 @@ erDiagram
     }
 
     Issue {
-        uuid id PK
+        int id PK
         string key UK
-        uuid projectId FK
-        uuid sprintId FK
+        int projectId FK
+        int sprintId FK
+        int epicId FK
+        int parentId FK
+        int fixVersionId FK
+        int componentId FK
+        int securityLevelId FK
         string title
-        string type
+        string issueType
         string status
         string priority
-        float order
-        uuid reporterId FK
-        uuid assigneeId FK
+        int reporterId FK
+        int assigneeId FK
+        float estimatedHours
+        float loggedHours
     }
 
     Worklog {
-        uuid id PK
-        uuid issueId FK
-        uuid authorId FK
-        int timeSpentSeconds
+        int id PK
+        int issueId FK
+        int authorId FK
+        float timeSpentHours
         timestamp startedAt
     }
 
     Comment {
-        uuid id PK
-        uuid issueId FK
-        uuid authorId FK
+        int id PK
+        int issueId FK
+        int authorId FK
         text body
     }
 
     Attachment {
-        uuid id PK
-        uuid issueId FK
-        uuid uploaderId FK
+        int id PK
+        int issueId FK
+        int uploaderId FK
         string filename
         string s3Key
         int sizeBytes
     }
 
     IssueLink {
-        uuid id PK
-        uuid sourceIssueId FK
-        uuid targetIssueId FK
-        string type
+        int id PK
+        int sourceIssueId FK
+        int targetIssueId FK
+        string linkType
+    }
+
+    ProjectVersion {
+        int id PK
+        int projectId FK
+        string name
+        string status
+        timestamp releaseDate
+    }
+
+    ProjectComponent {
+        int id PK
+        int projectId FK
+        string name
+        int leadId FK
+    }
+
+    Group {
+        int id PK
+        string name UK
+        string description
+    }
+
+    UserGroup {
+        int id PK
+        int userId FK
+        int groupId FK
+    }
+
+    PermissionScheme {
+        int id PK
+        string name UK
+        string description
+    }
+
+    PermissionGrant {
+        int id PK
+        int schemeId FK
+        string permission
+        string grantType
+        int roleId FK
+        int groupId FK
+    }
+
+    ProjectRole {
+        int id PK
+        string name UK
+        string description
+    }
+
+    ProjectRoleActor {
+        int id PK
+        int projectId FK
+        int roleId FK
+        int userId FK
+        int groupId FK
+    }
+
+    IssueSecurityScheme {
+        int id PK
+        string name UK
+        string description
+        int defaultLevelId FK
+    }
+
+    IssueSecurityLevel {
+        int id PK
+        int schemeId FK
+        string name
+        string description
+    }
+
+    IssueSecurityGrant {
+        int id PK
+        int securityLevelId FK
+        string grantType
+        int roleId FK
+        int groupId FK
     }
 
     LoginAuditLog {
-        uuid id PK
+        int id PK
         string email
         string ipAddress
         string status

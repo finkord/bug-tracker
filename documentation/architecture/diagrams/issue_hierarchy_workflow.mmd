@@ -1,0 +1,60 @@
+graph TB
+    subgraph Tier1["Tier 1: Portfolio & Initiatives (Epic Level)"]
+        Epic["EPIC<br/>(IssueType: EPIC)<br/>Portfolio Feature / Large Initiative<br/>epicColor, targetRelease"]
+    end
+
+    subgraph Tier2["Tier 2: Standard Work Units (Story / Task / Bug Level)"]
+        Story["STORY<br/>User Story with Acceptance Criteria"]
+        Task["TASK<br/>Technical Implementation Task"]
+        Bug["BUG<br/>Defect / Incident Resolution"]
+        Feature["FEATURE<br/>Functional System Capability"]
+        Improvement["IMPROVEMENT<br/>Refactoring / Enhancement"]
+    end
+
+    subgraph Tier3["Tier 3: Atomic Work Execution (Subtask Level)"]
+        Subtask1["SUBTASK 1<br/>Backend API Endpoint<br/>estimatedHours: 4h, loggedHours: 4h"]
+        Subtask2["SUBTASK 2<br/>Database Migration<br/>estimatedHours: 2h, loggedHours: 2h"]
+        Subtask3["SUBTASK 3<br/>Frontend UI Component<br/>estimatedHours: 6h, loggedHours: 5h"]
+    end
+
+    subgraph Containers["Agile Execution Containers"]
+        SprintContainer["SPRINT<br/>Capacity Hours, Start/End Dates<br/>Status: PLANNED, ACTIVE, COMPLETED"]
+        BacklogPool["PRODUCT BACKLOG<br/>Unassigned / Future Iterations Pool"]
+        ReleaseVersion["FIX VERSION<br/>Release Management (SemVer, Release Date)"]
+    end
+
+    subgraph WorkflowFSM["Finite State Machine Workflow Transitions"]
+        StateOpen["OPEN<br/>(To Do)"]
+        StateInProgress["IN_PROGRESS<br/>(Active Work)"]
+        StateReview["REVIEW<br/>(Code Review / QA)"]
+        StateResolved["RESOLVED<br/>(Completed / Verified)"]
+        StateClosed["CLOSED<br/>(Delivered / Archival)"]
+
+        StateOpen -->|Start Work| StateInProgress
+        StateInProgress -->|Submit for Review| StateReview
+        StateInProgress -->|Reopen or Pause| StateOpen
+        StateReview -->|Approve| StateResolved
+        StateReview -->|Request Changes| StateInProgress
+        StateResolved -->|Close| StateClosed
+        StateResolved -->|Reopen| StateOpen
+        StateClosed -->|Reopen| StateOpen
+    end
+
+    Epic -->|Parent of epicId| Story
+    Epic -->|Parent of epicId| Task
+    Epic -->|Parent of epicId| Bug
+    Epic -->|Parent of epicId| Feature
+    Epic -->|Parent of epicId| Improvement
+
+    Story -->|Parent of parentId| Subtask1
+    Story -->|Parent of parentId| Subtask2
+    Story -->|Parent of parentId| Subtask3
+
+    Story -.->|Assigned via sprintId| SprintContainer
+    Task -.->|Assigned via sprintId| SprintContainer
+    Bug -.->|Unplanned in Backlog| BacklogPool
+    Story -.->|Target Milestone| ReleaseVersion
+
+    Subtask1 -->|Governed by| WorkflowFSM
+    Story -->|Governed by| WorkflowFSM
+    Task -->|Governed by| WorkflowFSM

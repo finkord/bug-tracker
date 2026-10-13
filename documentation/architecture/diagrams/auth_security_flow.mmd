@@ -2,11 +2,13 @@ sequenceDiagram
     autonumber
     actor Client as User / Browser
     participant API as NestJS AuthController
-    participant Captcha as CaptchaService
+    participant Limiter as Redis RateLimiter
+    participant Captcha as CaptchaService (Turnstile)
     participant Users as UsersService
     participant Audit as SecurityAuditService
     participant Mail as Mailpit SMTP
     participant DB as PostgreSQL 15
+    participant RBAC as PermissionEvaluator
 
     Note over Client, DB: 1. Registration with Turnstile Captcha
     Client->>API: POST /api/v1/auth/register (Email, Password, Turnstile Token)
@@ -17,22 +19,47 @@ sequenceDiagram
     API->>Mail: sendActivationEmail(activationLink)
     API-->>Client: 201 Created ("Check your email")
 
-    Note over Client, DB: 2. Single-Use Email Activation
+    Note over Client, DB: 2. Account Activation
     Client->>API: GET /api/v1/auth/activate?token=XYZ
     API->>DB: UPDATE User SET isActive = true, activationToken = NULL
     API-->>Client: 200 OK ("Account activated")
 
     Note over Client, DB: 3. Secure Login & 2FA Challenge
     Client->>API: POST /api/v1/auth/login (Email, Password)
-    API->>Users: verifyPassword(Argon2id)
-    alt Invalid Password
-        API->>Audit: recordFailure(email, ip, bad_credentials)
-        API-->>Client: 401 Unauthorized
-    else Valid Password & 2FA Enabled
-        API->>Audit: recordChallenge(email, ip, 2fa_required)
-        API-->>Client: 200 OK { requires2FA: true, tempToken }
-        Client->>API: POST /api/v1/auth/2fa/verify (tempToken, totpCode)
-        API->>API: otplib.verify(totpCode, twoFactorSecret)
-        API->>Audit: recordSuccess(email, ip, login_success)
-        API-->>Client: 200 OK + Set-Cookie: access_token, refresh_token (httpOnly)
+    API->>Limiter: checkRateLimit(email, ip)
+    alt Account is Locked (5 failed attempts)
+        Limiter-->>API: Locked (15-minute cooldown)
+        API-->>Client: 429 Too Many Requests
+    else Allowed Attempt
+        API->>DB: SELECT User WHERE email = :email
+        alt Account does not exist (Side-Channel Timing Defense)
+            API->>Users: verifyPassword(DUMMY_ARGON2_HASH, password)
+            API->>Limiter: incrementFailures(email)
+            API-->>Client: 401 Unauthorized (Invalid credentials)
+        else Account exists
+            API->>Users: verifyPassword(user.passwordHash, password)
+            alt Invalid Password
+                API->>Limiter: incrementFailures(email)
+                API->>Audit: recordFailure(email, ip, "BAD_CREDENTIALS")
+                API-->>Client: 401 Unauthorized
+            else Valid Password & 2FA Enabled
+                API->>Audit: recordChallenge(email, ip, "2FA_REQUIRED")
+                API-->>Client: 200 OK { requires2FA: true, tempToken }
+                Client->>API: POST /api/v1/auth/2fa/verify (tempToken, totpCode)
+                API->>API: otplib.verify(totpCode, twoFactorSecret)
+                API->>Limiter: clearFailures(email)
+                API->>Audit: recordSuccess(email, ip, "LOGIN_SUCCESS")
+                API-->>Client: 200 OK + Set-Cookie: access_token (15m), refresh_token (7d)
+            end
+        end
     end
+
+    Note over Client, DB: 4. Protected API Access & RBAC Evaluation
+    Client->>API: GET /api/v1/issues/:id (Cookie: access_token)
+    API->>API: JwtAuthGuard validates JWT signature & expiration
+    API->>RBAC: hasProjectPermission(userId, projectId, "BROWSE_PROJECTS")
+    RBAC->>DB: Evaluate ProjectRoleActor, UserGroup, PermissionGrant
+    RBAC-->>API: Access Granted (true)
+    API->>DB: Evaluate issue_security_grants for user
+    DB-->>API: Issue Record
+    API-->>Client: 200 OK (Issue DTO)

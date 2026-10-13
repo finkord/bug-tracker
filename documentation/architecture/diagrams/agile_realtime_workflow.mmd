@@ -1,0 +1,34 @@
+sequenceDiagram
+    autonumber
+    actor UserA as Active User (Client A)
+    participant UI as React 19 UI (@dnd-kit)
+    participant Cache as TanStack Query Cache
+    participant API as NestJS API Gateway
+    participant Guard as FSM & RBAC Guards
+    participant DB as PostgreSQL 15
+    participant Redis as Redis 7 Pub/Sub
+    participant Gateway as Socket.IO EventsGateway
+    actor UserB as Teammate (Client B)
+
+    Note over UserA, Cache: 1. Drag Initiation & Optimistic UI
+    UserA->>UI: Drags ticket CORE-101 to Sprint 2 / In Progress
+    UI->>UI: PointerSensor activates (3px threshold)
+    UI->>Cache: setQueriesData (Synchronous Optimistic Update)
+    UI-->>UserA: UI updates immediately (Zero perceived latency)
+
+    Note over UI, DB: 2. Network Mutation & Backend Validation
+    UI->>API: PATCH /api/v1/issues/101/sprint (sprintId: 2)
+    API->>Guard: Validate user permission ("EDIT_ISSUES")
+    API->>Guard: Validate FSM workflow transition
+    Guard-->>API: Validated (OK)
+    API->>DB: UPDATE issues SET sprint_id = 2 WHERE id = 101
+    DB-->>API: 1 row affected
+    API-->>UI: 200 OK (Updated Issue DTO)
+
+    Note over API, UserB: 3. Real-Time Broadcast & Teammate Sync
+    API->>Gateway: emitIssueUpdated(project: CORE, issue)
+    Gateway->>Redis: PUBLISH project:CORE:events
+    Redis-->>Gateway: Broadcast to cluster nodes
+    Gateway-->>UserB: WebSocket Event ("issue:updated", issue)
+    UserB->>Cache: setQueryData (Update Issue in Teammate Cache)
+    UserB-->>UserB: Teammate board updates in real time
