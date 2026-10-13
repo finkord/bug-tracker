@@ -185,4 +185,21 @@ describe('IssueSubtasksSection', () => {
     expect(screen.getByText('PROJ-10')).toBeInTheDocument();
     expect(screen.getByText('Implement Authentication Pipeline')).toBeInTheDocument();
   });
+
+  it('calls onClose when close button clicked', () => {
+    const onClose = vi.fn();
+    render(
+      <MemoryRouter>
+        <IssueSubtasksSection
+          issue={mockIssueWithSubtasks}
+          onSubtasksChanged={onSubtasksChanged}
+          onClose={onClose}
+        />
+      </MemoryRouter>,
+    );
+
+    const closeBtn = screen.getByTitle('Collapse subtasks section');
+    fireEvent.click(closeBtn);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
 });

@@ -7,16 +7,18 @@ import {
 } from '../../api/queries/index.js';
 import { UserIdentity } from '../common/UserIdentity';
 import { Card, Button, Badge } from '../ui/index.js';
-import { GitCommitHorizontal, Plus, Check, CornerDownRight } from 'lucide-react';
+import { GitCommitHorizontal, Plus, Check, CornerDownRight, X } from 'lucide-react';
 
 interface IssueSubtasksSectionProps {
   issue: IssueItem;
   onSubtasksChanged: () => void;
+  onClose?: () => void;
 }
 
 export const IssueSubtasksSection: React.FC<IssueSubtasksSectionProps> = ({
   issue,
   onSubtasksChanged,
+  onClose,
 }) => {
   const [subtaskTitle, setSubtaskTitle] = useState('');
   const statusMutation = useUpdateIssueStatusMutation();
@@ -49,7 +51,7 @@ export const IssueSubtasksSection: React.FC<IssueSubtasksSectionProps> = ({
   if (issue.issueType === 'SUBTASK') {
     if (!issue.parent) return null;
     return (
-      <Card className="p-4 bg-[var(--md-sys-color-surface-container-low)] border-[var(--md-sys-color-outline-variant)]">
+      <Card className="p-3.5 sm:p-4 bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/60 rounded-2xl shadow-xs">
         <div className="flex items-center gap-2 text-xs text-[var(--md-sys-color-on-surface-variant)]">
           <CornerDownRight className="w-4 h-4 text-[var(--md-sys-color-primary)] shrink-0" />
           <span className="font-medium">Subtask of:</span>
@@ -75,12 +77,12 @@ export const IssueSubtasksSection: React.FC<IssueSubtasksSectionProps> = ({
     subtasks.length > 0 ? Math.round((completedCount / subtasks.length) * 100) : 0;
 
   return (
-    <Card className="p-3.5 bg-[var(--md-sys-color-surface-container-low)] border-[var(--md-sys-color-outline-variant)] space-y-3">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <Card className="p-3.5 sm:p-4 bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/60 rounded-2xl space-y-3 shadow-xs">
+      {/* Unified Header Row */}
+      <div className="flex items-center justify-between pb-2.5 border-b border-[var(--md-sys-color-outline-variant)]/40">
         <div className="flex items-center gap-2">
           <GitCommitHorizontal className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
-          <h3 className="text-xs font-bold text-[var(--md-sys-color-on-surface)] uppercase tracking-wider">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface)]">
             Subtasks
           </h3>
           {subtasks.length > 0 && (
@@ -88,13 +90,27 @@ export const IssueSubtasksSection: React.FC<IssueSubtasksSectionProps> = ({
               {completedCount} / {subtasks.length}
             </span>
           )}
+          {subtasks.length > 0 && (
+            <span className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] font-medium hidden sm:inline">
+              {progressPercent}% completed
+            </span>
+          )}
         </div>
 
-        {subtasks.length > 0 && (
-          <span className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] font-medium">
-            {progressPercent}% completed
-          </span>
-        )}
+        <div className="flex items-center gap-1.5">
+          {onClose && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              onClick={onClose}
+              className="h-7 w-7 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]"
+              title="Collapse subtasks section"
+            >
+              <X className="w-3.5 h-3.5" />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Progress Bar */}
@@ -109,19 +125,19 @@ export const IssueSubtasksSection: React.FC<IssueSubtasksSectionProps> = ({
 
       {/* Subtasks List */}
       {subtasks.length > 0 ? (
-        <div className="space-y-2 divide-y divide-[var(--md-sys-color-outline-variant)]/30">
+        <div className="space-y-1.5">
           {subtasks.map((subtask) => {
             const isDone = subtask.status === 'RESOLVED' || subtask.status === 'CLOSED';
             return (
               <div
                 key={subtask.id}
-                className="flex items-center justify-between gap-3 pt-2 first:pt-0 group hover:bg-[var(--md-sys-color-surface-container)]/50 px-2 py-1.5 rounded-lg transition-colors"
+                className="flex items-center justify-between gap-3 p-2 rounded-xl hover:bg-[var(--md-sys-color-surface-container)]/50 transition-colors border border-transparent hover:border-[var(--md-sys-color-outline-variant)]/40"
               >
                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
                   <button
                     type="button"
                     onClick={() => handleToggleSubtask(subtask.id, subtask.status)}
-                    className={`w-4 h-4 rounded flex items-center justify-center border transition-colors cursor-pointer shrink-0 ${
+                    className={`w-4 h-4 rounded-md flex items-center justify-center border transition-colors cursor-pointer shrink-0 ${
                       isDone
                         ? 'bg-[var(--md-sys-color-primary)] border-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)]'
                         : 'border-[var(--md-sys-color-outline)] hover:border-[var(--md-sys-color-primary)]'
@@ -152,7 +168,7 @@ export const IssueSubtasksSection: React.FC<IssueSubtasksSectionProps> = ({
 
                 <div className="flex items-center gap-2 shrink-0">
                   <Badge
-                    variant={isDone ? 'success' : subtask.status === 'IN_PROGRESS' ? 'primary' : 'secondary'}
+                    variant={isDone ? 'success' : subtask.status === 'IN_PROGRESS' ? 'primary' : 'neutral'}
                     size="sm"
                   >
                     {subtask.status.replace('_', ' ')}
@@ -172,7 +188,7 @@ export const IssueSubtasksSection: React.FC<IssueSubtasksSectionProps> = ({
           })}
         </div>
       ) : (
-        <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] italic">
+        <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] italic py-1">
           No subtasks yet. Break this task down into smaller actionable steps.
         </p>
       )}
@@ -184,7 +200,7 @@ export const IssueSubtasksSection: React.FC<IssueSubtasksSectionProps> = ({
           placeholder="Add a subtask..."
           value={subtaskTitle}
           onChange={(e) => setSubtaskTitle(e.target.value)}
-          className="flex-1 text-xs px-3 py-2 rounded-lg bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] placeholder:text-[var(--md-sys-color-on-surface-variant)] focus:outline-hidden focus:border-[var(--md-sys-color-primary)]"
+          className="flex-1 text-xs px-3 py-2 rounded-xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)] text-[var(--md-sys-color-on-surface)] placeholder:text-[var(--md-sys-color-on-surface-variant)] focus:outline-hidden focus:border-[var(--md-sys-color-primary)] transition-colors"
         />
         <Button
           type="submit"
@@ -192,7 +208,7 @@ export const IssueSubtasksSection: React.FC<IssueSubtasksSectionProps> = ({
           size="sm"
           disabled={!subtaskTitle.trim() || createIssueMutation.isPending}
           isLoading={createIssueMutation.isPending}
-          className="shrink-0 text-xs h-8"
+          className="shrink-0 text-xs h-8 px-3 rounded-xl"
         >
           <Plus className="w-3.5 h-3.5 mr-1" />
           Add

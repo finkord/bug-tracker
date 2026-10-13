@@ -32,6 +32,7 @@ import {
   AlertCircle,
   Link2,
   Paperclip,
+  GitCommitHorizontal,
 } from 'lucide-react';
 
 export interface IssueDetailViewProps {
@@ -66,6 +67,7 @@ export const IssueDetailView: React.FC<IssueDetailViewProps> = ({
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [activeViewers, setActiveViewers] = useState<{ id: number; fullName: string; avatarUrl?: string }[]>([]);
   const [activeActivityTab, setActiveActivityTab] = useState<'comments' | 'history' | 'worklogs' | 'development'>('comments');
+  const [subtasksCollapsed, setSubtasksCollapsed] = useState<boolean>(false);
   const [linksCollapsed, setLinksCollapsed] = useState<boolean | null>(null);
   const [attachmentsCollapsed, setAttachmentsCollapsed] = useState<boolean | null>(null);
 
@@ -305,13 +307,26 @@ export const IssueDetailView: React.FC<IssueDetailViewProps> = ({
             />
           </div>
 
-          {/* Subtasks Section - Always accessible checklist */}
-          <div id="subtasks-section">
-            <IssueSubtasksSection
-              issue={issue}
-              onSubtasksChanged={() => fetchIssue()}
-            />
-          </div>
+          {/* Collapsible Subtasks Section */}
+          {!subtasksCollapsed && issue.issueType !== 'SUBTASK' && (
+            <div id="subtasks-section">
+              <IssueSubtasksSection
+                issue={issue}
+                onSubtasksChanged={() => fetchIssue()}
+                onClose={() => setSubtasksCollapsed(true)}
+              />
+            </div>
+          )}
+
+          {/* Subtask parent indicator if subtask */}
+          {issue.issueType === 'SUBTASK' && (
+            <div id="subtasks-section">
+              <IssueSubtasksSection
+                issue={issue}
+                onSubtasksChanged={() => fetchIssue()}
+              />
+            </div>
+          )}
 
           {/* Collapsible Links Section */}
           {isLinksOpen && (
@@ -340,9 +355,23 @@ export const IssueDetailView: React.FC<IssueDetailViewProps> = ({
             </div>
           )}
 
-          {/* Quick Expand Bar if links or attachments are collapsed */}
-          {(!isLinksOpen || !isAttachmentsOpen) && (
-            <div className="flex items-center gap-2 pt-1">
+          {/* Quick Expand Bar if subtasks, links, or attachments are collapsed */}
+          {(subtasksCollapsed || !isLinksOpen || !isAttachmentsOpen) && (
+            <div className="flex items-center gap-2 pt-1 flex-wrap">
+              {subtasksCollapsed && issue.issueType !== 'SUBTASK' && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSubtasksCollapsed(false)}
+                  className="text-xs text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)]"
+                  leftIcon={<GitCommitHorizontal className="w-3.5 h-3.5" />}
+                >
+                  {(issue.subtasks?.length ?? 0) > 0
+                    ? `Show Subtasks (${issue.subtasks?.length})`
+                    : 'Add Subtask'}
+                </Button>
+              )}
               {!isLinksOpen && (
                 <Button
                   type="button"

@@ -65,24 +65,46 @@ export const IssueAttachmentsSection: React.FC<IssueAttachmentsSectionProps> = (
   const getSecureUrl = (url: string) => resolveSecureMediaUrl(url);
 
   return (
-    <div className="space-y-3 pt-1">
-      <div className="flex items-center justify-between pb-1.5 border-b border-[var(--md-sys-color-outline-variant)]/40">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)] flex items-center gap-1.5">
+    <Card className="p-3.5 sm:p-4 bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/60 rounded-2xl space-y-3 shadow-xs">
+      {/* Unified Header Row */}
+      <div className="flex items-center justify-between pb-2.5 border-b border-[var(--md-sys-color-outline-variant)]/40">
+        <div className="flex items-center gap-2">
           <Paperclip className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
-          Attachments ({attachments.length})
-        </h3>
-        {onClose && (
+          <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface)]">
+            Attachments
+          </h3>
+          {attachments.length > 0 && (
+            <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)]">
+              {attachments.length}
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
           <Button
             type="button"
-            variant="ghost"
-            size="icon-sm"
-            onClick={onClose}
-            className="h-6 w-6 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]"
-            title="Collapse attachments section"
+            variant="outline"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+            leftIcon={<UploadCloud className="w-3.5 h-3.5" />}
+            className="text-xs h-7 px-2.5"
           >
-            <X className="w-3.5 h-3.5" />
+            Upload
           </Button>
-        )}
+
+          {onClose && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              onClick={onClose}
+              className="h-7 w-7 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]"
+              title="Collapse attachments section"
+            >
+              <X className="w-3.5 h-3.5" />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Drag & Drop Upload Zone */}
@@ -94,10 +116,10 @@ export const IssueAttachmentsSection: React.FC<IssueAttachmentsSectionProps> = (
         onDragLeave={() => setIsDragOver(false)}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
-        className={`border border-dashed rounded-xl py-2.5 px-4 text-center cursor-pointer transition-colors ${
+        className={`border border-dashed rounded-xl py-2 px-3 text-center cursor-pointer transition-colors ${
           isDragOver
             ? 'border-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/20'
-            : 'border-[var(--md-sys-color-outline-variant)]/60 hover:border-[var(--md-sys-color-primary)]/50 bg-[var(--md-sys-color-surface-container-low)]'
+            : 'border-[var(--md-sys-color-outline-variant)]/60 hover:border-[var(--md-sys-color-primary)]/50 bg-[var(--md-sys-color-surface-container)]/40'
         }`}
       >
         <input
@@ -109,9 +131,9 @@ export const IssueAttachmentsSection: React.FC<IssueAttachmentsSectionProps> = (
         />
         <div className="flex items-center justify-center gap-2">
           {uploading ? (
-            <Loader2 className="w-4 h-4 text-[var(--md-sys-color-primary)] animate-spin" />
+            <Loader2 className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)] animate-spin" />
           ) : (
-            <UploadCloud className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
+            <UploadCloud className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
           )}
           <span className="text-xs font-medium text-[var(--md-sys-color-on-surface)]">
             {uploading ? 'Uploading...' : 'Drop files here or click to browse'}
@@ -123,8 +145,8 @@ export const IssueAttachmentsSection: React.FC<IssueAttachmentsSectionProps> = (
       </div>
 
       {/* Attachments List */}
-      {attachments.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {attachments.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           {attachments.map((att) => {
             const isImg = isImageMime(att.mimeType);
             const canDelete =
@@ -133,16 +155,16 @@ export const IssueAttachmentsSection: React.FC<IssueAttachmentsSectionProps> = (
               att.uploader?.id === currentUser?.id;
 
             return (
-              <Card
+              <div
                 key={att.id}
-                className="p-3 bg-[var(--md-sys-color-surface-container-low)] border-[var(--md-sys-color-outline-variant)]/60 flex items-center justify-between gap-3 group"
+                className="p-2.5 rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] flex items-center justify-between gap-2.5 group hover:border-[var(--md-sys-color-primary)]/40 transition-colors"
               >
-                <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <div className="p-2 rounded-lg bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface-variant)] shrink-0">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <div className="p-1.5 rounded-lg bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-primary)] shrink-0">
                     {isImg ? (
-                      <ImageIcon className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
+                      <ImageIcon className="w-4 h-4" />
                     ) : (
-                      <FileText className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
+                      <FileText className="w-4 h-4" />
                     )}
                   </div>
 
@@ -178,6 +200,7 @@ export const IssueAttachmentsSection: React.FC<IssueAttachmentsSectionProps> = (
                         setPreviewImageUrl(getSecureUrl(att.url));
                         setPreviewImageTitle(att.filename);
                       }}
+                      title="Preview image"
                     >
                       <Maximize2 className="w-3.5 h-3.5" />
                     </Button>
@@ -189,6 +212,7 @@ export const IssueAttachmentsSection: React.FC<IssueAttachmentsSectionProps> = (
                     target="_blank"
                     rel="noopener noreferrer"
                     className="p-1.5 rounded-md hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] transition-colors"
+                    title="Download file"
                   >
                     <Download className="w-3.5 h-3.5" />
                   </a>
@@ -199,15 +223,20 @@ export const IssueAttachmentsSection: React.FC<IssueAttachmentsSectionProps> = (
                       size="sm"
                       className="h-7 w-7 p-0 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/20"
                       onClick={() => onDelete(att.id)}
+                      title="Delete attachment"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
                   )}
                 </div>
-              </Card>
+              </div>
             );
           })}
         </div>
+      ) : (
+        <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] italic py-1">
+          No files attached.
+        </p>
       )}
 
       {/* Image Preview Modal */}
@@ -227,6 +256,6 @@ export const IssueAttachmentsSection: React.FC<IssueAttachmentsSectionProps> = (
           </div>
         </Modal>
       )}
-    </div>
+    </Card>
   );
 };
