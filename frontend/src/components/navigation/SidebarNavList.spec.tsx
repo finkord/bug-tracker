@@ -106,6 +106,10 @@ describe('SidebarNavList Component (Zero-Jump Personal & Workspace Navigation)',
     expect(backlogLink).toBeInTheDocument();
     expect(backlogLink).toHaveAttribute('href', '/projects/PHX/backlog');
 
+    const timesheetsLink = screen.getByRole('link', { name: /team timesheets/i });
+    expect(timesheetsLink).toBeInTheDocument();
+    expect(timesheetsLink).toHaveAttribute('href', '/projects/PHX/timesheets');
+
     const settingsLink = screen.getByRole('link', { name: /project settings/i });
     expect(settingsLink).toBeInTheDocument();
     expect(settingsLink).toHaveAttribute('href', '/projects/PHX/settings');
@@ -114,10 +118,6 @@ describe('SidebarNavList Component (Zero-Jump Personal & Workspace Navigation)',
     expect(screen.getByText(/^personal$/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /dashboard/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /^search$/i })).toBeInTheDocument();
-
-    // Team & Time section must remain anchored
-    expect(screen.getByText(/team & time/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /timesheets/i })).toBeInTheDocument();
   });
 
   it('renders project navigation using numeric ID fallback when only projectId is provided during loading', () => {

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import {
   useWorklogStatsQuery,
   useTeamTimesheetMatrixQuery,
@@ -102,19 +103,30 @@ export const TimeTrackingPage: React.FC = () => {
     return currentDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
   }, [rangeMode, currentDate, dateRange]);
 
+  const { projectId: routeProjectId } = useParams<{ projectId?: string }>();
   const { data: projects = [] } = useProjectsQuery();
   const { activeProjectId } = useActiveProjectStore();
+
+  const routeProject = useMemo(() => {
+    if (!routeProjectId) return null;
+    return projects.find((p) => p.key === routeProjectId || String(p.id) === routeProjectId) || null;
+  }, [routeProjectId, projects]);
+
   const [selectedProjectId, setSelectedProjectId] = useState<number | undefined>(
-    () => activeProjectId ?? undefined
+    () => routeProject?.id ?? activeProjectId ?? undefined
   );
 
   const prevActiveProjectIdRef = useRef(activeProjectId);
   useEffect(() => {
-    if (activeProjectId !== prevActiveProjectIdRef.current) {
+    if (routeProject?.id) {
+      setSelectedProjectId(routeProject.id);
+    } else if (activeProjectId !== prevActiveProjectIdRef.current) {
       prevActiveProjectIdRef.current = activeProjectId;
       setSelectedProjectId(activeProjectId ?? undefined);
     }
-  }, [activeProjectId]);
+  }, [activeProjectId, routeProject?.id]);
+
+  const effectiveProjectId = routeProject?.id ?? selectedProjectId;
 
   // TanStack Query Hooks for server state
   const {
@@ -127,7 +139,7 @@ export const TimeTrackingPage: React.FC = () => {
     data: matrix = null,
     isLoading: matrixLoading,
     refetch: refetchMatrix,
-  } = useTeamTimesheetMatrixQuery(dateRange.startDate, dateRange.endDate, selectedProjectId, undefined, groupBy);
+  } = useTeamTimesheetMatrixQuery(dateRange.startDate, dateRange.endDate, effectiveProjectId, undefined, groupBy);
 
   const [myLogsPage, setMyLogsPage] = useState<number>(1);
   const [myLogsLimit, setMyLogsLimit] = useState<number>(20);
@@ -284,8 +296,8 @@ export const TimeTrackingPage: React.FC = () => {
           onExportJson={handleExportJson}
           onRefresh={handleRefresh}
           loading={loading}
-          projects={projects}
-          selectedProjectId={selectedProjectId}
+          projects={routeProject ? undefined : projects}
+          selectedProjectId={effectiveProjectId}
           onProjectChange={setSelectedProjectId}
         />
 

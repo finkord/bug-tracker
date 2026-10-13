@@ -2,6 +2,7 @@ import React from 'react';
 import type { TimeTrackingTab, DateRangeMode, MatrixGroupBy } from '../../types/timeTracking';
 import type { WorklogStats } from '../../api/client';
 import {
+  Dropdown,
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
@@ -18,6 +19,7 @@ import {
   Clock,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Download,
   PlusCircle,
   RefreshCw,
@@ -136,30 +138,37 @@ export const TimeTrackingToolbar: React.FC<TimeTrackingToolbarProps> = ({
         {/* Right: Project Filter, Date Navigation, Range Toggle, Grouping, Actions */}
         <div className="flex items-center gap-2 flex-wrap">
           {/* Project Scope Filter */}
-          {projects && projects.length > 0 && (
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/40 text-xs">
-              <FolderKanban className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)] shrink-0" />
-              <select
-                value={selectedProjectId ? String(selectedProjectId) : ''}
-                onChange={(e) => onProjectChange?.(e.target.value ? Number(e.target.value) : undefined)}
-                className="bg-transparent text-xs font-semibold text-[var(--md-sys-color-on-surface)] focus:outline-hidden cursor-pointer pr-1"
-                aria-label="Filter timesheets by project"
-              >
-                <option value="" className="bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)]">
-                  All Projects
-                </option>
-                {projects.map((p) => (
-                  <option
-                    key={p.id}
-                    value={String(p.id)}
-                    className="bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)]"
+          {projects && projects.length > 0 && (() => {
+            const currentProj = projects.find((p) => p.id === selectedProjectId);
+            return (
+              <Dropdown
+                align="start"
+                trigger={
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/40 text-xs font-semibold text-[var(--md-sys-color-on-surface)] transition cursor-pointer"
+                    aria-label="Filter timesheets by project"
                   >
-                    {p.name} ({p.key})
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+                    <FolderKanban className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)] shrink-0" />
+                    <span className="max-w-[150px] truncate">
+                      {currentProj ? `${currentProj.name} (${currentProj.key})` : 'All Projects'}
+                    </span>
+                    <ChevronDown className="w-3 h-3 text-[var(--md-sys-color-on-surface-variant)]" />
+                  </button>
+                }
+                items={[
+                  {
+                    label: 'All Projects',
+                    onClick: () => onProjectChange?.(undefined),
+                  },
+                  ...projects.map((p) => ({
+                    label: `${p.name} (${p.key})`,
+                    onClick: () => onProjectChange?.(p.id),
+                  })),
+                ]}
+              />
+            );
+          })()}
 
           {/* Period Range Navigator */}
           <div className="inline-flex items-center gap-1 p-0.5 rounded-full bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/40">

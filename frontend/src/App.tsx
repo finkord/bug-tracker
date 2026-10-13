@@ -249,6 +249,14 @@ export const App: React.FC = () => {
                 }
               />
               <Route
+                path="/projects/:projectId/timesheets"
+                element={
+                  <ProtectedRoute>
+                    <TimeTrackingPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/issues/:key"
                 element={
                   <ProtectedRoute>

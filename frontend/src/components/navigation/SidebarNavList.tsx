@@ -122,6 +122,13 @@ export const SidebarNavList: React.FC<SidebarNavListProps> = ({
           activeMatch: (p) => p.includes('/backlog'),
         },
         {
+          label: 'Team Timesheets',
+          shortLabel: 'Timesheets',
+          path: `/projects/${projectIdentifier}/timesheets`,
+          icon: Clock,
+          activeMatch: (p) => p.includes('/timesheets'),
+        },
+        {
           label: 'Project Settings',
           shortLabel: 'Settings',
           path: `/projects/${projectIdentifier}/settings`,
@@ -208,28 +215,30 @@ export const SidebarNavList: React.FC<SidebarNavListProps> = ({
         ))}
       </div>
 
-      {/* Symmetric divider between Personal and Team sections */}
-      <div className="py-1 shrink-0" aria-hidden="true">
-        <div className="border-t border-[var(--md-sys-color-outline-variant)]/20 mx-1" />
-      </div>
-
-      {/* ─── 3. Team & Time Section (Bottom of Nav List) ─── */}
-      <div className="flex flex-col gap-1">
-        {!collapsed && (
-          <div className="px-2 pt-1.5 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)]/60">
-            Team & Time
+      {/* ─── 3. Global Team & Time Section (Shown when outside project scope) ─── */}
+      {!isProjectTier && (
+        <>
+          <div className="py-1 shrink-0" aria-hidden="true">
+            <div className="border-t border-[var(--md-sys-color-outline-variant)]/20 mx-1" />
           </div>
-        )}
-        {timesheetNavItems.map((item) => (
-          <SidebarNavItem
-            key={item.label}
-            item={item}
-            collapsed={collapsed}
-            showCollapsedLabels={showCollapsedLabels}
-            onNavigate={onNavigate}
-          />
-        ))}
-      </div>
+          <div className="flex flex-col gap-1">
+            {!collapsed && (
+              <div className="px-2 pt-1.5 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)]/60">
+                Team & Time
+              </div>
+            )}
+            {timesheetNavItems.map((item) => (
+              <SidebarNavItem
+                key={item.label}
+                item={item}
+                collapsed={collapsed}
+                showCollapsedLabels={showCollapsedLabels}
+                onNavigate={onNavigate}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </nav>
   );
 };
