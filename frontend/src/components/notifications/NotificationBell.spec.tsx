@@ -89,7 +89,7 @@ describe('NotificationBell Component', () => {
     const bellBtn = screen.getByLabelText('Notifications Inbox');
     fireEvent.click(bellBtn);
 
-    const markReadBtn = await screen.findByTitle('Mark as read (E)');
+    const markReadBtn = await screen.findByTitle('Mark as read');
     fireEvent.click(markReadBtn);
 
     await vi.waitFor(() => {
@@ -97,22 +97,20 @@ describe('NotificationBell Component', () => {
     });
   });
 
-  it('toggles sound alerts and persists preference in localStorage', async () => {
+  it('switches between unread and all filters', async () => {
     renderComponent();
 
     const bellBtn = screen.getByLabelText('Notifications Inbox');
     fireEvent.click(bellBtn);
 
-    const soundBtn = await screen.findByLabelText('Mute sound alerts');
-    fireEvent.click(soundBtn);
+    const allFilterBtn = await screen.findByRole('button', { name: 'All' });
+    fireEvent.click(allFilterBtn);
 
-    expect(localStorage.getItem('bugtracker_sound_alerts_enabled')).toBe('false');
-    expect(await screen.findByLabelText('Enable sound alerts')).toBeInTheDocument();
-
-    const enableSoundBtn = screen.getByLabelText('Enable sound alerts');
-    fireEvent.click(enableSoundBtn);
-
-    expect(localStorage.getItem('bugtracker_sound_alerts_enabled')).toBe('true');
+    await vi.waitFor(() => {
+      expect(notificationsApi.getNotifications).toHaveBeenCalledWith(
+        expect.objectContaining({ unreadOnly: false }),
+      );
+    });
   });
 
   it('renders standard Bell when unreadCount is 0', async () => {
