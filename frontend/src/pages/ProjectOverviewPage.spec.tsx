@@ -53,8 +53,28 @@ const mockSprints = [
   },
 ];
 
+const mockSummary = {
+  projectId: 42,
+  projectKey: 'PHX',
+  projectName: 'Phoenix Engine',
+  totalIssues: 2,
+  resolvedIssues: 1,
+  inProgressIssues: 1,
+  openIssues: 0,
+  completionPercent: 50,
+  totalEstimatedHours: 12,
+  totalLoggedHours: 8,
+  priorityBreakdown: {
+    critical: 1,
+    high: 1,
+    medium: 0,
+    low: 0,
+  },
+};
+
 vi.mock('../api/queries', () => ({
   useProjectsQuery: () => ({ data: [mockProject], isLoading: false }),
+  useProjectSummaryQuery: () => ({ data: mockSummary, isLoading: false }),
   useIssuesQuery: () => ({ data: { items: mockIssues, total: 2 }, isLoading: false }),
   useProjectSprintsQuery: () => ({ data: mockSprints, isLoading: false }),
   useTeamsQuery: () => ({ data: [], isLoading: false }),

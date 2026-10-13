@@ -168,7 +168,7 @@ export const ProjectsPage: React.FC = () => {
                 </div>
 
                 <Link
-                  to={`/projects/${project.key}/board`}
+                  to={`/projects/${project.key}`}
                   className="block font-bold text-base text-[var(--md-sys-color-on-surface)] hover:text-[var(--md-sys-color-primary)] transition-colors"
                 >
                   {project.name}

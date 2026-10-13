@@ -15,6 +15,7 @@ import {
   UploadedFile,
   Res,
   BadRequestException,
+  Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse, ApiConsumes } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -29,6 +30,8 @@ import {
   UpdateProjectVersionDto,
   ReleaseVersionDto,
 } from './dto/project-version.dto.js';
+import { ProjectSummaryDto } from './dto/project-summary.dto.js';
+import { FindProjectsQueryDto } from './dto/find-projects-query.dto.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { Public } from '../../common/decorators/public.decorator.js';
@@ -48,10 +51,13 @@ export class ProjectsController {
   @Get()
   @ApiOperation({
     summary: 'List all software projects',
-    description: 'Retrieves all registered projects with issue count aggregations.',
+    description: 'Retrieves all registered projects with issue count aggregations and optional search/pagination.',
   })
-  async findAll(@CurrentUser() user: User) {
-    return this.projectsService.findAll(user);
+  async findAll(
+    @CurrentUser() user: User,
+    @Query() query?: FindProjectsQueryDto,
+  ) {
+    return this.projectsService.findAll(user, query);
   }
 
   @Public()
@@ -75,6 +81,17 @@ export class ProjectsController {
   @ApiOperation({ summary: 'Get project details by project key' })
   async findByKey(@Param('key') key: string) {
     return this.projectsService.findByIdOrKey(key);
+  }
+
+  @Get(':id/summary')
+  @RequireProjectPermission(ProjectPermission.BROWSE_PROJECTS)
+  @ApiOperation({
+    summary: 'Get aggregated project health and completion metrics',
+    description: 'Computes real-time issue completion rates, time logs, and priority breakdowns directly in PostgreSQL.',
+  })
+  @ApiResponse({ status: 200, type: ProjectSummaryDto })
+  async getProjectSummary(@Param('id') id: string) {
+    return this.projectsService.getProjectSummary(id);
   }
 
   @Get(':id')

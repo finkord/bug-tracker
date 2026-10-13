@@ -110,3 +110,5 @@ export interface ReleaseNotesResponse {
   version: string;
   releaseNotes: string;
 }
+
+export type ProjectSummaryItem = components['schemas']['ProjectSummaryDto'];

@@ -754,7 +754,7 @@ export interface paths {
         };
         /**
          * List all software projects
-         * @description Retrieves all registered projects with issue count aggregations.
+         * @description Retrieves all registered projects with issue count aggregations and optional search/pagination.
          */
         get: operations["ProjectsController_findAll"];
         put?: never;
@@ -795,6 +795,26 @@ export interface paths {
         };
         /** Get project details by project key */
         get: operations["ProjectsController_findByKey"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{id}/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get aggregated project health and completion metrics
+         * @description Computes real-time issue completion rates, time logs, and priority breakdowns directly in PostgreSQL.
+         */
+        get: operations["ProjectsController_getProjectSummary"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2395,6 +2415,39 @@ export interface components {
              * @example DevOps Engineer
              */
             jobTitle?: string;
+        };
+        PriorityBreakdownDto: {
+            /** @example 2 */
+            critical: number;
+            /** @example 5 */
+            high: number;
+            /** @example 8 */
+            medium: number;
+            /** @example 3 */
+            low: number;
+        };
+        ProjectSummaryDto: {
+            /** @example 1 */
+            projectId: number;
+            /** @example CORE */
+            projectKey: string;
+            /** @example Core Platform Engine */
+            projectName: string;
+            /** @example 18 */
+            totalIssues: number;
+            /** @example 8 */
+            resolvedIssues: number;
+            /** @example 4 */
+            inProgressIssues: number;
+            /** @example 6 */
+            openIssues: number;
+            /** @example 44 */
+            completionPercent: number;
+            /** @example 120 */
+            totalEstimatedHours: number;
+            /** @example 45.5 */
+            totalLoggedHours: number;
+            priorityBreakdown: components["schemas"]["PriorityBreakdownDto"];
         };
         CreateProjectDto: {
             /**
@@ -4230,7 +4283,12 @@ export interface operations {
     };
     ProjectsController_findAll: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Filter projects by name or key */
+                search?: string;
+                limit?: number;
+                offset?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -4309,6 +4367,27 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    ProjectsController_getProjectSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectSummaryDto"];
+                };
             };
         };
     };

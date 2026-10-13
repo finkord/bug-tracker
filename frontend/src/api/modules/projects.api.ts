@@ -143,5 +143,8 @@ export const projectsApi = {
       method: 'PATCH',
       body: JSON.stringify({ avatarUrl }),
     }),
+
+  getProjectSummary: (idOrKey: string | number) =>
+    request<import('../types/projects.types.js').ProjectSummaryItem>(`/projects/${idOrKey}/summary`),
 };
 

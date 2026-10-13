@@ -51,6 +51,8 @@ describe('ProjectsService', () => {
         addGroupBy: vi.fn().mockReturnThis(),
         orderBy: vi.fn().mockReturnThis(),
         andWhere: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockReturnThis(),
+        offset: vi.fn().mockReturnThis(),
         getRawMany: vi.fn().mockResolvedValue([
           {
             id: '1',
@@ -137,6 +139,19 @@ describe('ProjectsService', () => {
       createQueryBuilder: vi.fn(() => ({
         where: vi.fn().mockReturnThis(),
         andWhere: vi.fn().mockReturnThis(),
+        select: vi.fn().mockReturnThis(),
+        getRawOne: vi.fn().mockResolvedValue({
+          totalIssues: '10',
+          resolvedIssues: '5',
+          inProgressIssues: '3',
+          openIssues: '2',
+          totalEstimatedHours: '80',
+          totalLoggedHours: '40',
+          criticalCount: '1',
+          highCount: '2',
+          mediumCount: '4',
+          lowCount: '3',
+        }),
         getCount: vi.fn().mockResolvedValue(0),
         update: vi.fn().mockReturnThis(),
         set: vi.fn().mockReturnThis(),
@@ -398,6 +413,39 @@ describe('ProjectsService', () => {
       expect(notes.releaseNotes).toContain('Bug Fixes');
       expect(notes.releaseNotes).toContain('ALPHA-2');
       expect(notes.releaseNotes).toContain('Fix CSRF token bug');
+    });
+  });
+
+  describe('getProjectSummary', () => {
+    it('should calculate accurate PostgreSQL aggregate metrics for a project', () => {
+      mockProjectRepo.findOne.mockResolvedValue({
+        id: 1,
+        key: 'ALPHA',
+        name: 'Alpha Project',
+      });
+
+      return service.getProjectSummary('ALPHA').then((summary) => {
+        expect(summary.projectId).toBe(1);
+        expect(summary.projectKey).toBe('ALPHA');
+        expect(summary.totalIssues).toBe(10);
+        expect(summary.resolvedIssues).toBe(5);
+        expect(summary.inProgressIssues).toBe(3);
+        expect(summary.openIssues).toBe(2);
+        expect(summary.completionPercent).toBe(50);
+        expect(summary.totalEstimatedHours).toBe(80);
+        expect(summary.totalLoggedHours).toBe(40);
+        expect(summary.priorityBreakdown).toEqual({
+          critical: 1,
+          high: 2,
+          medium: 4,
+          low: 3,
+        });
+      });
+    });
+
+    it('should throw NotFoundException if project does not exist', async () => {
+      mockProjectRepo.findOne.mockResolvedValue(null);
+      await expect(service.getProjectSummary('NON_EXISTENT')).rejects.toThrow();
     });
   });
 });

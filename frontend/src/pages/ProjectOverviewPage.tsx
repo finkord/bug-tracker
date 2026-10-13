@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   useProjectsQuery,
+  useProjectSummaryQuery,
   useIssuesQuery,
   useProjectSprintsQuery,
   useTeamsQuery,
@@ -111,9 +112,14 @@ export const ProjectOverviewPage: React.FC = () => {
   const effectiveProjectId = project?.id;
   const projectKey = project?.key || projectParam || '';
 
-  // Issues query for this project
+  // Project summary query computed natively via PostgreSQL aggregations
+  const { data: summaryData } = useProjectSummaryQuery(
+    effectiveProjectId || projectParam,
+  );
+
+  // Issues query for recent tickets in this workspace
   const { data: issuesData, isLoading: issuesLoading } = useIssuesQuery(
-    effectiveProjectId ? { projectId: effectiveProjectId, limit: 50 } : undefined,
+    effectiveProjectId ? { projectId: effectiveProjectId, limit: 8 } : undefined,
   );
 
   // Sprints, Teams, Components, Versions queries
@@ -129,21 +135,20 @@ export const ProjectOverviewPage: React.FC = () => {
 
   const issues = issuesData?.items ?? [];
 
-  // Compute metrics
-  const totalIssues = issues.length;
-  const resolvedIssues = issues.filter((i) => i.status === 'RESOLVED' || i.status === 'CLOSED').length;
-  const inProgressIssues = issues.filter((i) => i.status === 'IN_PROGRESS' || i.status === 'REVIEW').length;
-  const openIssues = issues.filter((i) => i.status === 'OPEN').length;
+  // Authentic backend-calculated metrics
+  const totalIssues = summaryData?.totalIssues ?? project?.totalIssues ?? 0;
+  const resolvedIssues = summaryData?.resolvedIssues ?? 0;
+  const inProgressIssues = summaryData?.inProgressIssues ?? 0;
+  const openIssues = summaryData?.openIssues ?? project?.openIssues ?? 0;
+  const completionPercent = summaryData?.completionPercent ?? 0;
 
-  const completionPercent = totalIssues > 0 ? Math.round((resolvedIssues / totalIssues) * 100) : 0;
+  const totalEstimatedHours = summaryData?.totalEstimatedHours ?? 0;
+  const totalLoggedHours = summaryData?.totalLoggedHours ?? 0;
 
-  const totalEstimatedHours = issues.reduce((acc, i) => acc + (i.estimatedHours || 0), 0);
-  const totalLoggedHours = issues.reduce((acc, i) => acc + (i.loggedHours || 0), 0);
-
-  const criticalCount = issues.filter((i) => i.priority === 'CRITICAL').length;
-  const highCount = issues.filter((i) => i.priority === 'HIGH').length;
-  const mediumCount = issues.filter((i) => i.priority === 'MEDIUM').length;
-  const lowCount = issues.filter((i) => i.priority === 'LOW').length;
+  const criticalCount = summaryData?.priorityBreakdown?.critical ?? 0;
+  const highCount = summaryData?.priorityBreakdown?.high ?? 0;
+  const mediumCount = summaryData?.priorityBreakdown?.medium ?? 0;
+  const lowCount = summaryData?.priorityBreakdown?.low ?? 0;
 
   const activeSprint = sprints.find((s: SprintItem) => s.status === 'ACTIVE');
 

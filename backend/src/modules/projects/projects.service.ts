@@ -15,6 +15,8 @@ import {
   UpdateProjectVersionDto,
   ReleaseVersionDto,
 } from './dto/project-version.dto.js';
+import { ProjectSummaryDto } from './dto/project-summary.dto.js';
+import { FindProjectsQueryDto } from './dto/find-projects-query.dto.js';
 import { User } from '../users/entities/user.entity.js';
 import { PermissionEvaluatorService } from '../rbac/services/permission-evaluator.service.js';
 import { ProjectPermission } from '../rbac/entities/permission-grant.entity.js';
@@ -97,7 +99,7 @@ export class ProjectsService {
    * Retrieves all projects accessible to the current user with lead details and aggregated issue counts.
    * Enforces multi-tenant project isolation based on BROWSE_PROJECTS permissions.
    */
-  async findAll(currentUser?: User): Promise<ProjectWithMetrics[]> {
+  async findAll(currentUser?: User, query?: FindProjectsQueryDto): Promise<ProjectWithMetrics[]> {
     let accessibleProjectIds: number[] | 'ALL' = 'ALL';
 
     if (currentUser) {
@@ -129,19 +131,34 @@ export class ProjectsService {
         'lead.email AS "lead_email"',
         'lead.avatarUrl AS "lead_avatarUrl"',
         'COUNT(issue.id) AS "totalIssues"',
-        `COUNT(CASE WHEN issue.status IN ('OPEN', 'IN_PROGRESS', 'CODE_REVIEW', 'TESTING') THEN 1 END) AS "openIssues"`,
+        `COUNT(CASE WHEN issue.status IN ('OPEN', 'IN_PROGRESS', 'REVIEW') THEN 1 END) AS "openIssues"`,
       ]);
 
     if (accessibleProjectIds !== 'ALL') {
       qb.andWhere('project.id IN (:...accessibleProjectIds)', { accessibleProjectIds });
     }
 
-    const raw: RawProjectRow[] = await qb
-      .groupBy('project.id')
+    if (query?.search && query.search.trim()) {
+      const term = `%${query.search.trim()}%`;
+      qb.andWhere(
+        '(LOWER(project.name) LIKE LOWER(:term) OR UPPER(project.key) LIKE UPPER(:term))',
+        { term },
+      );
+    }
+
+    qb.groupBy('project.id')
       .addGroupBy('lead.id')
       .addGroupBy('lead.avatarUrl')
-      .orderBy('project.createdAt', 'DESC')
-      .getRawMany<RawProjectRow>();
+      .orderBy('project.createdAt', 'DESC');
+
+    if (query?.limit) {
+      qb.limit(query.limit);
+    }
+    if (query?.offset) {
+      qb.offset(query.offset);
+    }
+
+    const raw: RawProjectRow[] = await qb.getRawMany<RawProjectRow>();
 
     return raw.map((r: RawProjectRow) => ({
       id: Number(r.id),
@@ -197,6 +214,58 @@ export class ProjectsService {
     }
 
     return project;
+  }
+
+  /**
+   * Retrieves aggregated project metrics directly calculated inside PostgreSQL:
+   * issue completion rates, time logs, and priority distributions.
+   */
+  async getProjectSummary(idOrKey: string | number): Promise<ProjectSummaryDto> {
+    const project = await this.findByIdOrKey(idOrKey);
+
+    const summaryRaw = await this.issueRepository
+      .createQueryBuilder('issue')
+      .where('issue.projectId = :projectId', { projectId: project.id })
+      .select([
+        'COUNT(issue.id) AS "totalIssues"',
+        `COUNT(CASE WHEN issue.status IN ('RESOLVED', 'CLOSED') THEN 1 END) AS "resolvedIssues"`,
+        `COUNT(CASE WHEN issue.status IN ('IN_PROGRESS', 'REVIEW') THEN 1 END) AS "inProgressIssues"`,
+        `COUNT(CASE WHEN issue.status = 'OPEN' THEN 1 END) AS "openIssues"`,
+        'COALESCE(SUM(issue.estimatedHours), 0) AS "totalEstimatedHours"',
+        'COALESCE(SUM(issue.loggedHours), 0) AS "totalLoggedHours"',
+        `COUNT(CASE WHEN issue.priority = 'CRITICAL' THEN 1 END) AS "criticalCount"`,
+        `COUNT(CASE WHEN issue.priority = 'HIGH' THEN 1 END) AS "highCount"`,
+        `COUNT(CASE WHEN issue.priority = 'MEDIUM' THEN 1 END) AS "mediumCount"`,
+        `COUNT(CASE WHEN issue.priority = 'LOW' THEN 1 END) AS "lowCount"`,
+      ])
+      .getRawOne();
+
+    const totalIssues = Number(summaryRaw?.totalIssues || 0);
+    const resolvedIssues = Number(summaryRaw?.resolvedIssues || 0);
+    const inProgressIssues = Number(summaryRaw?.inProgressIssues || 0);
+    const openIssues = Number(summaryRaw?.openIssues || 0);
+    const totalEstimatedHours = Number(Number(summaryRaw?.totalEstimatedHours || 0).toFixed(1));
+    const totalLoggedHours = Number(Number(summaryRaw?.totalLoggedHours || 0).toFixed(1));
+    const completionPercent = totalIssues > 0 ? Math.round((resolvedIssues / totalIssues) * 100) : 0;
+
+    return {
+      projectId: project.id,
+      projectKey: project.key,
+      projectName: project.name,
+      totalIssues,
+      resolvedIssues,
+      inProgressIssues,
+      openIssues,
+      completionPercent,
+      totalEstimatedHours,
+      totalLoggedHours,
+      priorityBreakdown: {
+        critical: Number(summaryRaw?.criticalCount || 0),
+        high: Number(summaryRaw?.highCount || 0),
+        medium: Number(summaryRaw?.mediumCount || 0),
+        low: Number(summaryRaw?.lowCount || 0),
+      },
+    };
   }
 
   /**

@@ -58,6 +58,12 @@ export const projectQueries = {
       queryFn: () => api.getVersions(id),
       enabled: typeof id === 'number' && !isNaN(id),
     }),
+  summary: (idOrKey: string | number) =>
+    queryOptions({
+      queryKey: [...projectQueries.all, 'summary', String(idOrKey)] as const,
+      queryFn: () => api.getProjectSummary(idOrKey),
+      enabled: Boolean(idOrKey),
+    }),
 };
 
 // Aliased for full backwards compatibility
@@ -71,6 +77,7 @@ export const projectKeys = {
   quickFilters: (id: number) => projectQueries.quickFilters(id).queryKey,
   components: (id: number) => projectQueries.components(id).queryKey,
   versions: (id: number) => projectQueries.versions(id).queryKey,
+  summary: (idOrKey: string | number) => projectQueries.summary(idOrKey).queryKey,
 };
 
 export function useProjectsQuery(options?: { enabled?: boolean }) {
@@ -79,6 +86,13 @@ export function useProjectsQuery(options?: { enabled?: boolean }) {
 
 export function useProjectDetailQuery(projectId?: number) {
   return useQuery(projectQueries.detail(projectId!));
+}
+
+export function useProjectSummaryQuery(idOrKey?: string | number) {
+  return useQuery({
+    ...projectQueries.summary(idOrKey || ''),
+    enabled: Boolean(idOrKey),
+  });
 }
 
 export function useProjectPeopleQuery(projectId?: number) {
