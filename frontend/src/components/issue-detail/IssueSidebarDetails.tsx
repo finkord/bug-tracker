@@ -9,8 +9,11 @@ import {
   SelectContent,
   SelectItem,
   PriorityBadge,
+  StatusBadge,
   UserPicker,
   Button,
+  Dropdown,
+  type DropdownMenuItemConfig,
 } from '../ui/index.js';
 import {
   Calendar,
@@ -23,21 +26,31 @@ import {
   SlidersHorizontal,
   Clock,
   Plus,
+  MoreHorizontal,
+  Trash2,
+  Share2,
+  Check,
+  Radio,
 } from 'lucide-react';
 import {
   useAssigneesQuery,
   useProjectSprintsQuery,
   useProjectComponentsQuery,
   useProjectVersionsQuery,
+  useMyProjectPermissionsQuery,
 } from '../../api/queries/index.js';
 import { IssueTypeIcon } from '../ui/IssueTypeIcon.js';
+import { Avatar } from '../common/Avatar.js';
+import { UserProfilePopover } from '../common/UserProfilePopover.js';
 
 interface IssueSidebarDetailsProps {
   issue: IssueItem;
   currentUser: UserProfile | null;
+  activeViewers?: Array<{ id: number; fullName: string; avatarUrl?: string }>;
   onAssignToMe: () => Promise<void>;
   onSprintChange?: (sprintId: number | null) => Promise<void>;
   onStatusChange?: (status: IssueStatus) => Promise<void>;
+  onDeleteClick?: () => void;
   onUpdateFields?: (data: Partial<{
     priority: IssuePriority;
     issueType: IssueType;
@@ -53,19 +66,74 @@ interface IssueSidebarDetailsProps {
 export const IssueSidebarDetails: React.FC<IssueSidebarDetailsProps> = ({
   issue,
   currentUser,
+  activeViewers = [],
   onAssignToMe: _onAssignToMe,
   onSprintChange,
-  onStatusChange: _onStatusChange,
+  onStatusChange,
+  onDeleteClick,
   onUpdateFields,
   onOpenLogWorkModal,
   onViewWorklogsTab,
 }) => {
   const [updatingField, setUpdatingField] = useState<string | null>(null);
+  const [hasCopiedLink, setHasCopiedLink] = useState(false);
 
   const { data: assigneesData } = useAssigneesQuery({ limit: 100 });
   const { data: sprints = [] } = useProjectSprintsQuery(issue.projectId);
   const { data: components = [] } = useProjectComponentsQuery(issue.projectId);
   const { data: versions = [] } = useProjectVersionsQuery(issue.projectId);
+  const { data: projectPermissions } = useMyProjectPermissionsQuery(issue.projectId);
+
+  const isSystemAdmin = Boolean(currentUser?.isAdmin || currentUser?.systemRole === 'ADMIN');
+  const hasProjectAdmin = Boolean(projectPermissions?.ADMINISTER_PROJECTS);
+  const hasDeletePermission = Boolean(projectPermissions?.DELETE_ISSUES);
+
+  const isReporter = Boolean(
+    currentUser &&
+      (issue.reporter?.id === currentUser.id || issue.reporterId === currentUser.id),
+  );
+  const isUnstarted = issue.status === 'OPEN';
+  const hasZeroWorklogs = !issue.loggedHours || Number(issue.loggedHours) === 0;
+  const isWithin24Hours = issue.createdAt
+    ? Date.now() - new Date(issue.createdAt).getTime() <= 24 * 60 * 60 * 1000
+    : false;
+  const isReporterGracePeriod = isReporter && isUnstarted && hasZeroWorklogs && isWithin24Hours;
+
+  const canDelete = Boolean(
+    currentUser &&
+      (isSystemAdmin || hasProjectAdmin || hasDeletePermission || isReporterGracePeriod),
+  );
+
+  const handleCopyLink = async () => {
+    try {
+      const url = `${window.location.origin}/issues/${issue.key}`;
+      await navigator.clipboard.writeText(url);
+      setHasCopiedLink(true);
+      setTimeout(() => setHasCopiedLink(false), 2000);
+    } catch {
+      // Ignored
+    }
+  };
+
+  const dropdownItems: DropdownMenuItemConfig[] = [
+    {
+      label: hasCopiedLink ? 'Link Copied!' : 'Copy Link to Issue',
+      icon: hasCopiedLink ? <Check className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" /> : <Share2 className="w-3.5 h-3.5" />,
+      onClick: handleCopyLink,
+    },
+  ];
+
+  if (canDelete && onDeleteClick) {
+    dropdownItems.push(
+      { label: '', divider: true },
+      {
+        label: 'Delete Issue',
+        icon: <Trash2 className="w-3.5 h-3.5" />,
+        onClick: onDeleteClick,
+        danger: true,
+      },
+    );
+  }
 
   const assignees = assigneesData?.items || [];
 
@@ -92,15 +160,78 @@ export const IssueSidebarDetails: React.FC<IssueSidebarDetailsProps> = ({
             <SlidersHorizontal className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
             Details & Properties
           </h3>
-          {updatingField && (
-            <div className="flex items-center gap-1 text-[11px] text-[var(--md-sys-color-primary)] font-medium">
-              <Loader2 className="w-3 h-3 animate-spin" />
-              <span>Saving...</span>
-            </div>
-          )}
+          <div className="flex items-center gap-1.5">
+            {updatingField && (
+              <div className="flex items-center gap-1 text-[11px] text-[var(--md-sys-color-primary)] font-medium mr-1">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                <span>Saving...</span>
+              </div>
+            )}
+            <Dropdown
+              trigger={
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="h-7 w-7 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]"
+                  title="More actions"
+                  aria-label="More issue actions"
+                >
+                  <MoreHorizontal className="w-3.5 h-3.5" />
+                </Button>
+              }
+              items={dropdownItems}
+            />
+          </div>
         </div>
 
+        {/* Active Viewers Indicator */}
+        {activeViewers.length > 0 && (
+          <div className="flex items-center justify-between p-2 rounded-xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/40 text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
+            <span className="flex items-center gap-1.5 font-medium">
+              <Radio className="w-3 h-3 text-[var(--md-sys-color-primary)] animate-pulse" />
+              Viewing:
+            </span>
+            <div className="flex -space-x-1.5 overflow-hidden">
+              {activeViewers.map((viewer) => (
+                <UserProfilePopover key={viewer.id} user={viewer}>
+                  <div className="inline-block ring-2 ring-[var(--md-sys-color-surface)] rounded-full cursor-pointer hover:ring-[var(--md-sys-color-primary)] transition-all">
+                    <Avatar
+                      name={viewer.fullName}
+                      avatarUrl={viewer.avatarUrl || undefined}
+                      size="sm"
+                      className="w-5 h-5 text-[10px]"
+                    />
+                  </div>
+                </UserProfilePopover>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="space-y-3.5 text-xs">
+          {/* Status Cockpit */}
+          <div className="space-y-1">
+            <span className="text-[var(--md-sys-color-on-surface-variant)] font-medium text-[11px]">
+              Status
+            </span>
+            <div>
+              <StatusBadge
+                status={issue.status}
+                interactive={Boolean(onStatusChange)}
+                onStatusChange={
+                  onStatusChange
+                    ? (newStatus) => {
+                        handleFieldChange('status', () =>
+                          onStatusChange(newStatus as IssueStatus),
+                        );
+                      }
+                    : undefined
+                }
+                size="sm"
+              />
+            </div>
+          </div>
+
           {/* Priority */}
           <div className="space-y-1">
             <span className="text-[var(--md-sys-color-on-surface-variant)] flex items-center gap-1 font-medium text-[11px]">

@@ -20,6 +20,7 @@ vi.mock('../../api/queries/index.js', () => ({
   useProjectComponentsQuery: vi.fn(() => ({ data: [] })),
   useProjectVersionsQuery: vi.fn(() => ({ data: [] })),
   useUserDetailQuery: vi.fn(() => ({ data: null })),
+  useMyProjectPermissionsQuery: vi.fn(() => ({ data: { DELETE_ISSUES: true } })),
 }));
 
 const sampleIssue: IssueItem = {
@@ -101,5 +102,16 @@ describe('IssueSidebarDetails Component', () => {
 
     // Priority badge is present
     expect(screen.getByText('Priority')).toBeInTheDocument();
+  });
+
+  it('renders Status field with StatusBadge in the sidebar', () => {
+    renderComponent();
+    expect(screen.getByText('Status')).toBeInTheDocument();
+    expect(screen.getByText('Open')).toBeInTheDocument();
+  });
+
+  it('renders more actions dropdown trigger', () => {
+    renderComponent({ onDeleteClick: vi.fn() });
+    expect(screen.getByLabelText('More issue actions')).toBeInTheDocument();
   });
 });

@@ -19,7 +19,6 @@ import { useRecentIssuesStore } from '../../store/useRecentIssuesStore';
 import { LogWorkModal } from '../kanban/LogWorkModal';
 import { IssueLinksSection } from '../kanban/IssueLinksSection';
 import {
-  IssueDetailHeader,
   IssueDetailDescription,
   IssueActivityTabs,
   IssueAttachmentsSection,
@@ -33,6 +32,7 @@ import {
   Link2,
   Paperclip,
   GitCommitHorizontal,
+  X,
 } from 'lucide-react';
 
 export interface IssueDetailViewProps {
@@ -283,18 +283,21 @@ export const IssueDetailView: React.FC<IssueDetailViewProps> = ({
 
   return (
     <div className={`w-full flex-1 flex flex-col min-w-0 space-y-5 animate-in fade-in duration-200 ${isModal ? 'p-2 sm:p-4' : 'px-4 sm:px-6 lg:px-8 py-5'}`}>
-      {/* Unified Command Header */}
-      <IssueDetailHeader
-        issue={issue}
-        currentUser={user}
-        activeViewers={activeViewers}
-        deleting={deleteIssueMutation.isPending}
-        onStatusChange={handleStatusChange}
-        onDeleteClick={() => setDeleteModalOpen(true)}
-        onBack={handleBack}
-        isModal={isModal}
-        onClose={onClose}
-      />
+      {/* Modal Close Button (only displayed inside overlay dialogs) */}
+      {isModal && onClose && (
+        <div className="flex justify-end -mb-3">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            onClick={onClose}
+            className="h-8 w-8 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]"
+            title="Close"
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
 
       {/* Main Responsive Grid Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -418,9 +421,11 @@ export const IssueDetailView: React.FC<IssueDetailViewProps> = ({
           <IssueSidebarDetails
             issue={issue}
             currentUser={user}
+            activeViewers={activeViewers}
             onAssignToMe={handleAssignToMe}
             onSprintChange={handleSprintChange}
             onStatusChange={handleStatusChange}
+            onDeleteClick={() => setDeleteModalOpen(true)}
             onUpdateFields={handleUpdateIssue}
             onOpenLogWorkModal={() => setLogWorkOpen(true)}
             onViewWorklogsTab={() => handleSwitchActivityTab('worklogs')}
