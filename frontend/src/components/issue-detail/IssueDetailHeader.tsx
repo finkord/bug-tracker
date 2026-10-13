@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 
 import { IssueTypeIcon } from '../ui/IssueTypeIcon.js';
+import { useMyProjectPermissionsQuery } from '../../api/queries/useProjectsQuery.js';
 
 export interface IssueDetailHeaderProps {
   issue: IssueItem;
@@ -45,9 +46,32 @@ export const IssueDetailHeader: React.FC<IssueDetailHeaderProps> = ({
   const [hasCopiedKey, setHasCopiedKey] = useState(false);
   const [hasCopiedLink, setHasCopiedLink] = useState(false);
 
-  // Any authenticated team member, author, or admin can access Delete in the actions menu.
-  // The backend enforces project RBAC (DELETE_ISSUES, ADMINISTER_PROJECTS, reporter grace period).
-  const canDelete = Boolean(currentUser);
+  const { data: projectPermissions } = useMyProjectPermissionsQuery(issue.projectId);
+
+  // In Jira and BugTracker, deleting an issue is restricted to:
+  // 1. Global system administrators (ADMIN role / isAdmin flag)
+  // 2. Project administrators (ADMINISTER_PROJECTS permission)
+  // 3. Team members granted explicit DELETE_ISSUES permission in the project scheme
+  // 4. Issue author (reporter) within 24-hour grace period for unstarted issues with 0 worklogs
+  const isSystemAdmin = Boolean(currentUser?.isAdmin || currentUser?.systemRole === 'ADMIN');
+  const hasProjectAdmin = Boolean(projectPermissions?.ADMINISTER_PROJECTS);
+  const hasDeletePermission = Boolean(projectPermissions?.DELETE_ISSUES);
+
+  const isReporter = Boolean(
+    currentUser &&
+      (issue.reporter?.id === currentUser.id || issue.reporterId === currentUser.id),
+  );
+  const isUnstarted = issue.status === 'OPEN';
+  const hasZeroWorklogs = !issue.loggedHours || Number(issue.loggedHours) === 0;
+  const isWithin24Hours = issue.createdAt
+    ? Date.now() - new Date(issue.createdAt).getTime() <= 24 * 60 * 60 * 1000
+    : false;
+  const isReporterGracePeriod = isReporter && isUnstarted && hasZeroWorklogs && isWithin24Hours;
+
+  const canDelete = Boolean(
+    currentUser &&
+      (isSystemAdmin || hasProjectAdmin || hasDeletePermission || isReporterGracePeriod),
+  );
 
   const handleCopyKey = async () => {
     try {
