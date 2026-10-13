@@ -9,6 +9,8 @@ interface LogWorkModalProps {
   issueId?: number;
   issueKey?: string;
   issueTitle?: string;
+  estimatedHours?: number;
+  loggedHours?: number;
   onWorkLogged: () => void;
 }
 
@@ -18,6 +20,8 @@ export const LogWorkModal: React.FC<LogWorkModalProps> = ({
   issueId: initialIssueId,
   issueKey: initialIssueKey,
   issueTitle: initialIssueTitle,
+  estimatedHours: initialEstimatedHours,
+  loggedHours: initialLoggedHours,
   onWorkLogged,
 }) => {
   const [selectedIssueId, setSelectedIssueId] = useState<number | undefined>(initialIssueId);
@@ -50,6 +54,16 @@ export const LogWorkModal: React.FC<LogWorkModalProps> = ({
   const numericHours = parseFloat(String(hours)) || 0;
   const numericMinutes = parseFloat(String(minutes)) || 0;
   const totalCalculatedHours = Number((numericHours + numericMinutes / 60).toFixed(2));
+
+  const selectedIssue = issuesList.find((i) => i.id === selectedIssueId);
+  const activeEstimatedHours = selectedIssue?.estimatedHours ?? (selectedIssueId === initialIssueId ? (initialEstimatedHours ?? 0) : 0);
+  const activeLoggedHours = selectedIssue?.loggedHours ?? (selectedIssueId === initialIssueId ? (initialLoggedHours ?? 0) : 0);
+  const remainingBefore = Math.max(0, Number((activeEstimatedHours - activeLoggedHours).toFixed(2)));
+  const projectedLogged = Number((activeLoggedHours + totalCalculatedHours).toFixed(2));
+  const projectedRemaining = Math.max(0, Number((activeEstimatedHours - projectedLogged).toFixed(2)));
+  const projectedOverage = projectedLogged > activeEstimatedHours && activeEstimatedHours > 0
+    ? Number((projectedLogged - activeEstimatedHours).toFixed(2))
+    : 0;
 
   // Quick preset chips handler
   const setQuickTime = (h: number, m: number) => {
@@ -212,6 +226,55 @@ export const LogWorkModal: React.FC<LogWorkModalProps> = ({
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Jira Time Tracking Estimate Impact Preview */}
+        <div className="p-3 rounded-xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/60 text-xs space-y-2">
+          <div className="flex items-center justify-between text-[11px] font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
+            <span>Time Tracking Impact</span>
+            <span className="normal-case font-medium text-[var(--md-sys-color-outline)]">Jira standard</span>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 py-0.5 text-center">
+            <div className="p-1.5 rounded-lg bg-[var(--md-sys-color-surface-container-high)]">
+              <div className="text-[10px] text-[var(--md-sys-color-on-surface-variant)]">Original</div>
+              <div className="font-bold text-[var(--md-sys-color-on-surface)]">
+                {activeEstimatedHours > 0 ? `${activeEstimatedHours}h` : 'None'}
+              </div>
+            </div>
+            <div className="p-1.5 rounded-lg bg-[var(--md-sys-color-surface-container-high)]">
+              <div className="text-[10px] text-[var(--md-sys-color-on-surface-variant)]">Logged</div>
+              <div className="font-bold text-[var(--md-sys-color-primary)]">
+                {activeLoggedHours}h
+              </div>
+            </div>
+            <div className="p-1.5 rounded-lg bg-[var(--md-sys-color-surface-container-high)]">
+              <div className="text-[10px] text-[var(--md-sys-color-on-surface-variant)]">Remaining</div>
+              <div className="font-bold text-[var(--md-sys-color-on-surface)]">
+                {remainingBefore > 0 ? `${remainingBefore}h` : '0h'}
+              </div>
+            </div>
+          </div>
+
+          {totalCalculatedHours > 0 && (
+            <div className="pt-1.5 border-t border-[var(--md-sys-color-outline-variant)]/40 flex items-center justify-between text-[11px]">
+              <span className="text-[var(--md-sys-color-on-surface-variant)]">After logging this work:</span>
+              <span className="font-semibold text-[var(--md-sys-color-on-surface)]">
+                {projectedLogged}h logged
+                {activeEstimatedHours > 0 && (
+                  projectedOverage > 0 ? (
+                    <span className="ml-1 text-[var(--md-sys-color-error)] font-bold">
+                      (+{projectedOverage}h over)
+                    </span>
+                  ) : (
+                    <span className="ml-1 text-[var(--md-sys-color-tertiary)] font-bold">
+                      ({projectedRemaining}h remaining)
+                    </span>
+                  )
+                )}
+              </span>
+            </div>
+          )}
         </div>
 
         <div>

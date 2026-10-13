@@ -15,7 +15,6 @@ import {
 import {
   FileSpreadsheet,
   Calendar,
-  TrendingUp,
   Clock,
   ChevronLeft,
   ChevronRight,
@@ -72,7 +71,7 @@ export const TimeTrackingToolbar: React.FC<TimeTrackingToolbarProps> = ({
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-extrabold text-[var(--md-sys-color-on-surface)] leading-tight">
-              Time Tracking
+              Team Timesheets
             </h1>
             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[var(--md-sys-color-primary-container)]/50 text-[var(--md-sys-color-primary)]">
               {periodTotalHours.toFixed(1)}h logged

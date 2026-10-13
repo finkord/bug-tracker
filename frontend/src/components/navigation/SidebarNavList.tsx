@@ -1,5 +1,4 @@
 import React from 'react';
-import { useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Kanban,
@@ -10,7 +9,6 @@ import {
   LogIn,
   UserPlus,
   KeyRound,
-  UserCheck,
   Compass,
 } from 'lucide-react';
 import { SidebarNavItem, type NavItemConfig } from './SidebarNavItem';
@@ -41,8 +39,6 @@ export const SidebarNavList: React.FC<SidebarNavListProps> = ({
   showCollapsedLabels = false,
   onNavigate,
 }) => {
-  const location = useLocation();
-
   if (!user) {
     const guestItems: NavItemConfig[] = [
       {
@@ -154,11 +150,11 @@ export const SidebarNavList: React.FC<SidebarNavListProps> = ({
     },
   ];
 
-  // ─── 3. Utilities Navigation Items ─────────────────────────────────────────
-  const utilityNavItems: NavItemConfig[] = [
+  // ─── 3. Team Timesheets Navigation Items ─────────────────────────────────
+  const timesheetNavItems: NavItemConfig[] = [
     {
-      label: 'Time Tracking',
-      shortLabel: 'Time',
+      label: 'Team Timesheets',
+      shortLabel: 'Timesheets',
       path: '/time-tracking',
       icon: Clock,
       activeMatch: (p) => p.startsWith('/time-tracking'),
@@ -212,19 +208,19 @@ export const SidebarNavList: React.FC<SidebarNavListProps> = ({
         ))}
       </div>
 
-      {/* Symmetric divider between Personal and Utilities sections */}
+      {/* Symmetric divider between Personal and Team sections */}
       <div className="py-1 shrink-0" aria-hidden="true">
         <div className="border-t border-[var(--md-sys-color-outline-variant)]/20 mx-1" />
       </div>
 
-      {/* ─── 3. Utilities Section (Bottom of Nav List) ─── */}
+      {/* ─── 3. Team & Time Section (Bottom of Nav List) ─── */}
       <div className="flex flex-col gap-1">
         {!collapsed && (
           <div className="px-2 pt-1.5 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)]/60">
-            Utilities
+            Team & Time
           </div>
         )}
-        {utilityNavItems.map((item) => (
+        {timesheetNavItems.map((item) => (
           <SidebarNavItem
             key={item.label}
             item={item}

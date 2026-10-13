@@ -59,10 +59,10 @@ describe('SidebarNavList Component (Zero-Jump Personal & Workspace Navigation)',
 
     expect(screen.getByRole('navigation', { name: /main navigation/i })).toBeInTheDocument();
     expect(screen.getByText(/^personal$/i)).toBeInTheDocument();
-    expect(screen.getByText(/^utilities$/i)).toBeInTheDocument();
+    expect(screen.getByText(/team & time/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /dashboard/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /^search$/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /time tracking/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /timesheets/i })).toBeInTheDocument();
 
     expect(screen.queryByRole('link', { name: /kanban board/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /backlog/i })).not.toBeInTheDocument();
@@ -115,9 +115,9 @@ describe('SidebarNavList Component (Zero-Jump Personal & Workspace Navigation)',
     expect(screen.getByRole('link', { name: /dashboard/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /^search$/i })).toBeInTheDocument();
 
-    // Utilities section must remain anchored
-    expect(screen.getByText(/^utilities$/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /time tracking/i })).toBeInTheDocument();
+    // Team & Time section must remain anchored
+    expect(screen.getByText(/team & time/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /timesheets/i })).toBeInTheDocument();
   });
 
   it('renders project navigation using numeric ID fallback when only projectId is provided during loading', () => {

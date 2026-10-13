@@ -199,7 +199,7 @@ export const HeaderBreadcrumbs: React.FC = () => {
   let title = 'Dashboard';
   if (path.startsWith('/my-issues')) title = 'My Issues';
   else if (path.startsWith('/search')) title = 'Advanced Search';
-  else if (path.startsWith('/time-tracking')) title = 'Time Tracking';
+  else if (path.startsWith('/time-tracking')) title = 'Team Timesheets';
   else if (path.startsWith('/projects')) title = 'Projects Directory';
   else if (path.startsWith('/users/')) title = 'User Profile';
   else if (path.startsWith('/reset-password')) title = 'Reset Password';

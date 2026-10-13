@@ -441,6 +441,8 @@ export const IssueDetailView: React.FC<IssueDetailViewProps> = ({
           issueId={issue.id}
           issueKey={issue.key}
           issueTitle={issue.title}
+          estimatedHours={issue.estimatedHours}
+          loggedHours={issue.loggedHours}
           onWorkLogged={() => fetchIssue()}
         />
       )}

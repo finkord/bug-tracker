@@ -31,6 +31,7 @@ import {
   Share2,
   Check,
   Radio,
+  Pencil,
 } from 'lucide-react';
 import {
   useAssigneesQuery,
@@ -58,6 +59,7 @@ interface IssueSidebarDetailsProps {
     reporterId: number;
     componentId: number | null;
     fixVersionId: number | null;
+    estimatedHours: number;
   }>) => Promise<void>;
   onOpenLogWorkModal?: () => void;
   onViewWorklogsTab?: () => void;
@@ -77,6 +79,19 @@ export const IssueSidebarDetails: React.FC<IssueSidebarDetailsProps> = ({
 }) => {
   const [updatingField, setUpdatingField] = useState<string | null>(null);
   const [hasCopiedLink, setHasCopiedLink] = useState(false);
+  const [isEditingEstimate, setIsEditingEstimate] = useState(false);
+  const [estimateDraft, setEstimateDraft] = useState(String(issue.estimatedHours || ''));
+
+  const handleSaveEstimate = async () => {
+    setIsEditingEstimate(false);
+    const parsed = Math.max(0, parseFloat(estimateDraft.trim()) || 0);
+    if (parsed === (issue.estimatedHours || 0)) return;
+    if (onUpdateFields) {
+      await handleFieldChange('estimate', () =>
+        onUpdateFields({ estimatedHours: parsed }),
+      );
+    }
+  };
 
   const { data: assigneesData } = useAssigneesQuery({ limit: 100 });
   const { data: sprints = [] } = useProjectSprintsQuery(issue.projectId);
@@ -507,9 +522,45 @@ export const IssueSidebarDetails: React.FC<IssueSidebarDetailsProps> = ({
                 <span className="font-semibold text-[var(--md-sys-color-on-surface)]">
                   {logged}h <span className="font-normal text-[var(--md-sys-color-on-surface-variant)]">logged</span>
                 </span>
-                <span className="text-[11px] font-mono text-[var(--md-sys-color-on-surface-variant)]">
-                  {estimated > 0 ? `${estimated}h estimate` : 'No estimate'}
-                </span>
+
+                {/* Inline Editable Original Estimate (Jira Standard) */}
+                {isEditingEstimate ? (
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      min="0"
+                      max="1000"
+                      step="0.5"
+                      value={estimateDraft}
+                      onChange={(e) => setEstimateDraft(e.target.value)}
+                      onBlur={handleSaveEstimate}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSaveEstimate();
+                        if (e.key === 'Escape') {
+                          setEstimateDraft(String(issue.estimatedHours || ''));
+                          setIsEditingEstimate(false);
+                        }
+                      }}
+                      className="w-16 px-1.5 py-0.5 text-[11px] font-mono font-bold rounded-md bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-surface)] focus:outline-hidden"
+                      autoFocus
+                      placeholder="0"
+                    />
+                    <span className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] font-mono">h</span>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEstimateDraft(String(issue.estimatedHours || ''));
+                      setIsEditingEstimate(true);
+                    }}
+                    className="inline-flex items-center gap-1 text-[11px] font-mono text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] transition-colors cursor-pointer group/est p-0.5 -m-0.5 rounded-md hover:bg-[var(--md-sys-color-surface-container)]"
+                    title="Click to edit original estimate"
+                  >
+                    <span>{estimated > 0 ? `${estimated}h estimate` : 'Set estimate'}</span>
+                    <Pencil className="w-2.5 h-2.5 opacity-0 group-hover/est:opacity-100 transition-opacity text-[var(--md-sys-color-primary)]" />
+                  </button>
+                )}
               </div>
 
               <div className="h-1.5 w-full bg-[var(--md-sys-color-surface-container-highest)] rounded-full overflow-hidden">
@@ -523,18 +574,22 @@ export const IssueSidebarDetails: React.FC<IssueSidebarDetailsProps> = ({
                 />
               </div>
 
-              {estimated > 0 && (
-                <div className="flex items-center justify-between text-[10px] text-[var(--md-sys-color-on-surface-variant)]">
-                  <span>{progressPercent}% spent</span>
-                  {isOverEstimated ? (
-                    <span className="text-[var(--md-sys-color-error)] font-medium">
-                      +{logged - estimated}h over
-                    </span>
-                  ) : (
-                    <span>{Math.max(0, estimated - logged)}h remaining</span>
-                  )}
-                </div>
-              )}
+              <div className="flex items-center justify-between text-[10px] text-[var(--md-sys-color-on-surface-variant)]">
+                {estimated > 0 ? (
+                  <>
+                    <span>{progressPercent}% spent</span>
+                    {isOverEstimated ? (
+                      <span className="text-[var(--md-sys-color-error)] font-medium">
+                        +{logged - estimated}h over
+                      </span>
+                    ) : (
+                      <span>{Math.max(0, estimated - logged)}h remaining</span>
+                    )}
+                  </>
+                ) : (
+                  <span className="italic">No estimate configured</span>
+                )}
+              </div>
             </div>
           </div>
 
