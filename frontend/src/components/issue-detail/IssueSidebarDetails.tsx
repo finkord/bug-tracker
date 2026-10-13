@@ -525,15 +525,56 @@ export const IssueSidebarDetails: React.FC<IssueSidebarDetailsProps> = ({
             )}
           </div>
 
-          {/* Issue Type (Distinct Icon) */}
+          {/* Issue Type (Distinct Icon with Interactive Select) */}
           <div className="flex items-center justify-between gap-2 pt-1 border-t border-[var(--md-sys-color-outline-variant)]/30">
             <span className="text-[var(--md-sys-color-on-surface-variant)] flex items-center gap-1.5 font-medium text-[11px]">
               <IssueTypeIcon type={issue.issueType} />
               Issue Type
             </span>
-            <Badge variant="neutral" className="text-[11px] font-mono">
-              {issue.issueType}
-            </Badge>
+            {onUpdateFields && issue.issueType !== 'SUBTASK' ? (
+              <Select
+                value={issue.issueType}
+                onValueChange={(val) =>
+                  handleFieldChange('issueType', () =>
+                    onUpdateFields({ issueType: val as IssueType }),
+                  )
+                }
+              >
+                <SelectTrigger size="sm" aria-label="Change issue type" className="h-7 w-auto min-w-[90px] rounded-lg bg-[var(--md-sys-color-surface-container)] text-xs font-semibold border-[var(--md-sys-color-outline-variant)]/40 px-2 py-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="TASK">
+                    <div className="flex items-center gap-1.5">
+                      <IssueTypeIcon type="TASK" />
+                      <span>Task</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="BUG">
+                    <div className="flex items-center gap-1.5">
+                      <IssueTypeIcon type="BUG" />
+                      <span>Bug</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="STORY">
+                    <div className="flex items-center gap-1.5">
+                      <IssueTypeIcon type="STORY" />
+                      <span>Story</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="EPIC">
+                    <div className="flex items-center gap-1.5">
+                      <IssueTypeIcon type="EPIC" />
+                      <span>Epic</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <Badge variant="neutral" className="text-[11px] font-mono">
+                {issue.issueType}
+              </Badge>
+            )}
           </div>
 
           {/* Labels (Tags Icon - distinct from Issue Type!) */}

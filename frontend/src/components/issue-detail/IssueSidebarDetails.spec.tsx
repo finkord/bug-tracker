@@ -115,4 +115,10 @@ describe('IssueSidebarDetails Component', () => {
     renderComponent({ onDeleteClick: vi.fn() });
     expect(screen.getByLabelText('More issue actions')).toBeInTheDocument();
   });
+
+  it('renders interactive issue type selector when onUpdateFields is provided', () => {
+    renderComponent({ onUpdateFields: vi.fn() });
+    expect(screen.getByText('Issue Type')).toBeInTheDocument();
+    expect(screen.getByLabelText('Change issue type')).toBeInTheDocument();
+  });
 });

@@ -129,7 +129,7 @@ export const HeaderBreadcrumbs: React.FC = () => {
 
         <ChevronRight className="w-3.5 h-3.5 opacity-40 shrink-0" />
 
-        <span className="font-mono font-bold text-[var(--md-sys-color-primary)] truncate">
+        <span className="font-semibold tracking-tight text-[var(--md-sys-color-primary)] truncate">
           {issueKey}
         </span>
       </nav>

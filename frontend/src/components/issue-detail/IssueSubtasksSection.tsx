@@ -57,7 +57,7 @@ export const IssueSubtasksSection: React.FC<IssueSubtasksSectionProps> = ({
           <span className="font-medium">Subtask of:</span>
           <Link
             to={`/issues/${issue.parent.key}`}
-            className="font-mono font-bold text-[var(--md-sys-color-primary)] hover:underline"
+            className="font-semibold tracking-tight text-[var(--md-sys-color-primary)] hover:underline"
           >
             {issue.parent.key}
           </Link>
