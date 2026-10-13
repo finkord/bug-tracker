@@ -33,44 +33,50 @@ export const SprintVelocityChart: React.FC<SprintVelocityChartProps> = ({
       </div>
 
       <div className="p-5 rounded-3xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)] space-y-4">
-        <div className="space-y-3">
-          {velocityData.map((v) => {
-            const maxBarVal = Math.max(...velocityData.map((x) => Math.max(x.planned, x.delivered)), 10);
-            const plannedWidth = Math.round((v.planned / maxBarVal) * 100);
-            const deliveredWidth = Math.round((v.delivered / maxBarVal) * 100);
+        {velocityData.length === 0 ? (
+          <div className="py-12 text-center text-xs text-[var(--md-sys-color-on-surface-variant)]">
+            No completed or active sprints found for historical velocity tracking.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {velocityData.map((v) => {
+              const maxBarVal = Math.max(...velocityData.map((x) => Math.max(x.planned, x.delivered)), 10);
+              const plannedWidth = Math.round((v.planned / maxBarVal) * 100);
+              const deliveredWidth = Math.round((v.delivered / maxBarVal) * 100);
 
-            return (
-              <div key={v.name} className="space-y-1.5 p-3 rounded-2xl bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-[var(--md-sys-color-on-surface)]">{v.name}</span>
-                  <span className="text-[10px] uppercase font-bold text-[var(--md-sys-color-on-surface-variant)]">
-                    {v.status}
-                  </span>
-                </div>
+              return (
+                <div key={v.name} className="space-y-1.5 p-3 rounded-2xl bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-[var(--md-sys-color-on-surface)]">{v.name}</span>
+                    <span className="text-[10px] uppercase font-bold text-[var(--md-sys-color-on-surface-variant)]">
+                      {v.status}
+                    </span>
+                  </div>
 
-                <div className="space-y-0.5">
-                  <div className="flex justify-between text-[10px] text-[var(--md-sys-color-on-surface-variant)]">
-                    <span>Committed Scope:</span>
-                    <span className="font-semibold">{v.planned} hrs</span>
+                  <div className="space-y-0.5">
+                    <div className="flex justify-between text-[10px] text-[var(--md-sys-color-on-surface-variant)]">
+                      <span>Committed Scope:</span>
+                      <span className="font-semibold">{v.planned} hrs</span>
+                    </div>
+                    <div className="w-full h-2 rounded-full bg-[var(--md-sys-color-secondary-container)] overflow-hidden">
+                      <div className="h-full bg-[var(--md-sys-color-secondary)] rounded-full" style={{ width: `${plannedWidth}%` }} />
+                    </div>
                   </div>
-                  <div className="w-full h-2 rounded-full bg-[var(--md-sys-color-secondary-container)] overflow-hidden">
-                    <div className="h-full bg-[var(--md-sys-color-secondary)] rounded-full" style={{ width: `${plannedWidth}%` }} />
-                  </div>
-                </div>
 
-                <div className="space-y-0.5">
-                  <div className="flex justify-between text-[10px] text-[var(--md-sys-color-success)] font-bold">
-                    <span>Delivered Effort:</span>
-                    <span className="font-bold">{v.delivered} hrs</span>
-                  </div>
-                  <div className="w-full h-2 rounded-full bg-[var(--md-sys-color-success-container)] overflow-hidden">
-                    <div className="h-full bg-[var(--md-sys-color-success)] rounded-full" style={{ width: `${deliveredWidth}%` }} />
+                  <div className="space-y-0.5">
+                    <div className="flex justify-between text-[10px] text-[var(--md-sys-color-success)] font-bold">
+                      <span>Delivered Effort:</span>
+                      <span className="font-bold">{v.delivered} hrs</span>
+                    </div>
+                    <div className="w-full h-2 rounded-full bg-[var(--md-sys-color-success-container)] overflow-hidden">
+                      <div className="h-full bg-[var(--md-sys-color-success)] rounded-full" style={{ width: `${deliveredWidth}%` }} />
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

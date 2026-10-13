@@ -160,7 +160,12 @@ export class SprintsService {
     if (!sprint.startDate) {
       sprint.startDate = new Date().toISOString().split('T')[0];
     }
-    return this.sprintRepository.save(sprint);
+    const saved = await this.sprintRepository.save(sprint);
+
+    // Record initial baseline snapshot at sprint start for velocity and burndown
+    await this.recordSnapshot(saved, sprint.startDate);
+
+    return saved;
   }
 
   /**
@@ -168,7 +173,15 @@ export class SprintsService {
    */
   async completeSprint(id: number, dto: CompleteSprintDto): Promise<Sprint> {
     const sprint = await this.getSprintById(id);
+
+    // 1. Record final completion snapshot BEFORE moving unresolved issues away
+    const today = new Date().toISOString().split('T')[0];
+    await this.recordSnapshot(sprint, today);
+
     sprint.status = SprintStatus.COMPLETED;
+    if (!sprint.endDate) {
+      sprint.endDate = today;
+    }
     const savedSprint = await this.sprintRepository.save(sprint);
     const targetSprintId: number | null = dto.transferSprintId || null;
 
@@ -251,8 +264,8 @@ export class SprintsService {
   /**
    * Records or updates a daily sprint snapshot.
    */
-  async recordSnapshot(sprintId: number, dateStr?: string): Promise<SprintSnapshot> {
-    const sprint = await this.getSprintById(sprintId);
+  async recordSnapshot(sprintOrId: number | Sprint, dateStr?: string): Promise<SprintSnapshot> {
+    const sprint = typeof sprintOrId === 'number' ? await this.getSprintById(sprintOrId) : sprintOrId;
     const today = dateStr || new Date().toISOString().split('T')[0];
 
     const issues = await this.issueRepository.find({
@@ -297,8 +310,10 @@ export class SprintsService {
   async getBurndown(sprintId: number): Promise<SprintBurndownResponseDto> {
     const sprint = await this.getSprintById(sprintId);
 
-    // Record today's live snapshot
-    await this.recordSnapshot(sprintId);
+    // Record today's live snapshot if active
+    if (sprint.status === SprintStatus.ACTIVE) {
+      await this.recordSnapshot(sprint);
+    }
 
     const snapshots = await this.snapshotRepository.find({
       where: { sprintId },
@@ -313,6 +328,23 @@ export class SprintsService {
     const issues = await this.issueRepository.find({
       where: { sprintId: sprint.id },
     });
+
+    const issueIds = issues.map((i) => i.id);
+    let histories: IssueHistory[] = [];
+    if (this.issueHistoryRepository && issueIds.length > 0) {
+      histories = await this.issueHistoryRepository.find({
+        where: { issueId: In(issueIds), field: 'status' },
+        order: { createdAt: 'ASC' },
+      });
+    }
+
+    const historyByIssue = new Map<number, IssueHistory[]>();
+    for (const h of histories) {
+      const list = historyByIssue.get(h.issueId) ?? [];
+      list.push(h);
+      historyByIssue.set(h.issueId, list);
+    }
+
     const currentScope = issues.reduce((sum, i) => sum + (Number(i.estimatedHours) || 0), 0);
     const currentCompleted = issues
       .filter((i) => i.status === IssueStatus.RESOLVED || i.status === IssueStatus.CLOSED)
@@ -337,27 +369,54 @@ export class SprintsService {
 
     for (let d = 0; d <= diffDays; d++) {
       const currentDayDate = new Date(startDate.getTime() + d * 86400000);
+      const dayEnd = new Date(currentDayDate);
+      dayEnd.setHours(23, 59, 59, 999);
       const dateKey = currentDayDate.toISOString().split('T')[0];
       const idealHours = Number((Math.max(0, initialScope * (1 - d / diffDays))).toFixed(1));
 
       const existingSnap = snapshotMap.get(dateKey);
       const isPastOrToday = dateKey <= todayStr;
 
+      let remainingHours: number | null = null;
+      let completedHours: number | null = null;
+
+      if (existingSnap) {
+        remainingHours = existingSnap.remainingHours;
+        completedHours = existingSnap.completedHours;
+      } else if (isPastOrToday) {
+        // Reconstruct from issue history on that day
+        let dayCompleted = 0;
+        let dayScope = 0;
+        for (const issue of issues) {
+          const est = Number(issue.estimatedHours) || 0;
+          const issueCreated = issue.createdAt ? new Date(issue.createdAt) : startDate;
+          if (issueCreated > dayEnd) {
+            continue;
+          }
+          dayScope += est;
+          const issueHist = historyByIssue.get(issue.id) ?? [];
+          const pastTransitions = issueHist.filter((h) => new Date(h.createdAt) <= dayEnd);
+          let statusOnDay: string = IssueStatus.OPEN;
+          if (pastTransitions.length > 0) {
+            statusOnDay = pastTransitions[pastTransitions.length - 1].newValue || IssueStatus.OPEN;
+          } else {
+            statusOnDay = issueHist.length > 0 && issueHist[0].oldValue ? issueHist[0].oldValue : issue.status;
+          }
+          if (statusOnDay === IssueStatus.RESOLVED || statusOnDay === IssueStatus.CLOSED) {
+            dayCompleted += est;
+          }
+        }
+        completedHours = dayCompleted;
+        remainingHours = Math.max(0, (dayScope || initialScope) - dayCompleted);
+      }
+
       points.push({
         date: dateKey,
         dayLabel: `Day ${d + 1}`,
         idealHours,
-        remainingHours: existingSnap
-          ? existingSnap.remainingHours
-          : isPastOrToday
-            ? currentRemaining
-            : null,
-        completedHours: existingSnap
-          ? existingSnap.completedHours
-          : isPastOrToday
-            ? currentCompleted
-            : null,
-        totalScopeHours: existingSnap ? existingSnap.totalScopeHours : currentScope,
+        remainingHours,
+        completedHours,
+        totalScopeHours: existingSnap ? existingSnap.totalScopeHours : initialScope,
         isRecordedSnapshot: Boolean(existingSnap),
       });
     }
@@ -542,26 +601,46 @@ export class SprintsService {
       p95CycleTimeDays = sortedCycleTimes[Math.min(count - 1, Math.floor(count * 0.95))];
     }
 
-    // 3. Historical Sprint Velocity
-    const allProjectSprints = await this.sprintRepository.find({
-      where: { projectId: sprint.projectId },
+    // 3. Historical Sprint Velocity (Completed & Active sprints, chronologically)
+    const projectSprints = await this.sprintRepository.find({
+      where: {
+        projectId: sprint.projectId,
+        status: In([SprintStatus.COMPLETED, SprintStatus.ACTIVE]),
+      },
       order: { createdAt: 'ASC' },
       take: 15,
     });
 
     const velocity: SprintVelocityItemDto[] = [];
-    for (const s of allProjectSprints) {
+    for (const s of projectSprints) {
+      const sSnapshots = await this.snapshotRepository.find({
+        where: { sprintId: s.id },
+        order: { snapshotDate: 'ASC' },
+      });
+
       const sIssues = await this.issueRepository.find({
         where: { sprintId: s.id },
       });
-      const committedHours = sIssues.reduce((acc, i) => acc + (Number(i.estimatedHours) || 0), 0);
-      const completedList = sIssues.filter(
+
+      let committedHours = sIssues.reduce((acc, i) => acc + (Number(i.estimatedHours) || 0), 0);
+      let completedHours = sIssues
+        .filter((i) => i.status === IssueStatus.RESOLVED || i.status === IssueStatus.CLOSED)
+        .reduce((acc, i) => acc + (Number(i.estimatedHours) || 0), 0);
+      let totalIssues = sIssues.length;
+      let completedIssues = sIssues.filter(
         (i) => i.status === IssueStatus.RESOLVED || i.status === IssueStatus.CLOSED,
-      );
-      const completedHours = completedList.reduce(
-        (acc, i) => acc + (Number(i.estimatedHours) || 0),
-        0,
-      );
+      ).length;
+
+      if (sSnapshots.length > 0) {
+        const firstSnap = sSnapshots[0];
+        const lastSnap = sSnapshots[sSnapshots.length - 1];
+        committedHours = Math.max(firstSnap.totalScopeHours, committedHours);
+        if (s.status === SprintStatus.COMPLETED) {
+          completedHours = lastSnap.completedHours;
+          completedIssues = lastSnap.completedIssues;
+          totalIssues = Math.max(firstSnap.totalIssues, totalIssues);
+        }
+      }
 
       velocity.push({
         sprintId: s.id,
@@ -569,10 +648,24 @@ export class SprintsService {
         status: s.status,
         committedHours,
         completedHours,
-        completedIssues: completedList.length,
-        totalIssues: sIssues.length,
+        completedIssues,
+        totalIssues,
       });
     }
+
+    // Average Velocity: strictly across COMPLETED sprints
+    const completedSprints = velocity.filter((v) => v.status === SprintStatus.COMPLETED);
+    const averageVelocity =
+      completedSprints.length > 0
+        ? Number(
+            (
+              completedSprints.reduce((acc, v) => acc + v.completedHours, 0) /
+              completedSprints.length
+            ).toFixed(1),
+          )
+        : velocity.length > 0 && velocity[0].completedHours > 0
+          ? velocity[0].completedHours
+          : 0;
 
     return {
       sprintId: sprint.id,
@@ -587,6 +680,7 @@ export class SprintsService {
         items: cycleTimeItems,
       },
       velocity,
+      averageVelocity,
     };
   }
 }

@@ -11,6 +11,7 @@ describe('SprintsService', () => {
   let mockSprintRepository: Partial<Repository<Sprint>>;
   let mockProjectRepository: Partial<Repository<Project>>;
   let mockIssueRepository: Partial<Repository<Issue>>;
+  let mockSnapshotRepository: any;
   let mockQueryBuilder: any;
   const mockProject: Project = {
     id: 1,
@@ -61,7 +62,7 @@ describe('SprintsService', () => {
       andWhere: vi.fn().mockReturnThis(),
       execute: vi.fn().mockResolvedValue({ affected: 2 }),
     };
-    const mockSnapshotRepository = {
+    mockSnapshotRepository = {
       find: vi.fn().mockResolvedValue([]),
       findOne: vi.fn().mockResolvedValue(null),
       create: vi.fn((data) => ({ id: 1, ...data })),
@@ -210,6 +211,30 @@ describe('SprintsService', () => {
       expect(metrics.cycleTime.items).toHaveLength(1);
       expect(metrics.cycleTime.items[0].key).toBe('BT-1');
       expect(metrics.velocity).toHaveLength(1);
+      expect(metrics.averageVelocity).toBeDefined();
+    });
+  });
+
+  describe('getBurndown', () => {
+    it('should compute burndown points and dynamically reconstruct missing snapshots from history', async () => {
+      vi.mocked(mockSprintRepository.findOne!).mockResolvedValueOnce(mockSprint);
+      vi.mocked(mockSnapshotRepository.find!).mockResolvedValueOnce([]);
+      const mockIssues = [
+        {
+          id: 101,
+          status: 'RESOLVED',
+          estimatedHours: 8,
+          createdAt: new Date('2026-09-01T10:00:00Z'),
+        },
+      ];
+      vi.mocked(mockIssueRepository.find!).mockResolvedValue(mockIssues as any);
+
+      const burndown = await service.getBurndown(10);
+      expect(burndown.sprintId).toBe(10);
+      expect(burndown.points.length).toBeGreaterThan(0);
+      expect(burndown.totalScopeHours).toBe(8);
+      expect(burndown.completedHours).toBe(8);
+      expect(burndown.remainingHours).toBe(0);
     });
   });
 });

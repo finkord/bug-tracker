@@ -110,4 +110,7 @@ export class SprintFlowMetricsResponseDto {
 
   @ApiProperty({ type: () => [SprintVelocityItemDto] })
   velocity: SprintVelocityItemDto[];
+
+  @ApiProperty({ example: 45.5, description: 'Average completed hours per sprint across completed sprints' })
+  averageVelocity: number;
 }

@@ -48,36 +48,16 @@ export const SprintAnalyticsModal: React.FC<SprintAnalyticsModalProps> = ({
     isOpen && sprint.id ? sprint.id : undefined,
   );
 
-  // Velocity data calculation
+  // Backend-calculated velocity data and average velocity
   const velocityData =
-    flowMetrics?.velocity && flowMetrics.velocity.length > 0
-      ? flowMetrics.velocity.map((v) => ({
-          name: v.sprintName,
-          status: v.status,
-          planned: v.committedHours,
-          delivered: v.completedHours,
-        }))
-      : Object.keys(allSprints).map((sprintKey) => {
-          const sprintDef = allSprints[sprintKey];
-          const sIssues = allIssues.filter(
-            (i) => (sprintDef?.id && i.sprintId === sprintDef.id) || i.sprint?.name === sprintKey,
-          );
-          const planned = sIssues.reduce((acc, i) => acc + (i.estimatedHours || 0), 0);
-          const delivered = sIssues
-            .filter((i) => i.status === 'RESOLVED' || i.status === 'CLOSED')
-            .reduce((acc, i) => acc + (i.estimatedHours || 0), 0);
-          return {
-            name: sprintKey,
-            status: sprintDef?.status || 'PLANNED',
-            planned,
-            delivered,
-          };
-        });
+    flowMetrics?.velocity?.map((v) => ({
+      name: v.sprintName,
+      status: v.status,
+      planned: v.committedHours,
+      delivered: v.completedHours,
+    })) ?? [];
 
-  const avgVelocity =
-    velocityData.length > 0
-      ? Math.round(velocityData.reduce((acc, v) => acc + v.delivered, 0) / velocityData.length)
-      : 0;
+  const avgVelocity = flowMetrics?.averageVelocity ?? 0;
 
   if (!isOpen) return null;
 

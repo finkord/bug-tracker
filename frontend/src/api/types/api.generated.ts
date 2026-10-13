@@ -3266,6 +3266,11 @@ export interface components {
             cfd: components["schemas"]["CfdDataPointDto"][];
             cycleTime: components["schemas"]["CycleTimeSummaryDto"];
             velocity: components["schemas"]["SprintVelocityItemDto"][];
+            /**
+             * @description Average completed hours per sprint across completed sprints
+             * @example 45.5
+             */
+            averageVelocity: number;
         };
         CreateTeamDto: {
             /**

@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import type { IssueItem } from '../../../api/client';
-import { Button, StatusBadge, PriorityBadge } from '../../ui';
+import { Button, StatusBadge, PriorityBadge, DataTable } from '../../ui';
+import type { ColumnDef } from '@tanstack/react-table';
 import { Download, Printer } from 'lucide-react';
 
 interface SprintSummaryReportProps {
@@ -33,6 +34,67 @@ export const SprintSummaryReport: React.FC<SprintSummaryReportProps> = ({
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  const columns = useMemo<ColumnDef<IssueItem>[]>(
+    () => [
+      {
+        accessorKey: 'key',
+        header: 'Key',
+        cell: ({ row }) => (
+          <span className="font-mono font-bold text-[var(--md-sys-color-primary)]">
+            {row.original.key}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'title',
+        header: 'Title',
+        cell: ({ row }) => (
+          <span className="font-semibold text-[var(--md-sys-color-on-surface)] truncate block max-w-[280px]">
+            {row.original.title}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'status',
+        header: 'Status',
+        cell: ({ row }) => <StatusBadge status={row.original.status} size="xs" />,
+      },
+      {
+        accessorKey: 'priority',
+        header: 'Priority',
+        cell: ({ row }) => <PriorityBadge priority={row.original.priority} size="xs" />,
+      },
+      {
+        id: 'assignee',
+        header: 'Assignee',
+        cell: ({ row }) => (
+          <span className="text-[var(--md-sys-color-on-surface-variant)]">
+            {row.original.assignee?.fullName || 'Unassigned'}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'estimatedHours',
+        header: 'Est.',
+        cell: ({ row }) => (
+          <span className="font-mono font-semibold text-[var(--md-sys-color-on-surface)]">
+            {row.original.estimatedHours || 0}h
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'loggedHours',
+        header: 'Logged',
+        cell: ({ row }) => (
+          <span className="font-mono font-semibold text-[var(--md-sys-color-success)]">
+            {row.original.loggedHours || 0}h
+          </span>
+        ),
+      },
+    ],
+    [],
+  );
 
   return (
     <div className="space-y-6">
@@ -68,44 +130,12 @@ export const SprintSummaryReport: React.FC<SprintSummaryReportProps> = ({
       </div>
 
       <div className="rounded-2xl border border-[var(--md-sys-color-outline-variant)] overflow-hidden bg-[var(--md-sys-color-surface)]">
-        <table className="w-full text-left text-xs border-collapse">
-          <thead>
-            <tr className="border-b border-[var(--md-sys-color-outline-variant)] bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface-variant)] font-semibold">
-              <th className="p-3">Key</th>
-              <th className="p-3">Title</th>
-              <th className="p-3">Status</th>
-              <th className="p-3">Priority</th>
-              <th className="p-3">Assignee</th>
-              <th className="p-3 text-right">Est.</th>
-              <th className="p-3 text-right">Logged</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[var(--md-sys-color-outline-variant)]">
-            {sprintIssues.map((issue) => (
-              <tr key={issue.id} className="hover:bg-[var(--md-sys-color-surface-container-high)] transition-colors">
-                <td className="p-3 font-mono font-bold text-[var(--md-sys-color-primary)]">{issue.key}</td>
-                <td className="p-3 font-semibold text-[var(--md-sys-color-on-surface)] truncate max-w-[240px]">
-                  {issue.title}
-                </td>
-                <td className="p-3">
-                  <StatusBadge status={issue.status} size="xs" />
-                </td>
-                <td className="p-3">
-                  <PriorityBadge priority={issue.priority} size="xs" />
-                </td>
-                <td className="p-3 text-[var(--md-sys-color-on-surface-variant)]">
-                  {issue.assignee?.fullName || 'Unassigned'}
-                </td>
-                <td className="p-3 text-right font-mono font-semibold text-[var(--md-sys-color-on-surface)]">
-                  {issue.estimatedHours || 0}h
-                </td>
-                <td className="p-3 text-right font-mono font-semibold text-[var(--md-sys-color-success)]">
-                  {issue.loggedHours || 0}h
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <DataTable
+          columns={columns}
+          data={sprintIssues}
+          emptyTitle="No issues in sprint"
+          emptyDescription="Add issues to this sprint to populate the summary report."
+        />
       </div>
     </div>
   );

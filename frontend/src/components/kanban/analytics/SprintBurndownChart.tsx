@@ -26,38 +26,25 @@ export const SprintBurndownChart: React.FC<SprintBurndownChartProps> = ({
   const hasLiveSnapshots = Boolean(burndownData?.points && burndownData.points.length > 0);
 
   const burndownPoints = useMemo(() => {
-    if (hasLiveSnapshots && burndownData?.points) {
-      return burndownData.points.map((p, idx) => {
-        let dayLabel = p.dayLabel || `Day ${idx + 1}`;
-        try {
-          const d = new Date(p.date);
-          if (!isNaN(d.getTime())) {
-            dayLabel = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-          }
-        } catch {}
-        return {
-          day: dayLabel,
-          idealHours: p.idealHours ?? p.idealRemainingHours ?? 0,
-          actualHours: p.remainingHours ?? p.actualRemainingHours ?? null,
-        };
-      });
+    if (!burndownData?.points || burndownData.points.length === 0) {
+      return [];
     }
 
-    const sprintDays = 10;
-    return Array.from({ length: sprintDays + 1 }, (_, index) => {
-      const dayRatio = index / sprintDays;
-      const idealHours = Number((totalScopeHours * (1 - dayRatio)).toFixed(1));
-
-      let actualHours: number | null = null;
-      if (index === 0) {
-        actualHours = totalScopeHours;
-      } else if (index <= Math.min(6, sprintDays)) {
-        const burnProgress = (index / 6) * (completedHours / Math.max(1, totalScopeHours));
-        actualHours = Number((totalScopeHours - totalScopeHours * burnProgress).toFixed(1));
-      }
-      return { day: `Day ${index + 1}`, idealHours, actualHours };
+    return burndownData.points.map((p, idx) => {
+      let dayLabel = p.dayLabel || `Day ${idx + 1}`;
+      try {
+        const d = new Date(p.date);
+        if (!isNaN(d.getTime())) {
+          dayLabel = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        }
+      } catch {}
+      return {
+        day: dayLabel,
+        idealHours: p.idealHours ?? p.idealRemainingHours ?? 0,
+        actualHours: p.remainingHours ?? p.actualRemainingHours ?? null,
+      };
     });
-  }, [hasLiveSnapshots, burndownData, totalScopeHours, completedHours]);
+  }, [burndownData]);
 
   const numPoints = Math.max(burndownPoints.length, 2);
   const maxH = Math.max(
@@ -161,80 +148,86 @@ export const SprintBurndownChart: React.FC<SprintBurndownChartProps> = ({
           </div>
         </div>
 
-        <div className="w-full overflow-x-auto">
-          <svg viewBox="0 0 600 240" className="w-full h-56 select-none font-mono text-[10px]">
-            {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
-              const y = 30 + ratio * 180;
-              const val = Math.round(maxH * (1 - ratio));
-              return (
-                <g key={ratio}>
-                  <line
-                    x1="40"
-                    y1={y}
-                    x2="560"
-                    y2={y}
-                    stroke="currentColor"
-                    className="text-[var(--md-sys-color-outline-variant)] opacity-40"
-                    strokeDasharray="2 2"
-                  />
-                  <text x="32" y={y + 3} textAnchor="end" fill="currentColor" className="text-[var(--md-sys-color-on-surface-variant)] text-[9px]">
-                    {val}h
-                  </text>
-                </g>
-              );
-            })}
+        {burndownPoints.length === 0 ? (
+          <div className="py-16 text-center text-xs text-[var(--md-sys-color-on-surface-variant)]">
+            No sprint burndown trajectory available yet. Add estimated issues to the sprint to begin tracking.
+          </div>
+        ) : (
+          <div className="w-full overflow-x-auto">
+            <svg viewBox="0 0 600 240" className="w-full h-56 select-none font-mono text-[10px]">
+              {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
+                const y = 30 + ratio * 180;
+                const val = Math.round(maxH * (1 - ratio));
+                return (
+                  <g key={ratio}>
+                    <line
+                      x1="40"
+                      y1={y}
+                      x2="560"
+                      y2={y}
+                      stroke="currentColor"
+                      className="text-[var(--md-sys-color-outline-variant)] opacity-40"
+                      strokeDasharray="2 2"
+                    />
+                    <text x="32" y={y + 3} textAnchor="end" fill="currentColor" className="text-[var(--md-sys-color-on-surface-variant)] text-[9px]">
+                      {val}h
+                    </text>
+                  </g>
+                );
+              })}
 
-            {burndownPoints.map((p, idx) => {
-              const x = toX(idx);
-              return (
-                <g key={p.day}>
-                  <line
-                    x1={x}
-                    y1="30"
-                    x2={x}
-                    y2="210"
-                    stroke="currentColor"
-                    className="text-[var(--md-sys-color-outline-variant)] opacity-20"
-                  />
-                  <text x={x} y={226} textAnchor="middle" fill="currentColor" className="text-[var(--md-sys-color-on-surface-variant)] text-[9px]">
-                    {p.day}
-                  </text>
-                </g>
-              );
-            })}
+              {burndownPoints.map((p, idx) => {
+                const x = toX(idx);
+                return (
+                  <g key={p.day}>
+                    <line
+                      x1={x}
+                      y1="30"
+                      x2={x}
+                      y2="210"
+                      stroke="currentColor"
+                      className="text-[var(--md-sys-color-outline-variant)] opacity-20"
+                    />
+                    <text x={x} y={226} textAnchor="middle" fill="currentColor" className="text-[var(--md-sys-color-on-surface-variant)] text-[9px]">
+                      {p.day}
+                    </text>
+                  </g>
+                );
+              })}
 
-            <path
-              d={idealPath}
-              fill="none"
-              stroke="#94a3b8"
-              strokeWidth="2"
-              strokeDasharray="6 4"
-            />
+              <path
+                d={idealPath}
+                fill="none"
+                stroke="#94a3b8"
+                strokeWidth="2"
+                strokeDasharray="6 4"
+              />
 
-            <path
-              d={actualPath}
-              fill="none"
-              stroke="#10b981"
-              strokeWidth="3"
-              strokeLinecap="round"
-            />
+              <path
+                d={actualPath}
+                fill="none"
+                stroke="#10b981"
+                strokeWidth="3"
+                strokeLinecap="round"
+              />
 
-            {actualActivePoints.map((p) => (
-              <circle
-                key={p.day}
-                cx={toX(p.originalIdx)}
-                cy={toY(p.actualHours!)}
-                r="4.5"
-                fill="#10b981"
-                stroke="#ffffff"
-                strokeWidth="1.5"
-                className="hover:scale-125 transition-transform cursor-pointer"
-              >
-                <title>{`${p.day}: ${p.actualHours}h remaining (Ideal: ${p.idealHours}h)`}</title>
-              </circle>
-            ))}
-          </svg>
-        </div>
+              {actualActivePoints.map((p) => (
+                <circle
+                  key={p.day}
+                  cx={toX(p.originalIdx)}
+                  cy={toY(p.actualHours!)}
+                  r="4.5"
+                  fill="#10b981"
+                  stroke="#ffffff"
+                  strokeWidth="1.5"
+                  className="hover:scale-125 transition-transform cursor-pointer"
+                >
+                  <title>{`${p.day}: ${p.actualHours}h remaining (Ideal: ${p.idealHours}h)`}</title>
+                </circle>
+              ))}
+            </svg>
+          </div>
+        )}
       </div>
     </div>
   );
