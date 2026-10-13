@@ -83,13 +83,15 @@ export const ProjectGeneralTab: React.FC<ProjectGeneralTabProps> = ({
     setSuccess(null);
 
     try {
-      let finalAvatarUrl: string | null = null;
-      if (avatarValue?.mode === 'preset') {
-        finalAvatarUrl = avatarValue.presetUrl || null;
-      } else if (avatarValue?.mode === 'upload') {
-        finalAvatarUrl = avatarValue.file ? null : (avatarValue.previewUrl || null);
-      } else if (avatarValue?.mode === 'default') {
-        finalAvatarUrl = null;
+      let finalAvatarUrl: string | null | undefined = undefined;
+      if (avatarValue !== null) {
+        if (avatarValue.mode === 'preset') {
+          finalAvatarUrl = avatarValue.presetUrl || null;
+        } else if (avatarValue.mode === 'upload') {
+          finalAvatarUrl = avatarValue.file ? undefined : (avatarValue.previewUrl || null);
+        } else if (avatarValue.mode === 'default') {
+          finalAvatarUrl = null;
+        }
       }
 
       await updateMutation.mutateAsync({

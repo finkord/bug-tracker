@@ -378,6 +378,26 @@ export class RbacService {
     return saved;
   }
 
+  async assignSecuritySchemeToProject(
+    projectId: number,
+    schemeId: number | null,
+  ): Promise<Project> {
+    const project = await this.projectRepository.findOne({ where: { id: projectId } });
+    if (!project) throw new NotFoundException('Project not found');
+
+    if (schemeId !== null && schemeId !== undefined) {
+      const scheme = await this.securitySchemeRepository.findOne({ where: { id: schemeId } });
+      if (!scheme) throw new NotFoundException('Issue security scheme not found');
+      project.securitySchemeId = scheme.id;
+    } else {
+      project.securitySchemeId = null;
+    }
+
+    const saved = await this.projectRepository.save(project);
+    await this.permissionEvaluator?.invalidatePermissions(projectId);
+    return saved;
+  }
+
   // ================= ISSUE SECURITY SCHEMES =================
   async getSecuritySchemes(): Promise<IssueSecurityScheme[]> {
     return this.securitySchemeRepository.find({

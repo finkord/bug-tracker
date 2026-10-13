@@ -49,7 +49,8 @@ export const ProjectSettingsPage: React.FC = () => {
       ? queryTab
       : 'general';
 
-  const { data: projects = [] } = useProjectsQuery();
+  const isKey = !rawIdentifier || Number.isNaN(parseInt(rawIdentifier, 10));
+  const { data: projects = [], isLoading: projectsLoading } = useProjectsQuery();
 
   const projectId = useMemo(() => {
     if (!rawIdentifier) return 0;
@@ -65,7 +66,7 @@ export const ProjectSettingsPage: React.FC = () => {
   const { data: usersData, isLoading: usersLoading } = useUsersQuery({ page: 1, limit: 100 });
   const allUsers = usersData?.items || [];
 
-  const { data: teams = [] } = useTeamsQuery(projectId);
+  const { data: teams = [] } = useTeamsQuery(projectId > 0 ? projectId : undefined);
   const { data: components = [] } = useProjectComponentsQuery(projectId);
   const { data: versions = [] } = useProjectVersionsQuery(projectId);
 
@@ -74,7 +75,7 @@ export const ProjectSettingsPage: React.FC = () => {
     navigate(`/projects/${projectKeyOrId}/settings/${tab}`);
   };
 
-  if (projectLoading || usersLoading) {
+  if ((isKey && projectsLoading) || projectLoading || usersLoading) {
     return (
       <div className="w-full px-4 sm:px-6 lg:px-8 py-16 text-center text-xs text-[var(--md-sys-color-on-surface-variant)] animate-pulse">
         Loading project configuration...

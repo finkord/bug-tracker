@@ -328,3 +328,14 @@ export function useAssignPermissionSchemeToProjectMutation() {
     },
   });
 }
+
+export function useAssignSecuritySchemeToProjectMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ projectId, schemeId }: { projectId: number; schemeId: number | null }) =>
+      api.assignSecuritySchemeToProject(projectId, schemeId),
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: projectKeys.detail(vars.projectId) });
+    },
+  });
+}

@@ -165,4 +165,10 @@ export const rbacApi = {
       method: 'PUT',
       body: JSON.stringify({ schemeId }),
     }),
+
+  assignSecuritySchemeToProject: (projectId: number, schemeId: number | null) =>
+    request<ProjectItem>(`/projects/${projectId}/rbac/security-scheme`, {
+      method: 'PUT',
+      body: JSON.stringify({ schemeId }),
+    }),
 };

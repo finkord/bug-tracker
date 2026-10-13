@@ -12,6 +12,7 @@ import { ProjectPermission } from '../entities/permission-grant.entity.js';
 import { PermissionEvaluatorService } from '../services/permission-evaluator.service.js';
 import { Issue } from '../../issues/entities/issue.entity.js';
 import { Project } from '../../projects/entities/project.entity.js';
+import { Team } from '../../teams/entities/team.entity.js';
 
 @Injectable()
 export class ProjectPermissionGuard implements CanActivate {
@@ -42,9 +43,14 @@ export class ProjectPermissionGuard implements CanActivate {
     let projectId: number | undefined = undefined;
     let issueId: number | undefined = undefined;
 
-    // 1. Explicit body projectId (e.g. POST /issues)
+    // 1. Explicit body or query projectId (e.g. POST /issues, POST /teams, GET /teams?projectId=1)
     if (request.body?.projectId) {
       projectId = Number(request.body.projectId);
+    } else if (request.query?.projectId) {
+      const qPid = Number(request.query.projectId);
+      if (!Number.isNaN(qPid)) {
+        projectId = qPid;
+      }
     }
 
     // 2. Explicit route params
@@ -128,6 +134,16 @@ export class ProjectPermissionGuard implements CanActivate {
             }
             issueId = issue.id;
             projectId = issue.projectId;
+          }
+        }
+      } else if (url.includes('/teams/')) {
+        if (/^\d+$/.test(rawId)) {
+          const team = await this.dataSource.getRepository(Team).findOne({
+            where: { id: Number(rawId) },
+            select: { id: true, projectId: true },
+          });
+          if (team) {
+            projectId = team.projectId;
           }
         }
       }

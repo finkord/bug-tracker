@@ -317,4 +317,15 @@ export class RbacController {
   ) {
     return this.rbacService.assignPermissionSchemeToProject(projectId, dto.schemeId);
   }
+
+  @Put('projects/:id/rbac/security-scheme')
+  @UseGuards(ProjectPermissionGuard)
+  @RequireProjectPermission(ProjectPermission.ADMINISTER_PROJECTS)
+  @ApiOperation({ summary: 'Assign issue security scheme to project' })
+  async assignSecuritySchemeToProject(
+    @Param('id', ParseIntPipe) projectId: number,
+    @Body() dto: { schemeId: number | null },
+  ) {
+    return this.rbacService.assignSecuritySchemeToProject(projectId, dto.schemeId);
+  }
 }

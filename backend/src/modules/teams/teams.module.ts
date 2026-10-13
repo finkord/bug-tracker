@@ -7,11 +7,13 @@ import { User } from '../users/entities/user.entity.js';
 import { TeamsService } from './teams.service.js';
 import { TeamsController } from './teams.controller.js';
 import { StorageModule } from '../storage/storage.module.js';
+import { RbacModule } from '../rbac/rbac.module.js';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Team, TeamMember, Project, User]),
     StorageModule,
+    RbacModule,
   ],
   controllers: [TeamsController],
   providers: [TeamsService],

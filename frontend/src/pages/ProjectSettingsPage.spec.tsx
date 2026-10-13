@@ -84,6 +84,10 @@ vi.mock('../api/queries', () => ({
     data: [{ id: 1, name: 'Default Scheme', isDefault: true }],
     isLoading: false,
   }),
+  useSecuritySchemesQuery: () => ({
+    data: [{ id: 1, name: 'Standard Security' }],
+    isLoading: false,
+  }),
   useMyProjectPermissionsQuery: () => ({
     data: { BROWSE_PROJECTS: true, ADMINISTER_PROJECTS: true },
     isLoading: false,
@@ -108,6 +112,7 @@ vi.mock('../api/queries', () => ({
   useAddActorToProjectRoleMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useRemoveActorFromProjectRoleMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useAssignPermissionSchemeToProjectMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useAssignSecuritySchemeToProjectMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useProjectWebhooksQuery: () => ({
     data: [
       {
@@ -179,8 +184,9 @@ describe('ProjectSettingsPage', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole('heading', { name: /People, Roles & Permission Scheme/i })).toBeInTheDocument();
-    expect(screen.getByText(/Active Permission Scheme/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /People, Roles & Security Policies/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Active Permission Scheme/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Issue Security Scheme/i })).toBeInTheDocument();
     expect(screen.getByText('Administrators')).toBeInTheDocument();
   });
 

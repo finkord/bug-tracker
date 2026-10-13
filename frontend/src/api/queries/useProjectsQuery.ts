@@ -26,37 +26,37 @@ export const projectQueries = {
     queryOptions({
       queryKey: [...projectQueries.details(), id] as const,
       queryFn: () => api.getProject(id),
-      enabled: typeof id === 'number' && !isNaN(id),
+      enabled: typeof id === 'number' && !isNaN(id) && id > 0,
     }),
   people: (id: number) =>
     queryOptions({
       queryKey: [...projectQueries.detail(id).queryKey, 'people'] as const,
       queryFn: () => api.getProjectPeople(id),
-      enabled: typeof id === 'number' && !isNaN(id),
+      enabled: typeof id === 'number' && !isNaN(id) && id > 0,
     }),
   permissions: (id: number) =>
     queryOptions({
       queryKey: [...projectQueries.detail(id).queryKey, 'permissions'] as const,
       queryFn: () => api.getMyProjectPermissions(id),
-      enabled: typeof id === 'number' && !isNaN(id),
+      enabled: typeof id === 'number' && !isNaN(id) && id > 0,
     }),
   quickFilters: (id: number) =>
     queryOptions({
       queryKey: [...projectQueries.detail(id).queryKey, 'quick-filters'] as const,
       queryFn: () => api.getQuickFilters(id),
-      enabled: typeof id === 'number' && !isNaN(id),
+      enabled: typeof id === 'number' && !isNaN(id) && id > 0,
     }),
   components: (id: number) =>
     queryOptions({
       queryKey: [...projectQueries.detail(id).queryKey, 'components'] as const,
       queryFn: () => api.getProjectComponents(id),
-      enabled: typeof id === 'number' && !isNaN(id),
+      enabled: typeof id === 'number' && !isNaN(id) && id > 0,
     }),
   versions: (id: number) =>
     queryOptions({
       queryKey: [...projectQueries.detail(id).queryKey, 'versions'] as const,
       queryFn: () => api.getVersions(id),
-      enabled: typeof id === 'number' && !isNaN(id),
+      enabled: typeof id === 'number' && !isNaN(id) && id > 0,
     }),
   summary: (idOrKey: string | number) =>
     queryOptions({

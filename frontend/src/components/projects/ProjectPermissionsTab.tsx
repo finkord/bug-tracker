@@ -4,9 +4,11 @@ import {
   useProjectPeopleQuery,
   useGroupsQuery,
   usePermissionSchemesQuery,
+  useSecuritySchemesQuery,
   useAddActorToProjectRoleMutation,
   useRemoveActorFromProjectRoleMutation,
   useAssignPermissionSchemeToProjectMutation,
+  useAssignSecuritySchemeToProjectMutation,
 } from '../../api/queries';
 import {
   Card,
@@ -46,10 +48,12 @@ export const ProjectPermissionsTab: React.FC<ProjectPermissionsTabProps> = ({
   const { data: people = [], isLoading: peopleLoading } = useProjectPeopleQuery(projectId);
   const { data: allGroups = [] } = useGroupsQuery();
   const { data: permissionSchemes = [] } = usePermissionSchemesQuery();
+  const { data: securitySchemes = [] } = useSecuritySchemesQuery();
 
   const addActorMutation = useAddActorToProjectRoleMutation();
   const removeActorMutation = useRemoveActorFromProjectRoleMutation();
   const assignSchemeMutation = useAssignPermissionSchemeToProjectMutation();
+  const assignSecuritySchemeMutation = useAssignSecuritySchemeToProjectMutation();
 
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -127,15 +131,26 @@ export const ProjectPermissionsTab: React.FC<ProjectPermissionsTabProps> = ({
     }
   };
 
+  const handleSecuritySchemeChange = async (val: string) => {
+    try {
+      const schemeId = val === 'none' ? null : Number(val);
+      await assignSecuritySchemeMutation.mutateAsync({ projectId, schemeId });
+      setSuccessMsg('Project issue security scheme updated.');
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to update issue security scheme');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="pb-4 border-b border-[var(--md-sys-color-outline-variant)]/40">
         <h2 className="text-base font-black text-[var(--md-sys-color-on-surface)]">
-          People, Roles & Permission Scheme
+          People, Roles & Security Policies
         </h2>
         <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-0.5">
-          Map engineers and directory groups to project roles (Administrators, Developers, Viewers) and select authorization policies.
+          Map engineers and directory groups to project roles and manage active permission & issue security schemes.
         </p>
       </div>
 
@@ -172,45 +187,89 @@ export const ProjectPermissionsTab: React.FC<ProjectPermissionsTabProps> = ({
         </div>
       )}
 
-      {/* Permission Scheme Selector Banner */}
-      <Card
-        variant="outlined"
-        padding="md"
-        rounded="2xl"
-        className="bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] flex items-center justify-center shrink-0">
-            <FileCheck2 className="w-5 h-5" />
+      {/* Security & Permission Schemes Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Permission Scheme Selector Banner */}
+        <Card
+          variant="outlined"
+          padding="md"
+          rounded="2xl"
+          className="bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/40 flex flex-col justify-between gap-4"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] flex items-center justify-center shrink-0">
+              <FileCheck2 className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">
+                Active Permission Scheme
+              </h3>
+              <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
+                Enforces authorization rules (Browse Project, Create Issue, Edit, Transition) across project roles.
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">
-              Active Permission Scheme
-            </h3>
-            <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
-              Enforces authorization rules (Browse Project, Create Issue, Edit, Transition) across project roles.
-            </p>
-          </div>
-        </div>
 
-        <div className="w-full sm:w-72 shrink-0">
-          <Select
-            value={project.permissionSchemeId ? String(project.permissionSchemeId) : ''}
-            onValueChange={(val) => val && handleSchemeChange(Number(val))}
-          >
-            <SelectTrigger className="h-9 text-xs rounded-xl bg-[var(--md-sys-color-surface)]">
-              <SelectValue placeholder="Select permission scheme..." />
-            </SelectTrigger>
-            <SelectContent>
-              {permissionSchemes.map((scheme) => (
-                <SelectItem key={scheme.id} value={String(scheme.id)}>
-                  {scheme.name} {scheme.isDefault ? '(Default)' : ''}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </Card>
+          <div className="w-full">
+            <Select
+              value={project.permissionSchemeId ? String(project.permissionSchemeId) : ''}
+              onValueChange={(val) => val && handleSchemeChange(Number(val))}
+            >
+              <SelectTrigger className="h-9 text-xs rounded-xl bg-[var(--md-sys-color-surface)]">
+                <SelectValue placeholder="Select permission scheme..." />
+              </SelectTrigger>
+              <SelectContent>
+                {permissionSchemes.map((scheme) => (
+                  <SelectItem key={scheme.id} value={String(scheme.id)}>
+                    {scheme.name} {scheme.isDefault ? '(Default)' : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </Card>
+
+        {/* Issue Security Scheme Selector Banner */}
+        <Card
+          variant="outlined"
+          padding="md"
+          rounded="2xl"
+          className="bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/40 flex flex-col justify-between gap-4"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[var(--md-sys-color-tertiary-container,var(--md-sys-color-primary-container))] text-[var(--md-sys-color-on-tertiary-container,var(--md-sys-color-on-primary-container))] flex items-center justify-center shrink-0">
+              <Shield className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">
+                Issue Security Scheme
+              </h3>
+              <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
+                Restricts visibility of sensitive issues to specific security clearance levels and roles.
+              </p>
+            </div>
+          </div>
+
+          <div className="w-full">
+            <Select
+              value={project.securitySchemeId ? String(project.securitySchemeId) : 'none'}
+              onValueChange={(val) => val && handleSecuritySchemeChange(val)}
+            >
+              <SelectTrigger className="h-9 text-xs rounded-xl bg-[var(--md-sys-color-surface)]">
+                <SelectValue placeholder="Select issue security scheme..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None (Standard Visibility)</SelectItem>
+                {securitySchemes.map((scheme) => (
+                  <SelectItem key={scheme.id} value={String(scheme.id)}>
+                    {scheme.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </Card>
+      </div>
 
       {/* Project Roles & Members Cards */}
       <div className="space-y-4">

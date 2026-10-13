@@ -22,6 +22,9 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse, ApiConsumes } from '
 import { TeamsService } from './teams.service.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { Public } from '../../common/decorators/public.decorator.js';
+import { ProjectPermissionGuard } from '../rbac/guards/project-permission.guard.js';
+import { RequireProjectPermission } from '../rbac/decorators/require-permission.decorator.js';
+import { ProjectPermission } from '../rbac/entities/permission-grant.entity.js';
 import { type UploadedFileInput } from '../storage/services/seaweedfs.service.js';
 import {
   CreateTeamDto,
@@ -32,7 +35,7 @@ import {
 
 @ApiTags('Scrum Teams & Capacity')
 @ApiBearerAuth('JWT-auth')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, ProjectPermissionGuard)
 @Controller('teams')
 export class TeamsController {
   constructor(private readonly teamsService: TeamsService) {}
@@ -48,6 +51,7 @@ export class TeamsController {
   }
 
   @Get(':id')
+  @RequireProjectPermission(ProjectPermission.BROWSE_PROJECTS)
   @ApiOperation({
     summary: 'Get Scrum Team details by ID',
     description: 'Returns team details, project binding, member capacities, and sprint history.',
@@ -58,6 +62,7 @@ export class TeamsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @RequireProjectPermission(ProjectPermission.ADMINISTER_PROJECTS)
   @ApiOperation({
     summary: 'Create a new Scrum Team',
     description: 'Registers a new Scrum Team bound to a project with default sprint capacity.',
@@ -68,6 +73,7 @@ export class TeamsController {
 
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
+  @RequireProjectPermission(ProjectPermission.ADMINISTER_PROJECTS)
   @ApiOperation({
     summary: 'Update Scrum Team details',
     description: 'Updates team name, description, project binding, team lead, or sprint capacity.',
@@ -81,6 +87,7 @@ export class TeamsController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
+  @RequireProjectPermission(ProjectPermission.ADMINISTER_PROJECTS)
   @ApiOperation({
     summary: 'Delete Scrum Team',
   })
@@ -90,6 +97,7 @@ export class TeamsController {
 
   @Post(':id/members')
   @HttpCode(HttpStatus.CREATED)
+  @RequireProjectPermission(ProjectPermission.ADMINISTER_PROJECTS)
   @ApiOperation({
     summary: 'Add a member to Scrum Team',
     description: 'Assigns a user to the Scrum Team with a specific role and weekly capacity hours.',
@@ -103,6 +111,7 @@ export class TeamsController {
 
   @Patch(':id/members/:memberId')
   @HttpCode(HttpStatus.OK)
+  @RequireProjectPermission(ProjectPermission.ADMINISTER_PROJECTS)
   @ApiOperation({
     summary: 'Update Scrum Team member role or capacity',
   })
@@ -116,6 +125,7 @@ export class TeamsController {
 
   @Delete(':id/members/:memberId')
   @HttpCode(HttpStatus.OK)
+  @RequireProjectPermission(ProjectPermission.ADMINISTER_PROJECTS)
   @ApiOperation({
     summary: 'Remove a member from Scrum Team',
   })
@@ -127,6 +137,7 @@ export class TeamsController {
   }
 
   @Get(':id/capacity')
+  @RequireProjectPermission(ProjectPermission.BROWSE_PROJECTS)
   @ApiOperation({
     summary: 'Calculate aggregated sprint capacity for Scrum Team',
     description: 'Computes total engineering hours available for a given sprint duration in weeks.',
@@ -141,6 +152,7 @@ export class TeamsController {
 
   @Post(':id/avatar/upload')
   @HttpCode(HttpStatus.OK)
+  @RequireProjectPermission(ProjectPermission.ADMINISTER_PROJECTS)
   @UseInterceptors(FileInterceptor('avatar', { limits: { fileSize: 5 * 1024 * 1024 } }))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({
@@ -162,6 +174,7 @@ export class TeamsController {
 
   @Patch(':id/avatar')
   @HttpCode(HttpStatus.OK)
+  @RequireProjectPermission(ProjectPermission.ADMINISTER_PROJECTS)
   @ApiOperation({
     summary: 'Update team avatar URL or preset',
   })

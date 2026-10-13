@@ -332,5 +332,18 @@ describe('RbacService Enterprise CRUD & Safeguards', () => {
       await service.deleteSecurityGrant(50);
       expect(mockSecurityGrantRepo.delete).toHaveBeenCalledWith(50);
     });
+
+    it('assigns and unassigns security scheme on a project', async () => {
+      mockProjectRepo.findOne.mockResolvedValue({ id: 1, name: 'Project 1', securitySchemeId: null });
+      mockSecuritySchemeRepo.findOne.mockResolvedValue({ id: 5, name: 'Confidential Scheme' });
+      mockProjectRepo.save.mockImplementation((p: any) => Promise.resolve(p));
+
+      const assigned = await service.assignSecuritySchemeToProject(1, 5);
+      expect(assigned.securitySchemeId).toBe(5);
+      expect(mockPermissionEvaluator.invalidatePermissions).toHaveBeenCalledWith(1);
+
+      const unassigned = await service.assignSecuritySchemeToProject(1, null);
+      expect(unassigned.securitySchemeId).toBeNull();
+    });
   });
 });
