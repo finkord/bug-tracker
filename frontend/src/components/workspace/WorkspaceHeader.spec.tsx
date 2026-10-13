@@ -18,10 +18,6 @@ vi.mock('./HeaderBreadcrumbs', () => ({
   HeaderBreadcrumbs: () => <div data-testid="mock-breadcrumbs">Breadcrumbs</div>,
 }));
 
-vi.mock('./WorkspaceGlobalSearch', () => ({
-  WorkspaceGlobalSearch: () => <div data-testid="mock-search">Search</div>,
-}));
-
 vi.mock('./WorkspaceBroadcastBanner', () => ({
   WorkspaceBroadcastBanner: () => null,
 }));

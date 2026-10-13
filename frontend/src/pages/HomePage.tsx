@@ -8,10 +8,9 @@ import {
   useProjectSprintsQuery,
   useMyWorklogsQuery,
 } from '../api/queries';
-import type { IssueItem, IssuePriority, IssueStatus, SprintItem } from '../api/client';
+import type { IssueItem, IssuePriority, IssueStatus, IssueType, SprintItem } from '../api/client';
 import { Avatar } from '../components/common/Avatar';
 import { IssueDetailsModal } from '../components/kanban/IssueDetailsModal';
-import { IssueContextMenu } from '../components/common/IssueContextMenu';
 import {
   Card,
   Button,
@@ -22,23 +21,29 @@ import {
   SelectValue,
   SelectContent,
   SelectItem,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  SearchInput,
 } from '../components/ui';
 import {
   Plus,
   Clock,
   CheckCircle2,
-  ListTodo,
   Calendar,
   ArrowRight,
   Activity,
-  Flame,
-  Kanban,
   History,
   FolderGit2,
   Sparkles,
-  Cloud,
   ExternalLink,
   ChevronRight,
+  Search,
+  Bug,
+  CheckSquare,
+  Zap,
+  UserCheck,
+  FileCheck2,
 } from 'lucide-react';
 import { GuestHeroSection } from '../components/home/GuestHeroSection';
 
@@ -59,6 +64,19 @@ const mapPriorityVariant = (
   }
 };
 
+const renderTypeIcon = (type?: IssueType) => {
+  switch (type) {
+    case 'BUG':
+      return <Bug className="w-3.5 h-3.5 text-[var(--md-sys-color-error)] shrink-0" />;
+    case 'FEATURE':
+      return <Sparkles className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)] shrink-0" />;
+    case 'EPIC':
+      return <Zap className="w-3.5 h-3.5 text-[var(--md-sys-color-tertiary)] shrink-0" />;
+    default:
+      return <CheckSquare className="w-3.5 h-3.5 text-[var(--md-sys-color-secondary)] shrink-0" />;
+  }
+};
+
 const getGreeting = () => {
   const hour = new Date().getHours();
   if (hour < 12) return 'Good morning';
@@ -66,22 +84,30 @@ const getGreeting = () => {
   return 'Good evening';
 };
 
+type WorkspaceTab = 'assigned' | 'reported' | 'done';
+
 export const HomePage: React.FC = () => {
   const { user } = useAuth();
   const { openCreateIssue } = useModalStore();
 
   const [selectedIssueId, setSelectedIssueId] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<'in-progress' | 'todo' | 'done'>('in-progress');
-  const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
-  const [contextMenuIssue, setContextMenuIssue] = useState<IssueItem | null>(null);
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>('assigned');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedPriority, setSelectedPriority] = useState<string>('ALL');
+  const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
 
-  // Queries
+  // Queries: Assigned issues & Reported issues
   const { data: assignedIssuesData, isLoading: issuesLoading } = useIssuesQuery(
-    user ? { assigneeId: user.id } : undefined,
+    user ? { assigneeId: user.id, limit: 100 } : undefined,
   );
   const assignedIssues = assignedIssuesData?.items ?? [];
 
-  const { data: projects = [], isLoading: projectsLoading } = useProjectsQuery();
+  const { data: reportedIssuesData, isLoading: reportedLoading } = useIssuesQuery(
+    user ? { jql: `reporter = "${user.email}"`, limit: 100 } : undefined,
+  );
+  const reportedIssues = reportedIssuesData?.items ?? [];
+
+  const { data: projects = [] } = useProjectsQuery();
   const { data: myWorklogs } = useMyWorklogsQuery(1, 50);
 
   // Active project ID resolution to fetch current sprint context
@@ -104,35 +130,24 @@ export const HomePage: React.FC = () => {
     }
   };
 
-  const handleContextMenu = (e: React.MouseEvent, issue: IssueItem) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setContextMenuIssue(issue);
-    setContextMenuPos({ x: e.clientX, y: e.clientY });
-  };
-
-  // Categorize assigned issues into workflow queues
-  const inProgressIssues = useMemo(
-    () =>
-      assignedIssues.filter(
-        (i) => i.status === 'IN_PROGRESS' || i.status === 'REVIEW',
-      ),
-    [assignedIssues],
-  );
-
-  const todoIssues = useMemo(
-    () =>
-      assignedIssues.filter(
-        (i) => i.status === 'OPEN',
-      ),
+  // Categorize assigned issues into active vs completed
+  const activeAssignedIssues = useMemo(
+    () => assignedIssues.filter((i) => i.status !== 'RESOLVED' && i.status !== 'CLOSED'),
     [assignedIssues],
   );
 
   const doneIssues = useMemo(
-    () =>
-      assignedIssues.filter(
-        (i) => i.status === 'RESOLVED' || i.status === 'CLOSED',
-      ),
+    () => assignedIssues.filter((i) => i.status === 'RESOLVED' || i.status === 'CLOSED'),
+    [assignedIssues],
+  );
+
+  const inProgressIssuesCount = useMemo(
+    () => assignedIssues.filter((i) => i.status === 'IN_PROGRESS' || i.status === 'REVIEW').length,
+    [assignedIssues],
+  );
+
+  const todoIssuesCount = useMemo(
+    () => assignedIssues.filter((i) => i.status === 'OPEN').length,
     [assignedIssues],
   );
 
@@ -141,7 +156,7 @@ export const HomePage: React.FC = () => {
     [assignedIssues],
   );
 
-  // Calculate today's and this week's logged hours
+  // Calculate today's logged hours
   const todayStr = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
   const todayLoggedHours = useMemo(() => {
@@ -151,7 +166,7 @@ export const HomePage: React.FC = () => {
       .reduce((acc, w) => acc + (Number(w.timeSpentHours) || 0), 0);
   }, [myWorklogs, todayStr]);
 
-  // Cloud-synced worked on issues (derived from real PostgreSQL worklogs & assigned issues)
+  // Derived list of recently worked on issues
   const workedOnIssues = useMemo(() => {
     const list: {
       id: number;
@@ -164,7 +179,6 @@ export const HomePage: React.FC = () => {
     }[] = [];
     const seen = new Set<number>();
 
-    // 1. Genuine backend worklogs
     for (const log of myWorklogs?.items || []) {
       if (log.issue && !seen.has(log.issue.id)) {
         seen.add(log.issue.id);
@@ -180,9 +194,8 @@ export const HomePage: React.FC = () => {
       }
     }
 
-    // 2. Active tasks in progress if no worklogs recorded yet
     if (list.length === 0) {
-      for (const issue of inProgressIssues) {
+      for (const issue of activeAssignedIssues) {
         if (!seen.has(issue.id)) {
           seen.add(issue.id);
           list.push({
@@ -200,33 +213,53 @@ export const HomePage: React.FC = () => {
     }
 
     return list.slice(0, 5);
-  }, [myWorklogs, inProgressIssues]);
+  }, [myWorklogs, activeAssignedIssues]);
 
   // Active sprint resolution
   const activeSprint = useMemo<SprintItem | undefined>(() => {
-    // 1. Check if user has an assigned issue in an active sprint and resolve full sprint metadata
     const issueWithActiveSprint = assignedIssues.find((i) => i.sprint?.status === 'ACTIVE');
     if (issueWithActiveSprint?.sprint) {
       const matched = sprints.find((s) => s.id === issueWithActiveSprint.sprint!.id);
       if (matched) return matched;
     }
-    // 2. Fallback to active sprint of primary project
     return sprints.find((s) => s.status === 'ACTIVE');
   }, [assignedIssues, sprints]);
 
-  // Current tab issues list
-  const currentTabIssues = useMemo(() => {
+  // Target collection based on active tab
+  const baseTabIssues = useMemo(() => {
     switch (activeTab) {
-      case 'in-progress':
-        return inProgressIssues;
-      case 'todo':
-        return todoIssues;
+      case 'assigned':
+        return activeAssignedIssues;
+      case 'reported':
+        return reportedIssues;
       case 'done':
         return doneIssues;
       default:
-        return inProgressIssues;
+        return activeAssignedIssues;
     }
-  }, [activeTab, inProgressIssues, todoIssues, doneIssues]);
+  }, [activeTab, activeAssignedIssues, reportedIssues, doneIssues]);
+
+  // Filtered issues based on search query, priority, and status
+  const filteredIssues = useMemo(() => {
+    return baseTabIssues.filter((issue) => {
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase().trim();
+        const matchTitle = issue.title.toLowerCase().includes(query);
+        const matchKey = issue.key.toLowerCase().includes(query);
+        if (!matchTitle && !matchKey) return false;
+      }
+
+      if (selectedPriority !== 'ALL' && issue.priority !== selectedPriority) {
+        return false;
+      }
+
+      if (selectedStatus !== 'ALL' && issue.status !== selectedStatus) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [baseTabIssues, searchQuery, selectedPriority, selectedStatus]);
 
   // 1. Guest landing page view
   if (!user) {
@@ -260,7 +293,7 @@ export const HomePage: React.FC = () => {
                 </Badge>
               </div>
               <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] leading-relaxed">
-                Personal Engineering Workspace • {inProgressIssues.length} tasks in progress • {todayLoggedHours}h logged today
+                Personal Engineering Workspace • {activeAssignedIssues.length} active tasks • {todayLoggedHours}h logged today
               </p>
             </div>
           </div>
@@ -286,16 +319,6 @@ export const HomePage: React.FC = () => {
                 Time Logs
               </Button>
             </Link>
-            <Link to="/my-issues">
-              <Button
-                type="button"
-                variant="outlined"
-                size="sm"
-                leftIcon={<ListTodo className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />}
-              >
-                My Issues
-              </Button>
-            </Link>
             <Link to="/projects">
               <Button
                 type="button"
@@ -318,7 +341,7 @@ export const HomePage: React.FC = () => {
             </span>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="font-mono text-base font-black text-[var(--md-sys-color-primary)]">
-                {inProgressIssues.length}
+                {inProgressIssuesCount}
               </span>
               <span className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">active tasks</span>
             </div>
@@ -330,7 +353,7 @@ export const HomePage: React.FC = () => {
             </span>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="font-mono text-base font-black text-[var(--md-sys-color-on-surface)]">
-                {todoIssues.length}
+                {todoIssuesCount}
               </span>
               <span className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">ready to pick</span>
             </div>
@@ -364,7 +387,7 @@ export const HomePage: React.FC = () => {
 
       {/* ── Main Workspace Grid (2/3 Left Queue, 1/3 Right Activity & Context) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column (2 Cols): Your Work Tabbed Queue */}
+        {/* Left Column (2 Cols): Unified Work Queue */}
         <div className="lg:col-span-2 space-y-4">
           <Card
             variant="outlined"
@@ -373,86 +396,159 @@ export const HomePage: React.FC = () => {
             className="bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/30 space-y-4 shadow-2xs"
           >
             {/* Queue Header & Tabs */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[var(--md-sys-color-outline-variant)]/20">
-              <div>
-                <h2 className="text-base font-black text-[var(--md-sys-color-on-surface)] flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
+            <div className="flex flex-wrap items-start sm:items-center justify-between gap-3.5 pb-3 border-b border-[var(--md-sys-color-outline-variant)]/20">
+              <div className="shrink-0 min-w-0">
+                <h2 className="text-base font-black text-[var(--md-sys-color-on-surface)] flex items-center gap-2 whitespace-nowrap">
+                  <CheckCircle2 className="w-4 h-4 text-[var(--md-sys-color-primary)] shrink-0" />
                   <span>Your Work</span>
                 </h2>
-                <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] mt-0.5">
-                  Tasks and tickets assigned to you across all projects
+                <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] mt-0.5 whitespace-normal xl:whitespace-nowrap">
+                  Tasks, bugs, and assignments across all workspace projects
                 </p>
               </div>
 
               {/* Status Queue Tabs */}
-              <div className="flex items-center gap-1 p-1 rounded-xl bg-[var(--md-sys-color-surface-container-high)]/60 text-xs">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('in-progress')}
-                  className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${activeTab === 'in-progress'
-                      ? 'bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-primary)] shadow-2xs'
-                      : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]'
-                    }`}
-                >
-                  In Progress ({inProgressIssues.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('todo')}
-                  className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${activeTab === 'todo'
-                      ? 'bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-primary)] shadow-2xs'
-                      : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]'
-                    }`}
-                >
-                  To Do ({todoIssues.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('done')}
-                  className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${activeTab === 'done'
-                      ? 'bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-primary)] shadow-2xs'
-                      : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]'
-                    }`}
-                >
-                  Done ({doneIssues.length})
-                </button>
+              <Tabs
+                value={activeTab}
+                onValueChange={(val) => {
+                  setActiveTab(val as WorkspaceTab);
+                  setSelectedStatus('ALL');
+                }}
+                className="shrink-0 max-w-full overflow-x-auto"
+              >
+                <TabsList variant="pills">
+                  <TabsTrigger
+                    value="assigned"
+                    size="sm"
+                    className="flex items-center gap-1.5"
+                    onClick={() => {
+                      setActiveTab('assigned');
+                      setSelectedStatus('ALL');
+                    }}
+                  >
+                    <UserCheck className="w-3.5 h-3.5" />
+                    <span>Assigned to Me</span>
+                    <span className="ml-1 text-[10px] px-1.5 py-0.2 rounded-full bg-[var(--md-sys-color-surface-container-highest)] font-mono">
+                      {activeAssignedIssues.length}
+                    </span>
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="reported"
+                    size="sm"
+                    className="flex items-center gap-1.5"
+                    onClick={() => {
+                      setActiveTab('reported');
+                      setSelectedStatus('ALL');
+                    }}
+                  >
+                    <FileCheck2 className="w-3.5 h-3.5" />
+                    <span>Reported by Me</span>
+                    <span className="ml-1 text-[10px] px-1.5 py-0.2 rounded-full bg-[var(--md-sys-color-surface-container-highest)] font-mono">
+                      {reportedIssues.length}
+                    </span>
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="done"
+                    size="sm"
+                    className="flex items-center gap-1.5"
+                    onClick={() => {
+                      setActiveTab('done');
+                      setSelectedStatus('ALL');
+                    }}
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Done / Closed</span>
+                    <span className="ml-1 text-[10px] px-1.5 py-0.2 rounded-full bg-[var(--md-sys-color-surface-container-highest)] font-mono">
+                      {doneIssues.length}
+                    </span>
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+
+            {/* Filter Bar (Search input + Priority filter + Status filter) */}
+            <div className="flex flex-wrap items-center gap-2 pt-1 pb-1">
+              <div className="flex-1 min-w-[200px]">
+                <SearchInput
+                  placeholder="Filter tickets by title or key..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onClear={() => setSearchQuery('')}
+                  size="sm"
+                />
               </div>
+
+              <div className="w-32">
+                <Select value={selectedPriority} onValueChange={setSelectedPriority}>
+                  <SelectTrigger size="sm" className="h-8 text-xs rounded-xl bg-[var(--md-sys-color-surface-container-high)]/50 border-[var(--md-sys-color-outline-variant)]/30">
+                    <SelectValue placeholder="Priority: All" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">All Priorities</SelectItem>
+                    <SelectItem value="CRITICAL">Critical</SelectItem>
+                    <SelectItem value="HIGH">High</SelectItem>
+                    <SelectItem value="MEDIUM">Medium</SelectItem>
+                    <SelectItem value="LOW">Low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {activeTab !== 'done' && (
+                <div className="w-32">
+                  <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                    <SelectTrigger size="sm" className="h-8 text-xs rounded-xl bg-[var(--md-sys-color-surface-container-high)]/50 border-[var(--md-sys-color-outline-variant)]/30">
+                      <SelectValue placeholder="Status: All" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ALL">All Statuses</SelectItem>
+                      <SelectItem value="OPEN">To Do</SelectItem>
+                      <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                      <SelectItem value="REVIEW">Review</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
 
             {/* Tasks List */}
-            {issuesLoading ? (
+            {issuesLoading || reportedLoading ? (
               <div className="py-12 text-center text-xs text-[var(--md-sys-color-on-surface-variant)] animate-pulse">
-                Loading your assigned workflow tasks...
+                Loading your workflow tasks...
               </div>
-            ) : currentTabIssues.length === 0 ? (
+            ) : filteredIssues.length === 0 ? (
               <div className="py-12 text-center space-y-2.5">
                 <div className="w-10 h-10 rounded-2xl bg-[var(--md-sys-color-primary-container)]/50 text-[var(--md-sys-color-primary)] flex items-center justify-center mx-auto">
                   <Sparkles className="w-5 h-5" />
                 </div>
                 <h3 className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">
-                  {activeTab === 'in-progress'
-                    ? 'No tasks currently in progress'
-                    : activeTab === 'todo'
-                      ? 'Your to-do list is clear'
-                      : 'No recently completed tasks'}
+                  {searchQuery || selectedPriority !== 'ALL' || selectedStatus !== 'ALL'
+                    ? 'No matching tickets found'
+                    : activeTab === 'assigned'
+                      ? 'No active tasks currently assigned'
+                      : activeTab === 'reported'
+                        ? 'No tickets reported by you'
+                        : 'No completed tasks recorded yet'}
                 </h3>
                 <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] max-w-sm mx-auto">
-                  {activeTab === 'in-progress'
-                    ? 'Pick an open item from your sprint backlog or Kanban board to start your day.'
-                    : 'Create a new ticket or pick up work from your project boards.'}
+                  {searchQuery || selectedPriority !== 'ALL' || selectedStatus !== 'ALL'
+                    ? 'Try clearing or relaxing your search query or filter criteria.'
+                    : activeTab === 'assigned'
+                      ? 'Pick an open item from your active sprint backlog or create a new issue to get started.'
+                      : 'File a new issue to track work or review your project boards.'}
                 </p>
               </div>
             ) : (
               <div className="space-y-2">
-                {currentTabIssues.map((issue) => (
+                {filteredIssues.map((issue) => (
                   <div
                     key={issue.id}
-                    onContextMenu={(e) => handleContextMenu(e, issue)}
                     onClick={() => setSelectedIssueId(issue.id)}
                     className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-[var(--md-sys-color-surface-container-high)]/60 hover:bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/20 hover:border-[var(--md-sys-color-outline-variant)]/50 cursor-pointer transition-all duration-150 group shadow-2xs"
                   >
-                    {/* Left: Key, Project, Title */}
+                    {/* Left: Type Icon, Key, Project, Title */}
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <span title={issue.issueType}>{renderTypeIcon(issue.issueType)}</span>
+
                       <a
                         href={`/issues/${issue.key}`}
                         onClick={(e) => {
@@ -604,19 +700,15 @@ export const HomePage: React.FC = () => {
                 <History className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
                 <span>Recently Worked On</span>
               </h2>
-              {/* <span className="text-[10px] font-semibold text-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/50 px-2 py-0.5 rounded-full flex items-center gap-1">
-                <Cloud className="w-3 h-3 text-[var(--md-sys-color-primary)]" />
-                <span>Cloud Synced</span>
-              </span> */}
             </div>
 
             {workedOnIssues.length === 0 ? (
               <div className="p-4 rounded-xl bg-[var(--md-sys-color-surface-container-high)]/40 border border-[var(--md-sys-color-outline-variant)]/20 text-center space-y-1 text-xs">
                 <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
-                  No worklogs or active progress recorded in the cloud yet.
+                  No worklogs or active progress recorded yet.
                 </p>
                 <p className="text-[10px] text-[var(--md-sys-color-on-surface-variant)]/70">
-                  Time logged on any ticket syncs across all your devices.
+                  Time logged on any ticket syncs automatically.
                 </p>
               </div>
             ) : (
@@ -708,20 +800,6 @@ export const HomePage: React.FC = () => {
           isOpen={true}
           issueId={selectedIssueId}
           onClose={() => setSelectedIssueId(null)}
-        />
-      )}
-
-      {/* Right-Click Context Menu */}
-      {contextMenuPos && contextMenuIssue && (
-        <IssueContextMenu
-          issue={contextMenuIssue}
-          position={contextMenuPos}
-          onClose={() => {
-            setContextMenuPos(null);
-            setContextMenuIssue(null);
-          }}
-          onStatusChange={handleStatusChange}
-          currentUserId={user?.id}
         />
       )}
     </div>

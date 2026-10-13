@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import type { IssueItem, UserProfile } from '../../api/types/index.js';
 import { Avatar } from '../common/Avatar.js';
 import { UserProfilePopover } from '../common/UserProfilePopover.js';
@@ -17,7 +17,6 @@ import {
   MessageSquare,
   History,
   Clock,
-  GitBranch,
   Send,
   Paperclip,
   Loader2,
@@ -26,6 +25,8 @@ import {
   Plus,
   Check,
   X,
+  ArrowUpDown,
+  GitBranch,
 } from 'lucide-react';
 import {
   useIssueHistoryQuery,
@@ -35,14 +36,16 @@ import {
 } from '../../api/queries/index.js';
 import { VcsDevelopmentPanel } from '../kanban/VcsDevelopmentPanel.js';
 
+export type ActivityTabType = 'comments' | 'history' | 'worklogs' | 'development';
+
 export interface IssueActivityTabsProps {
   issue: IssueItem;
   currentUser: UserProfile | null;
   onAddComment: (text: string) => Promise<void>;
   onUploadCommentScreenshot: (file: File) => Promise<string>;
   onOpenLogWorkModal: () => void;
-  activeTab?: 'comments' | 'history' | 'worklogs' | 'development';
-  onTabChange?: (tab: 'comments' | 'history' | 'worklogs' | 'development') => void;
+  activeTab?: ActivityTabType;
+  onTabChange?: (tab: ActivityTabType) => void;
 }
 
 export const IssueActivityTabs: React.FC<IssueActivityTabsProps> = ({
@@ -54,10 +57,10 @@ export const IssueActivityTabs: React.FC<IssueActivityTabsProps> = ({
   activeTab: controlledActiveTab,
   onTabChange,
 }) => {
-  const [internalActiveTab, setInternalActiveTab] = useState<'comments' | 'history' | 'worklogs' | 'development'>('comments');
+  const [internalActiveTab, setInternalActiveTab] = useState<ActivityTabType>('comments');
   const activeTab = controlledActiveTab ?? internalActiveTab;
   const handleTabChange = (val: string) => {
-    const tab = val as 'comments' | 'history' | 'worklogs' | 'development';
+    const tab = val as ActivityTabType;
     setInternalActiveTab(tab);
     onTabChange?.(tab);
   };
@@ -69,6 +72,7 @@ export const IssueActivityTabs: React.FC<IssueActivityTabsProps> = ({
   const [commentText, setCommentText] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [commentSortOrder, setCommentSortOrder] = useState<'newest' | 'oldest'>('newest');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Editing comment state
@@ -83,6 +87,14 @@ export const IssueActivityTabs: React.FC<IssueActivityTabsProps> = ({
 
   const comments = issue.comments || [];
   const worklogs = issue.worklogs || [];
+
+  const sortedComments = useMemo(() => {
+    return [...(issue.comments || [])].sort((a, b) => {
+      const timeA = new Date(a.createdAt).getTime();
+      const timeB = new Date(b.createdAt).getTime();
+      return commentSortOrder === 'newest' ? timeB - timeA : timeA - timeB;
+    });
+  }, [issue.comments, commentSortOrder]);
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -167,11 +179,11 @@ export const IssueActivityTabs: React.FC<IssueActivityTabsProps> = ({
     setEditingText('');
   };
 
-  const handleDeleteComment = async (commentId: number) => {
+  const handleDeleteComment = (commentId: number) => {
     setDeleteCommentId(commentId);
   };
 
-  const handleDeleteWorklog = async (worklogId: number) => {
+  const handleDeleteWorklog = (worklogId: number) => {
     setDeleteWorklogId(worklogId);
   };
 
@@ -221,7 +233,94 @@ export const IssueActivityTabs: React.FC<IssueActivityTabsProps> = ({
 
         {/* Tab 1: Comments */}
         <TabsContent value="comments" className="space-y-4 pt-3 focus:outline-none">
-          {comments.length === 0 ? (
+          {/* Top Form: Write a comment */}
+          <Card className="p-4 border-[var(--md-sys-color-outline-variant)]/80 bg-[var(--md-sys-color-surface-container-low)] rounded-2xl shadow-xs">
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div className="flex items-start gap-3">
+                <Avatar
+                  name={currentUser?.fullName || 'User'}
+                  avatarUrl={currentUser?.avatarUrl || undefined}
+                  size="sm"
+                  className="w-8 h-8 text-xs shrink-0 mt-0.5"
+                />
+                <div className="flex-1 space-y-2">
+                  <textarea
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    onPaste={handlePaste}
+                    onKeyDown={(e) => {
+                      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                        e.preventDefault();
+                        handleSubmit();
+                      }
+                    }}
+                    rows={3}
+                    placeholder="Add a comment... (Press Ctrl+Enter to submit, paste images directly)"
+                    className="w-full px-3 py-2 text-sm bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] font-sans resize-y"
+                  />
+
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                    accept="image/*"
+                    className="hidden"
+                  />
+
+                  <div className="flex items-center justify-between">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingImage}
+                      className="text-xs text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]"
+                    >
+                      {uploadingImage ? (
+                        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                      ) : (
+                        <Paperclip className="w-3.5 h-3.5 mr-1.5" />
+                      )}
+                      {uploadingImage ? 'Uploading Image...' : 'Attach Image'}
+                    </Button>
+
+                    <Button type="submit" size="sm" disabled={submitting || !commentText.trim()}>
+                      {submitting ? (
+                        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                      ) : (
+                        <Send className="w-3.5 h-3.5 mr-1.5" />
+                      )}
+                      Comment
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </Card>
+
+          {/* Comments Toolbar: Count and Sort Order */}
+          <div className="flex items-center justify-between px-1">
+            <span className="text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
+              {comments.length} {comments.length === 1 ? 'Comment' : 'Comments'}
+            </span>
+
+            {comments.length > 1 && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setCommentSortOrder((prev) => (prev === 'newest' ? 'oldest' : 'newest'))}
+                className="text-xs gap-1.5 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]"
+                title="Toggle comment order"
+              >
+                <ArrowUpDown className="w-3.5 h-3.5" />
+                <span>{commentSortOrder === 'newest' ? 'Newest first' : 'Oldest first'}</span>
+              </Button>
+            )}
+          </div>
+
+          {/* Comments List */}
+          {sortedComments.length === 0 ? (
             <EmptyState
               icon={<MessageSquare />}
               title="No comments yet"
@@ -230,7 +329,7 @@ export const IssueActivityTabs: React.FC<IssueActivityTabsProps> = ({
             />
           ) : (
             <div className="space-y-3">
-              {comments.map((comment) => {
+              {sortedComments.map((comment) => {
                 const isAuthor = currentUser?.id === comment.author?.id;
                 const canModify = isAuthor || currentUser?.systemRole === 'ADMIN';
                 const isEditing = editingCommentId === comment.id;
@@ -302,7 +401,7 @@ export const IssueActivityTabs: React.FC<IssueActivityTabsProps> = ({
                             value={editingText}
                             onChange={(e) => setEditingText(e.target.value)}
                             rows={3}
-                            className="w-full px-3 py-2 text-sm bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--md-sys-color-primary)] font-sans resize-y"
+                            className="w-full px-3 py-2 text-sm bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] font-sans resize-y"
                           />
                           <div className="flex items-center justify-end gap-2">
                             <Button
@@ -335,61 +434,6 @@ export const IssueActivityTabs: React.FC<IssueActivityTabsProps> = ({
               })}
             </div>
           )}
-
-          {/* Add Comment Form */}
-          <Card className="p-4 border-[var(--md-sys-color-outline-variant)]/80 bg-[var(--md-sys-color-surface-container-low)] rounded-2xl shadow-xs">
-            <form onSubmit={handleSubmit} className="space-y-3">
-              <textarea
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                onPaste={handlePaste}
-                onKeyDown={(e) => {
-                  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-                    e.preventDefault();
-                    handleSubmit();
-                  }
-                }}
-                rows={3}
-                placeholder="Write a comment... (Press Ctrl+Enter to submit, paste images directly)"
-                className="w-full px-3 py-2 text-sm bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] rounded-xl focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)] font-sans resize-y"
-              />
-
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileSelect}
-                accept="image/*"
-                className="hidden"
-              />
-
-              <div className="flex items-center justify-between">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadingImage}
-                  className="text-xs text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]"
-                >
-                  {uploadingImage ? (
-                    <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                  ) : (
-                    <Paperclip className="w-3.5 h-3.5 mr-1.5" />
-                  )}
-                  {uploadingImage ? 'Uploading Image...' : 'Attach Image'}
-                </Button>
-
-                <Button type="submit" size="sm" disabled={submitting || !commentText.trim()}>
-                  {submitting ? (
-                    <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                  ) : (
-                    <Send className="w-3.5 h-3.5 mr-1.5" />
-                  )}
-                  Send Comment (Ctrl+Enter)
-                </Button>
-              </div>
-            </form>
-          </Card>
         </TabsContent>
 
         {/* Tab 2: Audit Trail */}
@@ -564,7 +608,6 @@ export const IssueActivityTabs: React.FC<IssueActivityTabsProps> = ({
             issueId={issue.id}
             issueKey={issue.key}
             issueTitle={issue.title}
-            compact={false}
           />
         </TabsContent>
       </Tabs>
@@ -605,3 +648,4 @@ export const IssueActivityTabs: React.FC<IssueActivityTabsProps> = ({
     </div>
   );
 };
+

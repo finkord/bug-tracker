@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import type {
   IssueItem,
   IssueStatus,
@@ -7,7 +7,6 @@ import type {
 } from '../../api/client.js';
 import { Avatar } from '../common/Avatar.js';
 import { UserProfilePopover } from '../common/UserProfilePopover';
-import { IssueContextMenu } from '../common/IssueContextMenu';
 import type { CardDensity } from '../../types/kanban';
 import {
   Bug,
@@ -65,19 +64,6 @@ const IssueCardComponent: React.FC<IssueCardProps> = ({
   const { selectedIds, toggleSelection, rangeSelect } = useIssueSelectionStore();
   const isSelected = selectedIds.has(issue.id);
   const hasAnySelection = selectedIds.size > 0;
-
-  const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
-
-  const handleContextMenu = (e: React.MouseEvent) => {
-    const target = e.target as HTMLElement;
-    if (target.closest('a')) {
-      return;
-    }
-    e.preventDefault();
-    e.stopPropagation();
-    setContextMenuPos({ x: e.clientX, y: e.clientY });
-  };
-
   const handleCheckboxClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (e.shiftKey) {
@@ -210,7 +196,6 @@ const IssueCardComponent: React.FC<IssueCardProps> = ({
     return (
       <div
         onClick={handleClick}
-        onContextMenu={handleContextMenu}
         className={`group relative bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container)] dark:hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-outline-variant)]/80 rounded-xl p-2 shadow-2xs hover:shadow-xs transition-colors duration-150 ${
           isBeingDragged
             ? 'select-none cursor-grabbing opacity-30 scale-95 border-dashed border-[var(--md-sys-color-primary)]'
@@ -260,17 +245,6 @@ const IssueCardComponent: React.FC<IssueCardProps> = ({
             </div>
           )}
         </div>
-
-        {contextMenuPos && (
-          <IssueContextMenu
-            issue={issue}
-            position={contextMenuPos}
-            onClose={() => setContextMenuPos(null)}
-            onStatusChange={onStatusChange}
-            onAssignToMe={onAssignToMe}
-            currentUserId={currentUserId}
-          />
-        )}
       </div>
     );
   }
@@ -280,7 +254,6 @@ const IssueCardComponent: React.FC<IssueCardProps> = ({
     return (
       <div
         onClick={handleClick}
-        onContextMenu={handleContextMenu}
         className={`group relative bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container)] dark:hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-outline-variant)]/80 rounded-2xl p-2.5 shadow-2xs hover:shadow-xs transition-colors duration-150 ${
           isBeingDragged
             ? 'select-none cursor-grabbing opacity-30 scale-95 border-dashed border-[var(--md-sys-color-primary)]'
@@ -419,17 +392,6 @@ const IssueCardComponent: React.FC<IssueCardProps> = ({
             )}
           </div>
         </div>
-
-        {contextMenuPos && (
-          <IssueContextMenu
-            issue={issue}
-            position={contextMenuPos}
-            onClose={() => setContextMenuPos(null)}
-            onStatusChange={onStatusChange}
-            onAssignToMe={onAssignToMe}
-            currentUserId={currentUserId}
-          />
-        )}
       </div>
     );
   }
@@ -438,7 +400,6 @@ const IssueCardComponent: React.FC<IssueCardProps> = ({
   return (
     <div
       onClick={handleClick}
-      onContextMenu={handleContextMenu}
       className={`group relative bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container)] dark:hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-outline-variant)]/80 rounded-2xl p-3.5 shadow-2xs hover:shadow-xs transition-colors duration-150 ${
         isBeingDragged
           ? 'select-none cursor-grabbing opacity-30 scale-95 border-dashed border-[var(--md-sys-color-primary)]'
@@ -624,17 +585,6 @@ const IssueCardComponent: React.FC<IssueCardProps> = ({
           )}
         </div>
       </div>
-
-      {contextMenuPos && (
-        <IssueContextMenu
-          issue={issue}
-          position={contextMenuPos}
-          onClose={() => setContextMenuPos(null)}
-          onStatusChange={onStatusChange}
-          onAssignToMe={onAssignToMe}
-          currentUserId={currentUserId}
-        />
-      )}
     </div>
   );
 };

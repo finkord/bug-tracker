@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import type { IssueItem, IssuePriority, IssueStatus, IssueType } from '../../api/client';
 import { api } from '../../api/client';
 import { Avatar } from '../common/Avatar';
-import { IssueContextMenu } from '../common/IssueContextMenu';
 import { useAssignIssueToMeMutation } from '../../api/queries';
 import { useAuth } from '../../store';
 import {
@@ -68,15 +67,7 @@ export const SearchSplitView: React.FC<SearchSplitViewProps> = ({
 }) => {
   const { user } = useAuth();
   const assignMutation = useAssignIssueToMeMutation();
-  const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
-  const [contextMenuIssue, setContextMenuIssue] = useState<IssueItem | null>(null);
 
-  const handleContextMenu = (e: React.MouseEvent, issue: IssueItem) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setContextMenuIssue(issue);
-    setContextMenuPos({ x: e.clientX, y: e.clientY });
-  };
 
   const handleAssignToMe = async (issueId: number) => {
     try {
@@ -207,7 +198,6 @@ export const SearchSplitView: React.FC<SearchSplitViewProps> = ({
             return (
               <div
                 key={issue.id}
-                onContextMenu={(e) => handleContextMenu(e, issue)}
                 onClick={() => onSelectIssue(issue)}
                 className={`p-3.5 cursor-pointer transition flex flex-col gap-1.5 ${
                   isSelected
@@ -541,21 +531,6 @@ export const SearchSplitView: React.FC<SearchSplitViewProps> = ({
           </div>
         )}
       </div>
-
-      {/* Right-Click Context Menu */}
-      {contextMenuPos && contextMenuIssue && (
-        <IssueContextMenu
-          issue={contextMenuIssue}
-          position={contextMenuPos}
-          onClose={() => {
-            setContextMenuPos(null);
-            setContextMenuIssue(null);
-          }}
-          onStatusChange={onUpdateStatus}
-          onAssignToMe={handleAssignToMe}
-          currentUserId={user?.id}
-        />
-      )}
     </div>
   );
 };

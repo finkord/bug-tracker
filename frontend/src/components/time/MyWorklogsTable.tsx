@@ -1,10 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { WorklogItem, IssueItem, IssueStatus } from '../../api/client';
-import { IssueContextMenu } from '../common/IssueContextMenu';
-import { useAssignIssueToMeMutation, useUpdateIssueStatusMutation } from '../../api/queries';
-import { useAuth } from '../../store';
+import type { WorklogItem } from '../../api/client';
 import { Button, SearchInput, ConfirmDialog, DataTable } from '../ui';
 import { formatFullDate } from '../../utils/date';
 import {
@@ -42,56 +39,6 @@ export const MyWorklogsTable: React.FC<MyWorklogsTableProps> = ({
   onOpenLogModal,
   onDeleteWorklog,
 }) => {
-  const { user } = useAuth();
-  const assignMutation = useAssignIssueToMeMutation();
-  const updateStatusMutation = useUpdateIssueStatusMutation();
-
-  const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
-  const [contextMenuIssue, setContextMenuIssue] = useState<IssueItem | null>(null);
-
-  const handleContextMenu = (e: React.MouseEvent, rawIssue: NonNullable<WorklogItem['issue']>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const issueItem: IssueItem = {
-      id: rawIssue.id,
-      key: rawIssue.key,
-      title: rawIssue.title,
-      status: rawIssue.status,
-      priority: rawIssue.priority,
-      issueType: 'TASK',
-      projectId: 0,
-      projectKey: rawIssue.projectName || '',
-      projectName: rawIssue.projectName || '',
-      issueNum: 0,
-      description: null,
-      sprintId: null,
-      assignee: null,
-      createdAt: '',
-      updatedAt: '',
-      reporter: { id: 0, fullName: '', email: '' },
-      estimatedHours: 0,
-      loggedHours: 0,
-    };
-    setContextMenuIssue(issueItem);
-    setContextMenuPos({ x: e.clientX, y: e.clientY });
-  };
-
-  const handleStatusChange = async (issueId: number, status: IssueStatus) => {
-    try {
-      await updateStatusMutation.mutateAsync({ issueId, status });
-    } catch {
-      // Ignored
-    }
-  };
-
-  const handleAssignToMe = async (issueId: number) => {
-    try {
-      await assignMutation.mutateAsync(issueId);
-    } catch {
-      // Ignored
-    }
-  };
-
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [worklogToDelete, setWorklogToDelete] = useState<{
@@ -337,27 +284,7 @@ export const MyWorklogsTable: React.FC<MyWorklogsTableProps> = ({
             ? `No worklog records matching "${searchQuery}"`
             : 'You have not logged any time yet. Click "Log Time" to record your first entry.'
         }
-        onRowContextMenu={(e, row) => {
-          if (row.issue) {
-            handleContextMenu(e, row.issue);
-          }
-        }}
       />
-
-      {/* Right-Click Context Menu */}
-      {contextMenuPos && contextMenuIssue && (
-        <IssueContextMenu
-          issue={contextMenuIssue}
-          position={contextMenuPos}
-          onClose={() => {
-            setContextMenuPos(null);
-            setContextMenuIssue(null);
-          }}
-          onStatusChange={handleStatusChange}
-          onAssignToMe={handleAssignToMe}
-          currentUserId={user?.id}
-        />
-      )}
 
       <ConfirmDialog
         isOpen={!!worklogToDelete}

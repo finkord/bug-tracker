@@ -1,5 +1,5 @@
 import React, { Component, type ErrorInfo, type ReactNode } from 'react';
-import { AlertTriangle, RotateCcw, Home, RefreshCw, ChevronDown } from 'lucide-react';
+import { AlertTriangle, Home, RefreshCw, ChevronDown } from 'lucide-react';
 import { Button } from '../ui/index.js';
 
 interface Props {
@@ -27,10 +27,6 @@ export class AppErrorBoundary extends Component<Props, State> {
   public override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     console.error('Unhandled React Error Boundary caught exception:', error, errorInfo);
   }
-
-  private handleReset = () => {
-    this.setState({ hasError: false, error: null, showDetails: false });
-  };
 
   private handleReload = () => {
     window.location.reload();
@@ -75,15 +71,6 @@ export class AppErrorBoundary extends Component<Props, State> {
             <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
               <Button
                 variant="filled"
-                size="md"
-                onClick={this.handleReset}
-                leftIcon={<RotateCcw className="w-4 h-4" />}
-              >
-                Try Again
-              </Button>
-
-              <Button
-                variant="tonal"
                 size="md"
                 onClick={this.handleReload}
                 leftIcon={<RefreshCw className="w-4 h-4" />}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatBytes, isValidFileSize, isAllowedImage } from './files.js';
+import { formatBytes, isValidFileSize, isAllowedImage, resolveSecureMediaUrl } from './files.js';
 
 describe('files utilities', () => {
   it('formats zero or negative bytes', () => {
@@ -36,5 +36,16 @@ describe('files utilities', () => {
     expect(isAllowedImage(jpeg)).toBe(true);
     expect(isAllowedImage(webp)).toBe(true);
     expect(isAllowedImage(pdf)).toBe(false);
+  });
+
+  it('resolves secure media URLs with JWT token query parameter', () => {
+    localStorage.setItem('accessToken', 'test-token-xyz');
+    expect(resolveSecureMediaUrl('/api/v1/issues/attachments/5/file')).toBe(
+      '/api/v1/issues/attachments/5/file?token=test-token-xyz',
+    );
+    expect(resolveSecureMediaUrl('https://external.com/photo.png')).toBe(
+      'https://external.com/photo.png',
+    );
+    localStorage.removeItem('accessToken');
   });
 });

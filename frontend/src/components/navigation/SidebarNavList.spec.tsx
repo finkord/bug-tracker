@@ -61,10 +61,7 @@ describe('SidebarNavList Component (Zero-Jump Personal & Workspace Navigation)',
     expect(screen.getByText(/^personal$/i)).toBeInTheDocument();
     expect(screen.getByText(/^utilities$/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /dashboard/i })).toBeInTheDocument();
-    const myIssuesLink = screen.getByRole('link', { name: /my issues/i });
-    expect(myIssuesLink).toBeInTheDocument();
-    expect(myIssuesLink).toHaveAttribute('href', '/my-issues');
-    expect(screen.getByRole('link', { name: /advanced search/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^search$/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /time tracking/i })).toBeInTheDocument();
 
     expect(screen.queryByRole('link', { name: /kanban board/i })).not.toBeInTheDocument();
@@ -116,10 +113,7 @@ describe('SidebarNavList Component (Zero-Jump Personal & Workspace Navigation)',
     // Personal navigation must remain permanently accessible
     expect(screen.getByText(/^personal$/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /dashboard/i })).toBeInTheDocument();
-    const myIssuesLink = screen.getByRole('link', { name: /my issues/i });
-    expect(myIssuesLink).toBeInTheDocument();
-    expect(myIssuesLink).toHaveAttribute('href', '/my-issues');
-    expect(screen.getByRole('link', { name: /advanced search/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^search$/i })).toBeInTheDocument();
 
     // Utilities section must remain anchored
     expect(screen.getByText(/^utilities$/i)).toBeInTheDocument();

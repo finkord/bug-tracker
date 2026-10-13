@@ -20,6 +20,7 @@ import {
   Search,
   Loader2,
   ExternalLink,
+  X,
 } from 'lucide-react';
 
 interface IssueLinksSectionProps {
@@ -28,6 +29,7 @@ interface IssueLinksSectionProps {
   projectId: number;
   links?: IssueLinkItem[];
   onLinksChanged: () => void;
+  onClose?: () => void;
 }
 
 const statusBadgeConfig: Record<IssueStatus, { label: string; className: string }> = {
@@ -66,6 +68,7 @@ export const IssueLinksSection: React.FC<IssueLinksSectionProps> = ({
   projectId,
   links = [],
   onLinksChanged,
+  onClose,
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'tree'>('list');
@@ -247,6 +250,19 @@ export const IssueLinksSection: React.FC<IssueLinksSectionProps> = ({
           >
             Link Issue
           </Button>
+
+          {onClose && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              onClick={onClose}
+              className="h-7 w-7 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]"
+              title="Collapse links section"
+            >
+              <X className="w-3.5 h-3.5" />
+            </Button>
+          )}
         </div>
       </div>
 

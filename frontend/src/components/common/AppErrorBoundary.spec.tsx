@@ -36,8 +36,9 @@ describe('AppErrorBoundary', () => {
     expect(
       screen.getByText(/an unexpected error occurred while displaying this page\./i),
     ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /reload page/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /back to home/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /try again/i })).not.toBeInTheDocument();
   });
 
   it('toggles technical details with error stack when clicked', () => {

@@ -11,7 +11,6 @@ import {
   useUpdateIssueStatusMutation,
 } from '../api/queries';
 import { IssueDetailsModal } from '../components/kanban/IssueDetailsModal';
-import { IssueContextMenu } from '../components/common/IssueContextMenu';
 import { ProjectReleasesModal } from '../components/releases/ProjectReleasesModal';
 import { UserIdentity } from '../components/common/UserIdentity';
 import { Card, Button, Badge, EntityAvatar } from '../components/ui/index.js';
@@ -79,15 +78,7 @@ export const ProjectOverviewPage: React.FC = () => {
 
   const [selectedIssueId, setSelectedIssueId] = useState<number | null>(null);
   const [isReleasesOpen, setIsReleasesOpen] = useState<boolean>(false);
-  const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
-  const [contextMenuIssue, setContextMenuIssue] = useState<IssueItem | null>(null);
 
-  const handleContextMenu = (e: React.MouseEvent, issue: IssueItem) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setContextMenuIssue(issue);
-    setContextMenuPos({ x: e.clientX, y: e.clientY });
-  };
 
   const handleAssignToMe = async (issueId: number) => {
     try {
@@ -481,7 +472,6 @@ export const ProjectOverviewPage: React.FC = () => {
                 {issues.slice(0, 8).map((issue) => (
                   <div
                     key={issue.id}
-                    onContextMenu={(e) => handleContextMenu(e, issue)}
                     onClick={() => setSelectedIssueId(issue.id)}
                     className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)]/20 cursor-pointer transition-colors group"
                   >
@@ -732,21 +722,6 @@ export const ProjectOverviewPage: React.FC = () => {
           onClose={() => setIsReleasesOpen(false)}
           projectId={effectiveProjectId}
           projectKey={projectKey}
-        />
-      )}
-
-      {/* Right-Click Context Menu */}
-      {contextMenuPos && contextMenuIssue && (
-        <IssueContextMenu
-          issue={contextMenuIssue}
-          position={contextMenuPos}
-          onClose={() => {
-            setContextMenuPos(null);
-            setContextMenuIssue(null);
-          }}
-          onStatusChange={handleStatusChange}
-          onAssignToMe={handleAssignToMe}
-          currentUserId={user?.id}
         />
       )}
     </div>

@@ -8,20 +8,23 @@ import {
   SelectValue,
   SelectContent,
   SelectItem,
-  StatusBadge,
   PriorityBadge,
   UserPicker,
+  Button,
 } from '../ui/index.js';
 import {
   Calendar,
   Layers,
-  Tag,
+  Tags,
   Box,
   Milestone,
-  CheckCircle2,
   AlertTriangle,
   Loader2,
   SlidersHorizontal,
+  Clock,
+  Plus,
+  GitBranch,
+  ArrowRight,
 } from 'lucide-react';
 import {
   useAssigneesQuery,
@@ -29,6 +32,7 @@ import {
   useProjectComponentsQuery,
   useProjectVersionsQuery,
 } from '../../api/queries/index.js';
+import { IssueTypeIcon } from '../ui/IssueTypeIcon.js';
 
 interface IssueSidebarDetailsProps {
   issue: IssueItem;
@@ -44,6 +48,9 @@ interface IssueSidebarDetailsProps {
     componentId: number | null;
     fixVersionId: number | null;
   }>) => Promise<void>;
+  onOpenLogWorkModal?: () => void;
+  onViewWorklogsTab?: () => void;
+  onViewDevelopmentTab?: () => void;
 }
 
 export const IssueSidebarDetails: React.FC<IssueSidebarDetailsProps> = ({
@@ -51,8 +58,11 @@ export const IssueSidebarDetails: React.FC<IssueSidebarDetailsProps> = ({
   currentUser,
   onAssignToMe: _onAssignToMe,
   onSprintChange,
-  onStatusChange,
+  onStatusChange: _onStatusChange,
   onUpdateFields,
+  onOpenLogWorkModal,
+  onViewWorklogsTab,
+  onViewDevelopmentTab,
 }) => {
   const [updatingField, setUpdatingField] = useState<string | null>(null);
 
@@ -72,14 +82,19 @@ export const IssueSidebarDetails: React.FC<IssueSidebarDetailsProps> = ({
     }
   };
 
+  const estimated = issue.estimatedHours || 0;
+  const logged = issue.loggedHours || 0;
+  const progressPercent = estimated > 0 ? Math.min(Math.round((logged / estimated) * 100), 100) : 0;
+  const isOverEstimated = logged > estimated && estimated > 0;
+
   return (
     <div className="space-y-4">
-      {/* Unified High-Density Properties Card (Linear & Jira standard) */}
+      {/* High-Density Unified Inspector Dock */}
       <Card className="p-4 space-y-4 bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/60 rounded-2xl shadow-xs">
         <div className="flex items-center justify-between pb-2 border-b border-[var(--md-sys-color-outline-variant)]/30">
           <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)] flex items-center gap-1.5">
             <SlidersHorizontal className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
-            Properties
+            Details & Properties
           </h3>
           {updatingField && (
             <div className="flex items-center gap-1 text-[11px] text-[var(--md-sys-color-primary)] font-medium">
@@ -89,53 +104,31 @@ export const IssueSidebarDetails: React.FC<IssueSidebarDetailsProps> = ({
           )}
         </div>
 
-        <div className="space-y-3 text-xs">
-          {/* Status & Priority Row with Universal Badges */}
-          <div className="grid grid-cols-2 gap-2">
-            {/* Status */}
-            <div className="space-y-1">
-              <span className="text-[var(--md-sys-color-on-surface-variant)] flex items-center gap-1 font-medium text-[11px]">
-                <CheckCircle2 className="w-3 h-3 text-[var(--md-sys-color-primary)]" />
-                Status
-              </span>
-              <div>
-                <StatusBadge
-                  status={issue.status}
-                  interactive={Boolean(onStatusChange)}
-                  onStatusChange={(newStatus) =>
-                    onStatusChange && handleFieldChange('status', () => onStatusChange(newStatus))
-                  }
-                  size="sm"
-                  className="w-full justify-between"
-                />
-              </div>
-            </div>
-
-            {/* Priority */}
-            <div className="space-y-1">
-              <span className="text-[var(--md-sys-color-on-surface-variant)] flex items-center gap-1 font-medium text-[11px]">
-                <AlertTriangle className="w-3 h-3 text-[var(--md-sys-color-primary)]" />
-                Priority
-              </span>
-              <div>
-                <PriorityBadge
-                  priority={issue.priority}
-                  interactive={Boolean(onUpdateFields)}
-                  onPriorityChange={(newPriority) =>
-                    onUpdateFields &&
-                    handleFieldChange('priority', () =>
-                      onUpdateFields({ priority: newPriority as IssuePriority }),
-                    )
-                  }
-                  size="sm"
-                  className="w-full justify-between"
-                />
-              </div>
+        <div className="space-y-3.5 text-xs">
+          {/* Priority */}
+          <div className="space-y-1">
+            <span className="text-[var(--md-sys-color-on-surface-variant)] flex items-center gap-1 font-medium text-[11px]">
+              <AlertTriangle className="w-3 h-3 text-[var(--md-sys-color-primary)]" />
+              Priority
+            </span>
+            <div>
+              <PriorityBadge
+                priority={issue.priority}
+                interactive={Boolean(onUpdateFields)}
+                onPriorityChange={(newPriority) =>
+                  onUpdateFields &&
+                  handleFieldChange('priority', () =>
+                    onUpdateFields({ priority: newPriority as IssuePriority }),
+                  )
+                }
+                size="sm"
+                className="w-full justify-between"
+              />
             </div>
           </div>
 
           {/* Assignee */}
-          <div className="space-y-1 pt-1">
+          <div className="space-y-1">
             <span className="text-[var(--md-sys-color-on-surface-variant)] font-medium text-[11px]">
               Assignee
             </span>
@@ -176,8 +169,8 @@ export const IssueSidebarDetails: React.FC<IssueSidebarDetailsProps> = ({
             )}
           </div>
 
-          {/* Reporter (Editable via UserPicker, Linear/Jira Standard) */}
-          <div className="space-y-1 pt-1">
+          {/* Reporter */}
+          <div className="space-y-1">
             <span className="text-[var(--md-sys-color-on-surface-variant)] font-medium text-[11px]">
               Reporter
             </span>
@@ -222,7 +215,7 @@ export const IssueSidebarDetails: React.FC<IssueSidebarDetailsProps> = ({
           </div>
 
           {/* Sprint */}
-          <div className="space-y-1 pt-1">
+          <div className="space-y-1">
             <span className="text-[var(--md-sys-color-on-surface-variant)] flex items-center gap-1.5 font-medium text-[11px]">
               <Layers className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
               Sprint
@@ -256,7 +249,7 @@ export const IssueSidebarDetails: React.FC<IssueSidebarDetailsProps> = ({
           </div>
 
           {/* Component */}
-          <div className="space-y-1 pt-1">
+          <div className="space-y-1">
             <span className="text-[var(--md-sys-color-on-surface-variant)] flex items-center gap-1.5 font-medium text-[11px]">
               <Box className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
               Component
@@ -290,7 +283,7 @@ export const IssueSidebarDetails: React.FC<IssueSidebarDetailsProps> = ({
           </div>
 
           {/* Fix Version */}
-          <div className="space-y-1 pt-1">
+          <div className="space-y-1">
             <span className="text-[var(--md-sys-color-on-surface-variant)] flex items-center gap-1.5 font-medium text-[11px]">
               <Milestone className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
               Fix Version
@@ -323,10 +316,10 @@ export const IssueSidebarDetails: React.FC<IssueSidebarDetailsProps> = ({
             )}
           </div>
 
-          {/* Issue Type */}
-          <div className="flex items-center justify-between gap-2 pt-1">
+          {/* Issue Type (Distinct Icon) */}
+          <div className="flex items-center justify-between gap-2 pt-1 border-t border-[var(--md-sys-color-outline-variant)]/30">
             <span className="text-[var(--md-sys-color-on-surface-variant)] flex items-center gap-1.5 font-medium text-[11px]">
-              <Tag className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
+              <IssueTypeIcon type={issue.issueType} />
               Issue Type
             </span>
             <Badge variant="neutral" className="text-[11px] font-mono">
@@ -334,10 +327,10 @@ export const IssueSidebarDetails: React.FC<IssueSidebarDetailsProps> = ({
             </Badge>
           </div>
 
-          {/* Labels */}
+          {/* Labels (Tags Icon - distinct from Issue Type!) */}
           <div className="flex flex-col gap-1.5 pt-1">
             <span className="text-[var(--md-sys-color-on-surface-variant)] flex items-center gap-1.5 font-medium text-[11px]">
-              <Tag className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
+              <Tags className="w-3.5 h-3.5 text-[var(--md-sys-color-tertiary)]" />
               Labels
             </span>
             <div className="flex flex-wrap gap-1">
@@ -351,30 +344,108 @@ export const IssueSidebarDetails: React.FC<IssueSidebarDetailsProps> = ({
                   </span>
                 ))
               ) : (
-                <span className="text-[var(--md-sys-color-on-surface-variant)] italic">None</span>
+                <span className="text-[var(--md-sys-color-on-surface-variant)] italic">No labels</span>
               )}
             </div>
           </div>
 
-          <div className="h-px bg-[var(--md-sys-color-outline-variant)]/30 my-2" />
+          {/* Integrated Time Tracking Gauge */}
+          <div className="pt-2 border-t border-[var(--md-sys-color-outline-variant)]/30 space-y-2">
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={onViewWorklogsTab}
+                className="text-[11px] font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)] flex items-center gap-1.5 hover:text-[var(--md-sys-color-primary)] transition-colors cursor-pointer"
+                title="View worklog history in activity section"
+              >
+                <Clock className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
+                <span>Time Tracking</span>
+              </button>
+              {onOpenLogWorkModal && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={onOpenLogWorkModal}
+                  className="h-6 w-6 text-[var(--md-sys-color-primary)] hover:bg-[var(--md-sys-color-primary-container)]/50"
+                  title="Log time on this issue"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </Button>
+              )}
+            </div>
 
-          {/* Created At */}
-          <div className="flex items-center justify-between gap-2 text-[11px]">
-            <span className="text-[var(--md-sys-color-on-surface-variant)] flex items-center gap-1.5">
-              <Calendar className="w-3 h-3 text-[var(--md-sys-color-primary)]" />
-              Created
-            </span>
-            <span className="text-[var(--md-sys-color-on-surface-variant)] font-mono">
-              {new Date(issue.createdAt).toLocaleDateString()}
-            </span>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-[var(--md-sys-color-on-surface)]">
+                  {logged}h <span className="font-normal text-[var(--md-sys-color-on-surface-variant)]">logged</span>
+                </span>
+                <span className="text-[11px] font-mono text-[var(--md-sys-color-on-surface-variant)]">
+                  {estimated > 0 ? `${estimated}h estimate` : 'No estimate'}
+                </span>
+              </div>
+
+              <div className="h-1.5 w-full bg-[var(--md-sys-color-surface-container-highest)] rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-300 rounded-full ${
+                    isOverEstimated
+                      ? 'bg-[var(--md-sys-color-error)]'
+                      : 'bg-[var(--md-sys-color-primary)]'
+                  }`}
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+
+              {estimated > 0 && (
+                <div className="flex items-center justify-between text-[10px] text-[var(--md-sys-color-on-surface-variant)]">
+                  <span>{progressPercent}% spent</span>
+                  {isOverEstimated ? (
+                    <span className="text-[var(--md-sys-color-error)] font-medium">
+                      +{logged - estimated}h over
+                    </span>
+                  ) : (
+                    <span>{Math.max(0, estimated - logged)}h remaining</span>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Updated At */}
-          <div className="flex items-center justify-between gap-2 text-[11px]">
-            <span className="text-[var(--md-sys-color-on-surface-variant)]">Updated</span>
-            <span className="text-[var(--md-sys-color-on-surface-variant)] font-mono">
-              {new Date(issue.updatedAt).toLocaleDateString()}
-            </span>
+          {/* Development / Git Integration Shortcut */}
+          {onViewDevelopmentTab && (
+            <div className="pt-2 border-t border-[var(--md-sys-color-outline-variant)]/30">
+              <button
+                type="button"
+                onClick={onViewDevelopmentTab}
+                className="w-full flex items-center justify-between p-2 rounded-xl bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/40 text-xs transition-colors cursor-pointer group"
+              >
+                <div className="flex items-center gap-2">
+                  <GitBranch className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
+                  <span className="font-semibold text-[var(--md-sys-color-on-surface)]">Development & Git</span>
+                </div>
+                <ArrowRight className="w-3.5 h-3.5 text-[var(--md-sys-color-on-surface-variant)] group-hover:text-[var(--md-sys-color-primary)] group-hover:translate-x-0.5 transition-transform" />
+              </button>
+            </div>
+          )}
+
+          {/* Dates */}
+          <div className="pt-2 border-t border-[var(--md-sys-color-outline-variant)]/30 space-y-1.5 text-[11px]">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[var(--md-sys-color-on-surface-variant)] flex items-center gap-1.5">
+                <Calendar className="w-3 h-3 text-[var(--md-sys-color-primary)]" />
+                Created
+              </span>
+              <span className="text-[var(--md-sys-color-on-surface-variant)] font-mono">
+                {new Date(issue.createdAt).toLocaleDateString()}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[var(--md-sys-color-on-surface-variant)]">Updated</span>
+              <span className="text-[var(--md-sys-color-on-surface-variant)] font-mono">
+                {new Date(issue.updatedAt).toLocaleDateString()}
+              </span>
+            </div>
           </div>
         </div>
       </Card>

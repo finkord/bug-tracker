@@ -281,9 +281,9 @@ export const SuperSidebar: React.FC<SuperSidebarProps> = () => {
               onNavigate={handleCloseFlyout}
             />
 
-            {/* Row 2: Workspace Project Switcher (Separated from Brand Row with 8px spacing) */}
+            {/* Row 2: Workspace Project Switcher */}
             {user && (
-              <div className={`shrink-0 ${effectiveCollapsed ? 'pt-2 pb-1' : 'pt-2.5 pb-1'}`}>
+              <div className="shrink-0 py-1.5">
                 <SidebarProjectSwitcher
                   projects={projects}
                   activeProject={effectiveActiveProject}

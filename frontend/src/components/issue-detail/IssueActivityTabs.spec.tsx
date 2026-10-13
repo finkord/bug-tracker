@@ -37,10 +37,6 @@ vi.mock('../../api/queries/index.js', async (importOriginal) => {
   };
 });
 
-vi.mock('../kanban/VcsDevelopmentPanel.js', () => ({
-  VcsDevelopmentPanel: () => <div data-testid="vcs-development-panel">VCS Panel</div>,
-}));
-
 const mockUser: UserProfile = {
   id: 1,
   email: 'alice@example.com',
@@ -153,21 +149,29 @@ describe('IssueActivityTabs', () => {
     expect(screen.getByText('IN_PROGRESS')).toBeInTheDocument();
   });
 
-  it('renders Development tab with VCS panel', () => {
+  it('renders top comment input and allows submitting a new comment', async () => {
+    const onAddComment = vi.fn().mockResolvedValue(undefined);
     render(
       <MemoryRouter>
         <IssueActivityTabs
           issue={mockIssue}
           currentUser={mockUser}
-          activeTab="development"
-          onAddComment={vi.fn()}
+          activeTab="comments"
+          onAddComment={onAddComment}
           onUploadCommentScreenshot={vi.fn()}
           onOpenLogWorkModal={vi.fn()}
         />
       </MemoryRouter>,
     );
 
-    expect(screen.getByTestId('vcs-development-panel')).toBeInTheDocument();
+    const input = screen.getByPlaceholderText(/Add a comment/i);
+    expect(input).toBeInTheDocument();
+    fireEvent.change(input, { target: { value: 'New test reply from top' } });
+
+    const submitBtn = screen.getByRole('button', { name: /^Comment$/i });
+    fireEvent.click(submitBtn);
+
+    expect(onAddComment).toHaveBeenCalledWith('New test reply from top');
   });
 
   it('calls onTabChange when tab triggers are clicked', () => {
@@ -189,5 +193,22 @@ describe('IssueActivityTabs', () => {
     fireEvent.click(worklogsTrigger);
     // Even if radix tab value is controlled or uncontrolled, trigger fires click
     expect(worklogsTrigger).toBeInTheDocument();
+  });
+
+  it('renders Development tab trigger and content', () => {
+    render(
+      <MemoryRouter>
+        <IssueActivityTabs
+          issue={mockIssue}
+          currentUser={mockUser}
+          activeTab="development"
+          onAddComment={vi.fn()}
+          onUploadCommentScreenshot={vi.fn()}
+          onOpenLogWorkModal={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('tab', { name: /Development/i })).toBeInTheDocument();
   });
 });

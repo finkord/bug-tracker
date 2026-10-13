@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import type { IssueItem, IssueType, IssueStatus } from '../../api/client.js';
 import type { SprintDefinition } from '../../types/agile.js';
 import { UserIdentity } from '../common/UserIdentity';
-import { IssueContextMenu } from '../common/IssueContextMenu';
 import { StatusBadge, PriorityBadge, Dropdown } from '../ui';
 import {
   GripVertical,
@@ -60,19 +59,6 @@ const AgileIssueRowComponent: React.FC<AgileIssueRowProps> = ({
   const { selectedIds, toggleSelection, rangeSelect } = useIssueSelectionStore();
   const isSelected = selectedIds.has(issue.id);
   const hasAnySelection = selectedIds.size > 0;
-
-  const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
-
-  const handleContextMenu = (e: React.MouseEvent) => {
-    const target = e.target as HTMLElement;
-    if (target.closest('a')) {
-      return;
-    }
-    e.preventDefault();
-    e.stopPropagation();
-    setContextMenuPos({ x: e.clientX, y: e.clientY });
-  };
-
   const handleCheckboxClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (e.shiftKey) {
@@ -199,7 +185,6 @@ const AgileIssueRowComponent: React.FC<AgileIssueRowProps> = ({
       {...attributes}
       {...listeners}
       onClick={handleClick}
-      onContextMenu={handleContextMenu}
       className={`group relative flex items-center justify-between gap-3 px-3 py-2.5 rounded-2xl bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container)] dark:hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-outline-variant)]/80 transition-colors duration-150 cursor-grab active:cursor-grabbing shadow-2xs touch-none ${
         isSelected
           ? '!border-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-primary)]/40 bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-highest)] shadow-xs'
@@ -308,17 +293,6 @@ const AgileIssueRowComponent: React.FC<AgileIssueRowProps> = ({
           />
         </div>
       </div>
-
-      {contextMenuPos && (
-        <IssueContextMenu
-          issue={issue}
-          position={contextMenuPos}
-          onClose={() => setContextMenuPos(null)}
-          onStatusChange={onStatusChange}
-          onAssignToMe={onAssignToMe}
-          currentUserId={currentUserId}
-        />
-      )}
     </div>
   );
 };

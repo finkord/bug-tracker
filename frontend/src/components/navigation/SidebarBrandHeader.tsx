@@ -87,17 +87,15 @@ export const SidebarBrandHeader: React.FC<SidebarBrandHeaderProps> = ({
   const config = BRAND_STYLE_MAP[activeStyle] || BRAND_STYLE_MAP.vibrant;
 
   return (
-    <div className="h-11 shrink-0 px-2 flex items-center border-b border-[var(--md-sys-color-outline-variant)]/15">
+    <div className="h-11 shrink-0 px-3 flex items-center border-b border-[var(--md-sys-color-outline-variant)]/15">
       <NavLink
         to="/"
         onClick={onNavigate}
-        className={`w-full h-8 flex items-center rounded-lg group select-none transition-colors ${
-          collapsed ? 'justify-center px-0' : 'px-2'
-        }`}
+        className="w-full h-9 flex items-center rounded-xl group select-none transition-colors"
         title="BugTracker Workspace"
       >
-        {/* Icon slot aligned with SidebarProjectSwitcher and SidebarNavItem icon column (18px from edge) */}
-        <div className={`shrink-0 flex items-center justify-center ${collapsed ? '' : 'mr-2.5'}`}>
+        {/* Fixed 36x36px icon slot centered at X=30px */}
+        <div className="w-9 h-9 shrink-0 flex items-center justify-center">
           <div
             className={`w-6.5 h-6.5 rounded-lg flex items-center justify-center transition-all duration-200 group-hover:scale-105 ${config.iconBg}`}
           >
@@ -107,7 +105,7 @@ export const SidebarBrandHeader: React.FC<SidebarBrandHeaderProps> = ({
 
         {/* Fancy Gradient or Themed Typography */}
         <span
-          className={`tracking-tight whitespace-nowrap truncate transition-opacity duration-200 ${
+          className={`tracking-tight whitespace-nowrap truncate transition-opacity duration-200 ml-1.5 ${
             collapsed ? 'opacity-0 w-0 pointer-events-none' : 'opacity-100 flex-1 pr-1'
           } ${config.textStyle}`}
         >

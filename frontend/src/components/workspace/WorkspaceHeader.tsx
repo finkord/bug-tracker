@@ -2,14 +2,13 @@ import React from 'react';
 import { Menu, PanelLeft } from 'lucide-react';
 import { useAuth, useSidebar } from '../../store';
 import { HeaderBreadcrumbs } from './HeaderBreadcrumbs';
-import { WorkspaceGlobalSearch } from './WorkspaceGlobalSearch';
 import { WorkspaceCreateIssueAction } from './WorkspaceCreateIssueAction';
 import { NotificationBell } from '../notifications/NotificationBell';
 import { Tooltip } from '../ui/Tooltip';
 
 /**
  * Slim Workspace Header (44px) for authenticated application sessions.
- * Provides clean breadcrumbs, fast search chip, creation trigger, and notifications
+ * Provides clean breadcrumbs, creation trigger, and notifications
  * while maximizing vertical canvas space for Kanban boards and backlogs.
  */
 export const WorkspaceHeader: React.FC = () => {
@@ -54,13 +53,8 @@ export const WorkspaceHeader: React.FC = () => {
         <HeaderBreadcrumbs />
       </div>
 
-      {/* Center Column: Quick Search Command Pill (shrink-0, centered) */}
-      <div className="hidden sm:flex shrink-0 items-center justify-center px-2">
-        <WorkspaceGlobalSearch />
-      </div>
-
-      {/* Right Column: Actions (flex-1, right-aligned) */}
-      <div className="flex-1 min-w-0 flex items-center justify-end gap-1.5 sm:gap-2">
+      {/* Right Column: Actions (shrink-0, right-aligned) */}
+      <div className="flex items-center justify-end gap-1.5 sm:gap-2 shrink-0">
         <WorkspaceCreateIssueAction />
         <NotificationBell />
       </div>

@@ -9,7 +9,6 @@ import {
   DataTable,
 } from '../ui';
 import { UserIdentity } from '../common/UserIdentity';
-import { IssueContextMenu } from '../common/IssueContextMenu';
 import { useAssignIssueToMeMutation } from '../../api/queries';
 import { useAuth } from '../../store';
 import { formatShortDate } from '../../utils/date';
@@ -56,15 +55,7 @@ export const SearchResultsTable: React.FC<SearchResultsTableProps> = ({
 }) => {
   const { user } = useAuth();
   const assignMutation = useAssignIssueToMeMutation();
-  const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
-  const [contextMenuIssue, setContextMenuIssue] = useState<IssueItem | null>(null);
 
-  const handleContextMenu = (e: React.MouseEvent, issue: IssueItem) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setContextMenuIssue(issue);
-    setContextMenuPos({ x: e.clientX, y: e.clientY });
-  };
 
   const handleAssignToMe = async (issueId: number) => {
     try {
@@ -279,26 +270,10 @@ export const SearchResultsTable: React.FC<SearchResultsTableProps> = ({
         onPageChange={onPageChange}
         onPageSizeChange={onLimitChange}
         onRowClick={onSelectIssue}
-        onRowContextMenu={handleContextMenu}
         selectedRowId={selectedIssueId}
         emptyTitle="No issues found"
         emptyDescription="Try adjusting your search criteria or JQL query filter."
       />
-
-      {/* Right-Click Context Menu */}
-      {contextMenuPos && contextMenuIssue && (
-        <IssueContextMenu
-          issue={contextMenuIssue}
-          position={contextMenuPos}
-          onClose={() => {
-            setContextMenuPos(null);
-            setContextMenuIssue(null);
-          }}
-          onStatusChange={onUpdateStatus}
-          onAssignToMe={handleAssignToMe}
-          currentUserId={user?.id}
-        />
-      )}
     </>
   );
 };

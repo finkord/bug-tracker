@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { queryClient } from '../../api/queryClient.js';
 import {
   useIssueDetailQuery,
@@ -17,27 +17,21 @@ import { realtimeSocket } from '../../api/socket';
 import { useAuth } from '../../store';
 import { useRecentIssuesStore } from '../../store/useRecentIssuesStore';
 import { LogWorkModal } from '../kanban/LogWorkModal';
-import { IssueModal } from '../kanban/IssueModal';
 import { IssueLinksSection } from '../kanban/IssueLinksSection';
-import { VcsDevelopmentPanel } from '../kanban/VcsDevelopmentPanel';
 import {
   IssueDetailHeader,
   IssueDetailDescription,
   IssueActivityTabs,
   IssueAttachmentsSection,
   IssueSidebarDetails,
-  IssueTimeTrackingCard,
   IssueSubtasksSection,
 } from './index.js';
 import { Card, Button, Modal } from '../ui';
 import {
   Loader2,
   AlertCircle,
-  GitCommitHorizontal,
   Link2,
   Paperclip,
-  ExternalLink,
-  X,
 } from 'lucide-react';
 
 export interface IssueDetailViewProps {
@@ -55,7 +49,6 @@ export const IssueDetailView: React.FC<IssueDetailViewProps> = ({
   onClose,
   onIssueUpdated,
   onIssueDeleted,
-  onEditClick: customEditClick,
 }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -70,13 +63,11 @@ export const IssueDetailView: React.FC<IssueDetailViewProps> = ({
   const error = queryError instanceof Error ? queryError.message : queryError ? String(queryError) : null;
 
   const [logWorkOpen, setLogWorkOpen] = useState(false);
-  const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [activeViewers, setActiveViewers] = useState<{ id: number; fullName: string; avatarUrl?: string }[]>([]);
   const [activeActivityTab, setActiveActivityTab] = useState<'comments' | 'history' | 'worklogs' | 'development'>('comments');
-  const [showSubtasks, setShowSubtasks] = useState(false);
-  const [showLinks, setShowLinks] = useState(false);
-  const [showAttachments, setShowAttachments] = useState(false);
+  const [linksCollapsed, setLinksCollapsed] = useState<boolean | null>(null);
+  const [attachmentsCollapsed, setAttachmentsCollapsed] = useState<boolean | null>(null);
 
   const handleSwitchActivityTab = (tab: 'comments' | 'history' | 'worklogs' | 'development') => {
     setActiveActivityTab(tab);
@@ -235,14 +226,14 @@ export const IssueDetailView: React.FC<IssueDetailViewProps> = ({
           activeTag === 'select' ||
           (activeEl as HTMLElement)?.isContentEditable;
 
-        if (!isInput && !logWorkOpen && !editModalOpen && !deleteModalOpen) {
+        if (!isInput && !logWorkOpen && !deleteModalOpen) {
           handleBack();
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [logWorkOpen, editModalOpen, deleteModalOpen, handleBack]);
+  }, [logWorkOpen, deleteModalOpen, handleBack]);
 
   const handleDeleteIssue = async () => {
     if (!issue) return;
@@ -283,65 +274,30 @@ export const IssueDetailView: React.FC<IssueDetailViewProps> = ({
     );
   }
 
-  const hasSubtasks = Boolean((issue?.subtasks?.length ?? 0) > 0 || issue?.issueType === 'SUBTASK');
   const hasLinks = Boolean((issue?.links?.length ?? 0) > 0);
   const hasAttachments = Boolean((issue?.attachments?.length ?? 0) > 0);
+  const isLinksOpen = linksCollapsed === null ? hasLinks : !linksCollapsed;
+  const isAttachmentsOpen = attachmentsCollapsed === null ? hasAttachments : !attachmentsCollapsed;
 
   return (
-    <div className={`w-full flex-1 flex flex-col min-w-0 space-y-6 animate-in fade-in duration-200 ${isModal ? 'p-2 sm:p-4' : 'px-4 sm:px-6 lg:px-8 py-5'}`}>
-      {/* Header bar: If in modal, show compact modal actions */}
-      {isModal ? (
-        <div className="flex items-center justify-between gap-3 border-b border-[var(--md-sys-color-outline-variant)]/40 pb-4">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-mono text-xs font-bold text-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)] px-2.5 py-1 rounded-lg">
-              {issue.key}
-            </span>
-            {issue.sprint?.name && (
-              <span className="text-xs font-medium text-[var(--md-sys-color-on-surface-variant)] bg-[var(--md-sys-color-surface-container)] px-2 py-0.5 rounded-md border border-[var(--md-sys-color-outline-variant)]/60">
-                {issue.sprint.name}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Link
-              to={`/issues/${issue.key}`}
-              target="_blank"
-              rel="noreferrer"
-              className="p-1.5 rounded-lg text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-highest)] hover:text-[var(--md-sys-color-primary)] transition-colors flex items-center gap-1 text-xs"
-              title="Open in full page view"
-            >
-              <ExternalLink className="w-4 h-4" />
-              <span className="hidden sm:inline">Full page</span>
-            </Link>
-            {onClose && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                onClick={onClose}
-                aria-label="Close"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            )}
-          </div>
-        </div>
-      ) : (
-        <IssueDetailHeader
-          issue={issue}
-          activeViewers={activeViewers}
-          deleting={deleteIssueMutation.isPending}
-          onStatusChange={handleStatusChange}
-          onEditClick={customEditClick ? () => customEditClick(issue) : () => setEditModalOpen(true)}
-          onDeleteClick={() => setDeleteModalOpen(true)}
-          onBack={handleBack}
-        />
-      )}
+    <div className={`w-full flex-1 flex flex-col min-w-0 space-y-5 animate-in fade-in duration-200 ${isModal ? 'p-2 sm:p-4' : 'px-4 sm:px-6 lg:px-8 py-5'}`}>
+      {/* Unified Command Header */}
+      <IssueDetailHeader
+        issue={issue}
+        currentUser={user}
+        activeViewers={activeViewers}
+        deleting={deleteIssueMutation.isPending}
+        onStatusChange={handleStatusChange}
+        onDeleteClick={() => setDeleteModalOpen(true)}
+        onBack={handleBack}
+        isModal={isModal}
+        onClose={onClose}
+      />
 
       {/* Main Responsive Grid Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column: Title, Description, Links, Comments, Attachments */}
-        <div className="lg:col-span-8 xl:col-span-8 2xl:col-span-9 space-y-6">
+        {/* Left Column: Title, Description, Subtasks, Links, Attachments, Comments */}
+        <div className="lg:col-span-8 xl:col-span-8 2xl:col-span-9 space-y-5">
           <div id="description-section">
             <IssueDetailDescription
               issue={issue}
@@ -349,57 +305,16 @@ export const IssueDetailView: React.FC<IssueDetailViewProps> = ({
             />
           </div>
 
-          {/* Quick Actions Bar */}
-          {(!hasSubtasks || !hasLinks || !hasAttachments) && (
-            <div className="flex flex-wrap items-center gap-2 pt-1 pb-1">
-              {!hasSubtasks && !showSubtasks && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowSubtasks(true)}
-                  leftIcon={<GitCommitHorizontal className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />}
-                >
-                  Add subtask
-                </Button>
-              )}
-              {!hasLinks && !showLinks && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowLinks(true)}
-                  leftIcon={<Link2 className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />}
-                >
-                  Link issue
-                </Button>
-              )}
-              {!hasAttachments && !showAttachments && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowAttachments(true)}
-                  leftIcon={<Paperclip className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />}
-                >
-                  Attach files
-                </Button>
-              )}
-            </div>
-          )}
+          {/* Subtasks Section - Always accessible checklist */}
+          <div id="subtasks-section">
+            <IssueSubtasksSection
+              issue={issue}
+              onSubtasksChanged={() => fetchIssue()}
+            />
+          </div>
 
-          {/* Subtasks Section */}
-          {(hasSubtasks || showSubtasks) && (
-            <div id="subtasks-section">
-              <IssueSubtasksSection
-                issue={issue}
-                onSubtasksChanged={() => fetchIssue()}
-              />
-            </div>
-          )}
-
-          {/* Links Section */}
-          {(hasLinks || showLinks) && (
+          {/* Collapsible Links Section */}
+          {isLinksOpen && (
             <div id="links-section">
               <IssueLinksSection
                 issueId={issue.id}
@@ -407,23 +322,55 @@ export const IssueDetailView: React.FC<IssueDetailViewProps> = ({
                 projectId={issue.projectId}
                 links={issue.links}
                 onLinksChanged={() => fetchIssue()}
+                onClose={() => setLinksCollapsed(true)}
               />
             </div>
           )}
 
-          {/* Attachments Section */}
-          {(hasAttachments || showAttachments) && (
+          {/* Collapsible Attachments Section */}
+          {isAttachmentsOpen && (
             <div id="attachments-section">
               <IssueAttachmentsSection
                 attachments={issue.attachments || []}
                 currentUser={user}
                 onUpload={handleUploadAttachment}
                 onDelete={handleDeleteAttachment}
+                onClose={() => setAttachmentsCollapsed(true)}
               />
             </div>
           )}
 
-          {/* Activity / Comments Stream */}
+          {/* Quick Expand Bar if links or attachments are collapsed */}
+          {(!isLinksOpen || !isAttachmentsOpen) && (
+            <div className="flex items-center gap-2 pt-1">
+              {!isLinksOpen && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setLinksCollapsed(false)}
+                  className="text-xs text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)]"
+                  leftIcon={<Link2 className="w-3.5 h-3.5" />}
+                >
+                  {hasLinks ? `Show Links (${issue.links?.length || 0})` : 'Link another issue'}
+                </Button>
+              )}
+              {!isAttachmentsOpen && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setAttachmentsCollapsed(false)}
+                  className="text-xs text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)]"
+                  leftIcon={<Paperclip className="w-3.5 h-3.5" />}
+                >
+                  {hasAttachments ? `Show Attachments (${issue.attachments?.length || 0})` : 'Attach files'}
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Activity Stream Hub (Comments with top input, Audit trail, Worklogs, Development) */}
           <div id="activity-tabs-section">
             <IssueActivityTabs
               issue={issue}
@@ -437,7 +384,7 @@ export const IssueDetailView: React.FC<IssueDetailViewProps> = ({
           </div>
         </div>
 
-        {/* Right Column: Attributes & Time Tracking */}
+        {/* Right Column: Properties & Integrated Time Tracking Dock */}
         <div className="lg:col-span-4 xl:col-span-4 2xl:col-span-3 space-y-4 lg:sticky lg:top-6">
           <IssueSidebarDetails
             issue={issue}
@@ -446,20 +393,9 @@ export const IssueDetailView: React.FC<IssueDetailViewProps> = ({
             onSprintChange={handleSprintChange}
             onStatusChange={handleStatusChange}
             onUpdateFields={handleUpdateIssue}
-          />
-
-          <IssueTimeTrackingCard
-            issue={issue}
             onOpenLogWorkModal={() => setLogWorkOpen(true)}
             onViewWorklogsTab={() => handleSwitchActivityTab('worklogs')}
-          />
-
-          <VcsDevelopmentPanel
-            issueId={issue.id}
-            issueKey={issue.key}
-            issueTitle={issue.title}
-            compact
-            onViewDetails={() => handleSwitchActivityTab('development')}
+            onViewDevelopmentTab={() => handleSwitchActivityTab('development')}
           />
         </div>
       </div>
@@ -473,16 +409,6 @@ export const IssueDetailView: React.FC<IssueDetailViewProps> = ({
           issueKey={issue.key}
           issueTitle={issue.title}
           onWorkLogged={() => fetchIssue()}
-        />
-      )}
-
-      {/* Edit Issue Modal */}
-      {editModalOpen && (
-        <IssueModal
-          isOpen={editModalOpen}
-          onClose={() => setEditModalOpen(false)}
-          editingIssue={issue}
-          onIssueSaved={() => fetchIssue()}
         />
       )}
 
@@ -523,3 +449,4 @@ export const IssueDetailView: React.FC<IssueDetailViewProps> = ({
     </div>
   );
 };
+

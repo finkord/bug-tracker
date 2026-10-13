@@ -82,7 +82,7 @@ describe('IssueSidebarDetails Component', () => {
 
   it('renders unified properties panel without legacy separate People & Ownership block', () => {
     renderComponent();
-    expect(screen.getByText('Properties')).toBeInTheDocument();
+    expect(screen.getByText(/Properties/)).toBeInTheDocument();
     expect(screen.queryByText('People & Ownership')).not.toBeInTheDocument();
     expect(screen.queryByText('View Profile')).not.toBeInTheDocument();
   });
@@ -99,8 +99,7 @@ describe('IssueSidebarDetails Component', () => {
     const onUpdateFields = vi.fn().mockResolvedValue(undefined);
     renderComponent({ onUpdateFields });
 
-    // Status badge is present
-    expect(screen.getByText('Status')).toBeInTheDocument();
+    // Priority badge is present
     expect(screen.getByText('Priority')).toBeInTheDocument();
   });
 });

@@ -1,11 +1,15 @@
 import React, { useMemo } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { useProjectsQuery } from '../../api/queries';
+import { useActiveProjectStore } from '../../store';
 import { ChevronRight } from 'lucide-react';
 
 export const HeaderBreadcrumbs: React.FC = () => {
   const location = useLocation();
   const { data: projects = [] } = useProjectsQuery();
+  const activeProjectId = useActiveProjectStore((state) => state.activeProjectId);
+  const activeProjectKey = useActiveProjectStore((state) => state.activeProjectKey);
+  const activeProjectName = useActiveProjectStore((state) => state.activeProjectName);
 
   const path = location.pathname;
 
@@ -21,13 +25,40 @@ export const HeaderBreadcrumbs: React.FC = () => {
     if (!param) return undefined;
     const num = Number(param);
     if (!Number.isNaN(num)) {
-      return projects.find((p) => p.id === num);
+      const match = projects.find((p) => p.id === num);
+      if (match) return match;
+      if (activeProjectId === num && activeProjectKey && activeProjectName) {
+        return { id: num, key: activeProjectKey, name: activeProjectName };
+      }
+      return undefined;
     }
-    return projects.find((p) => p.key?.toUpperCase() === param.toUpperCase());
-  }, [param, projects]);
+    const match = projects.find((p) => p.key?.toUpperCase() === param.toUpperCase());
+    if (match) return match;
+    if (activeProjectKey?.toUpperCase() === param.toUpperCase() && activeProjectName) {
+      return { id: activeProjectId || 0, key: activeProjectKey, name: activeProjectName };
+    }
+    return undefined;
+  }, [param, projects, activeProjectId, activeProjectKey, activeProjectName]);
 
   const projectName = foundProject?.name || param;
   const projectKey = foundProject?.key || param;
+
+  if (path === '/projects/new' || path === '/projects/create') {
+    return (
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)] min-w-0">
+        <Link
+          to="/projects"
+          className="hover:text-[var(--md-sys-color-primary)] transition-colors font-medium truncate shrink-0"
+        >
+          <span>Projects</span>
+        </Link>
+        <ChevronRight className="w-3.5 h-3.5 opacity-40 shrink-0" />
+        <span className="font-semibold text-[var(--md-sys-color-primary)] truncate">
+          New Project
+        </span>
+      </nav>
+    );
+  }
 
   if (projectMatch && projectKey && param !== 'new' && param !== 'create') {
     let viewLabel = 'Overview';

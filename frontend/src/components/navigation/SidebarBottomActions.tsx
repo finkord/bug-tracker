@@ -97,10 +97,11 @@ export const SidebarBottomActions: React.FC<SidebarBottomActionsProps> = ({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className={`w-full flex items-center rounded-lg transition-colors cursor-pointer select-none text-left ${collapsed
+          className={`w-full flex items-center rounded-xl transition-colors cursor-pointer select-none text-left shrink-0 ${
+            collapsed
               ? 'h-9 w-9 mx-auto justify-center hover:bg-[var(--md-sys-color-surface-container-high)]'
-              : 'h-10 px-2.5 gap-2.5 hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)]'
-            }`}
+              : 'h-9 hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] pr-2'
+          }`}
           aria-label="User settings and account menu"
         >
           {collapsed ? (
@@ -111,7 +112,7 @@ export const SidebarBottomActions: React.FC<SidebarBottomActionsProps> = ({
               role={user.systemRole}
             />
           ) : (
-            <div className="w-4 h-4 flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 shrink-0 flex items-center justify-center">
               <Avatar
                 name={displayName}
                 avatarUrl={user.avatarUrl}
@@ -122,7 +123,7 @@ export const SidebarBottomActions: React.FC<SidebarBottomActionsProps> = ({
           )}
           {!collapsed && (
             <>
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 ml-1.5">
                 <p className="text-xs font-semibold truncate leading-tight text-[var(--md-sys-color-on-surface)]">
                   {displayName}
                 </p>
@@ -130,7 +131,7 @@ export const SidebarBottomActions: React.FC<SidebarBottomActionsProps> = ({
                   {user.systemRole || 'MEMBER'}
                 </p>
               </div>
-              <ChevronsUpDown className="w-3.5 h-3.5 opacity-60 text-[var(--md-sys-color-on-surface-variant)] shrink-0" />
+              <ChevronsUpDown className="w-3.5 h-3.5 opacity-60 text-[var(--md-sys-color-on-surface-variant)] shrink-0 ml-1" />
             </>
           )}
         </button>
@@ -208,8 +209,7 @@ export const SidebarBottomActions: React.FC<SidebarBottomActionsProps> = ({
   ) : null;
 
   return (
-    <div className={`shrink-0 border-t border-[var(--md-sys-color-outline-variant)]/15 flex flex-col gap-1 ${collapsed ? 'p-1.5' : 'px-2 py-2'
-      }`}>
+    <div className="shrink-0 px-3 py-2 border-t border-[var(--md-sys-color-outline-variant)]/15 flex flex-col gap-1">
       {/* Theme Toggle Utility (3-State Switching: System, Light, Dark) */}
       <div className="flex items-center w-full">
         {collapsed ? (
@@ -226,7 +226,7 @@ export const SidebarBottomActions: React.FC<SidebarBottomActionsProps> = ({
             <button
               type="button"
               onClick={handleToggleTheme}
-              className="w-9 h-9 mx-auto rounded-lg flex items-center justify-center text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)] transition-colors cursor-pointer"
+              className="w-9 h-9 mx-auto rounded-xl flex items-center justify-center text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)] transition-colors cursor-pointer shrink-0"
               aria-label={`Toggle theme (currently ${theme})`}
             >
               {theme === 'system' ? (
@@ -242,7 +242,7 @@ export const SidebarBottomActions: React.FC<SidebarBottomActionsProps> = ({
           <div
             role="group"
             aria-label="Theme selection"
-            className="w-full h-[34px] p-0.5 grid grid-cols-3 gap-0.5 rounded-lg bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/20 text-xs select-none"
+            className="w-full h-9 p-0.5 grid grid-cols-3 gap-0.5 rounded-xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/20 text-xs select-none shrink-0"
           >
             <button
               type="button"

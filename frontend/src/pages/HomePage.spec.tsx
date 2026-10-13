@@ -114,6 +114,7 @@ vi.mock('../api/queries', () => ({
   useProjectsQuery: vi.fn(),
   useProjectSprintsQuery: vi.fn(),
   useMyWorklogsQuery: vi.fn(),
+  useCreateIssueMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useUpdateIssueStatusMutation: () => ({ mutateAsync: vi.fn() }),
   useIssueDetailQuery: () => ({ data: mockAssignedIssues[0], isLoading: false }),
   useUserDetailQuery: () => ({ data: null, isLoading: false }),
@@ -194,7 +195,6 @@ describe('HomePage (Personal Dashboard)', () => {
     expect(screen.getByText('ADMIN')).toBeInTheDocument();
     expect(screen.getByText('Create Issue')).toBeInTheDocument();
     expect(screen.getByText('Time Logs')).toBeInTheDocument();
-    expect(screen.getByText('My Issues')).toBeInTheDocument();
     expect(screen.getByText('Projects')).toBeInTheDocument();
   });
 
@@ -205,19 +205,13 @@ describe('HomePage (Personal Dashboard)', () => {
       </MemoryRouter>,
     );
 
-    // Initial tab: In Progress
+    // Initial tab: Assigned to Me (active tasks)
     expect(screen.getByText('Implement database connection pooler')).toBeInTheDocument();
-    expect(screen.queryByText('Draft architecture RFC for search')).not.toBeInTheDocument();
-
-    // Switch to To Do tab
-    const todoTab = screen.getByRole('button', { name: /To Do \(1\)/i });
-    fireEvent.click(todoTab);
-
     expect(screen.getByText('Draft architecture RFC for search')).toBeInTheDocument();
-    expect(screen.queryByText('Implement database connection pooler')).not.toBeInTheDocument();
+    expect(screen.queryByText('Migrate to NestJS 12')).not.toBeInTheDocument();
 
     // Switch to Done tab
-    const doneTab = screen.getByRole('button', { name: /Done \(1\)/i });
+    const doneTab = screen.getByRole('tab', { name: /Done \/ Closed/i });
     fireEvent.click(doneTab);
 
     expect(screen.getByText('Migrate to NestJS 12')).toBeInTheDocument();

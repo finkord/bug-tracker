@@ -228,13 +228,13 @@ export const SidebarProjectSwitcher: React.FC<SidebarProjectSwitcherProps> = ({
 
   if (collapsed) {
     return (
-      <div className="shrink-0 flex items-center justify-center py-1">
+      <div className="shrink-0 px-3 flex items-center justify-center">
         <DropdownMenu open={isOpen} onOpenChange={handleOpenChange}>
           <DropdownMenuTrigger asChild>
             <Tooltip content={projectName} side="right" sideOffset={8}>
               <button
                 type="button"
-                className="w-7 h-7 rounded-lg bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] flex items-center justify-center transition-all cursor-pointer border border-[var(--md-sys-color-outline-variant)]/40 shadow-2xs overflow-hidden"
+                className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] flex items-center justify-center transition-all cursor-pointer border border-[var(--md-sys-color-outline-variant)]/40 shadow-2xs overflow-hidden shrink-0"
                 aria-label="Switch active project"
               >
                 <EntityAvatar
@@ -253,31 +253,32 @@ export const SidebarProjectSwitcher: React.FC<SidebarProjectSwitcherProps> = ({
   }
 
   return (
-    <div className="shrink-0 px-2.5 flex items-center">
+    <div className="shrink-0 px-3 flex items-center">
       <DropdownMenu open={isOpen} onOpenChange={handleOpenChange}>
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            className="w-full h-8 px-2 flex items-center justify-between rounded-lg bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] transition-all cursor-pointer border border-[var(--md-sys-color-outline-variant)]/30 overflow-hidden"
+            className="w-full h-9 flex items-center justify-between rounded-xl bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] transition-all cursor-pointer border border-[var(--md-sys-color-outline-variant)]/30 overflow-hidden pr-2 shrink-0"
             aria-label="Switch active project"
           >
-            <div className="flex items-center gap-2 min-w-0 flex-1">
+            {/* 36x36px avatar slot strictly matching the collapsed rail X=30px center line */}
+            <div className="w-9 h-9 shrink-0 flex items-center justify-center">
               <EntityAvatar
                 name={projectName}
                 projectKey={activeProject?.key}
                 avatarUrl={activeProject?.avatarUrl}
                 size="xs"
               />
-              <div className="text-left min-w-0 flex-1">
-                <p className="text-xs font-semibold truncate leading-tight text-[var(--md-sys-color-on-surface)]">
-                  {projectName}
-                </p>
-                <p className="text-[9px] font-mono text-[var(--md-sys-color-on-surface-variant)] truncate leading-none mt-0.5">
-                  {projectKey}
-                </p>
-              </div>
             </div>
-            <ChevronsUpDown className="w-3 h-3 opacity-60 shrink-0 ml-1 text-[var(--md-sys-color-on-surface-variant)]" />
+            <div className="text-left min-w-0 flex-1 ml-1.5">
+              <p className="text-xs font-semibold truncate leading-tight text-[var(--md-sys-color-on-surface)]">
+                {projectName}
+              </p>
+              <p className="text-[9px] font-mono text-[var(--md-sys-color-on-surface-variant)] truncate leading-none mt-0.5">
+                {projectKey}
+              </p>
+            </div>
+            <ChevronsUpDown className="w-3.5 h-3.5 opacity-60 shrink-0 ml-1 text-[var(--md-sys-color-on-surface-variant)]" />
           </button>
         </DropdownMenuTrigger>
         {dropdownContent}

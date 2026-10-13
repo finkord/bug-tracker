@@ -107,7 +107,7 @@ describe('IssueDetailPage Linear/Jira Layout', () => {
     });
   });
 
-  it('renders clean layout with quick action buttons and directly visible activity tabs when empty', () => {
+  it('renders clean layout with title, description, directly accessible subtasks and activity tabs', () => {
     mockUseIssueDetailQuery.mockReturnValue({
       data: mockIssue,
       isLoading: false,
@@ -125,27 +125,20 @@ describe('IssueDetailPage Linear/Jira Layout', () => {
       </QueryClientProvider>,
     );
 
-    // Assert description is rendered
+    // Assert title and description are rendered
     expect(screen.getByText('Critical Login Bug')).toBeInTheDocument();
     expect(screen.getByText('Cannot login with OAuth credentials')).toBeInTheDocument();
 
-    // Assert lazy anchor bar is NOT rendered
-    expect(screen.queryByText('Instant Access to Description and Comments')).not.toBeInTheDocument();
-
-    // Assert sleek Linear-style inline quick-add toolbar is rendered
-    expect(screen.getByRole('button', { name: /Add subtask/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Link issue/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Attach files/i })).toBeInTheDocument();
-
-    // Assert Subtasks, Links, Attachments sections are hidden when empty
-    expect(screen.queryByText(/No subtasks yet/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/No links attached/i)).not.toBeInTheDocument();
+    // Assert subtasks section is directly rendered with checklist and inline input
+    expect(screen.getByRole('heading', { name: /Subtasks/i })).toBeInTheDocument();
+    expect(screen.getByText(/No subtasks yet/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Add a subtask/i)).toBeInTheDocument();
 
     // Assert Comments tab is immediately present
     expect(screen.getByRole('tab', { name: /Comments/i })).toBeInTheDocument();
   });
 
-  it('expands Subtasks section when user clicks Add subtask button', () => {
+  it('renders quick action to link another issue', () => {
     mockUseIssueDetailQuery.mockReturnValue({
       data: mockIssue,
       isLoading: false,
@@ -163,11 +156,6 @@ describe('IssueDetailPage Linear/Jira Layout', () => {
       </QueryClientProvider>,
     );
 
-    const addSubtaskBtn = screen.getByRole('button', { name: /Add subtask/i });
-    fireEvent.click(addSubtaskBtn);
-
-    // Subtasks section now expands
-    expect(screen.getByText(/No subtasks yet/i)).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/Add a subtask/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Link another issue/i })).toBeInTheDocument();
   });
 });

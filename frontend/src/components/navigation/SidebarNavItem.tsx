@@ -44,7 +44,9 @@ export const SidebarNavItem: React.FC<SidebarNavItemProps> = ({
         to={item.path}
         end={item.exact}
         onClick={onNavigate}
-        className={`w-9 h-9 mx-auto rounded-lg flex flex-col items-center justify-center transition-all group select-none ${
+        className={`w-9 h-9 mx-auto rounded-xl flex ${
+          showCollapsedLabels ? 'flex-col justify-center' : 'items-center justify-center'
+        } transition-all group select-none shrink-0 ${
           isActive
             ? 'bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] font-semibold shadow-2xs'
             : 'text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)]'
@@ -72,20 +74,23 @@ export const SidebarNavItem: React.FC<SidebarNavItemProps> = ({
       to={item.path}
       end={item.exact}
       onClick={onNavigate}
-      className={`w-full h-[34px] px-2.5 flex items-center gap-2.5 rounded-lg transition-colors select-none text-[13px] ${
+      className={`w-full h-9 flex items-center rounded-xl transition-colors select-none text-[13px] pr-2.5 shrink-0 ${
         isActive
           ? 'bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] font-semibold shadow-2xs'
           : 'text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)] font-medium'
       }`}
     >
-      <Icon
-        className={`w-4 h-4 shrink-0 ${
-          isActive
-            ? 'text-[var(--md-sys-color-primary)]'
-            : 'text-[var(--md-sys-color-on-surface-variant)] group-hover:text-[var(--md-sys-color-on-surface)]'
-        }`}
-      />
-      <span className="truncate flex-1 leading-none">{item.label}</span>
+      {/* 36x36px icon slot strictly matching the collapsed rail X=30px center line */}
+      <div className="w-9 h-9 shrink-0 flex items-center justify-center">
+        <Icon
+          className={`w-4 h-4 shrink-0 ${
+            isActive
+              ? 'text-[var(--md-sys-color-primary)]'
+              : 'text-[var(--md-sys-color-on-surface-variant)] group-hover:text-[var(--md-sys-color-on-surface)]'
+          }`}
+        />
+      </div>
+      <span className="truncate flex-1 leading-none ml-1.5">{item.label}</span>
     </NavLink>
   );
 };

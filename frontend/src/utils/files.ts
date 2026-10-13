@@ -27,3 +27,14 @@ export const ALLOWED_IMAGE_TYPES = [
 export function isAllowedImage(file: File): boolean {
   return ALLOWED_IMAGE_TYPES.includes(file.type);
 }
+
+export function resolveSecureMediaUrl(url: string | null | undefined): string {
+  if (!url) return '';
+  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  if (!token) return url;
+  if (url.startsWith('/api') || url.includes('/issues/attachments/')) {
+    const sep = url.includes('?') ? '&' : '?';
+    return `${url}${sep}token=${encodeURIComponent(token)}`;
+  }
+  return url;
+}

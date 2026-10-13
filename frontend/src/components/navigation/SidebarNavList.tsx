@@ -80,7 +80,7 @@ export const SidebarNavList: React.FC<SidebarNavListProps> = ({
     ];
 
     return (
-      <nav aria-label="Guest Navigation" className="flex-1 py-3 overflow-y-auto overflow-x-hidden space-y-1">
+      <nav aria-label="Guest Navigation" className="flex-1 px-3 py-2 overflow-y-auto overflow-x-hidden flex flex-col gap-1">
         {guestItems.map((item) => (
           <SidebarNavItem
             key={item.label}
@@ -143,17 +143,10 @@ export const SidebarNavList: React.FC<SidebarNavListProps> = ({
       path: '/dashboard',
       exact: true,
       icon: LayoutDashboard,
-      activeMatch: (p) => p === '/' || p === '/dashboard',
+      activeMatch: (p) => p === '/' || p === '/dashboard' || p.startsWith('/my-issues'),
     },
     {
-      label: 'My Issues',
-      shortLabel: 'Mine',
-      path: '/my-issues',
-      icon: UserCheck,
-      activeMatch: (p) => p.startsWith('/my-issues'),
-    },
-    {
-      label: 'Advanced Search',
+      label: 'Search',
       shortLabel: 'Search',
       path: '/search',
       icon: Search,
@@ -172,15 +165,13 @@ export const SidebarNavList: React.FC<SidebarNavListProps> = ({
     },
   ];
 
-
-
   return (
-    <nav aria-label="Main Navigation" className="flex-1 px-2 py-2 overflow-y-auto overflow-x-hidden space-y-1">
+    <nav aria-label="Main Navigation" className="flex-1 px-3 py-1 overflow-y-auto overflow-x-hidden flex flex-col gap-1">
       {/* ─── 1. Active Project Scope (Top Level - Linear Style) ─── */}
       {isProjectTier && (
-        <div className="space-y-0.5">
+        <div className="flex flex-col gap-1">
           {!collapsed && (
-            <div className="px-2 pt-1 pb-1 text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)]/60 flex items-center justify-between">
+            <div className="px-2 pt-1.5 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)]/60 flex items-center justify-between">
               <span className="truncate">{activeProject?.name || 'Project Views'}</span>
             </div>
           )}
@@ -193,14 +184,20 @@ export const SidebarNavList: React.FC<SidebarNavListProps> = ({
               onNavigate={onNavigate}
             />
           ))}
-          <div className="my-1.5 border-t border-[var(--md-sys-color-outline-variant)]/15" />
+        </div>
+      )}
+
+      {/* Symmetric divider between Project and Personal sections */}
+      {isProjectTier && (
+        <div className="py-1 shrink-0" aria-hidden="true">
+          <div className="border-t border-[var(--md-sys-color-outline-variant)]/20 mx-1" />
         </div>
       )}
 
       {/* ─── 2. Personal Section ─── */}
-      <div className="space-y-0.5">
+      <div className="flex flex-col gap-1">
         {!collapsed && (
-          <div className="px-2 pt-1 pb-1 text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)]/60">
+          <div className="px-2 pt-1.5 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)]/60">
             Personal
           </div>
         )}
@@ -213,14 +210,17 @@ export const SidebarNavList: React.FC<SidebarNavListProps> = ({
             onNavigate={onNavigate}
           />
         ))}
+      </div>
 
+      {/* Symmetric divider between Personal and Utilities sections */}
+      <div className="py-1 shrink-0" aria-hidden="true">
+        <div className="border-t border-[var(--md-sys-color-outline-variant)]/20 mx-1" />
       </div>
 
       {/* ─── 3. Utilities Section (Bottom of Nav List) ─── */}
-      <div className="pt-1.5 space-y-0.5">
-        <div className="my-1.5 border-t border-[var(--md-sys-color-outline-variant)]/15" />
+      <div className="flex flex-col gap-1">
         {!collapsed && (
-          <div className="px-2 pt-1 pb-1 text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)]/60">
+          <div className="px-2 pt-1.5 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)]/60">
             Utilities
           </div>
         )}

@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import type { AttachmentItem, UserProfile } from '../../api/types/index.js';
 import { Card, Button, Modal } from '../ui/index.js';
+import { resolveSecureMediaUrl } from '../../utils/files.js';
 import {
   Paperclip,
   UploadCloud,
@@ -10,6 +11,7 @@ import {
   Trash2,
   Maximize2,
   Loader2,
+  X,
 } from 'lucide-react';
 
 interface IssueAttachmentsSectionProps {
@@ -17,6 +19,7 @@ interface IssueAttachmentsSectionProps {
   currentUser: UserProfile | null;
   onUpload: (file: File) => Promise<void>;
   onDelete: (attachmentId: number) => Promise<void>;
+  onClose?: () => void;
 }
 
 export const IssueAttachmentsSection: React.FC<IssueAttachmentsSectionProps> = ({
@@ -24,6 +27,7 @@ export const IssueAttachmentsSection: React.FC<IssueAttachmentsSectionProps> = (
   currentUser,
   onUpload,
   onDelete,
+  onClose,
 }) => {
   const [uploading, setUploading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -58,20 +62,27 @@ export const IssueAttachmentsSection: React.FC<IssueAttachmentsSectionProps> = (
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  const getSecureUrl = (url: string) => {
-    const token = localStorage.getItem('accessToken');
-    if (!token) return url;
-    const sep = url.includes('?') ? '&' : '?';
-    return `${url}${sep}token=${encodeURIComponent(token)}`;
-  };
+  const getSecureUrl = (url: string) => resolveSecureMediaUrl(url);
 
   return (
-    <div className="space-y-4 pt-2">
-      <div className="flex items-center justify-between">
+    <div className="space-y-3 pt-1">
+      <div className="flex items-center justify-between pb-1.5 border-b border-[var(--md-sys-color-outline-variant)]/40">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)] flex items-center gap-1.5">
           <Paperclip className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
           Attachments ({attachments.length})
         </h3>
+        {onClose && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            onClick={onClose}
+            className="h-6 w-6 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]"
+            title="Collapse attachments section"
+          >
+            <X className="w-3.5 h-3.5" />
+          </Button>
+        )}
       </div>
 
       {/* Drag & Drop Upload Zone */}

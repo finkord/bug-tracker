@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { ZoomIn, AlertCircle, ExternalLink } from 'lucide-react';
+import { ZoomIn, AlertCircle, ExternalLink, Download } from 'lucide-react';
+import { resolveSecureMediaUrl } from '../../utils/files.js';
+import { Modal } from '../ui/Modal.js';
 
 interface MarkdownContentProps {
   content?: string | null;
@@ -15,6 +17,7 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({
   onToggleChecklist,
 }) => {
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
+  const [lightboxImage, setLightboxImage] = useState<{ url: string; title: string } | null>(null);
 
   if (!content || !content.trim()) {
     return (
@@ -23,6 +26,14 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({
       </span>
     );
   }
+
+  const handleImageClickInternal = (url: string, title: string) => {
+    const secureUrl = resolveSecureMediaUrl(url);
+    if (onImageClick) {
+      onImageClick(secureUrl, title);
+    }
+    setLightboxImage({ url: secureUrl, title });
+  };
 
   const handleImageError = (url: string) => {
     setFailedImages((prev) => ({ ...prev, [url]: true }));
@@ -197,8 +208,9 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({
       }
 
       const altText = match[1] || 'Screenshot';
-      const imgUrl = match[2];
-      const isFailed = failedImages[imgUrl];
+      const rawImgUrl = match[2];
+      const imgUrl = resolveSecureMediaUrl(rawImgUrl);
+      const isFailed = failedImages[rawImgUrl];
 
       parts.push(
         <div key={`img-block-${matchStart}`} className="my-2.5 inline-block w-full max-w-lg">
@@ -218,13 +230,13 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({
           ) : (
             <div
               className="group relative rounded-xl overflow-hidden border border-[var(--md-sys-color-outline-variant)] bg-black/5 dark:bg-black/20 hover:border-[var(--md-sys-color-primary)] transition-all cursor-pointer shadow-xs"
-              onClick={() => onImageClick?.(imgUrl, altText)}
+              onClick={() => handleImageClickInternal(rawImgUrl, altText)}
             >
               <img
                 src={imgUrl}
                 alt={altText}
                 loading="lazy"
-                onError={() => handleImageError(imgUrl)}
+                onError={() => handleImageError(rawImgUrl)}
                 className="w-full max-h-96 object-contain rounded-xl transition-transform duration-200 group-hover:scale-[1.01]"
               />
               <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 text-white text-xs font-semibold backdrop-blur-[2px]">
@@ -334,18 +346,19 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({
       // Check for standalone image URL (png/jpg/webp)
       const directImgMatch = part.match(/(https?:\/\/[^\s]+\.(?:png|jpg|jpeg|gif|webp|svg)(?:\?[^\s]*)?)/i);
       if (directImgMatch) {
-        const imgUrl = directImgMatch[0];
+        const rawUrl = directImgMatch[0];
+        const secureUrl = resolveSecureMediaUrl(rawUrl);
         const before = part.substring(0, directImgMatch.index);
-        const after = part.substring((directImgMatch.index || 0) + imgUrl.length);
+        const after = part.substring((directImgMatch.index || 0) + rawUrl.length);
         return (
           <React.Fragment key={i}>
             {before}
             <div className="my-2 inline-block max-w-lg">
               <img
-                src={imgUrl}
+                src={secureUrl}
                 alt="Image attachment"
                 loading="lazy"
-                onClick={() => onImageClick?.(imgUrl, 'Image')}
+                onClick={() => handleImageClickInternal(rawUrl, 'Image')}
                 className="max-h-80 rounded-xl border border-[var(--md-sys-color-outline-variant)] cursor-pointer hover:border-[var(--md-sys-color-primary)] transition-colors"
               />
             </div>
@@ -357,5 +370,42 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({
     });
   };
 
-  return <div className={`markdown-body space-y-1 ${className}`}>{parseMarkdown(content)}</div>;
+  return (
+    <>
+      <div className={`markdown-body space-y-1 ${className}`}>{parseMarkdown(content)}</div>
+
+      {lightboxImage && (
+        <Modal
+          isOpen={true}
+          onClose={() => setLightboxImage(null)}
+          title={
+            <div className="flex items-center justify-between w-full pr-6">
+              <span className="truncate text-sm font-semibold text-[var(--md-sys-color-on-surface)]">
+                {lightboxImage.title || 'Image Preview'}
+              </span>
+              <a
+                href={lightboxImage.url}
+                target="_blank"
+                rel="noreferrer"
+                download
+                className="inline-flex items-center gap-1 text-xs text-[var(--md-sys-color-primary)] hover:underline ml-3 shrink-0"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Download</span>
+              </a>
+            </div>
+          }
+          size="lg"
+        >
+          <div className="p-3 flex items-center justify-center max-h-[75vh] overflow-auto bg-black/5 dark:bg-black/40 rounded-xl">
+            <img
+              src={lightboxImage.url}
+              alt={lightboxImage.title || 'Preview'}
+              className="max-w-full max-h-[70vh] rounded-lg object-contain"
+            />
+          </div>
+        </Modal>
+      )}
+    </>
+  );
 };

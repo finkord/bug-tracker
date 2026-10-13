@@ -1,50 +1,53 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import type { IssueItem, IssueStatus } from '../../api/types/index.js';
+import { Link } from 'react-router-dom';
+import type { IssueItem, IssueStatus, UserProfile } from '../../api/types/index.js';
 import { Avatar } from '../common/Avatar.js';
 import { UserProfilePopover } from '../common/UserProfilePopover.js';
-import { BackButton } from '../common/BackButton.js';
+import { StatusBadge } from '../ui/StatusBadge.js';
+import { Button } from '../ui/Button.js';
+import { Dropdown, type DropdownMenuItemConfig } from '../ui/Dropdown.js';
 import {
-  Button,
-  Badge,
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from '../ui/index.js';
-import {
-  Edit3,
-  Trash2,
-  Layers,
   Radio,
   Copy,
   Check,
+  Trash2,
+  ExternalLink,
+  X,
+  MoreHorizontal,
+  Share2,
 } from 'lucide-react';
 
-interface IssueDetailHeaderProps {
+import { IssueTypeIcon } from '../ui/IssueTypeIcon.js';
+
+export interface IssueDetailHeaderProps {
   issue: IssueItem;
-  activeViewers: Array<{ id: number; fullName: string; avatarUrl?: string }>;
-  deleting: boolean;
+  currentUser?: UserProfile | null;
+  activeViewers?: Array<{ id: number; fullName: string; avatarUrl?: string }>;
+  deleting?: boolean;
   onStatusChange: (status: IssueStatus) => Promise<void>;
-  onEditClick: () => void;
   onDeleteClick: () => void;
   onBack?: () => void;
+  isModal?: boolean;
+  onClose?: () => void;
 }
 
 export const IssueDetailHeader: React.FC<IssueDetailHeaderProps> = ({
   issue,
-  activeViewers,
-  deleting,
+  currentUser,
+  activeViewers = [],
+  deleting: _deleting = false,
   onStatusChange,
-  onEditClick,
   onDeleteClick,
-  onBack,
+  onBack: _onBack,
+  isModal = false,
+  onClose,
 }) => {
-  const location = useLocation();
   const [hasCopiedKey, setHasCopiedKey] = useState(false);
+  const [hasCopiedLink, setHasCopiedLink] = useState(false);
 
-  const backLabel = (location.state as { label?: string } | null)?.label || (issue.projectKey ? `Back to ${issue.projectKey}` : 'Back');
+  const canDelete =
+    currentUser?.isAdmin ||
+    currentUser?.systemRole === 'ADMIN';
 
   const handleCopyKey = async () => {
     try {
@@ -56,64 +59,88 @@ export const IssueDetailHeader: React.FC<IssueDetailHeaderProps> = ({
     }
   };
 
+  const handleCopyLink = async () => {
+    try {
+      const url = `${window.location.origin}/issues/${issue.key}`;
+      await navigator.clipboard.writeText(url);
+      setHasCopiedLink(true);
+      setTimeout(() => setHasCopiedLink(false), 2000);
+    } catch {
+      // Ignored
+    }
+  };
+
+  const renderActiveViewers = () => (
+    <div className="flex items-center gap-1.5 bg-[var(--md-sys-color-primary-container)]/20 px-2.5 py-1 rounded-full border border-[var(--md-sys-color-primary)]/30">
+      <Radio className="w-3 h-3 text-[var(--md-sys-color-primary)] animate-pulse" />
+      <span className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] mr-1 hidden sm:inline">
+        Viewing:
+      </span>
+      <div className="flex -space-x-1.5 overflow-hidden">
+        {activeViewers.map((viewer) => (
+          <UserProfilePopover key={viewer.id} user={viewer}>
+            <div className="inline-block ring-2 ring-[var(--md-sys-color-surface)] rounded-full cursor-pointer hover:ring-[var(--md-sys-color-primary)] transition-all">
+              <Avatar
+                name={viewer.fullName}
+                avatarUrl={viewer.avatarUrl || undefined}
+                size="sm"
+                className="w-5 h-5 text-[10px]"
+              />
+            </div>
+          </UserProfilePopover>
+        ))}
+      </div>
+    </div>
+  );
+
+  const dropdownItems: DropdownMenuItemConfig[] = [
+    {
+      label: hasCopiedKey ? 'Key Copied!' : 'Copy Issue Key',
+      icon: hasCopiedKey ? <Check className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" /> : <Copy className="w-3.5 h-3.5" />,
+      onClick: handleCopyKey,
+    },
+    {
+      label: hasCopiedLink ? 'Link Copied!' : 'Copy Link to Issue',
+      icon: hasCopiedLink ? <Check className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" /> : <Share2 className="w-3.5 h-3.5" />,
+      onClick: handleCopyLink,
+    },
+  ];
+
+  if (canDelete) {
+    dropdownItems.push(
+      { label: '', divider: true },
+      {
+        label: 'Delete Issue',
+        icon: <Trash2 className="w-3.5 h-3.5" />,
+        onClick: onDeleteClick,
+        danger: true,
+      },
+    );
+  }
+
   return (
-    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--md-sys-color-outline-variant)]/40 pb-5">
-      <div className="flex flex-wrap items-center gap-3">
-        <BackButton
-          fallbackPath={issue.projectKey ? `/projects/${issue.projectKey}/board` : '/projects'}
-          label={backLabel}
-          onClick={onBack}
-        />
+    <div className="flex items-center justify-between gap-3 border-b border-[var(--md-sys-color-outline-variant)]/40 pb-3">
+      {/* Left: Type, Key, Status cockpit, Parent, Sprint */}
+      <div className="flex items-center gap-2.5 flex-wrap min-w-0">
+        {/* Issue Type Chip */}
+        <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/50 text-xs font-semibold text-[var(--md-sys-color-on-surface)]">
+          <IssueTypeIcon type={issue.issueType} />
+          <span className="capitalize">{issue.issueType?.toLowerCase() || 'Issue'}</span>
+        </div>
 
-        <div className="h-4 w-px bg-[var(--md-sys-color-outline-variant)]/60" />
-
-        <Link
-          to={`/projects/${issue.projectKey || issue.projectId}/board`}
-          className="text-sm font-medium text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] transition-colors flex items-center gap-1.5"
-        >
-          <Layers className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
-          {issue.projectName}
-        </Link>
-
-        {issue.parent?.parent && (
-          <>
-            <span className="text-[var(--md-sys-color-on-surface-variant)]">/</span>
-            <Link
-              to={`/issues/${issue.parent.parent.key}`}
-              className="text-sm font-medium text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] transition-colors font-mono inline-flex items-center gap-1"
-              title={`Epic: ${issue.parent.parent.title}`}
-            >
-              <Layers className="w-3.5 h-3.5 text-[var(--md-sys-color-secondary)]" />
-              <span>{issue.parent.parent.key}</span>
-            </Link>
-          </>
-        )}
-
-        {issue.parent && (
-          <>
-            <span className="text-[var(--md-sys-color-on-surface-variant)]">/</span>
-            <Link
-              to={`/issues/${issue.parent.key}`}
-              className="text-sm font-medium text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] transition-colors font-mono inline-flex items-center gap-1"
-              title={`Parent: ${issue.parent.title}`}
-            >
-              <span>{issue.parent.key}</span>
-            </Link>
-          </>
-        )}
-
-        <span className="text-[var(--md-sys-color-on-surface-variant)]">/</span>
-
+        {/* Issue Key with Quick Copy */}
         <div className="inline-flex items-center gap-1">
-          <Badge variant="neutral" className="font-mono text-xs px-2.5 py-0.5 font-bold tracking-wide">
+          <span className="font-mono text-xs font-bold text-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/70 px-2.5 py-1 rounded-lg border border-[var(--md-sys-color-primary)]/20">
             {issue.key}
-          </Badge>
+          </span>
           <Button
             type="button"
             variant="ghost"
             size="icon-sm"
             onClick={handleCopyKey}
             aria-label="Copy issue key to clipboard"
+            title="Copy issue key"
+            className="h-7 w-7 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]"
           >
             {hasCopiedKey ? (
               <Check className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
@@ -123,64 +150,86 @@ export const IssueDetailHeader: React.FC<IssueDetailHeaderProps> = ({
           </Button>
         </div>
 
-        <div className="w-36">
-          <Select value={issue.status} onValueChange={(val) => onStatusChange(val as IssueStatus)}>
-            <SelectTrigger className="h-8 text-xs font-semibold">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="OPEN">Open</SelectItem>
-              <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-              <SelectItem value="REVIEW">In Review</SelectItem>
-              <SelectItem value="RESOLVED">Resolved</SelectItem>
-              <SelectItem value="CLOSED">Closed</SelectItem>
-            </SelectContent>
-          </Select>
+        {/* Primary Status Workflow Cockpit */}
+        <div className="inline-flex items-center">
+          <StatusBadge
+            status={issue.status}
+            interactive={true}
+            onStatusChange={onStatusChange}
+            size="md"
+          />
         </div>
-      </div>
 
-      <div className="flex items-center gap-2.5">
-        {activeViewers.length > 0 && (
-          <div className="flex items-center gap-1.5 bg-[var(--md-sys-color-primary-container)]/20 px-2.5 py-1 rounded-full border border-[var(--md-sys-color-primary)]/30 mr-1">
-            <Radio className="w-3 h-3 text-[var(--md-sys-color-primary)] animate-pulse" />
-            <span className="text-xs text-[var(--md-sys-color-on-surface-variant)] mr-1">Viewing:</span>
-            <div className="flex -space-x-1.5 overflow-hidden">
-              {activeViewers.map((viewer) => (
-                <UserProfilePopover key={viewer.id} user={viewer}>
-                  <div className="inline-block ring-2 ring-[var(--md-sys-color-surface)] rounded-full cursor-pointer hover:ring-[var(--md-sys-color-primary)] transition-all">
-                    <Avatar
-                      name={viewer.fullName}
-                      avatarUrl={viewer.avatarUrl || undefined}
-                      size="sm"
-                      className="w-5 h-5 text-[10px]"
-                    />
-                  </div>
-                </UserProfilePopover>
-              ))}
-            </div>
-          </div>
+        {/* Parent Link if Subtask */}
+        {issue.parent && (
+          <Link
+            to={`/issues/${issue.parent.key}`}
+            className="text-xs font-medium text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] transition-colors inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/40 font-mono"
+            title={`Parent: ${issue.parent.title}`}
+          >
+            <span className="text-[10px] text-[var(--md-sys-color-on-surface-variant)] uppercase font-sans">Parent:</span>
+            <span>{issue.parent.key}</span>
+          </Link>
         )}
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onEditClick}
-          className="gap-1.5 text-xs font-medium text-[var(--md-sys-color-on-surface)]"
-        >
-          <Edit3 className="w-3.5 h-3.5 text-[var(--md-sys-color-on-surface-variant)]" />
-          Edit
-        </Button>
+        {/* Sprint Chip */}
+        {issue.sprint?.name && (
+          <span className="text-xs font-medium text-[var(--md-sys-color-on-surface-variant)] bg-[var(--md-sys-color-surface-container)] px-2 py-0.5 rounded-md border border-[var(--md-sys-color-outline-variant)]/60">
+            {issue.sprint.name}
+          </span>
+        )}
+      </div>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onDeleteClick}
-          disabled={deleting}
-          className="gap-1.5 text-xs font-medium text-[var(--md-sys-color-error)] hover:bg-[var(--md-sys-color-error-container)]/20 hover:text-[var(--md-sys-color-error)]"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-          Delete
-        </Button>
+      {/* Right: Presence, Actions Dropdown Menu, Modal Controls */}
+      <div className="flex items-center gap-1.5 shrink-0">
+        {activeViewers.length > 0 && renderActiveViewers()}
+
+        {/* More Actions Dropdown Menu */}
+        <Dropdown
+          trigger={
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className="h-8 w-8 rounded-lg text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container)]"
+              aria-label="More issue actions"
+              title="More actions"
+            >
+              <MoreHorizontal className="w-4 h-4" />
+            </Button>
+          }
+          items={dropdownItems}
+          align="end"
+        />
+
+        {/* Modal Controls */}
+        {isModal && (
+          <>
+            <Link
+              to={`/issues/${issue.key}`}
+              target="_blank"
+              rel="noreferrer"
+              className="p-1.5 rounded-lg text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-highest)] hover:text-[var(--md-sys-color-primary)] transition-colors flex items-center gap-1 text-xs"
+              title="Open in full page view"
+            >
+              <ExternalLink className="w-4 h-4" />
+              <span className="hidden sm:inline">Full page</span>
+            </Link>
+
+            {onClose && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                onClick={onClose}
+                aria-label="Close"
+                className="h-8 w-8 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

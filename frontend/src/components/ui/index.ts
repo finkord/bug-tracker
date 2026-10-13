@@ -18,3 +18,4 @@ export * from './DataTable';
 export * from './EntityAvatar';
 export * from './AvatarPicker';
 export * from './Textarea';
+export * from './IssueTypeIcon';
