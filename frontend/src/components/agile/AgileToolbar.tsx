@@ -51,7 +51,7 @@ interface AgileToolbarProps {
   onToggleDrawer?: (tab: 'epics' | 'versions') => void;
 }
 
-export const AgileToolbar: React.FC<AgileToolbarProps> = ({
+const AgileToolbarComponent: React.FC<AgileToolbarProps> = ({
   activeProject,
   viewMode,
   onViewModeChange,
@@ -354,3 +354,5 @@ export const AgileToolbar: React.FC<AgileToolbarProps> = ({
     </div>
   );
 };
+
+export const AgileToolbar = React.memo(AgileToolbarComponent);

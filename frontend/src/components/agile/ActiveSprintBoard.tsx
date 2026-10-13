@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -7,7 +7,9 @@ import {
   KeyboardSensor,
   useSensor,
   useSensors,
-  closestCorners,
+  pointerWithin,
+  rectIntersection,
+  type CollisionDetection,
   type DragStartEvent,
   type DragEndEvent,
 } from '@dnd-kit/core';
@@ -62,9 +64,10 @@ interface ScrumColumnProps {
   onStatusChange: (issueId: number, nextStatus: IssueStatus) => void;
   onAssignToMe: (issueId: number) => void;
   currentUserId?: number;
+  orderedIds: number[];
 }
 
-const ScrumColumnDroppable: React.FC<ScrumColumnProps> = ({
+const ScrumColumnDroppableComponent: React.FC<ScrumColumnProps> = ({
   col,
   colIssues,
   activeIssue,
@@ -72,6 +75,7 @@ const ScrumColumnDroppable: React.FC<ScrumColumnProps> = ({
   onStatusChange,
   onAssignToMe,
   currentUserId,
+  orderedIds,
 }) => {
   const isDisallowed = activeIssue
     ? !col.statuses.some((s) => isAllowedTransition(activeIssue.status, s))
@@ -93,7 +97,7 @@ const ScrumColumnDroppable: React.FC<ScrumColumnProps> = ({
     <div
       ref={setNodeRef}
       data-column-status={col.dropStatus}
-      className={`flex flex-col flex-1 min-w-[230px] rounded-3xl bg-[var(--md-sys-color-surface-container-low)] border transition-all duration-150 shadow-2xs ${
+      className={`flex flex-col flex-1 min-w-[230px] rounded-3xl bg-[var(--md-sys-color-surface-container-low)] border transition-colors duration-150 shadow-2xs ${
         isDisallowed
           ? 'opacity-40 border-dashed border-[var(--md-sys-color-outline-variant)]/40 bg-[var(--md-sys-color-surface-container-lowest)] cursor-not-allowed'
           : isOver && !isCurrentColumn
@@ -155,12 +159,23 @@ const ScrumColumnDroppable: React.FC<ScrumColumnProps> = ({
               onStatusChange={onStatusChange}
               onAssignToMe={onAssignToMe}
               currentUserId={currentUserId}
+              orderedIds={orderedIds}
             />
           ))
         )}
       </div>
     </div>
   );
+};
+
+const ScrumColumnDroppable = React.memo(ScrumColumnDroppableComponent);
+
+const boardCollisionDetection: CollisionDetection = (args) => {
+  const pointerCollisions = pointerWithin(args);
+  if (pointerCollisions.length > 0) {
+    return pointerCollisions;
+  }
+  return rectIntersection(args);
 };
 
 export const ActiveSprintBoard: React.FC<ActiveSprintBoardProps> = ({
@@ -224,6 +239,24 @@ export const ActiveSprintBoard: React.FC<ActiveSprintBoardProps> = ({
     setActiveIssue(null);
   };
 
+  const orderedIds = useMemo(() => issues.map((i) => i.id), [issues]);
+
+  const issuesByColumn = useMemo(() => {
+    const map: Record<string, IssueItem[]> = {};
+    for (const col of SCRUM_COLUMNS) {
+      map[col.id] = [];
+    }
+    for (const issue of issues) {
+      for (const col of SCRUM_COLUMNS) {
+        if (col.statuses.includes(issue.status)) {
+          map[col.id].push(issue);
+          break;
+        }
+      }
+    }
+    return map;
+  }, [issues]);
+
   if (!sprint) {
     return (
       <div className="flex flex-col items-center justify-center p-12 my-6 rounded-3xl border border-dashed border-[var(--md-sys-color-outline-variant)] bg-[var(--md-sys-color-surface-container-low)] text-center">
@@ -256,7 +289,7 @@ export const ActiveSprintBoard: React.FC<ActiveSprintBoardProps> = ({
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={boardCollisionDetection}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
@@ -332,7 +365,7 @@ export const ActiveSprintBoard: React.FC<ActiveSprintBoardProps> = ({
         <div data-drag-scroll-x="true" className="overflow-x-auto pb-4 scrollbar-thin">
           <div className="flex gap-3 xl:gap-4 items-stretch min-w-[1000px]">
             {SCRUM_COLUMNS.map((col) => {
-              const colIssues = issues.filter((i) => col.statuses.includes(i.status));
+              const colIssues = issuesByColumn[col.id] || [];
 
               return (
                 <ScrumColumnDroppable
@@ -344,6 +377,7 @@ export const ActiveSprintBoard: React.FC<ActiveSprintBoardProps> = ({
                   onStatusChange={onStatusChange}
                   onAssignToMe={onAssignToMe}
                   currentUserId={currentUserId}
+                  orderedIds={orderedIds}
                 />
               );
             })}

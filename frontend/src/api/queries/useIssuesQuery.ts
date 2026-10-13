@@ -7,6 +7,7 @@ import {
   type GetIssuesParams,
   type BulkUpdateIssuesDto,
   type BulkDeleteIssuesDto,
+  type PaginatedIssuesResponse,
 } from '../client.js';
 
 export const issueQueries = {
@@ -93,14 +94,42 @@ export function useUpdateIssueStatusMutation() {
   return useMutation({
     mutationFn: ({ issueId, status }: { issueId: number; status: IssueStatus }) =>
       api.updateIssueStatus(issueId, status),
+    onMutate: async ({ issueId, status }) => {
+      await queryClient.cancelQueries({ queryKey: issueQueries.lists() });
+      const previousLists = queryClient.getQueriesData<PaginatedIssuesResponse>({ queryKey: issueQueries.lists() });
+      queryClient.setQueriesData<PaginatedIssuesResponse>({ queryKey: issueQueries.lists() }, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          items: old.items.map((item) => (item.id === issueId ? { ...item, status } : item)),
+        };
+      });
+      return { previousLists };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previousLists) {
+        for (const [queryKey, data] of context.previousLists) {
+          queryClient.setQueryData(queryKey, data);
+        }
+      }
+    },
     onSuccess: (updatedIssue) => {
       if (updatedIssue.key) {
         queryClient.setQueryData(issueQueries.detail(updatedIssue.key).queryKey, updatedIssue);
       }
       queryClient.setQueryData(issueQueries.detail(String(updatedIssue.id)).queryKey, updatedIssue);
       queryClient.setQueryData(issueQueries.detail(updatedIssue.id).queryKey, updatedIssue);
+      queryClient.setQueriesData<PaginatedIssuesResponse>(
+        { queryKey: issueQueries.lists() },
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            items: old.items.map((item) => (item.id === updatedIssue.id ? { ...item, ...updatedIssue } : item)),
+          };
+        },
+      );
       queryClient.invalidateQueries({ queryKey: issueQueries.details() });
-      queryClient.invalidateQueries({ queryKey: issueQueries.lists() });
     },
   });
 }
@@ -127,7 +156,16 @@ export function useReorderIssueMutation() {
       }
       queryClient.setQueryData(issueQueries.detail(String(updatedIssue.id)).queryKey, updatedIssue);
       queryClient.setQueryData(issueQueries.detail(updatedIssue.id).queryKey, updatedIssue);
-      queryClient.invalidateQueries({ queryKey: issueQueries.lists() });
+      queryClient.setQueriesData<PaginatedIssuesResponse>(
+        { queryKey: issueQueries.lists() },
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            items: old.items.map((item) => (item.id === updatedIssue.id ? { ...item, ...updatedIssue } : item)),
+          };
+        },
+      );
     },
   });
 }
@@ -137,14 +175,64 @@ export function useUpdateIssueMutation() {
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: Partial<CreateIssuePayload> }) =>
       api.updateIssue(id, data),
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries({ queryKey: issueQueries.lists() });
+      const previousLists = queryClient.getQueriesData<PaginatedIssuesResponse>({
+        queryKey: issueQueries.lists(),
+      });
+      queryClient.setQueriesData<PaginatedIssuesResponse>(
+        { queryKey: issueQueries.lists() },
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            items: old.items.map((item) => {
+              if (item.id !== id) return item;
+              return {
+                ...item,
+                ...data,
+                assignee:
+                  data.assigneeId === null
+                    ? null
+                    : data.assigneeId !== undefined
+                      ? item.assignee
+                        ? { ...item.assignee, id: data.assigneeId }
+                        : { id: data.assigneeId, fullName: '', email: '' }
+                      : item.assignee,
+                parentId: data.parentId !== undefined ? data.parentId : item.parentId,
+                epicId: data.epicId !== undefined ? data.epicId : item.epicId,
+                priority: data.priority !== undefined ? data.priority : item.priority,
+              };
+            }),
+          };
+        },
+      );
+      return { previousLists };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previousLists) {
+        for (const [queryKey, prevData] of context.previousLists) {
+          queryClient.setQueryData(queryKey, prevData);
+        }
+      }
+    },
     onSuccess: (updatedIssue) => {
       if (updatedIssue.key) {
         queryClient.setQueryData(issueQueries.detail(updatedIssue.key).queryKey, updatedIssue);
       }
       queryClient.setQueryData(issueQueries.detail(String(updatedIssue.id)).queryKey, updatedIssue);
       queryClient.setQueryData(issueQueries.detail(updatedIssue.id).queryKey, updatedIssue);
+      queryClient.setQueriesData<PaginatedIssuesResponse>(
+        { queryKey: issueQueries.lists() },
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            items: old.items.map((item) => (item.id === updatedIssue.id ? { ...item, ...updatedIssue } : item)),
+          };
+        },
+      );
       queryClient.invalidateQueries({ queryKey: issueQueries.details() });
-      queryClient.invalidateQueries({ queryKey: issueQueries.lists() });
     },
   });
 }
@@ -180,14 +268,54 @@ export function useUpdateIssueSprintMutation() {
   return useMutation({
     mutationFn: ({ id, sprintId }: { id: number; sprintId: number | null }) =>
       api.updateIssueSprint(id, sprintId),
+    onMutate: async ({ id, sprintId }) => {
+      await queryClient.cancelQueries({ queryKey: issueQueries.lists() });
+      const previousLists = queryClient.getQueriesData<PaginatedIssuesResponse>({
+        queryKey: issueQueries.lists(),
+      });
+      queryClient.setQueriesData<PaginatedIssuesResponse>(
+        { queryKey: issueQueries.lists() },
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            items: old.items.map((item) => {
+              if (item.id === id || item.parentId === id) {
+                return { ...item, sprintId };
+              }
+              return item;
+            }),
+          };
+        },
+      );
+      return { previousLists };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previousLists) {
+        for (const [queryKey, prevData] of context.previousLists) {
+          queryClient.setQueryData(queryKey, prevData);
+        }
+      }
+    },
     onSuccess: (updatedIssue) => {
       if (updatedIssue.key) {
         queryClient.setQueryData(issueQueries.detail(updatedIssue.key).queryKey, updatedIssue);
       }
       queryClient.setQueryData(issueQueries.detail(String(updatedIssue.id)).queryKey, updatedIssue);
       queryClient.setQueryData(issueQueries.detail(updatedIssue.id).queryKey, updatedIssue);
+      queryClient.setQueriesData<PaginatedIssuesResponse>(
+        { queryKey: issueQueries.lists() },
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            items: old.items.map((item) =>
+              item.id === updatedIssue.id ? { ...item, ...updatedIssue } : item,
+            ),
+          };
+        },
+      );
       queryClient.invalidateQueries({ queryKey: issueQueries.details() });
-      queryClient.invalidateQueries({ queryKey: issueQueries.lists() });
     },
   });
 }
@@ -305,8 +433,53 @@ export function useBulkUpdateIssuesMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: BulkUpdateIssuesDto) => api.bulkUpdateIssues(payload),
+    onMutate: async (payload) => {
+      await queryClient.cancelQueries({ queryKey: issueQueries.lists() });
+      const previousLists = queryClient.getQueriesData<PaginatedIssuesResponse>({
+        queryKey: issueQueries.lists(),
+      });
+      const idSet = new Set(payload.issueIds);
+      queryClient.setQueriesData<PaginatedIssuesResponse>(
+        { queryKey: issueQueries.lists() },
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            items: old.items.map((item) => {
+              if (idSet.has(item.id) || (item.parentId && idSet.has(item.parentId))) {
+                return {
+                  ...item,
+                  ...(payload.status !== undefined ? { status: payload.status } : {}),
+                  ...(payload.priority !== undefined ? { priority: payload.priority } : {}),
+                  ...(payload.assigneeId !== undefined
+                    ? {
+                        assignee:
+                          payload.assigneeId === null
+                            ? null
+                            : item.assignee
+                              ? { ...item.assignee, id: payload.assigneeId }
+                              : { id: payload.assigneeId, fullName: '', email: '' },
+                      }
+                    : {}),
+                  ...(payload.sprintId !== undefined ? { sprintId: payload.sprintId } : {}),
+                };
+              }
+              return item;
+            }),
+          };
+        },
+      );
+      return { previousLists };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previousLists) {
+        for (const [queryKey, prevData] of context.previousLists) {
+          queryClient.setQueryData(queryKey, prevData);
+        }
+      }
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: issueQueries.all });
+      queryClient.invalidateQueries({ queryKey: issueQueries.details() });
     },
   });
 }

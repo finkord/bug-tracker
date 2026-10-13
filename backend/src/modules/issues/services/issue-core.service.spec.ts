@@ -91,6 +91,8 @@ describe('IssueCoreService', () => {
     mockPermissionEvaluator = {
       getAccessibleProjectIds: vi.fn().mockResolvedValue('ALL'),
       hasPermission: vi.fn().mockResolvedValue(true),
+      isUserAdmin: vi.fn().mockResolvedValue(false),
+      getUserGroupIds: vi.fn().mockResolvedValue([]),
     };
     const mockConfigService = {
       get: vi.fn((key: string, defaultValue?: any) => {

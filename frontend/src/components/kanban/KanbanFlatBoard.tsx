@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -7,7 +7,8 @@ import {
   KeyboardSensor,
   useSensor,
   useSensors,
-  closestCorners,
+  MeasuringStrategy,
+  type CollisionDetection,
   type DragStartEvent,
   type DragEndEvent,
 } from '@dnd-kit/core';
@@ -15,7 +16,6 @@ import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import type { IssueItem, IssueStatus } from '../../api/client.js';
 import type { KanbanSettings } from '../../types/kanban.js';
 import { KANBAN_COLUMNS } from '../../types/kanban.js';
-import { IssueCard } from './IssueCard.js';
 import { DraggableKanbanCard } from './DraggableKanbanCard.js';
 import { Badge } from '../ui/index.js';
 import { Loader2, Plus, AlertCircle, Ban } from 'lucide-react';
@@ -34,12 +34,47 @@ interface KanbanFlatBoardProps {
   focusedIssueId?: number | null;
 }
 
+interface GhostCardProps {
+  issue: IssueItem;
+  selectedCount?: number;
+}
+
+const GhostCard: React.FC<GhostCardProps> = React.memo(({ issue, selectedCount }) => {
+  return (
+    <div
+      style={{ willChange: 'transform', transform: 'translateZ(0)' }}
+      className="p-3.5 rounded-2xl bg-[var(--md-sys-color-surface-container)] border-2 border-[var(--md-sys-color-primary)] shadow-2xl w-[260px] select-none pointer-events-none relative"
+    >
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-[11px] font-mono font-bold text-[var(--md-sys-color-primary)]">
+          {issue.key}
+        </span>
+        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
+          {issue.status}
+        </span>
+      </div>
+      <p className="text-xs font-semibold text-[var(--md-sys-color-on-surface)] line-clamp-2 leading-snug">
+        {issue.title}
+      </p>
+      {issue.assignee && (
+        <div className="mt-2 text-[10px] text-[var(--md-sys-color-on-surface-variant)] font-medium truncate">
+          {issue.assignee.fullName}
+        </div>
+      )}
+      {selectedCount && selectedCount > 1 ? (
+        <span className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] text-xs font-bold shadow-md ring-2 ring-[var(--md-sys-color-surface)]">
+          +{selectedCount - 1} more
+        </span>
+      ) : null}
+    </div>
+  );
+});
+
 interface KanbanColumnProps {
   col: (typeof KANBAN_COLUMNS)[number];
   colIssues: IssueItem[];
   limit?: number;
   loading: boolean;
-  activeIssue: IssueItem | null;
   onSelectIssue: (issue: IssueItem) => void;
   onStatusChange: (issueId: number, nextStatus: IssueStatus) => void;
   onAssignToMe: (issueId: number) => void;
@@ -50,12 +85,11 @@ interface KanbanColumnProps {
   orderedIds: number[];
 }
 
-const KanbanColumnDroppable: React.FC<KanbanColumnProps> = ({
+const KanbanColumnDroppableComponent: React.FC<KanbanColumnProps> = ({
   col,
   colIssues,
   limit,
   loading,
-  activeIssue,
   onSelectIssue,
   onStatusChange,
   onAssignToMe,
@@ -65,27 +99,30 @@ const KanbanColumnDroppable: React.FC<KanbanColumnProps> = ({
   settings,
   orderedIds,
 }) => {
-  const isDisallowed = activeIssue
-    ? !isAllowedTransition(activeIssue.status, col.status)
-    : false;
-  const isCurrentColumn = activeIssue ? activeIssue.status === col.status : false;
-
-  const { setNodeRef, isOver } = useDroppable({
+  const { setNodeRef, isOver, active } = useDroppable({
     id: `column-${col.status}`,
     data: {
       type: 'column',
       status: col.status,
     },
-    disabled: isDisallowed,
+    disabled: false,
   });
+
+  const draggedIssue = active?.data.current?.issue as IssueItem | undefined;
+  const isDisallowed = draggedIssue
+    ? !isAllowedTransition(draggedIssue.status, col.status)
+    : false;
+  const isCurrentColumn = draggedIssue ? draggedIssue.status === col.status : false;
 
   const isLimitExceeded = limit !== undefined && limit > 0 && colIssues.length > limit;
 
   return (
     <div
       ref={setNodeRef}
+      id={`column-${col.status}`}
+      data-drop-zone="column"
       data-column-status={col.status}
-      className={`flex flex-col flex-1 min-w-[230px] rounded-3xl bg-[var(--md-sys-color-surface-container-low)] border transition-all duration-150 shadow-2xs ${
+      className={`flex flex-col flex-1 min-w-[230px] rounded-3xl bg-[var(--md-sys-color-surface-container-low)] border transition-colors duration-150 shadow-2xs ${
         isDisallowed
           ? 'opacity-40 border-dashed border-[var(--md-sys-color-outline-variant)]/40 bg-[var(--md-sys-color-surface-container-lowest)] cursor-not-allowed'
           : isOver && !isCurrentColumn
@@ -187,6 +224,36 @@ const KanbanColumnDroppable: React.FC<KanbanColumnProps> = ({
   );
 };
 
+const KanbanColumnDroppable = React.memo(KanbanColumnDroppableComponent);
+
+const boardCollisionDetection: CollisionDetection = (args) => {
+  const { pointerCoordinates, droppableContainers } = args;
+  if (!pointerCoordinates) {
+    return [];
+  }
+
+  const el = document.elementFromPoint(pointerCoordinates.x, pointerCoordinates.y);
+  if (el) {
+    const colEl = el.closest<HTMLElement>('[data-drop-zone="column"]');
+    if (colEl && colEl.id) {
+      const container = droppableContainers.find((c) => c.id === colEl.id);
+      if (container) {
+        return [
+          {
+            id: colEl.id,
+            data: {
+              droppableContainer: container,
+              value: 1,
+            },
+          },
+        ];
+      }
+    }
+  }
+
+  return [];
+};
+
 export const KanbanFlatBoard: React.FC<KanbanFlatBoardProps> = ({
   issues,
   loading,
@@ -204,7 +271,7 @@ export const KanbanFlatBoard: React.FC<KanbanFlatBoardProps> = ({
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 5,
+        distance: 3,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -261,29 +328,48 @@ export const KanbanFlatBoard: React.FC<KanbanFlatBoardProps> = ({
     setActiveIssue(null);
   };
 
-  const orderedIds = issues.map((i) => i.id);
+  const orderedIds = useMemo(() => issues.map((i) => i.id), [issues]);
+
+  const issuesByColumn = useMemo(() => {
+    const map: Record<string, IssueItem[]> = {};
+    for (const col of KANBAN_COLUMNS) {
+      map[col.status] = [];
+    }
+    for (const issue of issues) {
+      if (map[issue.status]) {
+        map[issue.status].push(issue);
+      }
+    }
+    return map;
+  }, [issues]);
+
+  const visibleColumns = useMemo(() => {
+    if (settings.showClosedColumn === false) {
+      return KANBAN_COLUMNS.filter((col) => col.status !== 'CLOSED');
+    }
+    return KANBAN_COLUMNS;
+  }, [settings.showClosedColumn]);
 
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={boardCollisionDetection}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
-      autoScroll={{
-        threshold: {
-          x: 0.15,
-          y: 0.15,
+      measuring={{
+        droppable: {
+          strategy: MeasuringStrategy.BeforeDragging,
         },
-        acceleration: 15,
       }}
+      autoScroll={false}
     >
       <div className="w-full pb-6 pt-1">
-        {/* 5-Column Horizontal Container */}
+        {/* Horizontal Container */}
         <div data-drag-scroll-x="true" className="overflow-x-auto pb-4 scrollbar-thin">
           <div className="flex gap-3 xl:gap-4 items-stretch min-w-[1200px]">
-            {KANBAN_COLUMNS.map((col) => {
-              const colIssues = issues.filter((i) => i.status === col.status);
+            {visibleColumns.map((col) => {
+              const colIssues = issuesByColumn[col.status] || [];
               const limit = settings.wipLimits[col.status];
 
               return (
@@ -293,7 +379,6 @@ export const KanbanFlatBoard: React.FC<KanbanFlatBoardProps> = ({
                   colIssues={colIssues}
                   limit={limit}
                   loading={loading}
-                  activeIssue={activeIssue}
                   onSelectIssue={onSelectIssue}
                   onStatusChange={onStatusChange}
                   onAssignToMe={onAssignToMe}
@@ -309,21 +394,16 @@ export const KanbanFlatBoard: React.FC<KanbanFlatBoardProps> = ({
         </div>
       </div>
 
-      <DragOverlay dropAnimation={{ duration: 180, easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)' }}>
+      <DragOverlay
+        className="pointer-events-none"
+        style={{ pointerEvents: 'none' }}
+        dropAnimation={null}
+      >
         {activeIssue ? (
-          <div className="rotate-2 scale-102 shadow-2xl opacity-95 pointer-events-none w-[270px] relative">
-            <IssueCard
-              issue={activeIssue}
-              onClick={() => {}}
-              density={settings.cardDensity}
-              isDragging
-            />
-            {selectedIds.has(activeIssue.id) && selectedIds.size > 1 && (
-              <span className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] text-xs font-bold shadow-md ring-2 ring-[var(--md-sys-color-surface)]">
-                +{selectedIds.size - 1} more
-              </span>
-            )}
-          </div>
+          <GhostCard
+            issue={activeIssue}
+            selectedCount={selectedIds.size}
+          />
         ) : null}
       </DragOverlay>
     </DndContext>

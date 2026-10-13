@@ -284,9 +284,20 @@ export const IssueDetailView: React.FC<IssueDetailViewProps> = ({
 
   return (
     <div className={`w-full flex-1 flex flex-col min-w-0 space-y-5 animate-in fade-in duration-200 ${isModal ? 'p-2 sm:p-4' : 'px-4 sm:px-6 lg:px-8 py-5'}`}>
-      {/* Modal Close Button (only displayed inside overlay dialogs) */}
-      {isModal && onClose && (
-        <div className="flex justify-end -mb-3">
+      {/* Top Header / Breadcrumb Bar */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-sm text-[var(--md-sys-color-on-surface-variant)]">
+          {issue.projectKey && (
+            <span className="font-medium text-[var(--md-sys-color-on-surface-variant)]">
+              {issue.projectKey}
+            </span>
+          )}
+          {issue.projectKey && <span>/</span>}
+          <span className="font-semibold text-[var(--md-sys-color-primary)]">
+            {issue.key}
+          </span>
+        </div>
+        {isModal && onClose && (
           <Button
             type="button"
             variant="ghost"
@@ -297,8 +308,8 @@ export const IssueDetailView: React.FC<IssueDetailViewProps> = ({
           >
             <X className="w-4 h-4" />
           </Button>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Main Responsive Grid Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">

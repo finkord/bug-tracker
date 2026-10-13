@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import '@testing-library/jest-dom/vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { AgileBacklogLeftDrawer } from './AgileBacklogLeftDrawer';
 import type { IssueItem } from '../../api/client';
@@ -135,6 +136,7 @@ describe('AgileBacklogLeftDrawer Component', () => {
         selectedVersionId="ALL"
         onSelectVersion={onSelectVersion}
         onClose={onClose}
+        onCreateEpic={vi.fn()}
       />,
     );
 
@@ -163,6 +165,7 @@ describe('AgileBacklogLeftDrawer Component', () => {
         selectedVersionId="ALL"
         onSelectVersion={onSelectVersion}
         onClose={onClose}
+        onCreateEpic={vi.fn()}
       />,
     );
 
@@ -192,11 +195,62 @@ describe('AgileBacklogLeftDrawer Component', () => {
         selectedVersionId="ALL"
         onSelectVersion={vi.fn()}
         onClose={onClose}
+        onCreateEpic={vi.fn()}
       />,
     );
 
     const closeBtn = screen.getByLabelText(/collapse side panel/i);
     fireEvent.click(closeBtn);
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('filters by Issues without Epic when No Epic droppable is clicked', () => {
+    const onSelectEpic = vi.fn();
+
+    render(
+      <AgileBacklogLeftDrawer
+        projectId={1}
+        projectKey="TEST"
+        issues={mockIssues}
+        activeDrawerTab="epics"
+        onDrawerTabChange={vi.fn()}
+        selectedEpicId="ALL"
+        onSelectEpic={onSelectEpic}
+        selectedVersionId="ALL"
+        onSelectVersion={vi.fn()}
+        onClose={vi.fn()}
+        onCreateEpic={vi.fn()}
+      />,
+    );
+
+    const noEpicItem = screen.getByText('Issues without Epic');
+    expect(noEpicItem).toBeInTheDocument();
+    fireEvent.click(noEpicItem);
+    expect(onSelectEpic).toHaveBeenCalledWith('NONE');
+  });
+
+  it('filters by Issues without Version when No Version droppable is clicked', () => {
+    const onSelectVersion = vi.fn();
+
+    render(
+      <AgileBacklogLeftDrawer
+        projectId={1}
+        projectKey="TEST"
+        issues={mockIssues}
+        activeDrawerTab="versions"
+        onDrawerTabChange={vi.fn()}
+        selectedEpicId="ALL"
+        onSelectEpic={vi.fn()}
+        selectedVersionId="ALL"
+        onSelectVersion={onSelectVersion}
+        onClose={vi.fn()}
+        onCreateEpic={vi.fn()}
+      />,
+    );
+
+    const noVersionItem = screen.getByText('Issues without Version');
+    expect(noVersionItem).toBeInTheDocument();
+    fireEvent.click(noVersionItem);
+    expect(onSelectVersion).toHaveBeenCalledWith('NONE');
   });
 });

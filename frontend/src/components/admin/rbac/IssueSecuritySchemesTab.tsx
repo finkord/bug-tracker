@@ -7,6 +7,10 @@ import {
   AlertCircle,
   Shield,
   Users,
+  UserCheck,
+  User,
+  UserPlus,
+  Globe,
   Star,
   X,
 } from 'lucide-react';
@@ -97,32 +101,78 @@ const SchemeLevelsTable: React.FC<SchemeLevelsTableProps> = ({
                 No actors granted
               </span>
             ) : (
-              lvl.grants.map((g) => (
-                <span
-                  key={g.id}
-                  className="text-[10px] pl-2 pr-1.5 py-0.5 rounded-full bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] font-medium border border-[var(--md-sys-color-outline-variant)]/30 flex items-center gap-1"
-                >
-                  {g.grantType === 'ROLE' ? (
-                    <>
-                      <Shield className="w-2.5 h-2.5 text-[var(--md-sys-color-primary)]" />
-                      <span>Role: {g.role?.name || `Role #${g.roleId}`}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Users className="w-2.5 h-2.5 text-[var(--md-sys-color-secondary)]" />
-                      <span>Group: {g.group?.name || `Group #${g.groupId}`}</span>
-                    </>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => onDeleteGrant(g.id)}
-                    className="w-3.5 h-3.5 rounded-full hover:bg-[var(--md-sys-color-error-container)] hover:text-[var(--md-sys-color-error)] flex items-center justify-center cursor-pointer text-[var(--md-sys-color-outline)] ml-0.5"
-                    title="Revoke actor access"
+              lvl.grants.map((g) => {
+                const renderGrantBadge = () => {
+                  switch (g.grantType) {
+                    case 'ROLE':
+                      return (
+                        <>
+                          <Shield className="w-2.5 h-2.5 text-[var(--md-sys-color-primary)]" />
+                          <span>Role: {g.role?.name || `Role #${g.roleId}`}</span>
+                        </>
+                      );
+                    case 'GROUP':
+                      return (
+                        <>
+                          <Users className="w-2.5 h-2.5 text-[var(--md-sys-color-secondary)]" />
+                          <span>Group: {g.group?.name || `Group #${g.groupId}`}</span>
+                        </>
+                      );
+                    case 'LEAD':
+                      return (
+                        <>
+                          <UserCheck className="w-2.5 h-2.5 text-[var(--md-sys-color-tertiary)]" />
+                          <span>Project Lead</span>
+                        </>
+                      );
+                    case 'REPORTER':
+                      return (
+                        <>
+                          <User className="w-2.5 h-2.5 text-[var(--md-sys-color-primary)]" />
+                          <span>Reporter</span>
+                        </>
+                      );
+                    case 'ASSIGNEE':
+                      return (
+                        <>
+                          <UserPlus className="w-2.5 h-2.5 text-[var(--md-sys-color-secondary)]" />
+                          <span>Current Assignee</span>
+                        </>
+                      );
+                    case 'ANY_LOGGED_IN':
+                      return (
+                        <>
+                          <Globe className="w-2.5 h-2.5 text-[var(--md-sys-color-outline)]" />
+                          <span>Any Logged-in User</span>
+                        </>
+                      );
+                    default:
+                      return (
+                        <>
+                          <Users className="w-2.5 h-2.5 text-[var(--md-sys-color-outline)]" />
+                          <span>{g.grantType}</span>
+                        </>
+                      );
+                  }
+                };
+
+                return (
+                  <span
+                    key={g.id}
+                    className="text-[10px] pl-2 pr-1.5 py-0.5 rounded-full bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] font-medium border border-[var(--md-sys-color-outline-variant)]/30 flex items-center gap-1"
                   >
-                    <X className="w-2.5 h-2.5" />
-                  </button>
-                </span>
-              ))
+                    {renderGrantBadge()}
+                    <button
+                      type="button"
+                      onClick={() => onDeleteGrant(g.id)}
+                      className="w-3.5 h-3.5 rounded-full hover:bg-[var(--md-sys-color-error-container)] hover:text-[var(--md-sys-color-error)] flex items-center justify-center cursor-pointer text-[var(--md-sys-color-outline)] ml-0.5"
+                      title="Revoke actor access"
+                    >
+                      <X className="w-2.5 h-2.5" />
+                    </button>
+                  </span>
+                );
+              })
             )}
             <Button
               variant="outline"
@@ -215,7 +265,14 @@ export const IssueSecuritySchemesTab: React.FC<IssueSecuritySchemesTabProps> = (
   // Add Actor Grant State
   const [addGrantModalOpen, setAddGrantModalOpen] = useState(false);
   const [targetLevelForGrant, setTargetLevelForGrant] = useState<{ schemeId: number; levelId: number } | null>(null);
-  const [grantType, setGrantType] = useState<'ROLE' | 'GROUP'>('ROLE');
+  type SecurityGrantType =
+    | 'ROLE'
+    | 'GROUP'
+    | 'LEAD'
+    | 'REPORTER'
+    | 'ASSIGNEE'
+    | 'ANY_LOGGED_IN';
+  const [grantType, setGrantType] = useState<SecurityGrantType>('ROLE');
   const [selectedRoleId, setSelectedRoleId] = useState<number | ''>('');
   const [selectedGroupId, setSelectedGroupId] = useState<number | ''>('');
 
@@ -631,7 +688,7 @@ export const IssueSecuritySchemesTab: React.FC<IssueSecuritySchemesTabProps> = (
           isOpen={addGrantModalOpen}
           onClose={() => setAddGrantModalOpen(false)}
           title="Grant Actor Access"
-          description="Authorize a Project Role or Directory Group to view issues tagged with this security level"
+          description="Authorize a Project Role, Directory Group, or dynamic issue actor to view issues tagged with this security level"
           size="md"
         >
           <form onSubmit={handleAddGrantSubmit} className="space-y-4">
@@ -641,7 +698,7 @@ export const IssueSecuritySchemesTab: React.FC<IssueSecuritySchemesTabProps> = (
               </label>
               <Select
                 value={grantType}
-                onValueChange={(val) => setGrantType(val as 'ROLE' | 'GROUP')}
+                onValueChange={(val) => setGrantType(val as SecurityGrantType)}
               >
                 <SelectTrigger className="h-10 text-xs rounded-xl bg-[var(--md-sys-color-surface)]">
                   <SelectValue placeholder="Select actor type..." />
@@ -649,6 +706,10 @@ export const IssueSecuritySchemesTab: React.FC<IssueSecuritySchemesTabProps> = (
                 <SelectContent>
                   <SelectItem value="ROLE">Project Role</SelectItem>
                   <SelectItem value="GROUP">Directory Group</SelectItem>
+                  <SelectItem value="LEAD">Project Lead</SelectItem>
+                  <SelectItem value="REPORTER">Reporter</SelectItem>
+                  <SelectItem value="ASSIGNEE">Current Assignee</SelectItem>
+                  <SelectItem value="ANY_LOGGED_IN">Any Logged-in User</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -696,6 +757,34 @@ export const IssueSecuritySchemesTab: React.FC<IssueSecuritySchemesTabProps> = (
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            )}
+
+            {grantType === 'LEAD' && (
+              <div className="p-3 rounded-xl bg-[var(--md-sys-color-surface-container)] text-xs text-[var(--md-sys-color-on-surface-variant)] flex items-start gap-2 border border-[var(--md-sys-color-outline-variant)]/20">
+                <UserCheck className="w-4 h-4 text-[var(--md-sys-color-tertiary)] shrink-0 mt-0.5" />
+                <span>Grants viewing access automatically to the designated Project Lead of the project containing the issue.</span>
+              </div>
+            )}
+
+            {grantType === 'REPORTER' && (
+              <div className="p-3 rounded-xl bg-[var(--md-sys-color-surface-container)] text-xs text-[var(--md-sys-color-on-surface-variant)] flex items-start gap-2 border border-[var(--md-sys-color-outline-variant)]/20">
+                <User className="w-4 h-4 text-[var(--md-sys-color-primary)] shrink-0 mt-0.5" />
+                <span>Grants viewing access automatically to the user who reported/created the issue.</span>
+              </div>
+            )}
+
+            {grantType === 'ASSIGNEE' && (
+              <div className="p-3 rounded-xl bg-[var(--md-sys-color-surface-container)] text-xs text-[var(--md-sys-color-on-surface-variant)] flex items-start gap-2 border border-[var(--md-sys-color-outline-variant)]/20">
+                <UserPlus className="w-4 h-4 text-[var(--md-sys-color-secondary)] shrink-0 mt-0.5" />
+                <span>Grants viewing access automatically to the user currently assigned to the issue.</span>
+              </div>
+            )}
+
+            {grantType === 'ANY_LOGGED_IN' && (
+              <div className="p-3 rounded-xl bg-[var(--md-sys-color-surface-container)] text-xs text-[var(--md-sys-color-on-surface-variant)] flex items-start gap-2 border border-[var(--md-sys-color-outline-variant)]/20">
+                <Globe className="w-4 h-4 text-[var(--md-sys-color-outline)] shrink-0 mt-0.5" />
+                <span>Grants viewing access to any authenticated user who has permission to browse the project.</span>
               </div>
             )}
 

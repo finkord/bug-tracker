@@ -520,6 +520,36 @@ export class PermissionEvaluatorService {
   }
 
   /**
+   * Checks if user has global admin privileges (via SystemRole.ADMIN or directory group).
+   */
+  async isUserAdmin(userId: number): Promise<boolean> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) return false;
+    if (user.systemRole === SystemRole.ADMIN) {
+      return true;
+    }
+
+    const userAdminGroup = await this.userGroupRepository.createQueryBuilder('ug')
+      .innerJoin('ug.group', 'g')
+      .where('ug.userId = :userId', { userId })
+      .andWhere('LOWER(g.name) IN (:...names)', { names: ['administrators', 'admin', 'admins'] })
+      .getOne();
+
+    return !!userAdminGroup;
+  }
+
+  /**
+   * Returns list of directory group IDs the user belongs to.
+   */
+  async getUserGroupIds(userId: number): Promise<number[]> {
+    const userGroups = await this.userGroupRepository.find({
+      where: { userId },
+      select: { groupId: true },
+    });
+    return userGroups.map((ug) => ug.groupId);
+  }
+
+  /**
    * Invalidates Redis permission cache for projects and users.
    */
   async invalidatePermissions(projectId?: number, userId?: number): Promise<void> {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   useIssuesQuery,
@@ -9,9 +9,11 @@ import {
   useCompleteSprintMutation,
   useDeleteSprintMutation,
   useUpdateIssueSprintMutation,
+  useBulkUpdateIssuesMutation,
   useUpdateIssueStatusMutation,
   useAssignIssueToMeMutation,
   issueKeys,
+  issueQueries,
 } from '../api/queries';
 import { type IssueItem, type IssueStatus, type PaginatedIssuesResponse } from '../api/client';
 import { realtimeSocket } from '../api/socket';
@@ -29,9 +31,9 @@ export function useAgileBacklog(selectedProjectId: number | null) {
   const [filters, setFilters] = useState<AgileFilterState>(DEFAULT_AGILE_FILTERS);
   const [error, setError] = useState<string | null>(null);
 
-  // TanStack Query for issues in selected project
+  // TanStack Query for issues in selected project with enterprise 100-item batching
   const issueFilter = useMemo(
-    () => (selectedProjectId ? { projectId: selectedProjectId } : undefined),
+    () => (selectedProjectId ? { projectId: selectedProjectId, limit: 100 } : undefined),
     [selectedProjectId],
   );
 
@@ -59,8 +61,35 @@ export function useAgileBacklog(selectedProjectId: number | null) {
   const deleteSprintMutation = useDeleteSprintMutation();
 
   const updateSprintOnIssueMutation = useUpdateIssueSprintMutation();
+  const bulkUpdateIssuesMutation = useBulkUpdateIssuesMutation();
   const updateStatusMutation = useUpdateIssueStatusMutation();
   const assignMutation = useAssignIssueToMeMutation();
+
+  // Stable mutation reference to eliminate unnecessary function recreation across renders
+  const mutationsRef = useRef({
+    createSprint: createSprintMutation,
+    updateSprint: updateSprintMutation,
+    startSprint: startSprintMutation,
+    completeSprint: completeSprintMutation,
+    deleteSprint: deleteSprintMutation,
+    updateSprintOnIssue: updateSprintOnIssueMutation,
+    bulkUpdateIssues: bulkUpdateIssuesMutation,
+    updateStatus: updateStatusMutation,
+    assign: assignMutation,
+  });
+  useEffect(() => {
+    mutationsRef.current = {
+      createSprint: createSprintMutation,
+      updateSprint: updateSprintMutation,
+      startSprint: startSprintMutation,
+      completeSprint: completeSprintMutation,
+      deleteSprint: deleteSprintMutation,
+      updateSprintOnIssue: updateSprintOnIssueMutation,
+      bulkUpdateIssues: bulkUpdateIssuesMutation,
+      updateStatus: updateStatusMutation,
+      assign: assignMutation,
+    };
+  });
 
   const loading = issuesLoading || sprintsLoading;
 
@@ -202,130 +231,179 @@ export function useAgileBacklog(selectedProjectId: number | null) {
     });
   }, [sprintDefinitions, filters.teamId]);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     await Promise.all([refetchIssues(), refetchSprints()]);
-  };
+  }, [refetchIssues, refetchSprints]);
 
-  const setIssues = (updater: IssueItem[] | ((prev: IssueItem[]) => IssueItem[])) => {
-    queryClient.setQueryData<PaginatedIssuesResponse>(issueKeys.list(issueFilter), (old) => {
-      const currentItems = old?.items ?? [];
-      const nextItems = typeof updater === 'function' ? updater(currentItems) : updater;
-      return {
-        items: nextItems,
-        total: nextItems.length,
-        page: old?.page ?? 1,
-        limit: old?.limit ?? 50,
-        totalPages: Math.ceil(nextItems.length / (old?.limit ?? 50)),
-      };
-    });
-  };
-
-  // Issue manipulation via relational sprintId
-  const handleMoveToSprint = async (issueId: number, sprintId: number | null) => {
-    try {
+  const setIssues = useCallback(
+    (updater: IssueItem[] | ((prev: IssueItem[]) => IssueItem[])) => {
       queryClient.setQueryData<PaginatedIssuesResponse>(issueKeys.list(issueFilter), (old) => {
-        if (!old) return old;
+        const currentItems = old?.items ?? [];
+        const nextItems = typeof updater === 'function' ? updater(currentItems) : updater;
         return {
-          ...old,
-          items: old.items.map((i) => {
-            if (i.id === issueId || i.parentId === issueId) {
-              return { ...i, sprintId };
-            }
-            return i;
-          }),
+          items: nextItems,
+          total: nextItems.length,
+          page: old?.page ?? 1,
+          limit: old?.limit ?? 50,
+          totalPages: Math.ceil(nextItems.length / (old?.limit ?? 50)),
         };
       });
-      await updateSprintOnIssueMutation.mutateAsync({ id: issueId, sprintId });
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to move issue');
-    }
-  };
+    },
+    [queryClient, issueFilter],
+  );
 
-  const handleStatusChange = async (issueId: number, nextStatus: IssueStatus) => {
-    try {
-      await updateStatusMutation.mutateAsync({ issueId, status: nextStatus });
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to update issue status');
-    }
-  };
+  // Issue manipulation via relational sprintId
+  const handleMoveToSprint = useCallback(
+    async (issueId: number, sprintId: number | null) => {
+      try {
+        queryClient.setQueriesData<PaginatedIssuesResponse>({ queryKey: issueQueries.lists() }, (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            items: old.items.map((i) => {
+              if (i.id === issueId || i.parentId === issueId) {
+                return { ...i, sprintId };
+              }
+              return i;
+            }),
+          };
+        });
+        await mutationsRef.current.updateSprintOnIssue.mutateAsync({ id: issueId, sprintId });
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Failed to move issue');
+      }
+    },
+    [queryClient],
+  );
 
-  const handleAssignToMe = async (issueId: number) => {
-    try {
-      await assignMutation.mutateAsync(issueId);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to assign issue');
-    }
-  };
+  // High-performance atomic bulk move for multiple issues
+  const handleBulkMoveToSprint = useCallback(
+    async (issueIds: number[], sprintId: number | null) => {
+      try {
+        const issueSet = new Set(issueIds);
+        queryClient.setQueriesData<PaginatedIssuesResponse>({ queryKey: issueQueries.lists() }, (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            items: old.items.map((i) => {
+              if (issueSet.has(i.id) || (i.parentId && issueSet.has(i.parentId))) {
+                return { ...i, sprintId };
+              }
+              return i;
+            }),
+          };
+        });
+        await mutationsRef.current.bulkUpdateIssues.mutateAsync({ issueIds, sprintId });
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Failed to move issues');
+      }
+    },
+    [queryClient],
+  );
+
+  const handleStatusChange = useCallback(
+    async (issueId: number, nextStatus: IssueStatus) => {
+      try {
+        await mutationsRef.current.updateStatus.mutateAsync({ issueId, status: nextStatus });
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Failed to update issue status');
+      }
+    },
+    [],
+  );
+
+  const handleAssignToMe = useCallback(
+    async (issueId: number) => {
+      try {
+        await mutationsRef.current.assign.mutateAsync(issueId);
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Failed to assign issue');
+      }
+    },
+    [],
+  );
 
   // Sprint lifecycle
-  const handleSaveSprint = async (sprintData: SprintDefinition, editingSprint?: SprintDefinition | null) => {
-    if (!selectedProjectId) return;
-    try {
-      if (editingSprint && editingSprint.id) {
-        await updateSprintMutation.mutateAsync({
-          projectId: selectedProjectId,
-          sprintId: editingSprint.id,
-          data: {
-            name: sprintData.name,
-            goal: sprintData.goal,
-            startDate: sprintData.startDate,
-            endDate: sprintData.endDate,
-            status: sprintData.status,
-            teamId: sprintData.teamId,
-            capacityHours: sprintData.capacityHours,
-          },
-        });
-      } else {
-        await createSprintMutation.mutateAsync({
-          projectId: selectedProjectId,
-          data: {
-            name: sprintData.name,
-            goal: sprintData.goal,
-            startDate: sprintData.startDate,
-            endDate: sprintData.endDate,
-            status: sprintData.status,
-            teamId: sprintData.teamId,
-            capacityHours: sprintData.capacityHours,
-          },
-        });
+  const handleSaveSprint = useCallback(
+    async (sprintData: SprintDefinition, editingSprint?: SprintDefinition | null) => {
+      if (!selectedProjectId) return;
+      try {
+        if (editingSprint && editingSprint.id) {
+          await mutationsRef.current.updateSprint.mutateAsync({
+            projectId: selectedProjectId,
+            sprintId: editingSprint.id,
+            data: {
+              name: sprintData.name,
+              goal: sprintData.goal,
+              startDate: sprintData.startDate,
+              endDate: sprintData.endDate,
+              status: sprintData.status,
+              teamId: sprintData.teamId,
+              capacityHours: sprintData.capacityHours,
+            },
+          });
+        } else {
+          await mutationsRef.current.createSprint.mutateAsync({
+            projectId: selectedProjectId,
+            data: {
+              name: sprintData.name,
+              goal: sprintData.goal,
+              startDate: sprintData.startDate,
+              endDate: sprintData.endDate,
+              status: sprintData.status,
+              teamId: sprintData.teamId,
+              capacityHours: sprintData.capacityHours,
+            },
+          });
+        }
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Failed to save sprint');
       }
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to save sprint');
-    }
-  };
+    },
+    [selectedProjectId],
+  );
 
-  const handleStartSprint = async (sprintId: number) => {
-    if (!selectedProjectId) return;
-    try {
-      await startSprintMutation.mutateAsync({ projectId: selectedProjectId, sprintId });
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to start sprint');
-    }
-  };
+  const handleStartSprint = useCallback(
+    async (sprintId: number) => {
+      if (!selectedProjectId) return;
+      try {
+        await mutationsRef.current.startSprint.mutateAsync({ projectId: selectedProjectId, sprintId });
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Failed to start sprint');
+      }
+    },
+    [selectedProjectId],
+  );
 
-  const handleConfirmCompleteSprint = async (sprintId: number, rolloverTargetSprintId: number | null) => {
-    if (!selectedProjectId) return;
-    try {
-      await completeSprintMutation.mutateAsync({
-        projectId: selectedProjectId,
-        sprintId,
-        data: {
-          transferSprintId: rolloverTargetSprintId,
-        },
-      });
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to complete sprint');
-    }
-  };
+  const handleConfirmCompleteSprint = useCallback(
+    async (sprintId: number, rolloverTargetSprintId: number | null) => {
+      if (!selectedProjectId) return;
+      try {
+        await mutationsRef.current.completeSprint.mutateAsync({
+          projectId: selectedProjectId,
+          sprintId,
+          data: {
+            transferSprintId: rolloverTargetSprintId,
+          },
+        });
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Failed to complete sprint');
+      }
+    },
+    [selectedProjectId],
+  );
 
-  const handleDeleteSprint = async (sprintId: number) => {
-    if (!selectedProjectId) return;
-    try {
-      await deleteSprintMutation.mutateAsync({ projectId: selectedProjectId, sprintId });
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to delete sprint');
-    }
-  };
+  const handleDeleteSprint = useCallback(
+    async (sprintId: number) => {
+      if (!selectedProjectId) return;
+      try {
+        await mutationsRef.current.deleteSprint.mutateAsync({ projectId: selectedProjectId, sprintId });
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Failed to delete sprint');
+      }
+    },
+    [selectedProjectId],
+  );
 
   const activeError = error || (issuesError instanceof Error ? issuesError.message : null) || (sprintsError instanceof Error ? sprintsError.message : null);
 
@@ -344,6 +422,7 @@ export function useAgileBacklog(selectedProjectId: number | null) {
     sprintList,
     loadData,
     handleMoveToSprint,
+    handleBulkMoveToSprint,
     handleStatusChange,
     handleAssignToMe,
     handleSaveSprint,

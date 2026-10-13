@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Modal, Button, Tabs, TabsList, TabsTrigger, ConfirmDialog } from '../ui';
+import { Modal, Button, Tabs, TabsList, TabsTrigger, ConfirmDialog, Input } from '../ui';
 import type { KanbanSettings, SwimlaneType, CardDensity, UnassignedPosition } from '../../types/kanban';
 import { DEFAULT_KANBAN_SETTINGS } from '../../types/kanban';
 import {
@@ -310,7 +310,43 @@ export const KanbanBoardSettingsModal: React.FC<KanbanBoardSettingsModalProps> =
               </div>
             )}
 
-            {/* 4. Column WIP Limits */}
+            {/* 4. Column Visibility Options */}
+            <div className="p-4 rounded-2xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-xs font-bold text-[var(--md-sys-color-on-surface)]">
+                    Closed Column Visibility
+                  </div>
+                  <div className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
+                    Show or hide the Closed column on the board
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={settings.showClosedColumn !== false}
+                  onClick={() =>
+                    onUpdateSettings({
+                      ...settings,
+                      showClosedColumn: settings.showClosedColumn === false,
+                    })
+                  }
+                  className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-200 ease-in-out ${
+                    settings.showClosedColumn !== false
+                      ? 'bg-[var(--md-sys-color-primary)]'
+                      : 'bg-[var(--md-sys-color-surface-container-highest)]'
+                  }`}
+                >
+                  <div
+                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${
+                      settings.showClosedColumn !== false ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+
+            {/* 5. Column WIP Limits */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="text-xs font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)]">
@@ -319,40 +355,44 @@ export const KanbanBoardSettingsModal: React.FC<KanbanBoardSettingsModalProps> =
                 <span className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">0 = unlimited</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="flex items-center justify-between p-3 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/40">
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/40 gap-3">
                   <div>
                     <div className="text-xs font-bold">In Progress</div>
                     <div className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
                       Highlight column when exceeded
                     </div>
                   </div>
-                  <input
-                    type="number"
-                    min="0"
-                    max="50"
-                    value={settings.wipLimits.IN_PROGRESS ?? ''}
-                    placeholder="None"
-                    onChange={(e) => handleWipLimitChange('IN_PROGRESS', e.target.value)}
-                    className="w-16 px-2.5 py-1 text-center font-bold text-xs rounded-xl bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)] focus:outline-none focus:ring-2 focus:ring-[var(--md-sys-color-primary)]"
-                  />
+                  <div className="w-20">
+                    <Input
+                      type="number"
+                      min={0}
+                      max={50}
+                      value={settings.wipLimits.IN_PROGRESS ?? ''}
+                      placeholder="None"
+                      onChange={(e) => handleWipLimitChange('IN_PROGRESS', e.target.value)}
+                      className="text-center font-bold text-xs"
+                    />
+                  </div>
                 </div>
 
-                <div className="flex items-center justify-between p-3 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/40">
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/40 gap-3">
                   <div>
                     <div className="text-xs font-bold">Code Review</div>
                     <div className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
                       Highlight column when exceeded
                     </div>
                   </div>
-                  <input
-                    type="number"
-                    min="0"
-                    max="50"
-                    value={settings.wipLimits.REVIEW ?? ''}
-                    placeholder="None"
-                    onChange={(e) => handleWipLimitChange('REVIEW', e.target.value)}
-                    className="w-16 px-2.5 py-1 text-center font-bold text-xs rounded-xl bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)] focus:outline-none focus:ring-2 focus:ring-[var(--md-sys-color-primary)]"
-                  />
+                  <div className="w-20">
+                    <Input
+                      type="number"
+                      min={0}
+                      max={50}
+                      value={settings.wipLimits.REVIEW ?? ''}
+                      placeholder="None"
+                      onChange={(e) => handleWipLimitChange('REVIEW', e.target.value)}
+                      className="text-center font-bold text-xs"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -399,12 +439,12 @@ export const KanbanBoardSettingsModal: React.FC<KanbanBoardSettingsModalProps> =
                   <label className="block text-[11px] font-semibold text-[var(--md-sys-color-on-surface-variant)] mb-1">
                     Button Label
                   </label>
-                  <input
+                  <Input
                     type="text"
                     value={newFilterName}
                     onChange={(e) => setNewFilterName(e.target.value)}
                     placeholder="e.g. Critical Bugs"
-                    className="w-full px-2.5 py-1.5 text-xs rounded-xl bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] focus:outline-none focus:ring-1 focus:ring-[var(--md-sys-color-primary)]"
+                    className="text-xs"
                   />
                 </div>
 
@@ -412,12 +452,12 @@ export const KanbanBoardSettingsModal: React.FC<KanbanBoardSettingsModalProps> =
                   <label className="block text-[11px] font-semibold text-[var(--md-sys-color-on-surface-variant)] mb-1">
                     JQL Query Expression
                   </label>
-                  <input
+                  <Input
                     type="text"
                     value={newFilterJql}
                     onChange={(e) => setNewFilterJql(e.target.value)}
                     placeholder='type = "BUG" AND priority = "CRITICAL"'
-                    className="w-full px-2.5 py-1.5 text-xs font-mono rounded-xl bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface)] border border-[var(--md-sys-color-outline-variant)] focus:outline-none focus:ring-1 focus:ring-[var(--md-sys-color-primary)]"
+                    className="text-xs font-mono"
                   />
                 </div>
               </div>

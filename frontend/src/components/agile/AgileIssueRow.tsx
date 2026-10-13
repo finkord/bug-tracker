@@ -34,32 +34,86 @@ export interface AgileIssueRowProps {
   disableDrag?: boolean;
 }
 
-const AgileIssueRowComponent: React.FC<AgileIssueRowProps> = ({
+interface AgileIssueRowContentProps {
+  issue: IssueItem;
+  availableSprints: SprintDefinition[];
+  onClick: (issue: IssueItem) => void;
+  onMoveToSprint: (issueId: number, sprintId: number | null) => void;
+  orderedIds?: number[];
+  isBeingDragged: boolean;
+}
+
+const renderTypeIcon = (type: IssueType) => {
+  switch (type) {
+    case 'STORY':
+      return (
+        <span title="Story" className="inline-flex items-center">
+          <Bookmark className="w-3.5 h-3.5 text-[var(--md-sys-color-success)]" />
+        </span>
+      );
+    case 'TASK':
+      return (
+        <span title="Task" className="inline-flex items-center">
+          <CheckSquare className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
+        </span>
+      );
+    case 'BUG':
+      return (
+        <span title="Bug" className="inline-flex items-center">
+          <Bug className="w-3.5 h-3.5 text-[var(--md-sys-color-error)]" />
+        </span>
+      );
+    case 'EPIC':
+      return (
+        <span title="Epic" className="inline-flex items-center">
+          <Zap className="w-3.5 h-3.5 text-[var(--md-sys-color-tertiary)]" />
+        </span>
+      );
+    case 'SUBTASK':
+      return (
+        <span title="Subtask" className="inline-flex items-center">
+          <GitCommitHorizontal className="w-3.5 h-3.5 text-[var(--md-sys-color-secondary)]" />
+        </span>
+      );
+    case 'FEATURE':
+      return (
+        <span title="Feature" className="inline-flex items-center">
+          <Sparkles className="w-3.5 h-3.5 text-[var(--md-sys-color-success)]" />
+        </span>
+      );
+    case 'IMPROVEMENT':
+      return (
+        <span title="Improvement" className="inline-flex items-center">
+          <Zap className="w-3.5 h-3.5 text-[var(--md-sys-color-tertiary)]" />
+        </span>
+      );
+    default:
+      return (
+        <span title="Task" className="inline-flex items-center">
+          <CheckSquare className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
+        </span>
+      );
+  }
+};
+
+/**
+ * Isolated presentational content of an Agile issue row.
+ * Strictly memoized so that when DndKit context changes during drag start,
+ * all 99 non-dragged rows skip re-rendering entirely (saving hundreds of ms of CPU time).
+ */
+const AgileIssueRowContentComponent: React.FC<AgileIssueRowContentProps> = ({
   issue,
   availableSprints,
   onClick,
   onMoveToSprint,
-  onStatusChange: _onStatusChange,
-  onAssignToMe: _onAssignToMe,
-  currentUserId: _currentUserId,
   orderedIds,
-  isDragging = false,
-  disableDrag = false,
+  isBeingDragged,
 }) => {
-  const { attributes, listeners, setNodeRef, isDragging: isDndDragging } = useDraggable({
-    id: `issue-${issue.id}`,
-    data: {
-      type: 'issue',
-      issue,
-    },
-    disabled: disableDrag,
-  });
+  const isSelected = useIssueSelectionStore((state) => state.selectedIds.has(issue.id));
+  const hasAnySelection = useIssueSelectionStore((state) => state.selectedIds.size > 0);
+  const toggleSelection = useIssueSelectionStore((state) => state.toggleSelection);
+  const rangeSelect = useIssueSelectionStore((state) => state.rangeSelect);
 
-  const isBeingDragged = isDragging || isDndDragging;
-
-  const { selectedIds, toggleSelection, rangeSelect } = useIssueSelectionStore();
-  const isSelected = selectedIds.has(issue.id);
-  const hasAnySelection = selectedIds.size > 0;
   const handleCheckboxClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (e.shiftKey) {
@@ -75,78 +129,6 @@ const AgileIssueRowComponent: React.FC<AgileIssueRowProps> = ({
       return;
     }
     onClick(issue);
-  };
-
-  const renderSelectionCheckbox = () => (
-    <button
-      type="button"
-      role="checkbox"
-      aria-checked={isSelected}
-      aria-label={`Select issue ${issue.key}`}
-      onClick={handleCheckboxClick}
-      className={`rounded border flex items-center justify-center transition-all w-3.5 h-3.5 cursor-pointer pointer-events-auto shrink-0 ${
-        isSelected
-          ? 'bg-[var(--md-sys-color-primary)] border-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] shadow-2xs'
-          : hasAnySelection
-            ? 'opacity-80 hover:opacity-100 border-[var(--md-sys-color-outline)] bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container)] hover:border-[var(--md-sys-color-primary)]'
-            : 'opacity-60 hover:opacity-100 border-[var(--md-sys-color-outline-variant)] bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container)] hover:border-[var(--md-sys-color-primary)]'
-      }`}
-    >
-      {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
-    </button>
-  );
-
-  const renderTypeIcon = (type: IssueType) => {
-    switch (type) {
-      case 'STORY':
-        return (
-          <span title="Story" className="inline-flex items-center">
-            <Bookmark className="w-3.5 h-3.5 text-[var(--md-sys-color-success)]" />
-          </span>
-        );
-      case 'TASK':
-        return (
-          <span title="Task" className="inline-flex items-center">
-            <CheckSquare className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
-          </span>
-        );
-      case 'BUG':
-        return (
-          <span title="Bug" className="inline-flex items-center">
-            <Bug className="w-3.5 h-3.5 text-[var(--md-sys-color-error)]" />
-          </span>
-        );
-      case 'EPIC':
-        return (
-          <span title="Epic" className="inline-flex items-center">
-            <Zap className="w-3.5 h-3.5 text-[var(--md-sys-color-tertiary)]" />
-          </span>
-        );
-      case 'SUBTASK':
-        return (
-          <span title="Subtask" className="inline-flex items-center">
-            <GitCommitHorizontal className="w-3.5 h-3.5 text-[var(--md-sys-color-secondary)]" />
-          </span>
-        );
-      case 'FEATURE':
-        return (
-          <span title="Feature" className="inline-flex items-center">
-            <Sparkles className="w-3.5 h-3.5 text-[var(--md-sys-color-success)]" />
-          </span>
-        );
-      case 'IMPROVEMENT':
-        return (
-          <span title="Improvement" className="inline-flex items-center">
-            <Zap className="w-3.5 h-3.5 text-[var(--md-sys-color-tertiary)]" />
-          </span>
-        );
-      default:
-        return (
-          <span title="Task" className="inline-flex items-center">
-            <CheckSquare className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
-          </span>
-        );
-    }
   };
 
   // Build quick move dropdown options
@@ -200,42 +182,49 @@ const AgileIssueRowComponent: React.FC<AgileIssueRowProps> = ({
 
   return (
     <div
-      ref={setNodeRef}
-      {...attributes}
-      {...listeners}
       onClick={handleClick}
-      className={`group relative flex items-center justify-between gap-3 px-3 py-2.5 rounded-2xl bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container)] dark:hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-outline-variant)]/80 transition-colors duration-150 cursor-grab active:cursor-grabbing shadow-2xs touch-none ${
+      className={`group relative flex items-center justify-between gap-3 px-3 py-2.5 rounded-2xl bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container)] dark:hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-outline-variant)]/80 transition-colors duration-150 cursor-grab active:cursor-grabbing shadow-2xs select-none ${
         isSelected
           ? '!border-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-primary)]/40 bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-highest)] shadow-xs'
           : ''
       } ${
         isBeingDragged
-          ? 'select-none opacity-40 scale-98 border-dashed border-[var(--md-sys-color-primary)]'
+          ? 'opacity-40 scale-98 border-dashed border-[var(--md-sys-color-primary)]'
           : ''
       }`}
     >
       {/* Left: Drag grip, Checkbox, Type Icon, Key, Title */}
       <div className="flex items-center gap-2 min-w-0 flex-1">
         <div
-          title="Drag to reorder or move between sprints"
-          className="cursor-grab active:cursor-grabbing shrink-0 select-none flex items-center justify-center text-[var(--md-sys-color-outline)]/40 group-hover:text-[var(--md-sys-color-primary)] transition-colors"
+          className="text-[var(--md-sys-color-outline)]/40 group-hover:text-[var(--md-sys-color-outline)] transition-colors shrink-0 -ml-1 cursor-grab"
+          aria-hidden="true"
         >
           <GripVertical className="w-3.5 h-3.5" />
         </div>
-        {renderSelectionCheckbox()}
-        <div className="shrink-0 select-none">{renderTypeIcon(issue.issueType)}</div>
 
-        <a
-          href={`/issues/${issue.key}`}
-          onClick={(e) => {
-            if (e.button === 1 || e.ctrlKey || e.metaKey) return;
-            e.preventDefault();
-            onClick(issue);
-          }}
-          className="font-mono text-[11px] font-bold text-[var(--md-sys-color-primary)] hover:underline bg-[var(--md-sys-color-primary-container)]/40 px-2 py-0.5 rounded-full whitespace-nowrap shrink-0 pointer-events-auto select-text"
+        {/* Selection Checkbox */}
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={isSelected}
+          aria-label={`Select issue ${issue.key}`}
+          onClick={handleCheckboxClick}
+          className={`rounded border flex items-center justify-center transition-all w-3.5 h-3.5 cursor-pointer pointer-events-auto shrink-0 ${
+            isSelected
+              ? 'bg-[var(--md-sys-color-primary)] border-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] shadow-2xs'
+              : hasAnySelection
+                ? 'opacity-80 hover:opacity-100 border-[var(--md-sys-color-outline)] bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container)] hover:border-[var(--md-sys-color-primary)]'
+                : 'opacity-60 hover:opacity-100 border-[var(--md-sys-color-outline-variant)] bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container)] hover:border-[var(--md-sys-color-primary)]'
+          }`}
         >
+          {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+        </button>
+
+        {renderTypeIcon(issue.issueType)}
+
+        <span className="font-mono text-xs font-bold text-[var(--md-sys-color-primary)] hover:underline shrink-0">
           {issue.key}
-        </a>
+        </span>
 
         {issue.epic && (
           <span
@@ -327,6 +316,52 @@ const AgileIssueRowComponent: React.FC<AgileIssueRowProps> = ({
           />
         </div>
       </div>
+    </div>
+  );
+};
+
+const AgileIssueRowContent = React.memo(AgileIssueRowContentComponent);
+
+/**
+ * Headless draggable row wrapper.
+ * By delegating presentation to the strictly memoized AgileIssueRowContent,
+ * DndKit context changes during drag start do not cause re-renders of the inner DOM/UI.
+ */
+const AgileIssueRowComponent: React.FC<AgileIssueRowProps> = ({
+  issue,
+  availableSprints,
+  onClick,
+  onMoveToSprint,
+  orderedIds,
+  isDragging = false,
+  disableDrag = false,
+}) => {
+  const { attributes, listeners, setNodeRef, isDragging: isDndDragging } = useDraggable({
+    id: `issue-${issue.id}`,
+    data: {
+      type: 'issue',
+      issue,
+    },
+    disabled: disableDrag,
+  });
+
+  const isBeingDragged = isDragging || isDndDragging;
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      className="touch-none select-none"
+    >
+      <AgileIssueRowContent
+        issue={issue}
+        availableSprints={availableSprints}
+        onClick={onClick}
+        onMoveToSprint={onMoveToSprint}
+        orderedIds={orderedIds}
+        isBeingDragged={isBeingDragged}
+      />
     </div>
   );
 };

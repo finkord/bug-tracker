@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import type { IssueItem, ProjectVersionItem } from '../../api/types';
 import { useProjectVersionsQuery } from '../../api/queries';
@@ -45,7 +45,7 @@ const EpicDroppableItem: React.FC<EpicDroppableItemProps> = ({
   isSelected,
   onSelectEpic,
 }) => {
-  const { setNodeRef, isOver } = useDroppable({
+  const { setNodeRef } = useDroppable({
     id: `drawer-epic-${epic.id}`,
     data: {
       type: 'epic',
@@ -56,6 +56,8 @@ const EpicDroppableItem: React.FC<EpicDroppableItemProps> = ({
   return (
     <div
       ref={setNodeRef}
+      data-drop-zone="epic"
+      data-epic-id={epic.id}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
@@ -66,11 +68,9 @@ const EpicDroppableItem: React.FC<EpicDroppableItemProps> = ({
       }}
       onClick={() => onSelectEpic(isSelected ? 'ALL' : epic.id)}
       className={`p-3 rounded-2xl border transition-all cursor-pointer space-y-1.5 ${
-        isOver
-          ? 'border-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-primary)]/50 bg-[var(--md-sys-color-primary-container)]/20 shadow-xs'
-          : isSelected
-            ? 'border-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/15 shadow-xs'
-            : 'border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-outline-variant)]/70 bg-[var(--md-sys-color-surface-container)]'
+        isSelected
+          ? 'border-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/15 shadow-xs'
+          : 'border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-outline-variant)]/70 bg-[var(--md-sys-color-surface-container)]'
       }`}
     >
       <div className="flex items-center justify-between gap-1">
@@ -123,7 +123,7 @@ const VersionDroppableItem: React.FC<VersionDroppableItemProps> = ({
   isSelected,
   onSelectVersion,
 }) => {
-  const { setNodeRef, isOver } = useDroppable({
+  const { setNodeRef } = useDroppable({
     id: `drawer-version-${ver.id}`,
     data: {
       type: 'version',
@@ -134,6 +134,8 @@ const VersionDroppableItem: React.FC<VersionDroppableItemProps> = ({
   return (
     <div
       ref={setNodeRef}
+      data-drop-zone="version"
+      data-version-id={ver.id}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
@@ -144,11 +146,9 @@ const VersionDroppableItem: React.FC<VersionDroppableItemProps> = ({
       }}
       onClick={() => onSelectVersion(isSelected ? 'ALL' : (ver.id as number))}
       className={`p-3 rounded-2xl border transition-all cursor-pointer space-y-1.5 ${
-        isOver
-          ? 'border-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-primary)]/50 bg-[var(--md-sys-color-primary-container)]/20 shadow-xs'
-          : isSelected
-            ? 'border-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/15 shadow-xs'
-            : 'border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-outline-variant)]/70 bg-[var(--md-sys-color-surface-container)]'
+        isSelected
+          ? 'border-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/15 shadow-xs'
+          : 'border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-outline-variant)]/70 bg-[var(--md-sys-color-surface-container)]'
       }`}
     >
       <div className="flex items-center justify-between gap-1">
@@ -187,7 +187,97 @@ const VersionDroppableItem: React.FC<VersionDroppableItemProps> = ({
   );
 };
 
-export const AgileBacklogLeftDrawer: React.FC<AgileBacklogLeftDrawerProps> = ({
+interface NoEpicDroppableItemProps {
+  count: number;
+  isSelected: boolean;
+  onSelectEpic: (epicId: number | 'ALL' | 'NONE') => void;
+}
+
+const NoEpicDroppableItem: React.FC<NoEpicDroppableItemProps> = ({
+  count,
+  isSelected,
+  onSelectEpic,
+}) => {
+  const { setNodeRef, isOver } = useDroppable({
+    id: 'drawer-epic-none',
+    data: {
+      type: 'epic',
+      epicId: null,
+    },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelectEpic(isSelected ? 'ALL' : 'NONE');
+        }
+      }}
+      onClick={() => onSelectEpic(isSelected ? 'ALL' : 'NONE')}
+      className={`w-full flex items-center justify-between px-3 py-2 rounded-2xl text-xs font-semibold transition-all cursor-pointer border ${
+        isOver
+          ? 'border-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-primary)]/50 bg-[var(--md-sys-color-primary-container)]/25 shadow-xs'
+          : isSelected
+            ? 'border-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] ring-1 ring-[var(--md-sys-color-primary)]'
+            : 'border-transparent text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container)]'
+      }`}
+    >
+      <span>Issues without Epic</span>
+      <span className="text-[10px] font-mono">{count}</span>
+    </div>
+  );
+};
+
+interface NoVersionDroppableItemProps {
+  count: number;
+  isSelected: boolean;
+  onSelectVersion: (versionId: number | 'ALL' | 'NONE') => void;
+}
+
+const NoVersionDroppableItem: React.FC<NoVersionDroppableItemProps> = ({
+  count,
+  isSelected,
+  onSelectVersion,
+}) => {
+  const { setNodeRef, isOver } = useDroppable({
+    id: 'drawer-version-none',
+    data: {
+      type: 'version',
+      versionId: null,
+    },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelectVersion(isSelected ? 'ALL' : 'NONE');
+        }
+      }}
+      onClick={() => onSelectVersion(isSelected ? 'ALL' : 'NONE')}
+      className={`w-full flex items-center justify-between px-3 py-2 rounded-2xl text-xs font-semibold transition-all cursor-pointer border ${
+        isOver
+          ? 'border-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-primary)]/50 bg-[var(--md-sys-color-primary-container)]/25 shadow-xs'
+          : isSelected
+            ? 'border-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] ring-1 ring-[var(--md-sys-color-primary)]'
+            : 'border-transparent text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container)]'
+      }`}
+    >
+      <span>Issues without Version</span>
+      <span className="text-[10px] font-mono">{count}</span>
+    </div>
+  );
+};
+
+const AgileBacklogLeftDrawerComponent: React.FC<AgileBacklogLeftDrawerProps> = ({
   projectId,
   issues,
   activeDrawerTab,
@@ -201,8 +291,41 @@ export const AgileBacklogLeftDrawer: React.FC<AgileBacklogLeftDrawerProps> = ({
 }) => {
   const { data: versions = [] } = useProjectVersionsQuery(projectId);
 
-  // Extract all Epics in project
-  const epics = issues.filter((i) => i.issueType === 'EPIC');
+  // Extract all Epics in project (memoized to avoid re-filtering every render)
+  const epics = useMemo(() => issues.filter((i) => i.issueType === 'EPIC'), [issues]);
+
+  const issuesByEpicId = useMemo(() => {
+    const map = new Map<number, IssueItem[]>();
+    for (const i of issues) {
+      const targetId = i.epicId || (i.parentId && i.issueType !== 'EPIC' ? i.parentId : null);
+      if (targetId) {
+        const list = map.get(targetId);
+        if (list) {
+          list.push(i);
+        } else {
+          map.set(targetId, [i]);
+        }
+      }
+    }
+    return map;
+  }, [issues]);
+
+  const issuesByVersionId = useMemo(() => {
+    const map = new Map<number, IssueItem[]>();
+    for (const i of issues) {
+      if (i.fixVersionId) {
+        const list = map.get(i.fixVersionId);
+        if (list) {
+          list.push(i);
+        } else {
+          map.set(i.fixVersionId, [i]);
+        }
+      }
+    }
+    return map;
+  }, [issues]);
+
+  const noVersionCount = useMemo(() => issues.filter((i) => !i.fixVersionId).length, [issues]);
 
   return (
     <aside
@@ -277,21 +400,12 @@ export const AgileBacklogLeftDrawer: React.FC<AgileBacklogLeftDrawerProps> = ({
               </span>
             </button>
 
-            {/* Issues Without Epic Filter */}
-            <button
-              type="button"
-              onClick={() => onSelectEpic(selectedEpicId === 'NONE' ? 'ALL' : 'NONE')}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-2xl text-xs font-semibold transition-all cursor-pointer ${
-                selectedEpicId === 'NONE'
-                  ? 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] ring-1 ring-[var(--md-sys-color-primary)]'
-                  : 'text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container)]'
-              }`}
-            >
-              <span>Issues without Epic</span>
-              <span className="text-[10px] font-mono">
-                {issues.filter((i) => !i.epicId && !i.parentId && i.issueType !== 'EPIC').length}
-              </span>
-            </button>
+            {/* Issues Without Epic Droppable Target & Filter */}
+            <NoEpicDroppableItem
+              count={issues.filter((i) => !i.epicId && !i.parentId && i.issueType !== 'EPIC').length}
+              isSelected={selectedEpicId === 'NONE'}
+              onSelectEpic={onSelectEpic}
+            />
 
             <div className="h-px bg-[var(--md-sys-color-outline-variant)]/20 my-1" />
 
@@ -311,7 +425,7 @@ export const AgileBacklogLeftDrawer: React.FC<AgileBacklogLeftDrawerProps> = ({
               </div>
             ) : (
               epics.map((epic) => {
-                const childIssues = issues.filter((i) => i.epicId === epic.id || i.parentId === epic.id);
+                const childIssues = issuesByEpicId.get(epic.id) || [];
                 const completedChildCount = childIssues.filter(
                   (i) => i.status === 'RESOLVED' || i.status === 'CLOSED',
                 ).length;
@@ -363,21 +477,12 @@ export const AgileBacklogLeftDrawer: React.FC<AgileBacklogLeftDrawerProps> = ({
               </span>
             </button>
 
-            {/* Issues Without Version Filter */}
-            <button
-              type="button"
-              onClick={() => onSelectVersion(selectedVersionId === 'NONE' ? 'ALL' : 'NONE')}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-2xl text-xs font-semibold transition-all cursor-pointer ${
-                selectedVersionId === 'NONE'
-                  ? 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] ring-1 ring-[var(--md-sys-color-primary)]'
-                  : 'text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container)]'
-              }`}
-            >
-              <span>Issues without Version</span>
-              <span className="text-[10px] font-mono">
-                {issues.filter((i) => !i.fixVersionId).length}
-              </span>
-            </button>
+            {/* Issues Without Version Droppable Target & Filter */}
+            <NoVersionDroppableItem
+              count={noVersionCount}
+              isSelected={selectedVersionId === 'NONE'}
+              onSelectVersion={onSelectVersion}
+            />
 
             <div className="h-px bg-[var(--md-sys-color-outline-variant)]/20 my-1" />
 
@@ -388,7 +493,7 @@ export const AgileBacklogLeftDrawer: React.FC<AgileBacklogLeftDrawerProps> = ({
               </div>
             ) : (
               versions.map((ver) => {
-                const verIssues = issues.filter((i) => i.fixVersionId === ver.id);
+                const verIssues = issuesByVersionId.get(ver.id) || [];
                 const completedCount = verIssues.filter(
                   (i) => i.status === 'RESOLVED' || i.status === 'CLOSED',
                 ).length;
@@ -415,3 +520,5 @@ export const AgileBacklogLeftDrawer: React.FC<AgileBacklogLeftDrawerProps> = ({
     </aside>
   );
 };
+
+export const AgileBacklogLeftDrawer = React.memo(AgileBacklogLeftDrawerComponent);

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -7,15 +7,17 @@ import {
   KeyboardSensor,
   useSensors,
   useSensor,
-  closestCorners,
+  pointerWithin,
+  MeasuringStrategy,
+  type CollisionDetection,
   type DragStartEvent,
+  type DragMoveEvent,
   type DragEndEvent,
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import type { IssueItem, IssueStatus, IssuePriority, IssueType, AssigneeUser } from '../../api/client';
 import type { KanbanSettings } from '../../types/kanban.js';
 import { KANBAN_COLUMNS } from '../../types/kanban.js';
-import { IssueCard } from './IssueCard.js';
 import { DraggableKanbanCard } from './DraggableKanbanCard.js';
 import { Avatar } from '../common/Avatar';
 import { Badge } from '../ui';
@@ -56,7 +58,16 @@ interface BaseSwimlaneGroup {
   title: string;
   subtitle?: string | null;
   issues: IssueItem[];
+  issuesByColumn: Record<IssueStatus, IssueItem[]>;
 }
+
+const createColumnBuckets = (): Record<IssueStatus, IssueItem[]> => {
+  const buckets = {} as Record<IssueStatus, IssueItem[]>;
+  for (const col of KANBAN_COLUMNS) {
+    buckets[col.status] = [];
+  }
+  return buckets;
+};
 
 interface AssigneeSwimlaneGroup extends BaseSwimlaneGroup {
   type: 'assignee';
@@ -78,12 +89,47 @@ interface ExpediteSwimlaneGroup extends BaseSwimlaneGroup {
 
 type SwimlaneGroup = AssigneeSwimlaneGroup | EpicSwimlaneGroup | ExpediteSwimlaneGroup;
 
-interface SwimlaneCellDroppableProps {
+interface GhostCardProps {
+  issue: IssueItem;
+  selectedCount?: number;
+}
+
+const GhostCard: React.FC<GhostCardProps> = React.memo(({ issue, selectedCount }) => {
+  return (
+    <div
+      style={{ willChange: 'transform', transform: 'translateZ(0)' }}
+      className="p-3.5 rounded-2xl bg-[var(--md-sys-color-surface-container)] border-2 border-[var(--md-sys-color-primary)] shadow-2xl w-[260px] select-none pointer-events-none relative"
+    >
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-[11px] font-mono font-bold text-[var(--md-sys-color-primary)]">
+          {issue.key}
+        </span>
+        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider">
+          {issue.status}
+        </span>
+      </div>
+      <p className="text-xs font-semibold text-[var(--md-sys-color-on-surface)] line-clamp-2 leading-snug">
+        {issue.title}
+      </p>
+      {issue.assignee && (
+        <div className="mt-2 text-[10px] text-[var(--md-sys-color-on-surface-variant)] font-medium truncate">
+          {issue.assignee.fullName}
+        </div>
+      )}
+      {selectedCount && selectedCount > 1 ? (
+        <span className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] text-xs font-bold shadow-md ring-2 ring-[var(--md-sys-color-surface)]">
+          +{selectedCount - 1} more
+        </span>
+      ) : null}
+    </div>
+  );
+});
+
+interface SwimlaneCellProps {
   group: SwimlaneGroup;
   col: (typeof KANBAN_COLUMNS)[number];
   colIssues: IssueItem[];
-  allIssues: IssueItem[];
-  activeIssue: IssueItem | null;
+  orderedIds: number[];
   settings: KanbanSettings;
   onSelectIssue: (issue: IssueItem) => void;
   onStatusChange: (issueId: number, nextStatus: IssueStatus) => void;
@@ -94,12 +140,11 @@ interface SwimlaneCellDroppableProps {
   focusedIssueId?: number | null;
 }
 
-const SwimlaneCellDroppable: React.FC<SwimlaneCellDroppableProps> = ({
+const SwimlaneCellComponent: React.FC<SwimlaneCellProps> = ({
   group,
   col,
   colIssues,
-  allIssues,
-  activeIssue,
+  orderedIds,
   settings,
   onSelectIssue,
   onStatusChange,
@@ -109,34 +154,30 @@ const SwimlaneCellDroppable: React.FC<SwimlaneCellDroppableProps> = ({
   currentUserId,
   focusedIssueId,
 }) => {
-  const isTransitionAllowed = !activeIssue || isAllowedTransition(activeIssue.status, col.status);
   const cellKey = `${group.key}-${col.status}`;
 
-  const { setNodeRef, isOver } = useDroppable({
-    id: `swimlane-cell-${cellKey}`,
-    data: {
-      type: 'swimlane-cell',
-      group,
-      status: col.status,
+  const handleCardStatusChange = useCallback(
+    (id: number, nextStatus: IssueStatus) => {
+      if (group.type === 'assignee') {
+        onAssigneeAndStatusChange(id, group.assigneeId, nextStatus);
+      } else {
+        onStatusChange(id, nextStatus);
+      }
     },
-    disabled: !isTransitionAllowed,
-  });
+    [group, onAssigneeAndStatusChange, onStatusChange],
+  );
 
   const limit = settings.wipLimits[col.status];
   const isLimitExceeded = limit !== undefined && limit > 0 && colIssues.length > limit;
 
   return (
     <div
-      ref={setNodeRef}
+      id={`swimlane-cell-${cellKey}`}
       data-drop-zone="cell"
       data-column-status={col.status}
       data-lane-key={group.key}
       className={`flex-1 min-w-[230px] flex flex-col rounded-2xl p-2.5 transition-colors duration-150 min-h-[120px] border ${
-        isOver && isTransitionAllowed
-          ? 'border-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-primary)]/40 bg-[var(--md-sys-color-primary-container)]/10 shadow-xs'
-          : isOver && !isTransitionAllowed
-          ? 'border-[var(--md-sys-color-error)]/40 bg-[var(--md-sys-color-error-container)]/10 cursor-not-allowed'
-          : isLimitExceeded
+        isLimitExceeded
           ? 'border-[var(--md-sys-color-error)]/40 bg-[var(--md-sys-color-error-container)]/10'
           : 'border-[var(--md-sys-color-outline-variant)]/30 bg-[var(--md-sys-color-surface-container-low)]'
       }`}
@@ -176,17 +217,9 @@ const SwimlaneCellDroppable: React.FC<SwimlaneCellDroppableProps> = ({
       <div className="flex-1 space-y-2.5">
         {colIssues.length === 0 ? (
           <div
-            className={`h-16 rounded-xl border border-dashed flex flex-col items-center justify-center text-center p-2 text-[11px] transition-colors ${
-              isOver && isTransitionAllowed
-                ? 'border-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/20 text-[var(--md-sys-color-primary)]'
-                : isOver && !isTransitionAllowed
-                ? 'border-[var(--md-sys-color-error)]/40 bg-[var(--md-sys-color-error-container)]/20 text-[var(--md-sys-color-error)]'
-                : 'border-[var(--md-sys-color-outline-variant)]/30 text-[var(--md-sys-color-outline)]'
-            }`}
+            className="h-16 rounded-xl border border-dashed border-[var(--md-sys-color-outline-variant)]/30 flex flex-col items-center justify-center text-center p-2 text-[11px] text-[var(--md-sys-color-outline)]"
           >
-            <span className="text-[10px] opacity-70">
-              {isOver && !isTransitionAllowed ? 'Transition not allowed' : 'Drop tickets here'}
-            </span>
+            <span className="text-[10px] opacity-70">Drop tickets here</span>
           </div>
         ) : (
           colIssues.map((issue) => (
@@ -194,24 +227,259 @@ const SwimlaneCellDroppable: React.FC<SwimlaneCellDroppableProps> = ({
               key={issue.id}
               issue={issue}
               onClick={onSelectIssue}
-              onStatusChange={(id, nextStatus) => {
-                if (group.type === 'assignee') {
-                  onAssigneeAndStatusChange(id, group.assigneeId, nextStatus);
-                } else {
-                  onStatusChange(id, nextStatus);
-                }
-              }}
+              onStatusChange={handleCardStatusChange}
               onAssignToMe={onAssignToMe}
               currentUserId={currentUserId}
               density={settings.cardDensity}
               isFocused={focusedIssueId === issue.id}
-              orderedIds={allIssues.map((i) => i.id)}
+              orderedIds={orderedIds}
             />
           ))
         )}
       </div>
     </div>
   );
+};
+
+const SwimlaneCell = React.memo(SwimlaneCellComponent);
+
+interface StickyColumnDroppableProps {
+  col: (typeof KANBAN_COLUMNS)[number];
+  count: number;
+  limit?: number;
+}
+
+const StickyColumnDroppable: React.FC<StickyColumnDroppableProps> = React.memo(({ col, count, limit }) => {
+  const { setNodeRef } = useDroppable({
+    id: `column-${col.status}`,
+    data: {
+      type: 'column',
+      status: col.status,
+    },
+  });
+
+  const isLimitExceeded = limit !== undefined && limit > 0 && count > limit;
+
+  return (
+    <div
+      ref={setNodeRef}
+      id={`column-${col.status}`}
+      data-column-status={col.status}
+      className={`flex-1 min-w-[230px] flex items-center justify-between px-3.5 py-2.5 rounded-2xl border transition-colors ${
+        isLimitExceeded
+          ? 'border-[var(--md-sys-color-error)]/40 bg-[var(--md-sys-color-error-container)]/10'
+          : 'bg-[var(--md-sys-color-surface-container)] border-[var(--md-sys-color-outline-variant)]/30'
+      }`}
+    >
+      <span className="font-bold text-xs uppercase tracking-wider text-[var(--md-sys-color-on-surface)] truncate">
+        {col.title}
+      </span>
+      <div className="flex items-center gap-1.5">
+        <Badge variant={col.badgeVariant} size="sm" className="px-2 py-0.5 rounded-full font-bold">
+          {count}
+          {limit ? ` / ${limit}` : ''}
+        </Badge>
+        {isLimitExceeded && (
+          <AlertCircle className="w-3.5 h-3.5 text-[var(--md-sys-color-error)]" />
+        )}
+      </div>
+    </div>
+  );
+});
+
+interface SwimlaneGroupRowProps {
+  group: SwimlaneGroup;
+  isCollapsed: boolean;
+  visibleColumns: (typeof KANBAN_COLUMNS);
+  orderedIds: number[];
+  settings: KanbanSettings;
+  toggleLane: (laneKey: string) => void;
+  onSelectIssue: (issue: IssueItem) => void;
+  onStatusChange: (issueId: number, nextStatus: IssueStatus) => void;
+  onAssigneeAndStatusChange: (issueId: number, newAssigneeId: number | null, nextStatus: IssueStatus) => void;
+  onAssignToMe: (issueId: number) => void;
+  onQuickAddInStatus?: (status: IssueStatus, assigneeId?: number | null) => void;
+  currentUserId?: number;
+  focusedIssueId?: number | null;
+}
+
+const SwimlaneGroupRowComponent: React.FC<SwimlaneGroupRowProps> = ({
+  group,
+  isCollapsed,
+  visibleColumns,
+  orderedIds,
+  settings,
+  toggleLane,
+  onSelectIssue,
+  onStatusChange,
+  onAssigneeAndStatusChange,
+  onAssignToMe,
+  onQuickAddInStatus,
+  currentUserId,
+  focusedIssueId,
+}) => {
+  return (
+    <div
+      style={{ contentVisibility: 'auto', containIntrinsicSize: '0 180px' }}
+      className={`rounded-3xl border shadow-2xs overflow-hidden transition-all duration-200 ${
+        group.type === 'expedite' && group.isExpedite
+          ? 'border-[var(--md-sys-color-error)]/40 bg-[var(--md-sys-color-error-container)]/5'
+          : 'border-[var(--md-sys-color-outline-variant)]/40 bg-[var(--md-sys-color-surface-container-low)]'
+      }`}
+    >
+      {/* Swimlane Header Banner */}
+      <div
+        onClick={() => toggleLane(group.key)}
+        className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] cursor-pointer select-none border-b border-[var(--md-sys-color-outline-variant)]/30 transition-colors"
+      >
+        {/* Left: Collapse Icon + Entity Info */}
+        <div className="flex items-center gap-3 min-w-0">
+          <button
+            type="button"
+            aria-label={isCollapsed ? 'Expand lane' : 'Collapse lane'}
+            className="p-1 rounded-lg text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] shrink-0"
+          >
+            {isCollapsed ? (
+              <ChevronRight className="w-4 h-4" />
+            ) : (
+              <ChevronDown className="w-4 h-4" />
+            )}
+          </button>
+
+          {/* Left Icon / Avatar based on swimlane type */}
+          {group.type === 'assignee' && (
+            group.assignee ? (
+              <Avatar
+                name={group.assignee.fullName}
+                avatarUrl={group.assignee.avatarUrl}
+                role={group.assignee.systemRole}
+                size="sm"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-[var(--md-sys-color-surface-container-highest)] border border-dashed border-[var(--md-sys-color-outline)] flex items-center justify-center text-[var(--md-sys-color-outline)] shrink-0">
+                <UserX className="w-4 h-4" />
+              </div>
+            )
+          )}
+
+          {group.type === 'epic' && (
+            <div className="w-8 h-8 rounded-xl bg-[var(--md-sys-color-primary-container)]/40 border border-[var(--md-sys-color-primary)]/30 flex items-center justify-center text-[var(--md-sys-color-primary)] shrink-0">
+              <Layers className="w-4 h-4" />
+            </div>
+          )}
+
+          {group.type === 'expedite' && (
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+              group.isExpedite
+                ? 'bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-error)]'
+                : 'bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-on-surface-variant)]'
+            }`}>
+              {group.isExpedite ? (
+                <Flame className="w-4 h-4 text-[var(--md-sys-color-error)]" />
+              ) : (
+                <Layers className="w-4 h-4" />
+              )}
+            </div>
+          )}
+
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 className="text-xs sm:text-sm font-bold text-[var(--md-sys-color-on-surface)] truncate">
+                {group.title}
+              </h3>
+              {group.type === 'assignee' && group.assignee?.systemRole && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-on-surface-variant)] font-semibold shrink-0">
+                  {group.assignee.systemRole}
+                </span>
+              )}
+              {group.type === 'expedite' && group.isExpedite && (
+                <Badge variant="critical" size="sm" className="px-2 py-0.5 rounded-full font-bold">
+                  P0 Blocker
+                </Badge>
+              )}
+            </div>
+            {group.subtitle && (
+              <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] truncate">
+                {group.subtitle}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Right: Issue Counts & Stats */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)]">
+            <span className="font-bold text-[var(--md-sys-color-on-surface)]">{group.issues.length}</span>
+            <span>{group.issues.length === 1 ? 'ticket' : 'tickets'}</span>
+          </div>
+
+          {/* Status distribution pill */}
+          <div className="hidden sm:flex items-center gap-1.5 text-[11px]">
+            {visibleColumns.map((col) => {
+              const cnt = group.issuesByColumn[col.status]?.length || 0;
+              if (cnt === 0) return null;
+              return (
+                <Badge key={col.status} variant={col.badgeVariant} size="sm" className="px-1.5 py-0.2 rounded-md font-bold">
+                  {col.shortTitle}: {cnt}
+                </Badge>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Swimlane Columns Body */}
+      {!isCollapsed && (
+        <div className="p-3 bg-[var(--md-sys-color-surface-container-lowest)]/40 dark:bg-[var(--md-sys-color-surface-container-low)]">
+          <div className="flex gap-3 xl:gap-4 items-stretch">
+            {visibleColumns.map((col) => {
+              const colIssues = group.issuesByColumn[col.status] || [];
+
+              return (
+                <SwimlaneCell
+                  key={col.status}
+                  group={group}
+                  col={col}
+                  colIssues={colIssues}
+                  orderedIds={orderedIds}
+                  settings={settings}
+                  onSelectIssue={onSelectIssue}
+                  onStatusChange={onStatusChange}
+                  onAssigneeAndStatusChange={onAssigneeAndStatusChange}
+                  onAssignToMe={onAssignToMe}
+                  onQuickAddInStatus={onQuickAddInStatus}
+                  currentUserId={currentUserId}
+                  focusedIssueId={focusedIssueId}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const SwimlaneGroupRow = React.memo(SwimlaneGroupRowComponent);
+
+const boardCollisionDetection: CollisionDetection = (args) => {
+  const { pointerCoordinates, droppableContainers } = args;
+  if (!pointerCoordinates) {
+    return [];
+  }
+
+  const el = document.elementFromPoint(pointerCoordinates.x, pointerCoordinates.y);
+  if (el) {
+    const colStatus = el.closest<HTMLElement>('[data-column-status]')?.getAttribute('data-column-status');
+    if (colStatus) {
+      const container = droppableContainers.find((c) => c.id === `column-${colStatus}`);
+      if (container) {
+        return [{ id: container.id, data: { droppableContainer: container, value: 1 } }];
+      }
+    }
+  }
+
+  return pointerWithin(args);
 };
 
 export const KanbanSwimlaneBoard: React.FC<KanbanSwimlaneBoardProps> = ({
@@ -229,15 +497,19 @@ export const KanbanSwimlaneBoard: React.FC<KanbanSwimlaneBoardProps> = ({
 }) => {
   const [collapsedLanes, setCollapsedLanes] = useState<Record<string, boolean>>({});
   const [activeIssue, setActiveIssue] = useState<IssueItem | null>(null);
+  const activeIssueRef = useRef<IssueItem | null>(null);
+  const lastHoveredCellRef = useRef<HTMLElement | null>(null);
 
   const { selectedIds, clearSelection } = useIssueSelectionStore();
+
+  const orderedIds = useMemo(() => issues.map((i) => i.id), [issues]);
 
   const swimlaneType = settings.swimlaneType || 'assignee';
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 5,
+        distance: 3,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -258,6 +530,7 @@ export const KanbanSwimlaneBoard: React.FC<KanbanSwimlaneBoardProps> = ({
         parentId: null,
         parentIssue: null,
         issues: [],
+        issuesByColumn: createColumnBuckets(),
       };
 
       for (const issue of issues) {
@@ -274,11 +547,15 @@ export const KanbanSwimlaneBoard: React.FC<KanbanSwimlaneBoardProps> = ({
               epicId: epId,
               parentIssue: ep,
               issues: [],
+              issuesByColumn: createColumnBuckets(),
             });
           }
-          parentMap.get(epId)!.issues.push(issue);
+          const grp = parentMap.get(epId)!;
+          grp.issues.push(issue);
+          grp.issuesByColumn[issue.status]?.push(issue);
         } else {
           standaloneGroup.issues.push(issue);
+          standaloneGroup.issuesByColumn[issue.status]?.push(issue);
         }
       }
 
@@ -293,12 +570,16 @@ export const KanbanSwimlaneBoard: React.FC<KanbanSwimlaneBoardProps> = ({
     if (swimlaneType === 'expedite') {
       const expediteIssues: IssueItem[] = [];
       const standardIssues: IssueItem[] = [];
+      const expediteByCol = createColumnBuckets();
+      const standardByCol = createColumnBuckets();
 
       for (const issue of issues) {
         if (issue.priority === 'CRITICAL') {
           expediteIssues.push(issue);
+          expediteByCol[issue.status]?.push(issue);
         } else {
           standardIssues.push(issue);
+          standardByCol[issue.status]?.push(issue);
         }
       }
 
@@ -311,6 +592,7 @@ export const KanbanSwimlaneBoard: React.FC<KanbanSwimlaneBoardProps> = ({
           subtitle: 'Priority 0 items requiring immediate attention and fast-tracking',
           isExpedite: true,
           issues: expediteIssues,
+          issuesByColumn: expediteByCol,
         });
       }
 
@@ -321,6 +603,7 @@ export const KanbanSwimlaneBoard: React.FC<KanbanSwimlaneBoardProps> = ({
         subtitle: 'Normal priority issues following regular WIP rules',
         isExpedite: false,
         issues: standardIssues,
+        issuesByColumn: standardByCol,
       });
 
       return groups;
@@ -336,6 +619,7 @@ export const KanbanSwimlaneBoard: React.FC<KanbanSwimlaneBoardProps> = ({
       assignee: null,
       assigneeId: null,
       issues: [],
+      issuesByColumn: createColumnBuckets(),
     };
 
     for (const issue of issues) {
@@ -350,11 +634,15 @@ export const KanbanSwimlaneBoard: React.FC<KanbanSwimlaneBoardProps> = ({
             assignee: issue.assignee,
             assigneeId: userId,
             issues: [],
+            issuesByColumn: createColumnBuckets(),
           });
         }
-        assigneeMap.get(userId)!.issues.push(issue);
+        const grp = assigneeMap.get(userId)!;
+        grp.issues.push(issue);
+        grp.issuesByColumn[issue.status]?.push(issue);
       } else {
         unassignedGroup.issues.push(issue);
+        unassignedGroup.issuesByColumn[issue.status]?.push(issue);
       }
     }
 
@@ -376,12 +664,12 @@ export const KanbanSwimlaneBoard: React.FC<KanbanSwimlaneBoardProps> = ({
     return groups;
   }, [issues, swimlaneType, settings.unassignedPosition]);
 
-  const toggleLane = (laneKey: string) => {
+  const toggleLane = useCallback((laneKey: string) => {
     setCollapsedLanes((prev) => ({
       ...prev,
       [laneKey]: !prev[laneKey],
     }));
-  };
+  }, []);
 
   const handleExpandAll = () => {
     setCollapsedLanes({});
@@ -400,27 +688,84 @@ export const KanbanSwimlaneBoard: React.FC<KanbanSwimlaneBoardProps> = ({
     return swimlaneGroups.every((g) => Boolean(collapsedLanes[g.key]));
   }, [swimlaneGroups, collapsedLanes]);
 
+  const visibleColumns = useMemo(() => {
+    if (settings.showClosedColumn === false) {
+      return KANBAN_COLUMNS.filter((col) => col.status !== 'CLOSED');
+    }
+    return KANBAN_COLUMNS;
+  }, [settings.showClosedColumn]);
+
   const handleDragStart = (event: DragStartEvent) => {
     const issue = event.active.data.current?.issue as IssueItem | undefined;
     if (issue) {
       setActiveIssue(issue);
+      activeIssueRef.current = issue;
     }
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    setActiveIssue(null);
-    if (!over) return;
+  const handleDragMove = useCallback((event: DragMoveEvent) => {
+    const mouseEvent = event.activatorEvent as MouseEvent;
+    const currentX = (mouseEvent.clientX ?? 0) + event.delta.x;
+    const currentY = (mouseEvent.clientY ?? 0) + event.delta.y;
 
-    const issue = active.data.current?.issue as IssueItem | undefined;
+    const target = document.elementFromPoint(currentX, currentY);
+    const cellEl = target?.closest<HTMLElement>('[data-drop-zone="cell"]');
+
+    if (cellEl !== lastHoveredCellRef.current) {
+      if (lastHoveredCellRef.current) {
+        lastHoveredCellRef.current.removeAttribute('data-is-over');
+        lastHoveredCellRef.current.removeAttribute('data-is-disallowed');
+      }
+      if (cellEl) {
+        const colStatus = cellEl.getAttribute('data-column-status') as IssueStatus;
+        const currentActive = activeIssueRef.current;
+        const allowed = !currentActive || isAllowedTransition(currentActive.status, colStatus);
+        if (allowed) {
+          cellEl.setAttribute('data-is-over', 'true');
+        } else {
+          cellEl.setAttribute('data-is-disallowed', 'true');
+        }
+      }
+      lastHoveredCellRef.current = cellEl || null;
+    }
+  }, []);
+
+  const clearHoveredCell = useCallback(() => {
+    if (lastHoveredCellRef.current) {
+      lastHoveredCellRef.current.removeAttribute('data-is-over');
+      lastHoveredCellRef.current.removeAttribute('data-is-disallowed');
+      lastHoveredCellRef.current = null;
+    }
+  }, []);
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    clearHoveredCell();
+    setActiveIssue(null);
+    activeIssueRef.current = null;
+
+    const issue = event.active.data.current?.issue as IssueItem | undefined;
     if (!issue) return;
+
+    // Direct O(1) hit-test at the drop coordinates
+    const mouseEvent = event.activatorEvent as MouseEvent;
+    const dropX = (mouseEvent.clientX ?? 0) + event.delta.x;
+    const dropY = (mouseEvent.clientY ?? 0) + event.delta.y;
+
+    const target = document.elementFromPoint(dropX, dropY);
+    const cellEl = target?.closest<HTMLElement>('[data-drop-zone="cell"]');
 
     let targetStatus: IssueStatus | undefined;
     let targetGroup: SwimlaneGroup | undefined;
 
-    if (over.data.current?.type === 'swimlane-cell') {
-      targetStatus = over.data.current.status;
-      targetGroup = over.data.current.group;
+    if (cellEl) {
+      targetStatus = cellEl.getAttribute('data-column-status') as IssueStatus;
+      const laneKey = cellEl.getAttribute('data-lane-key');
+      targetGroup = swimlaneGroups.find((g) => g.key === laneKey);
+    } else if (event.over?.data.current?.status) {
+      targetStatus = event.over.data.current.status;
+      targetGroup = swimlaneGroups.find((g) =>
+        g.type === 'assignee' ? g.assigneeId === (issue.assignee?.id ?? null) : true,
+      );
     }
 
     if (!targetStatus || !targetGroup) return;
@@ -479,7 +824,9 @@ export const KanbanSwimlaneBoard: React.FC<KanbanSwimlaneBoardProps> = ({
   };
 
   const handleDragCancel = () => {
+    clearHoveredCell();
     setActiveIssue(null);
+    activeIssueRef.current = null;
   };
 
   if (loading) {
@@ -515,18 +862,33 @@ export const KanbanSwimlaneBoard: React.FC<KanbanSwimlaneBoardProps> = ({
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={boardCollisionDetection}
       onDragStart={handleDragStart}
+      onDragMove={handleDragMove}
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
-      autoScroll={{
-        threshold: {
-          x: 0.15,
-          y: 0.15,
+      measuring={{
+        droppable: {
+          strategy: MeasuringStrategy.BeforeDragging,
         },
-        acceleration: 15,
       }}
+      autoScroll={false}
     >
+      <style>{`
+        [data-drop-zone="cell"][data-is-over="true"] {
+          border-color: var(--md-sys-color-primary) !important;
+          outline: 2px solid var(--md-sys-color-primary) !important;
+          outline-offset: -2px;
+          background-color: var(--md-sys-color-surface-container) !important;
+        }
+        [data-drop-zone="cell"][data-is-disallowed="true"] {
+          border-color: var(--md-sys-color-error) !important;
+          outline: 2px solid var(--md-sys-color-error) !important;
+          outline-offset: -2px;
+          background-color: var(--md-sys-color-error-container) !important;
+          cursor: not-allowed !important;
+        }
+      `}</style>
       <div className="w-full pb-8 pt-1 space-y-4">
         {/* Swimlane Global Control Bar */}
         <div className="flex items-center justify-between px-2 py-1 shrink-0">
@@ -549,36 +911,20 @@ export const KanbanSwimlaneBoard: React.FC<KanbanSwimlaneBoardProps> = ({
         {/* Single Synchronized Horizontal Scroll Container */}
         <div data-drag-scroll-x="true" className="overflow-x-auto pb-4 scrollbar-thin">
           <div className="min-w-[1200px] space-y-4">
-            {/* Sticky Board Columns Header for Swimlanes */}
+            {/* Sticky Board Columns Header for Swimlanes (Only 5 droppables for the entire board) */}
             <div className="sticky top-0 z-20 bg-[var(--md-sys-color-background)]/95 backdrop-blur-md pb-2 pt-1 border-b border-[var(--md-sys-color-outline-variant)]/30">
               <div className="flex gap-3 xl:gap-4">
-                {KANBAN_COLUMNS.map((col) => {
+                {visibleColumns.map((col) => {
                   const count = issues.filter((i) => i.status === col.status).length;
                   const limit = settings.wipLimits[col.status];
-                  const isLimitExceeded = limit !== undefined && limit > 0 && count > limit;
 
                   return (
-                    <div
+                    <StickyColumnDroppable
                       key={col.status}
-                      className={`flex-1 min-w-[230px] flex items-center justify-between px-3.5 py-2.5 rounded-2xl border transition-colors ${
-                        isLimitExceeded
-                          ? 'border-[var(--md-sys-color-error)]/40 bg-[var(--md-sys-color-error-container)]/10'
-                          : 'bg-[var(--md-sys-color-surface-container)] border-[var(--md-sys-color-outline-variant)]/30'
-                      }`}
-                    >
-                      <span className="font-bold text-xs uppercase tracking-wider text-[var(--md-sys-color-on-surface)] truncate">
-                        {col.title}
-                      </span>
-                      <div className="flex items-center gap-1.5">
-                        <Badge variant={col.badgeVariant} size="sm" className="px-2 py-0.5 rounded-full font-bold">
-                          {count}
-                          {limit ? ` / ${limit}` : ''}
-                        </Badge>
-                        {isLimitExceeded && (
-                          <AlertCircle className="w-3.5 h-3.5 text-[var(--md-sys-color-error)]" />
-                        )}
-                      </div>
-                    </div>
+                      col={col}
+                      count={count}
+                      limit={limit}
+                    />
                   );
                 })}
               </div>
@@ -589,166 +935,38 @@ export const KanbanSwimlaneBoard: React.FC<KanbanSwimlaneBoardProps> = ({
           const isCollapsed = Boolean(collapsedLanes[group.key]);
 
           return (
-            <div
+            <SwimlaneGroupRow
               key={group.key}
-              className={`rounded-3xl border shadow-2xs overflow-hidden transition-all duration-200 ${
-                group.type === 'expedite' && group.isExpedite
-                  ? 'border-[var(--md-sys-color-error)]/40 bg-[var(--md-sys-color-error-container)]/5'
-                  : 'border-[var(--md-sys-color-outline-variant)]/40 bg-[var(--md-sys-color-surface-container-low)]'
-              }`}
-            >
-              {/* Swimlane Header Banner */}
-              <div
-                onClick={() => toggleLane(group.key)}
-                className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] cursor-pointer select-none border-b border-[var(--md-sys-color-outline-variant)]/30 transition-colors"
-              >
-                {/* Left: Collapse Icon + Entity Info */}
-                <div className="flex items-center gap-3 min-w-0">
-                  <button
-                    type="button"
-                    aria-label={isCollapsed ? 'Expand lane' : 'Collapse lane'}
-                    className="p-1 rounded-lg text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] shrink-0"
-                  >
-                    {isCollapsed ? (
-                      <ChevronRight className="w-4 h-4" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4" />
-                    )}
-                  </button>
-
-                  {/* Left Icon / Avatar based on swimlane type */}
-                  {group.type === 'assignee' && (
-                    group.assignee ? (
-                      <Avatar
-                        name={group.assignee.fullName}
-                        avatarUrl={group.assignee.avatarUrl}
-                        role={group.assignee.systemRole}
-                        size="sm"
-                      />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-[var(--md-sys-color-surface-container-highest)] border border-dashed border-[var(--md-sys-color-outline)] flex items-center justify-center text-[var(--md-sys-color-outline)] shrink-0">
-                        <UserX className="w-4 h-4" />
-                      </div>
-                    )
-                  )}
-
-                  {group.type === 'epic' && (
-                    <div className="w-8 h-8 rounded-xl bg-[var(--md-sys-color-primary-container)]/40 border border-[var(--md-sys-color-primary)]/30 flex items-center justify-center text-[var(--md-sys-color-primary)] shrink-0">
-                      <Layers className="w-4 h-4" />
-                    </div>
-                  )}
-
-                  {group.type === 'expedite' && (
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                      group.isExpedite
-                        ? 'bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-error)]'
-                        : 'bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-on-surface-variant)]'
-                    }`}>
-                      {group.isExpedite ? (
-                        <Flame className="w-4 h-4 text-[var(--md-sys-color-error)]" />
-                      ) : (
-                        <Layers className="w-4 h-4" />
-                      )}
-                    </div>
-                  )}
-
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-xs sm:text-sm font-bold text-[var(--md-sys-color-on-surface)] truncate">
-                        {group.title}
-                      </h3>
-                      {group.type === 'assignee' && group.assignee?.systemRole && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-on-surface-variant)] font-semibold shrink-0">
-                          {group.assignee.systemRole}
-                        </span>
-                      )}
-                      {group.type === 'expedite' && group.isExpedite && (
-                        <Badge variant="critical" size="sm" className="px-2 py-0.5 rounded-full font-bold">
-                          P0 Blocker
-                        </Badge>
-                      )}
-                    </div>
-                    {group.subtitle && (
-                      <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] truncate">
-                        {group.subtitle}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Right: Issue Counts & Stats */}
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)]">
-                    <span className="font-bold text-[var(--md-sys-color-on-surface)]">{group.issues.length}</span>
-                    <span>{group.issues.length === 1 ? 'ticket' : 'tickets'}</span>
-                  </div>
-
-                  {/* Status distribution pill */}
-                  <div className="hidden sm:flex items-center gap-1.5 text-[11px]">
-                    {KANBAN_COLUMNS.map((col) => {
-                      const cnt = group.issues.filter((i) => i.status === col.status).length;
-                      if (cnt === 0) return null;
-                      return (
-                        <Badge key={col.status} variant={col.badgeVariant} size="sm" className="px-1.5 py-0.2 rounded-md font-bold">
-                          {col.shortTitle}: {cnt}
-                        </Badge>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              {/* Swimlane Columns Body */}
-              {!isCollapsed && (
-                <div className="p-3 bg-[var(--md-sys-color-surface-container-lowest)]/40 dark:bg-[var(--md-sys-color-surface-container-low)]">
-                  <div className="flex gap-3 xl:gap-4 items-stretch">
-                    {KANBAN_COLUMNS.map((col) => {
-                      const colIssues = group.issues.filter((i) => i.status === col.status);
-
-                      return (
-                        <SwimlaneCellDroppable
-                          key={col.status}
-                          group={group}
-                          col={col}
-                          colIssues={colIssues}
-                          allIssues={issues}
-                          activeIssue={activeIssue}
-                          settings={settings}
-                          onSelectIssue={onSelectIssue}
-                          onStatusChange={onStatusChange}
-                          onAssigneeAndStatusChange={onAssigneeAndStatusChange}
-                          onAssignToMe={onAssignToMe}
-                          onQuickAddInStatus={onQuickAddInStatus}
-                          currentUserId={currentUserId}
-                          focusedIssueId={focusedIssueId}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
+              group={group}
+              isCollapsed={isCollapsed}
+              visibleColumns={visibleColumns}
+              orderedIds={orderedIds}
+              settings={settings}
+              toggleLane={toggleLane}
+              onSelectIssue={onSelectIssue}
+              onStatusChange={onStatusChange}
+              onAssigneeAndStatusChange={onAssigneeAndStatusChange}
+              onAssignToMe={onAssignToMe}
+              onQuickAddInStatus={onQuickAddInStatus}
+              currentUserId={currentUserId}
+              focusedIssueId={focusedIssueId}
+            />
           );
         })}
           </div>
         </div>
       </div>
 
-      <DragOverlay dropAnimation={{ duration: 180, easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)' }}>
+      <DragOverlay
+        className="pointer-events-none"
+        style={{ pointerEvents: 'none' }}
+        dropAnimation={null}
+      >
         {activeIssue ? (
-          <div className="rotate-2 scale-102 shadow-2xl opacity-95 pointer-events-none w-[270px] relative">
-            <IssueCard
-              issue={activeIssue}
-              onClick={() => {}}
-              density={settings.cardDensity}
-              isDragging
-            />
-            {selectedIds.has(activeIssue.id) && selectedIds.size > 1 && (
-              <span className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] text-xs font-bold shadow-md ring-2 ring-[var(--md-sys-color-surface)]">
-                +{selectedIds.size - 1} more
-              </span>
-            )}
-          </div>
+          <GhostCard
+            issue={activeIssue}
+            selectedCount={selectedIds.size}
+          />
         ) : null}
       </DragOverlay>
     </DndContext>

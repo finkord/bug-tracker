@@ -15,6 +15,7 @@ import {
   useAssignIssueToMeMutation,
   useCreateSavedFilterMutation,
   issueKeys,
+  issueQueries,
 } from '../api/queries';
 import {
   type IssueItem,
@@ -84,7 +85,7 @@ export const KanbanBoardPage: React.FC = () => {
 
   // TanStack Query for issues
   const issueFilter = useMemo(
-    () => ({ projectId: selectedProjectId }),
+    () => ({ projectId: selectedProjectId, limit: 100 }),
     [selectedProjectId],
   );
 
@@ -220,12 +221,9 @@ export const KanbanBoardPage: React.FC = () => {
     return map;
   }, [projectSprints]);
 
-  const daysRemaining = useMemo(() => {
-    if (!activeSprint?.endDate) return null;
-    const end = new Date(activeSprint.endDate).getTime();
-    const diff = end - Date.now();
-    return Math.ceil(diff / (1000 * 60 * 60 * 24));
-  }, [activeSprint?.endDate]);
+  const daysRemaining = activeSprint?.endDate
+    ? Math.ceil((new Date(activeSprint.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null;
 
   const activeSprintIssues = useMemo(() => {
     if (!activeSprint) return [];
@@ -404,6 +402,20 @@ export const KanbanBoardPage: React.FC = () => {
     const original = issues.find((i) => i.id === issueId);
     if (!original || original.status === nextStatus) return;
 
+    // Instant optimistic update
+    queryClient.setQueriesData<PaginatedIssuesResponse>(
+      { queryKey: issueQueries.lists() },
+      (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          items: old.items.map((item) =>
+            item.id === issueId ? { ...item, status: nextStatus } : item,
+          ),
+        };
+      },
+    );
+
     try {
       await updateStatusMutation.mutateAsync({ issueId, status: nextStatus });
     } catch (err: unknown) {
@@ -425,46 +437,124 @@ export const KanbanBoardPage: React.FC = () => {
 
     if (isSameAssignee && isSameStatus) return;
 
-    try {
-      if (!isSameAssignee) {
-        await updateIssueMutation.mutateAsync({
-          id: issueId,
-          data: { assigneeId: newAssigneeId === null ? undefined : newAssigneeId },
-        });
-      }
+    // Instant optimistic update
+    queryClient.setQueriesData<PaginatedIssuesResponse>(
+      { queryKey: issueQueries.lists() },
+      (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          items: old.items.map((item) => {
+            if (item.id !== issueId) return item;
+            return {
+              ...item,
+              ...(!isSameStatus ? { status: nextStatus } : {}),
+              ...(!isSameAssignee ? { assigneeId: newAssigneeId } : {}),
+            };
+          }),
+        };
+      },
+    );
 
-      if (!isSameStatus) {
-        await updateStatusMutation.mutateAsync({ issueId, status: nextStatus });
+    try {
+      const promises: Promise<unknown>[] = [];
+      if (!isSameAssignee) {
+        promises.push(
+          updateIssueMutation.mutateAsync({
+            id: issueId,
+            data: { assigneeId: newAssigneeId },
+          }),
+        );
       }
+      if (!isSameStatus) {
+        promises.push(
+          updateStatusMutation.mutateAsync({ issueId, status: nextStatus }),
+        );
+      }
+      await Promise.all(promises);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to update issue');
     }
   };
 
-  // Cross-swimlane drop handler supporting Assignee, Epic, and Priority/Expedite
+  // Cross-swimlane drop handler supporting Assignee, Epic, Parent, and Priority/Expedite
   const handleSwimlaneDrop = async (
     issueId: number,
     nextStatus: IssueStatus,
-    patch?: { assigneeId?: number | null; parentId?: number | null; priority?: IssuePriority },
+    patch?: {
+      assigneeId?: number | null;
+      parentId?: number | null;
+      epicId?: number | null;
+      priority?: IssuePriority;
+    },
   ) => {
     const original = issues.find((i) => i.id === issueId);
     if (!original) return;
 
+    const hasAssigneeChange =
+      patch?.assigneeId !== undefined &&
+      patch.assigneeId !== (original.assignee?.id ?? null);
+    const hasParentChange =
+      patch?.parentId !== undefined &&
+      patch.parentId !== (original.parentId ?? null);
+    const hasEpicChange =
+      patch?.epicId !== undefined &&
+      patch.epicId !== (original.epicId ?? null);
+    const hasPriorityChange =
+      patch?.priority !== undefined &&
+      patch.priority !== original.priority;
+    const hasFieldChange =
+      hasAssigneeChange || hasParentChange || hasEpicChange || hasPriorityChange;
+    const hasStatusChange = original.status !== nextStatus;
+
+    if (!hasFieldChange && !hasStatusChange) return;
+
+    // Synchronous optimistic cache update across all list queries for zero latency
+    queryClient.setQueriesData<PaginatedIssuesResponse>(
+      { queryKey: issueQueries.lists() },
+      (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          items: old.items.map((item) => {
+            if (item.id !== issueId) return item;
+            return {
+              ...item,
+              ...(hasStatusChange ? { status: nextStatus } : {}),
+              ...(hasAssigneeChange ? { assigneeId: patch!.assigneeId } : {}),
+              ...(hasParentChange ? { parentId: patch!.parentId } : {}),
+              ...(hasEpicChange ? { epicId: patch!.epicId } : {}),
+              ...(hasPriorityChange ? { priority: patch!.priority } : {}),
+            };
+          }),
+        };
+      },
+    );
+
     try {
-      if (patch && Object.keys(patch).length > 0) {
-        await updateIssueMutation.mutateAsync({
-          id: issueId,
-          data: {
-            assigneeId: patch.assigneeId === null ? undefined : patch.assigneeId,
-            parentId: patch.parentId === null ? undefined : patch.parentId,
-            priority: patch.priority,
-          },
-        });
+      const promises: Promise<unknown>[] = [];
+
+      if (hasFieldChange) {
+        promises.push(
+          updateIssueMutation.mutateAsync({
+            id: issueId,
+            data: {
+              assigneeId: hasAssigneeChange ? patch!.assigneeId : undefined,
+              parentId: hasParentChange ? patch!.parentId : undefined,
+              epicId: hasEpicChange ? patch!.epicId : undefined,
+              priority: hasPriorityChange ? patch!.priority : undefined,
+            },
+          }),
+        );
       }
 
-      if (original.status !== nextStatus) {
-        await updateStatusMutation.mutateAsync({ issueId, status: nextStatus });
+      if (hasStatusChange) {
+        promises.push(
+          updateStatusMutation.mutateAsync({ issueId, status: nextStatus }),
+        );
       }
+
+      await Promise.all(promises);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to update issue');
     }

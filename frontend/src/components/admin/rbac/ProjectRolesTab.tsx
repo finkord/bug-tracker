@@ -48,7 +48,16 @@ export const ProjectRolesTab: React.FC<ProjectRolesTabProps> = ({ roles }) => {
   const deleteRoleMutation = useDeleteProjectRoleMutation();
 
   const isBaselineRole = (roleName: string) =>
-    ['administrator', 'member', 'viewer'].includes(roleName.toLowerCase().trim());
+    [
+      'administrators',
+      'administrator',
+      'project lead',
+      'developers',
+      'reporters',
+      'viewers',
+      'member',
+      'viewer',
+    ].includes(roleName.toLowerCase().trim());
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

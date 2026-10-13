@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import type { IssueItem } from '../../api/client.js';
 import type { SprintDefinition } from '../../types/agile.js';
@@ -25,7 +25,7 @@ interface SprintContainerProps {
   issues: IssueItem[];
   availableSprints: SprintDefinition[];
   isCollapsed: boolean;
-  onToggleCollapse: () => void;
+  onToggleCollapse: (sprintName: string) => void;
   onSelectIssue: (issue: IssueItem) => void;
   onMoveToSprint: (issueId: number, sprintId: number | null) => void;
   onStartSprint: (sprintId: number) => void;
@@ -36,7 +36,7 @@ interface SprintContainerProps {
   onQuickCreateInSprint: (sprintId: number) => void;
 }
 
-export const SprintContainer: React.FC<SprintContainerProps> = ({
+const SprintContainerComponent: React.FC<SprintContainerProps> = ({
   sprint,
   issues,
   availableSprints,
@@ -51,13 +51,15 @@ export const SprintContainer: React.FC<SprintContainerProps> = ({
   onGoToActiveBoard,
   onQuickCreateInSprint,
 }) => {
-  const { setNodeRef, isOver } = useDroppable({
+  const { setNodeRef } = useDroppable({
     id: `sprint-${sprint.id}`,
     data: {
       type: 'sprint',
       sprintId: sprint.id,
     },
   });
+
+  const orderedIds = useMemo(() => issues.map((i) => i.id), [issues]);
 
   const totalEstimate = issues.reduce((acc, i) => acc + (i.estimatedHours || 0), 0);
   const capacity = sprint.capacityHours || sprint.team?.sprintCapacityHours || 0;
@@ -99,27 +101,23 @@ export const SprintContainer: React.FC<SprintContainerProps> = ({
       ref={setNodeRef}
       data-drop-zone="sprint"
       data-sprint-id={sprint.id}
-      className={`rounded-3xl border bg-[var(--md-sys-color-surface-container-low)] shadow-2xs overflow-hidden transition-colors duration-150 ${
-        isOver
-          ? 'border-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-primary)]/40 bg-[var(--md-sys-color-primary-container)]/10 shadow-xs'
-          : 'border-[var(--md-sys-color-outline-variant)]/40 hover:border-[var(--md-sys-color-outline-variant)]/70'
-      }`}
+      className="rounded-3xl border border-[var(--md-sys-color-outline-variant)]/40 hover:border-[var(--md-sys-color-outline-variant)]/70 bg-[var(--md-sys-color-surface-container-low)] shadow-2xs overflow-hidden transition-colors duration-150"
     >
       {/* Sprint Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-[var(--md-sys-color-surface-container)] border-b border-[var(--md-sys-color-outline-variant)]/40">
-        <div className="flex items-center gap-3 min-w-0">
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 p-4 bg-[var(--md-sys-color-surface-container)] border-b border-[var(--md-sys-color-outline-variant)]/40">
+        <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
           <button
             type="button"
-            onClick={onToggleCollapse}
+            onClick={() => onToggleCollapse(sprint.name)}
             aria-label={isCollapsed ? 'Expand sprint' : 'Collapse sprint'}
-            className="p-1 rounded-lg text-[var(--md-sys-color-outline)] hover:text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container-highest)] transition-colors cursor-pointer shrink-0"
+            className="p-1 rounded-lg text-[var(--md-sys-color-outline)] hover:text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container-highest)] transition-colors cursor-pointer shrink-0 mt-0.5 sm:mt-0"
           >
             {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
 
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <span className="font-bold text-sm text-[var(--md-sys-color-on-surface)] truncate">
+              <span className="font-bold text-sm text-[var(--md-sys-color-on-surface)]">
                 {sprint.name}
               </span>
 
@@ -151,9 +149,9 @@ export const SprintContainer: React.FC<SprintContainerProps> = ({
                 </span>
               )}
               {sprint.goal && (
-                <span className="flex items-center gap-1 truncate max-w-md">
+                <span className="flex items-center gap-1 min-w-0">
                   <Target className="w-3 h-3 text-[var(--md-sys-color-tertiary)] shrink-0" />
-                  <span className="truncate">Goal: {sprint.goal}</span>
+                  <span className="truncate max-w-xl">Goal: {sprint.goal}</span>
                 </span>
               )}
             </div>
@@ -306,7 +304,7 @@ export const SprintContainer: React.FC<SprintContainerProps> = ({
                 availableSprints={availableSprints}
                 onClick={onSelectIssue}
                 onMoveToSprint={onMoveToSprint}
-                orderedIds={issues.map((i) => i.id)}
+                orderedIds={orderedIds}
               />
             ))
           )}
@@ -327,3 +325,5 @@ export const SprintContainer: React.FC<SprintContainerProps> = ({
     </div>
   );
 };
+
+export const SprintContainer = React.memo(SprintContainerComponent);

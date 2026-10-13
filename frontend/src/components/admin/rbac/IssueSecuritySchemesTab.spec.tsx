@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom/vitest';
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
@@ -35,14 +36,51 @@ describe('IssueSecuritySchemesTab Component', () => {
           schemeId: 1,
           name: 'Confidential',
           description: 'Restricted issue visible only to Project Leads and System Administrators',
-          isDefault: true,
           grants: [
             {
               id: 101,
-              levelId: 10,
+              securityLevelId: 10,
               grantType: 'ROLE',
               roleId: 1,
-              role: { id: 1, name: 'Administrators' },
+              role: {
+                id: 1,
+                name: 'Administrators',
+                description: 'Full administrators',
+                isDefault: false,
+              },
+            },
+            {
+              id: 102,
+              securityLevelId: 10,
+              grantType: 'GROUP',
+              groupId: 1,
+              group: {
+                id: 1,
+                name: 'SecOps',
+                description: 'Security team',
+                isSystem: false,
+                createdAt: '2026-01-01',
+              },
+            },
+            {
+              id: 103,
+              securityLevelId: 10,
+              grantType: 'LEAD',
+            },
+            {
+              id: 104,
+              securityLevelId: 10,
+              grantType: 'REPORTER',
+            },
+            {
+              id: 105,
+              securityLevelId: 10,
+              grantType: 'ASSIGNEE',
+            },
+            {
+              id: 106,
+              securityLevelId: 10,
+              grantType: 'ANY_LOGGED_IN',
             },
           ],
         },
@@ -51,14 +89,13 @@ describe('IssueSecuritySchemesTab Component', () => {
           schemeId: 1,
           name: 'Public',
           description: 'Standard issue visible to all project members and stakeholders',
-          isDefault: false,
           grants: [],
         },
       ],
     },
   ];
 
-  it('renders security schemes with compact unified table for levels', () => {
+  it('renders security schemes with compact unified table for levels and all grant types', () => {
     render(
       <QueryClientProvider client={queryClient}>
         <IssueSecuritySchemesTab securitySchemes={mockSchemes} />
@@ -81,10 +118,19 @@ describe('IssueSecuritySchemesTab Component', () => {
     // Default Level indicator
     expect(screen.getByText('DEFAULT LEVEL')).toBeInTheDocument();
 
-    // Authorized actor
+    // Authorized actors
     expect(screen.getByText('Role: Administrators')).toBeInTheDocument();
+    expect(screen.getByText('Group: SecOps')).toBeInTheDocument();
+    expect(screen.getByText('Project Lead')).toBeInTheDocument();
+    expect(screen.getByText('Reporter')).toBeInTheDocument();
+    expect(screen.getByText('Current Assignee')).toBeInTheDocument();
+    expect(screen.getByText('Any Logged-in User')).toBeInTheDocument();
+
+    // Assert that Group #null bug is never present
+    expect(screen.queryByText(/Group #null/i)).not.toBeInTheDocument();
 
     // Make Default button for non-default level
     expect(screen.getByText('Make Default')).toBeInTheDocument();
   });
 });
+

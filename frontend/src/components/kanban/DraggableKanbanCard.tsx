@@ -9,7 +9,7 @@ export interface DraggableKanbanCardProps extends IssueCardProps {
 /**
  * Headless accessible draggable card wrapper for Kanban & Scrum boards powered by @dnd-kit.
  */
-export const DraggableKanbanCard: React.FC<DraggableKanbanCardProps> = ({
+const DraggableKanbanCardComponent: React.FC<DraggableKanbanCardProps> = ({
   disabled = false,
   ...props
 }) => {
@@ -27,9 +27,11 @@ export const DraggableKanbanCard: React.FC<DraggableKanbanCardProps> = ({
       ref={setNodeRef}
       {...attributes}
       {...listeners}
-      className={`touch-none ${isDragging ? 'opacity-30 scale-95 pointer-events-none' : ''}`}
+      className={`touch-none select-none ${isDragging ? 'opacity-30 scale-95 pointer-events-none' : ''}`}
     >
       <IssueCard {...props} isDragging={isDragging} />
     </div>
   );
 };
+
+export const DraggableKanbanCard = React.memo(DraggableKanbanCardComponent);

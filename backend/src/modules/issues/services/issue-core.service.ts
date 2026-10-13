@@ -191,10 +191,36 @@ export class IssueCoreService {
         qb.andWhere('issue.projectId IN (:...accessibleProjectIds)', { accessibleProjectIds });
       }
 
-      if (user.systemRole !== SystemRole.ADMIN) {
+      const isAdmin =
+        user.systemRole === SystemRole.ADMIN ||
+        (await this.permissionEvaluator.isUserAdmin(user.id));
+
+      if (!isAdmin) {
+        const userGroupIds = await this.permissionEvaluator.getUserGroupIds(user.id);
+        const safeGroupIds = userGroupIds.length > 0 ? userGroupIds : [-1];
+
         qb.andWhere(
-          '(issue.securityLevelId IS NULL OR issue.reporterId = :currentUserId OR issue.assigneeId = :currentUserId)',
-          { currentUserId: user.id },
+          `(` +
+            `issue.securityLevelId IS NULL ` +
+            `OR issue.reporterId = :currentUserId ` +
+            `OR issue.assigneeId = :currentUserId ` +
+            `OR EXISTS (` +
+              `SELECT 1 FROM issue_security_grants isg ` +
+              `WHERE isg.security_level_id = issue.securityLevelId ` +
+                `AND (` +
+                  `isg.grant_type = 'ANY_LOGGED_IN' ` +
+                  `OR (isg.grant_type = 'LEAD' AND project.leadId = :currentUserId) ` +
+                  `OR (isg.grant_type = 'GROUP' AND isg.group_id IN (:...userGroupIds)) ` +
+                  `OR (isg.grant_type = 'ROLE' AND EXISTS (` +
+                    `SELECT 1 FROM project_role_actors pra ` +
+                    `WHERE pra.project_id = issue.projectId ` +
+                      `AND pra.role_id = isg.role_id ` +
+                      `AND (pra.user_id = :currentUserId OR pra.group_id IN (:...userGroupIds))` +
+                  `))` +
+                `)` +
+            `)` +
+          `)`,
+          { currentUserId: user.id, userGroupIds: safeGroupIds },
         );
       }
     }

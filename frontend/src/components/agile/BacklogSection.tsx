@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import type { IssueItem } from '../../api/client.js';
 import type { SprintDefinition } from '../../types/agile.js';
@@ -16,7 +16,7 @@ interface BacklogSectionProps {
   onQuickCreateInBacklog: () => void;
 }
 
-export const BacklogSection: React.FC<BacklogSectionProps> = ({
+const BacklogSectionComponent: React.FC<BacklogSectionProps> = ({
   issues,
   availableSprints,
   isCollapsed,
@@ -25,7 +25,7 @@ export const BacklogSection: React.FC<BacklogSectionProps> = ({
   onMoveToSprint,
   onQuickCreateInBacklog,
 }) => {
-  const { setNodeRef, isOver } = useDroppable({
+  const { setNodeRef } = useDroppable({
     id: 'backlog',
     data: {
       type: 'backlog',
@@ -33,17 +33,15 @@ export const BacklogSection: React.FC<BacklogSectionProps> = ({
     },
   });
 
+  const orderedIds = useMemo(() => issues.map((i) => i.id), [issues]);
+
   const totalEstimate = issues.reduce((acc, i) => acc + (i.estimatedHours || 0), 0);
 
   return (
     <div
       ref={setNodeRef}
       data-drop-zone="backlog"
-      className={`rounded-3xl border bg-[var(--md-sys-color-surface-container-low)] shadow-2xs overflow-hidden transition-colors duration-150 ${
-        isOver
-          ? 'border-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-primary)]/40 bg-[var(--md-sys-color-primary-container)]/10 shadow-xs'
-          : 'border-[var(--md-sys-color-outline-variant)]/40 hover:border-[var(--md-sys-color-outline-variant)]/70'
-      }`}
+      className="rounded-3xl border border-[var(--md-sys-color-outline-variant)]/40 hover:border-[var(--md-sys-color-outline-variant)]/70 bg-[var(--md-sys-color-surface-container-low)] shadow-2xs overflow-hidden transition-colors duration-150"
     >
       {/* Backlog Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-[var(--md-sys-color-surface-container)] border-b border-[var(--md-sys-color-outline-variant)]/30">
@@ -111,7 +109,7 @@ export const BacklogSection: React.FC<BacklogSectionProps> = ({
                 availableSprints={availableSprints}
                 onClick={onSelectIssue}
                 onMoveToSprint={onMoveToSprint}
-                orderedIds={issues.map((i) => i.id)}
+                orderedIds={orderedIds}
               />
             ))
           )}
@@ -132,3 +130,5 @@ export const BacklogSection: React.FC<BacklogSectionProps> = ({
     </div>
   );
 };
+
+export const BacklogSection = React.memo(BacklogSectionComponent);
