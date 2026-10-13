@@ -284,32 +284,28 @@ export const IssueDetailView: React.FC<IssueDetailViewProps> = ({
 
   return (
     <div className={`w-full flex-1 flex flex-col min-w-0 space-y-5 animate-in fade-in duration-200 ${isModal ? 'p-2 sm:p-4' : 'px-4 sm:px-6 lg:px-8 py-5'}`}>
-      {/* Top Header / Breadcrumb Bar */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-sm text-[var(--md-sys-color-on-surface-variant)]">
-          {issue.projectKey && (
-            <span className="font-medium text-[var(--md-sys-color-on-surface-variant)]">
-              {issue.projectKey}
+      {/* Top Header Bar for Modal */}
+      {isModal && (
+        <div className="flex items-center justify-between gap-3 pb-2 border-b border-[var(--md-sys-color-outline-variant)]/20">
+          <div className="flex items-center gap-2 text-sm text-[var(--md-sys-color-on-surface-variant)]">
+            <span className="font-semibold text-[var(--md-sys-color-primary)]">
+              {issue.key}
             </span>
+          </div>
+          {onClose && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              onClick={onClose}
+              className="h-8 w-8 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] cursor-pointer"
+              title="Close"
+            >
+              <X className="w-4 h-4" />
+            </Button>
           )}
-          {issue.projectKey && <span>/</span>}
-          <span className="font-semibold text-[var(--md-sys-color-primary)]">
-            {issue.key}
-          </span>
         </div>
-        {isModal && onClose && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            onClick={onClose}
-            className="h-8 w-8 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]"
-            title="Close"
-          >
-            <X className="w-4 h-4" />
-          </Button>
-        )}
-      </div>
+      )}
 
       {/* Main Responsive Grid Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">

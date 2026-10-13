@@ -45,7 +45,7 @@ export const HeaderBreadcrumbs: React.FC = () => {
 
   if (path === '/projects/new' || path === '/projects/create') {
     return (
-      <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)] min-w-0">
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)] min-w-0 select-text">
         <Link
           to="/projects"
           className="hover:text-[var(--md-sys-color-primary)] transition-colors font-medium truncate shrink-0"
@@ -67,7 +67,7 @@ export const HeaderBreadcrumbs: React.FC = () => {
     else if (currentView === 'settings') viewLabel = 'Project Settings';
 
     return (
-      <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)] min-w-0">
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)] min-w-0 select-text">
         <Link
           to="/projects"
           className="hover:text-[var(--md-sys-color-primary)] transition-colors flex items-center gap-1 font-medium truncate shrink-0"
@@ -106,7 +106,7 @@ export const HeaderBreadcrumbs: React.FC = () => {
     const projKey = foundIssueProj?.key || projectPrefix;
 
     return (
-      <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)] min-w-0">
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)] min-w-0 select-text">
         <Link
           to="/projects"
           className="hover:text-[var(--md-sys-color-primary)] transition-colors flex items-center gap-1 font-medium truncate shrink-0"
@@ -146,7 +146,7 @@ export const HeaderBreadcrumbs: React.FC = () => {
     else if (path.startsWith('/admin/announcements')) sectionTitle = 'System Announcements';
 
     return (
-      <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)] min-w-0">
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)] min-w-0 select-text">
         <Link
           to="/admin/users"
           className="hover:text-[var(--md-sys-color-primary)] transition-colors font-medium truncate shrink-0"
@@ -167,7 +167,7 @@ export const HeaderBreadcrumbs: React.FC = () => {
   if (path.startsWith('/profile') || path.startsWith('/preferences')) {
     const isProfile = path.startsWith('/profile');
     return (
-      <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)] min-w-0">
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)] min-w-0 select-text">
         <Link
           to="/profile"
           className="hover:text-[var(--md-sys-color-primary)] transition-colors font-medium truncate shrink-0"
@@ -187,7 +187,7 @@ export const HeaderBreadcrumbs: React.FC = () => {
   // 5. Access Denied route
   if (path === '/forbidden') {
     return (
-      <nav aria-label="Breadcrumb" className="flex items-center text-xs min-w-0">
+      <nav aria-label="Breadcrumb" className="flex items-center text-xs min-w-0 select-text">
         <span className="font-bold text-[var(--md-sys-color-error)] truncate">
           Access Denied
         </span>
@@ -207,7 +207,7 @@ export const HeaderBreadcrumbs: React.FC = () => {
   else title = 'Page Not Found';
 
   return (
-    <nav aria-label="Breadcrumb" className="flex items-center text-xs min-w-0">
+    <nav aria-label="Breadcrumb" className="flex items-center text-xs min-w-0 select-text">
       <span className="font-bold text-[var(--md-sys-color-on-surface)] truncate">
         {title}
       </span>
