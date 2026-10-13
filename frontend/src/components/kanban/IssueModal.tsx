@@ -19,8 +19,21 @@ import {
   ArrowRightCircle,
   Clock,
   Tag,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
-import { Modal, Button, Input, SelectField, UserPicker } from '../ui';
+import {
+  Modal,
+  Button,
+  Input,
+  SelectField,
+  UserPicker,
+  Badge,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  type UserPickerUser,
+} from '../ui';
 import { MarkdownContent } from '../common/MarkdownContent';
 
 interface IssueModalProps {
@@ -59,10 +72,12 @@ export const IssueModal: React.FC<IssueModalProps> = ({
   const [estimatedHours, setEstimatedHours] = useState<string>('0');
   const [sprintId, setSprintId] = useState<string>(defaultSprintId ? String(defaultSprintId) : '');
   const [assigneeId, setAssigneeId] = useState<number | ''>('');
+  const [selectedAssignee, setSelectedAssignee] = useState<UserPickerUser | null>(null);
   const [componentId, setComponentId] = useState<string>('');
   const [fixVersionId, setFixVersionId] = useState<string>('');
   const [labelsInput, setLabelsInput] = useState<string>('');
   const [createAnother, setCreateAnother] = useState<boolean>(false);
+  const [showMoreFields, setShowMoreFields] = useState<boolean>(false);
 
   const { data: projectSprints = [] } = useProjectSprintsQuery(projectId);
   const { data: projectComponents = [] } = useProjectComponentsQuery(projectId);
@@ -93,9 +108,18 @@ export const IssueModal: React.FC<IssueModalProps> = ({
       setEstimatedHours(String(editingIssue.estimatedHours || 0));
       setSprintId(editingIssue.sprintId ? String(editingIssue.sprintId) : '');
       setAssigneeId(editingIssue.assignee?.id ?? '');
+      setSelectedAssignee(editingIssue.assignee || null);
       setComponentId(editingIssue.componentId ? String(editingIssue.componentId) : '');
       setFixVersionId(editingIssue.fixVersionId ? String(editingIssue.fixVersionId) : '');
       setLabelsInput(editingIssue.labels ? editingIssue.labels.join(', ') : '');
+      const hasExtra = Boolean(
+        editingIssue.sprintId ||
+        (editingIssue.estimatedHours && editingIssue.estimatedHours > 0) ||
+        editingIssue.componentId ||
+        editingIssue.fixVersionId ||
+        (editingIssue.labels && editingIssue.labels.length > 0)
+      );
+      setShowMoreFields(hasExtra);
     } else {
       setTitle('');
       setDescription('');
@@ -104,9 +128,11 @@ export const IssueModal: React.FC<IssueModalProps> = ({
       setEstimatedHours('0');
       setSprintId(defaultSprintId ? String(defaultSprintId) : '');
       setAssigneeId(defaultAssigneeId ?? '');
+      setSelectedAssignee(null);
       setComponentId('');
       setFixVersionId('');
       setLabelsInput('');
+      setShowMoreFields(Boolean(defaultSprintId));
     }
     setValidationError(null);
   }, [editingIssue, isOpen, defaultAssigneeId, defaultSprintId]);
@@ -120,6 +146,14 @@ export const IssueModal: React.FC<IssueModalProps> = ({
       return () => clearTimeout(timer);
     }
   }, [isOpen]);
+
+  const activeExtraCount = [
+    Boolean(sprintId),
+    parseFloat(estimatedHours) > 0,
+    Boolean(componentId),
+    Boolean(fixVersionId),
+    Boolean(labelsInput.trim()),
+  ].filter(Boolean).length;
 
   if (!isOpen) return null;
 
@@ -271,7 +305,11 @@ export const IssueModal: React.FC<IssueModalProps> = ({
           </label>
           <UserPicker
             value={assigneeId === '' ? null : Number(assigneeId)}
-            onChange={(val) => setAssigneeId(val ?? '')}
+            onChange={(val, pickedUser) => {
+              setAssigneeId(val ?? '');
+              setSelectedAssignee(pickedUser);
+            }}
+            fallbackUser={selectedAssignee}
             users={assignees}
             currentUserId={user?.id}
             placeholder="Unassigned"
@@ -281,100 +319,35 @@ export const IssueModal: React.FC<IssueModalProps> = ({
           />
         </div>
 
-        {/* Grid row: Estimates & Relational Sprint */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Input
-            label="Estimated Hours"
-            type="number"
-            step="0.5"
-            min="0"
-            placeholder="e.g. 4.0"
-            value={estimatedHours}
-            onChange={(e) => setEstimatedHours(e.target.value)}
-            leftIcon={<Clock className="w-4 h-4 text-[var(--md-sys-color-primary)]" />}
-          />
-
-          <SelectField
-            label="Sprint"
-            value={sprintId}
-            onValueChange={(val) => setSprintId(val)}
-            options={[
-              { value: '', label: 'Product Backlog (No Sprint)' },
-              ...projectSprints.map((s) => ({
-                value: String(s.id),
-                label: `${s.name} (${s.status})`,
-              })),
-            ]}
-          />
-        </div>
-
-        {/* Grid row: Component, Fix Version & Labels */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <SelectField
-            label="Component"
-            value={componentId}
-            onValueChange={(val) => setComponentId(val)}
-            options={[
-              { value: '', label: 'No Component' },
-              ...projectComponents.map((c) => ({
-                value: String(c.id),
-                label: c.name,
-              })),
-            ]}
-          />
-
-          <SelectField
-            label="Fix Version"
-            value={fixVersionId}
-            onValueChange={(val) => setFixVersionId(val)}
-            options={[
-              { value: '', label: 'No Version' },
-              ...projectVersions.map((v) => ({
-                value: String(v.id),
-                label: `${v.name} (${v.status})`,
-              })),
-            ]}
-          />
-
-          <Input
-            label="Labels (comma separated)"
-            placeholder="e.g. backend, security, api"
-            value={labelsInput}
-            onChange={(e) => setLabelsInput(e.target.value)}
-            leftIcon={<Tag className="w-4 h-4 text-[var(--md-sys-color-primary)]" />}
-          />
-        </div>
-
         {/* Description with Write / Preview Tabs */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <label className="text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)]">
               Description (Steps to reproduce, environment details)
             </label>
-            <div className="inline-flex items-center p-0.5 rounded-lg bg-[var(--md-sys-color-surface-container-high)] text-xs">
-              <button
-                type="button"
-                onClick={() => setDescTab('write')}
-                className={`px-2.5 py-0.5 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
-                  descTab === 'write'
-                    ? 'bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] shadow-xs'
-                    : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]'
-                }`}
-              >
-                Write
-              </button>
-              <button
-                type="button"
-                onClick={() => setDescTab('preview')}
-                className={`px-2.5 py-0.5 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
-                  descTab === 'preview'
-                    ? 'bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] shadow-xs'
-                    : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]'
-                }`}
-              >
-                Preview
-              </button>
-            </div>
+            <Tabs
+              value={descTab}
+              onValueChange={(val) => setDescTab(val as 'write' | 'preview')}
+            >
+              <TabsList variant="pills" className="rounded-lg h-7 p-0.5">
+                <TabsTrigger
+                  value="write"
+                  onClick={() => setDescTab('write')}
+                  size="sm"
+                  className="h-6 px-2.5 text-xs font-semibold"
+                >
+                  Write
+                </TabsTrigger>
+                <TabsTrigger
+                  value="preview"
+                  onClick={() => setDescTab('preview')}
+                  size="sm"
+                  className="h-6 px-2.5 text-xs font-semibold"
+                >
+                  Preview
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
 
           {descTab === 'write' ? (
@@ -394,6 +367,99 @@ export const IssueModal: React.FC<IssueModalProps> = ({
                   Nothing to preview. Enter markdown in the Write tab.
                 </span>
               )}
+            </div>
+          )}
+        </div>
+
+        {/* Progressive Disclosure: Additional Fields */}
+        <div className="pt-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowMoreFields(!showMoreFields)}
+            leftIcon={
+              showMoreFields ? (
+                <ChevronUp className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
+              ) : (
+                <ChevronDown className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
+              )
+            }
+            className="text-xs font-semibold text-[var(--md-sys-color-primary)]"
+          >
+            <span>{showMoreFields ? 'Hide additional fields' : 'Additional fields (Sprint, Estimates, Components, Versions, Labels)'}</span>
+            {activeExtraCount > 0 && !showMoreFields && (
+              <Badge variant="secondary" size="sm" className="ml-2 font-mono">
+                {activeExtraCount} set
+              </Badge>
+            )}
+          </Button>
+
+          {showMoreFields && (
+            <div className="mt-2.5 p-3.5 rounded-2xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/40 space-y-3 animate-in fade-in-50 duration-150">
+              {/* Estimates & Relational Sprint */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Input
+                  label="Estimated Hours"
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  placeholder="e.g. 4.0"
+                  value={estimatedHours}
+                  onChange={(e) => setEstimatedHours(e.target.value)}
+                  leftIcon={<Clock className="w-4 h-4 text-[var(--md-sys-color-primary)]" />}
+                />
+
+                <SelectField
+                  label="Sprint"
+                  value={sprintId}
+                  onValueChange={(val) => setSprintId(val)}
+                  options={[
+                    { value: '', label: 'Product Backlog (No Sprint)' },
+                    ...projectSprints.map((s) => ({
+                      value: String(s.id),
+                      label: `${s.name} (${s.status})`,
+                    })),
+                  ]}
+                />
+              </div>
+
+              {/* Component, Fix Version & Labels */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <SelectField
+                  label="Component"
+                  value={componentId}
+                  onValueChange={(val) => setComponentId(val)}
+                  options={[
+                    { value: '', label: 'No Component' },
+                    ...projectComponents.map((c) => ({
+                      value: String(c.id),
+                      label: c.name,
+                    })),
+                  ]}
+                />
+
+                <SelectField
+                  label="Fix Version"
+                  value={fixVersionId}
+                  onValueChange={(val) => setFixVersionId(val)}
+                  options={[
+                    { value: '', label: 'No Version' },
+                    ...projectVersions.map((v) => ({
+                      value: String(v.id),
+                      label: `${v.name} (${v.status})`,
+                    })),
+                  ]}
+                />
+
+                <Input
+                  label="Labels (comma separated)"
+                  placeholder="e.g. backend, security, api"
+                  value={labelsInput}
+                  onChange={(e) => setLabelsInput(e.target.value)}
+                  leftIcon={<Tag className="w-4 h-4 text-[var(--md-sys-color-primary)]" />}
+                />
+              </div>
             </div>
           )}
         </div>

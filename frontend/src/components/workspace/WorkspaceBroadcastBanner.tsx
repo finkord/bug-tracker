@@ -53,7 +53,9 @@ export const WorkspaceBroadcastBanner: React.FC = () => {
   }, [serverBanner, setBroadcast]);
 
   useEffect(() => {
-    const socket = realtimeSocket.getSocket() || realtimeSocket.connect();
+    const socket = realtimeSocket.getSocket();
+    if (!socket) return;
+
     const handleBannerUpdated = (newBanner: BroadcastConfig) => {
       setBroadcast(newBanner);
     };

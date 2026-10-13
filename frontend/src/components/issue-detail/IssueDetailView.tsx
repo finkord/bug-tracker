@@ -314,14 +314,15 @@ export const IssueDetailView: React.FC<IssueDetailViewProps> = ({
               <span className="hidden sm:inline">Full page</span>
             </Link>
             {onClose && (
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon-sm"
                 onClick={onClose}
-                className="p-1.5 rounded-lg text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-highest)] transition-colors cursor-pointer"
-                title="Close"
+                aria-label="Close"
               >
                 <X className="w-4 h-4" />
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -352,34 +353,37 @@ export const IssueDetailView: React.FC<IssueDetailViewProps> = ({
           {(!hasSubtasks || !hasLinks || !hasAttachments) && (
             <div className="flex flex-wrap items-center gap-2 pt-1 pb-1">
               {!hasSubtasks && !showSubtasks && (
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  size="sm"
                   onClick={() => setShowSubtasks(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] hover:bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/60 transition-colors cursor-pointer"
+                  leftIcon={<GitCommitHorizontal className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />}
                 >
-                  <GitCommitHorizontal className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
                   Add subtask
-                </button>
+                </Button>
               )}
               {!hasLinks && !showLinks && (
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  size="sm"
                   onClick={() => setShowLinks(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] hover:bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/60 transition-colors cursor-pointer"
+                  leftIcon={<Link2 className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />}
                 >
-                  <Link2 className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
                   Link issue
-                </button>
+                </Button>
               )}
               {!hasAttachments && !showAttachments && (
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  size="sm"
                   onClick={() => setShowAttachments(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] hover:bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/60 transition-colors cursor-pointer"
+                  leftIcon={<Paperclip className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />}
                 >
-                  <Paperclip className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
                   Attach files
-                </button>
+                </Button>
               )}
             </div>
           )}

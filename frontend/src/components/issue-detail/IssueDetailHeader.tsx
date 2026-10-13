@@ -108,18 +108,19 @@ export const IssueDetailHeader: React.FC<IssueDetailHeaderProps> = ({
           <Badge variant="neutral" className="font-mono text-xs px-2.5 py-0.5 font-bold tracking-wide">
             {issue.key}
           </Badge>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon-sm"
             onClick={handleCopyKey}
-            className="p-1 rounded-md hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] transition-colors cursor-pointer"
-            title="Copy issue key to clipboard"
+            aria-label="Copy issue key to clipboard"
           >
             {hasCopiedKey ? (
               <Check className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
             ) : (
               <Copy className="w-3.5 h-3.5" />
             )}
-          </button>
+          </Button>
         </div>
 
         <div className="w-36">

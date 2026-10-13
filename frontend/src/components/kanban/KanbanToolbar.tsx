@@ -15,6 +15,10 @@ import {
   SelectContent,
   SelectItem,
   SearchInput,
+  Button,
+  Tabs,
+  TabsList,
+  TabsTrigger,
 } from '../ui';
 import {
   RefreshCw,
@@ -111,32 +115,33 @@ export const KanbanToolbar: React.FC<KanbanToolbarProps> = ({
         {/* Left: Board Mode Toggle, Ticket Count Badge, Search Bar, Type & Priority Selects */}
         <div className="flex flex-wrap items-center gap-2 flex-1 min-w-[280px]">
           {onBoardModeChange && (
-            <div className="flex items-center p-0.5 rounded-full bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/30 text-xs shrink-0">
-              <button
-                type="button"
-                onClick={() => onBoardModeChange('kanban')}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-full font-semibold transition-all cursor-pointer ${
-                  boardMode === 'kanban'
-                    ? 'bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] shadow-xs'
-                    : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]'
-                }`}
-              >
-                <Columns3 className="w-3.5 h-3.5 shrink-0" />
-                <span>Kanban</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => onBoardModeChange('scrum')}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-full font-semibold transition-all cursor-pointer ${
-                  boardMode === 'scrum'
-                    ? 'bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] shadow-xs'
-                    : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]'
-                }`}
-              >
-                <Zap className="w-3.5 h-3.5 shrink-0" />
-                <span>Scrum Sprint</span>
-              </button>
-            </div>
+            <Tabs
+              value={boardMode}
+              onValueChange={(val) => onBoardModeChange(val as 'kanban' | 'scrum')}
+            >
+              <TabsList variant="pills" className="rounded-full">
+                <TabsTrigger
+                  value="kanban"
+                  onClick={() => onBoardModeChange('kanban')}
+                  variant="pills"
+                  size="sm"
+                  className="rounded-full gap-1.5 font-semibold"
+                >
+                  <Columns3 className="w-3.5 h-3.5" />
+                  <span>Kanban</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="scrum"
+                  onClick={() => onBoardModeChange('scrum')}
+                  variant="pills"
+                  size="sm"
+                  className="rounded-full gap-1.5 font-semibold"
+                >
+                  <Zap className="w-3.5 h-3.5" />
+                  <span>Scrum Sprint</span>
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           )}
 
           {/* Ticket Count Badge */}
@@ -350,27 +355,29 @@ export const KanbanToolbar: React.FC<KanbanToolbarProps> = ({
 
           {/* Board Settings Modal Trigger */}
           <Tooltip content="Board Settings (Grouping, Density, WIP Limits)">
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon-sm"
               onClick={() => onOpenSettingsModal('layout')}
-              className="p-2 rounded-full text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container-high)] transition-colors cursor-pointer"
               aria-label="Kanban Settings"
             >
               <Settings className="w-4 h-4" />
-            </button>
+            </Button>
           </Tooltip>
 
           {/* Refresh Button */}
           <Tooltip content="Refresh board tickets">
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon-sm"
               onClick={onRefresh}
               disabled={loading}
-              className="p-2 rounded-full text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] transition-colors cursor-pointer disabled:opacity-50"
               aria-label="Refresh board"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            </button>
+            </Button>
           </Tooltip>
         </div>
       </div>
@@ -382,53 +389,55 @@ export const KanbanToolbar: React.FC<KanbanToolbarProps> = ({
             {projectQuickFilters.map((qf) => {
               const isActive = activeQuickFilterIds.includes(qf.id);
               return (
-                <button
+                <Button
                   key={qf.id}
                   type="button"
+                  variant={isActive ? 'tonal' : 'ghost'}
+                  size="sm"
                   onClick={() => onToggleQuickFilter(qf.id)}
-                  className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                    isActive
-                      ? 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] ring-1 ring-[var(--md-sys-color-primary)] shadow-xs'
-                      : 'bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)]'
-                  }`}
+                  className={isActive ? 'ring-1 ring-[var(--md-sys-color-primary)]' : 'bg-[var(--md-sys-color-surface-container)]'}
                   title={qf.jqlQuery}
                 >
-                  <span>{qf.name}</span>
-                </button>
+                  {qf.name}
+                </Button>
               );
             })}
 
             {/* Manage Quick Filters Shortcut */}
             <Tooltip content="Manage Quick Filters (Tech Lead)">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon-sm"
                 onClick={() => onOpenSettingsModal('quickFilters')}
-                className="p-1.5 rounded-full text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] hover:bg-[var(--md-sys-color-surface-container-high)] transition-colors cursor-pointer"
                 aria-label="Manage quick filters"
               >
                 <SlidersHorizontal className="w-3.5 h-3.5" />
-              </button>
+              </Button>
             </Tooltip>
 
             {/* Save Filter Button */}
             {isFilterActive && (
               <Tooltip content="Save current filter to Personal Dashboard">
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon-sm"
                   onClick={onSaveCurrentFilter}
-                  className="p-1.5 rounded-full text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] hover:bg-[var(--md-sys-color-surface-container-high)] transition-colors cursor-pointer"
                   aria-label="Save current filter"
                 >
                   <BookmarkPlus className="w-4 h-4" />
-                </button>
+                </Button>
               </Tooltip>
             )}
           </div>
 
           {/* Reset Filters button */}
           {isFilterActive && (
-            <button
+            <Button
               type="button"
+              variant="text"
+              size="sm"
               onClick={() => {
                 onSearchChange('');
                 onFilterTypeChange('ALL');
@@ -438,10 +447,10 @@ export const KanbanToolbar: React.FC<KanbanToolbarProps> = ({
                 onSelectVersion?.(null);
                 activeQuickFilterIds.forEach((id) => onToggleQuickFilter(id));
               }}
-              className="text-xs font-semibold text-[var(--md-sys-color-primary)] hover:underline cursor-pointer"
+              className="text-xs"
             >
               Reset filters
-            </button>
+            </Button>
           )}
         </div>
       )}

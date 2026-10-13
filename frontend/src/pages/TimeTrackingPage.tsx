@@ -43,8 +43,8 @@ const getWeekBounds = (date: Date) => {
 };
 
 export const TimeTrackingPage: React.FC = () => {
-  // Navigation & View State
-  const [activeTab, setActiveTab] = useState<TimeTrackingTab>('matrix');
+  // Navigation & View State - Defaults to personal timesheet ('worklogs')
+  const [activeTab, setActiveTab] = useState<TimeTrackingTab>('worklogs');
   const [rangeMode, setRangeMode] = useState<DateRangeMode>('week');
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [groupBy, setGroupBy] = useState<MatrixGroupBy>('user');

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useDroppable } from '@dnd-kit/core';
 import type { IssueItem } from '../../api/client';
-import { useProjectVersionsQuery, useUpdateIssueMutation } from '../../api/queries';
+import { useProjectVersionsQuery } from '../../api/queries';
 import { Badge, Button, Tabs, TabsList, TabsTrigger } from '../ui';
 import {
   Layers,
@@ -27,6 +28,162 @@ interface AgileBacklogLeftDrawerProps {
   onCreateEpic: () => void;
 }
 
+interface EpicDroppableItemProps {
+  epic: IssueItem;
+  childIssues: IssueItem[];
+  completedChildCount: number;
+  progressPercent: number;
+  isSelected: boolean;
+  onSelectEpic: (epicId: number | 'ALL' | 'NONE') => void;
+}
+
+const EpicDroppableItem: React.FC<EpicDroppableItemProps> = ({
+  epic,
+  childIssues,
+  completedChildCount,
+  progressPercent,
+  isSelected,
+  onSelectEpic,
+}) => {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `drawer-epic-${epic.id}`,
+    data: {
+      type: 'epic',
+      epicId: epic.id,
+    },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelectEpic(isSelected ? 'ALL' : epic.id);
+        }
+      }}
+      onClick={() => onSelectEpic(isSelected ? 'ALL' : epic.id)}
+      className={`p-3 rounded-2xl border transition-all cursor-pointer space-y-1.5 ${
+        isOver
+          ? 'border-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-primary)]/50 bg-[var(--md-sys-color-primary-container)]/20 shadow-xs'
+          : isSelected
+            ? 'border-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/15 shadow-xs'
+            : 'border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-outline-variant)]/70 bg-[var(--md-sys-color-surface-container)]'
+      }`}
+    >
+      <div className="flex items-center justify-between gap-1">
+        <span className="font-mono text-[10px] font-bold text-[var(--md-sys-color-primary)]">
+          {epic.key}
+        </span>
+        <span className="text-[10px] text-[var(--md-sys-color-on-surface-variant)] font-mono">
+          {completedChildCount}/{childIssues.length} done
+        </span>
+      </div>
+
+      <div className="text-xs font-semibold text-[var(--md-sys-color-on-surface)] truncate">
+        {epic.title}
+      </div>
+
+      {/* Progress Bar */}
+      <div className="h-1.5 w-full bg-[var(--md-sys-color-surface-container-highest)] rounded-full overflow-hidden">
+        <div
+          className="h-full bg-[var(--md-sys-color-primary)] rounded-full transition-all duration-300"
+          style={{ width: `${progressPercent}%` }}
+        />
+      </div>
+    </div>
+  );
+};
+
+interface VersionDroppableItemProps {
+  ver: {
+    id?: number;
+    name: string;
+    status?: string;
+    releaseDate?: string;
+    description?: string;
+  };
+  verIssues: IssueItem[];
+  completedCount: number;
+  progressPercent: number;
+  isSelected: boolean;
+  onSelectVersion: (versionId: number | 'ALL' | 'NONE') => void;
+}
+
+const VersionDroppableItem: React.FC<VersionDroppableItemProps> = ({
+  ver,
+  verIssues,
+  completedCount,
+  progressPercent,
+  isSelected,
+  onSelectVersion,
+}) => {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `drawer-version-${ver.id}`,
+    data: {
+      type: 'version',
+      versionId: ver.id,
+    },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelectVersion(isSelected ? 'ALL' : (ver.id as number));
+        }
+      }}
+      onClick={() => onSelectVersion(isSelected ? 'ALL' : (ver.id as number))}
+      className={`p-3 rounded-2xl border transition-all cursor-pointer space-y-1.5 ${
+        isOver
+          ? 'border-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-primary)]/50 bg-[var(--md-sys-color-primary-container)]/20 shadow-xs'
+          : isSelected
+            ? 'border-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/15 shadow-xs'
+            : 'border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-outline-variant)]/70 bg-[var(--md-sys-color-surface-container)]'
+      }`}
+    >
+      <div className="flex items-center justify-between gap-1">
+        <span className="text-xs font-bold text-[var(--md-sys-color-on-surface)] truncate">
+          {ver.name}
+        </span>
+        <Badge
+          variant={ver.status === 'RELEASED' ? 'resolved' : 'neutral'}
+          size="sm"
+          className="text-[9px] uppercase font-mono px-1.5"
+        >
+          {ver.status || 'UNRELEASED'}
+        </Badge>
+      </div>
+
+      <div className="flex items-center justify-between text-[10px] text-[var(--md-sys-color-on-surface-variant)]">
+        <span className="font-mono">
+          {completedCount}/{verIssues.length} issues
+        </span>
+        {ver.releaseDate && (
+          <span className="flex items-center gap-1 opacity-70">
+            <Calendar className="w-2.5 h-2.5" />
+            <span>{new Date(ver.releaseDate).toLocaleDateString()}</span>
+          </span>
+        )}
+      </div>
+
+      {/* Progress Bar */}
+      <div className="h-1.5 w-full bg-[var(--md-sys-color-surface-container-highest)] rounded-full overflow-hidden">
+        <div
+          className="h-full bg-[var(--md-sys-color-primary)] rounded-full transition-all duration-300"
+          style={{ width: `${progressPercent}%` }}
+        />
+      </div>
+    </div>
+  );
+};
+
 export const AgileBacklogLeftDrawer: React.FC<AgileBacklogLeftDrawerProps> = ({
   projectId,
   issues,
@@ -40,69 +197,28 @@ export const AgileBacklogLeftDrawer: React.FC<AgileBacklogLeftDrawerProps> = ({
   onCreateEpic,
 }) => {
   const { data: versions = [] } = useProjectVersionsQuery(projectId);
-  const updateIssueMutation = useUpdateIssueMutation();
-
-  const [dragOverEpicId, setDragOverEpicId] = useState<number | null>(null);
-  const [dragOverVersionId, setDragOverVersionId] = useState<number | null>(null);
 
   // Extract all Epics in project
   const epics = issues.filter((i) => i.issueType === 'EPIC');
 
-  const handleEpicDrop = async (e: React.DragEvent, epicId: number) => {
-    e.preventDefault();
-    setDragOverEpicId(null);
-    const issueIdStr = e.dataTransfer.getData('text/plain');
-    if (!issueIdStr) return;
-    const issueId = Number(issueIdStr);
-    if (!Number.isNaN(issueId) && issueId !== epicId) {
-      await updateIssueMutation.mutateAsync({
-        id: issueId,
-        data: { parentId: epicId },
-      });
-    }
-  };
-
-  const handleVersionDrop = async (e: React.DragEvent, versionId: number) => {
-    e.preventDefault();
-    setDragOverVersionId(null);
-    const issueIdStr = e.dataTransfer.getData('text/plain');
-    if (!issueIdStr) return;
-    const issueId = Number(issueIdStr);
-    if (!Number.isNaN(issueId)) {
-      await updateIssueMutation.mutateAsync({
-        id: issueId,
-        data: { fixVersionId: versionId },
-      });
-    }
-  };
-
   return (
     <aside
-      aria-label="Backlog Epics and Releases Panel"
-      className="w-full md:w-72 lg:w-80 shrink-0 flex flex-col bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/40 rounded-3xl overflow-hidden shadow-2xs transition-all duration-200"
+      aria-label="Backlog Epics and Releases Drawer"
+      className="w-full md:w-80 shrink-0 bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/30 rounded-3xl p-4 flex flex-col space-y-4 shadow-xs"
     >
-      {/* Drawer Header Tabs & Close Action */}
-      <div className="p-3 border-b border-[var(--md-sys-color-outline-variant)]/30 flex items-center justify-between gap-2 bg-[var(--md-sys-color-surface-container)]">
+      {/* Drawer Header with Tabs & Close */}
+      <div className="flex items-center justify-between gap-2 border-b border-[var(--md-sys-color-outline-variant)]/20 pb-3">
         <Tabs
           value={activeDrawerTab}
-          onValueChange={(val) => onDrawerTabChange(val as BacklogDrawerTab)}
+          onValueChange={(v) => onDrawerTabChange(v as BacklogDrawerTab)}
+          className="w-full"
         >
-          <TabsList variant="pills" className="rounded-full">
-            <TabsTrigger
-              value="epics"
-              variant="pills"
-              size="sm"
-              className="rounded-full gap-1.5 font-semibold text-xs"
-            >
+          <TabsList className="w-full grid grid-cols-2">
+            <TabsTrigger value="epics" className="flex items-center gap-1.5 text-xs">
               <Layers className="w-3.5 h-3.5" />
               <span>Epics ({epics.length})</span>
             </TabsTrigger>
-            <TabsTrigger
-              value="versions"
-              variant="pills"
-              size="sm"
-              className="rounded-full gap-1.5 font-semibold text-xs"
-            >
+            <TabsTrigger value="versions" className="flex items-center gap-1.5 text-xs">
               <Milestone className="w-3.5 h-3.5" />
               <span>Versions ({versions.length})</span>
             </TabsTrigger>
@@ -112,28 +228,27 @@ export const AgileBacklogLeftDrawer: React.FC<AgileBacklogLeftDrawerProps> = ({
         <button
           type="button"
           onClick={onClose}
-          className="p-1.5 rounded-full text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-highest)] hover:text-[var(--md-sys-color-on-surface)] transition-colors cursor-pointer"
+          className="p-1.5 rounded-full hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-outline)] hover:text-[var(--md-sys-color-on-surface)] transition-colors cursor-pointer shrink-0"
           aria-label="Collapse side panel"
-          title="Collapse side panel"
         >
           <X className="w-4 h-4" />
         </button>
       </div>
 
-      {/* Drawer Body */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2">
+      {/* Drawer Content */}
+      <div className="flex-1 overflow-y-auto max-h-[calc(100vh-280px)] pr-1 space-y-3">
         {activeDrawerTab === 'epics' ? (
           /* ================= Epics Panel ================= */
           <div className="space-y-2">
             <div className="flex items-center justify-between px-1">
               <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--md-sys-color-on-surface-variant)]">
-                Project Epics
+                Epics
               </span>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={onCreateEpic}
-                className="h-6 text-[11px] px-2 gap-1 text-[var(--md-sys-color-primary)] hover:bg-[var(--md-sys-color-primary-container)]/20"
+                className="h-6 px-2 text-[11px] gap-1 text-[var(--md-sys-color-primary)]"
               >
                 <Plus className="w-3 h-3" />
                 <span>Create Epic</span>
@@ -152,7 +267,7 @@ export const AgileBacklogLeftDrawer: React.FC<AgileBacklogLeftDrawerProps> = ({
             >
               <span className="flex items-center gap-2">
                 <Filter className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
-                <span>All Epics</span>
+                <span>All Issues</span>
               </span>
               <span className="text-[10px] text-[var(--md-sys-color-on-surface-variant)] font-mono">
                 {issues.length}
@@ -180,9 +295,15 @@ export const AgileBacklogLeftDrawer: React.FC<AgileBacklogLeftDrawerProps> = ({
             {/* List of Epics */}
             {epics.length === 0 ? (
               <div className="text-center py-8 px-4 text-xs text-[var(--md-sys-color-on-surface-variant)] space-y-2">
-                <p>No epics created yet for this project.</p>
-                <Button variant="outline" size="sm" onClick={onCreateEpic} className="text-xs">
-                  Create First Epic
+                <p>No epics defined yet.</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onCreateEpic}
+                  className="gap-1.5 text-xs mx-auto"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Create First Epic</span>
                 </Button>
               </div>
             ) : (
@@ -196,55 +317,17 @@ export const AgileBacklogLeftDrawer: React.FC<AgileBacklogLeftDrawerProps> = ({
                     ? Math.round((completedChildCount / childIssues.length) * 100)
                     : 0;
                 const isSelected = selectedEpicId === epic.id;
-                const isDragTarget = dragOverEpicId === epic.id;
 
                 return (
-                  <div
+                  <EpicDroppableItem
                     key={epic.id}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        onSelectEpic(isSelected ? 'ALL' : epic.id);
-                      }
-                    }}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      setDragOverEpicId(epic.id);
-                    }}
-                    onDragLeave={() => setDragOverEpicId(null)}
-                    onDrop={(e) => handleEpicDrop(e, epic.id)}
-                    onClick={() => onSelectEpic(isSelected ? 'ALL' : epic.id)}
-                    className={`p-3 rounded-2xl border transition-all cursor-pointer space-y-1.5 ${
-                      isDragTarget
-                        ? 'border-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-primary)]/50 bg-[var(--md-sys-color-primary-container)]/20'
-                        : isSelected
-                          ? 'border-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/15 shadow-xs'
-                          : 'border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-outline-variant)]/70 bg-[var(--md-sys-color-surface-container)]'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="font-mono text-[10px] font-bold text-[var(--md-sys-color-primary)]">
-                        {epic.key}
-                      </span>
-                      <span className="text-[10px] text-[var(--md-sys-color-on-surface-variant)] font-mono">
-                        {completedChildCount}/{childIssues.length} done
-                      </span>
-                    </div>
-
-                    <div className="text-xs font-semibold text-[var(--md-sys-color-on-surface)] truncate">
-                      {epic.title}
-                    </div>
-
-                    {/* Progress Bar */}
-                    <div className="h-1.5 w-full bg-[var(--md-sys-color-surface-container-highest)] rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-[var(--md-sys-color-primary)] rounded-full transition-all duration-300"
-                        style={{ width: `${progressPercent}%` }}
-                      />
-                    </div>
-                  </div>
+                    epic={epic}
+                    childIssues={childIssues}
+                    completedChildCount={completedChildCount}
+                    progressPercent={progressPercent}
+                    isSelected={isSelected}
+                    onSelectEpic={onSelectEpic}
+                  />
                 );
               })
             )}
@@ -309,68 +392,17 @@ export const AgileBacklogLeftDrawer: React.FC<AgileBacklogLeftDrawerProps> = ({
                 const progressPercent =
                   verIssues.length > 0 ? Math.round((completedCount / verIssues.length) * 100) : 0;
                 const isSelected = selectedVersionId === ver.id;
-                const isDragTarget = dragOverVersionId === ver.id;
 
                 return (
-                  <div
+                  <VersionDroppableItem
                     key={ver.id}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        onSelectVersion(isSelected ? 'ALL' : ver.id);
-                      }
-                    }}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      setDragOverVersionId(ver.id);
-                    }}
-                    onDragLeave={() => setDragOverVersionId(null)}
-                    onDrop={(e) => handleVersionDrop(e, ver.id)}
-                    onClick={() => onSelectVersion(isSelected ? 'ALL' : ver.id)}
-                    className={`p-3 rounded-2xl border transition-all cursor-pointer space-y-1.5 ${
-                      isDragTarget
-                        ? 'border-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-primary)]/50 bg-[var(--md-sys-color-primary-container)]/20'
-                        : isSelected
-                          ? 'border-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/15 shadow-xs'
-                          : 'border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-outline-variant)]/70 bg-[var(--md-sys-color-surface-container)]'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="text-xs font-bold text-[var(--md-sys-color-on-surface)] truncate">
-                        {ver.name}
-                      </span>
-                      <Badge
-                        variant={ver.status === 'RELEASED' ? 'resolved' : 'neutral'}
-                        size="sm"
-                        className="text-[9px]"
-                      >
-                        {ver.status}
-                      </Badge>
-                    </div>
-
-                    {ver.releaseDate && (
-                      <div className="flex items-center gap-1 text-[10px] text-[var(--md-sys-color-on-surface-variant)] font-mono">
-                        <Calendar className="w-3 h-3 text-[var(--md-sys-color-primary)]" />
-                        <span>{ver.releaseDate}</span>
-                      </div>
-                    )}
-
-                    {/* Progress Bar */}
-                    <div className="space-y-1 pt-0.5">
-                      <div className="flex items-center justify-between text-[10px] text-[var(--md-sys-color-on-surface-variant)] font-mono">
-                        <span>{verIssues.length} tickets</span>
-                        <span>{progressPercent}%</span>
-                      </div>
-                      <div className="h-1.5 w-full bg-[var(--md-sys-color-surface-container-highest)] rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-[var(--md-sys-color-primary)] rounded-full transition-all duration-300"
-                          style={{ width: `${progressPercent}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
+                    ver={ver}
+                    verIssues={verIssues}
+                    completedCount={completedCount}
+                    progressPercent={progressPercent}
+                    isSelected={isSelected}
+                    onSelectVersion={onSelectVersion}
+                  />
                 );
               })
             )}

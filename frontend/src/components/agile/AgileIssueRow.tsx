@@ -18,9 +18,10 @@ import {
   Check,
   GitCommitHorizontal,
 } from 'lucide-react';
+import { useDraggable } from '@dnd-kit/core';
 import { useIssueSelectionStore } from '../../store/useIssueSelectionStore';
 
-interface AgileIssueRowProps {
+export interface AgileIssueRowProps {
   issue: IssueItem;
   availableSprints: SprintDefinition[];
   onClick: (issue: IssueItem) => void;
@@ -30,6 +31,7 @@ interface AgileIssueRowProps {
   currentUserId?: number;
   orderedIds?: number[];
   isDragging?: boolean;
+  disableDrag?: boolean;
 }
 
 const AgileIssueRowComponent: React.FC<AgileIssueRowProps> = ({
@@ -42,8 +44,18 @@ const AgileIssueRowComponent: React.FC<AgileIssueRowProps> = ({
   currentUserId,
   orderedIds,
   isDragging = false,
+  disableDrag = false,
 }) => {
-  const isBeingDragged = isDragging;
+  const { attributes, listeners, setNodeRef, isDragging: isDndDragging } = useDraggable({
+    id: `issue-${issue.id}`,
+    data: {
+      type: 'issue',
+      issue,
+    },
+    disabled: disableDrag,
+  });
+
+  const isBeingDragged = isDragging || isDndDragging;
 
   const { selectedIds, toggleSelection, rangeSelect } = useIssueSelectionStore();
   const isSelected = selectedIds.has(issue.id);
@@ -90,7 +102,7 @@ const AgileIssueRowComponent: React.FC<AgileIssueRowProps> = ({
           ? 'bg-[var(--md-sys-color-primary)] border-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] shadow-2xs'
           : hasAnySelection
             ? 'opacity-80 hover:opacity-100 border-[var(--md-sys-color-outline)] bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container)] hover:border-[var(--md-sys-color-primary)]'
-            : 'opacity-0 group-hover:opacity-80 hover:!opacity-100 border-[var(--md-sys-color-outline)] bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container)] hover:border-[var(--md-sys-color-primary)]'
+            : 'opacity-60 hover:opacity-100 border-[var(--md-sys-color-outline-variant)] bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container)] hover:border-[var(--md-sys-color-primary)]'
       }`}
     >
       {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
@@ -183,21 +195,31 @@ const AgileIssueRowComponent: React.FC<AgileIssueRowProps> = ({
 
   return (
     <div
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
       onClick={handleClick}
       onContextMenu={handleContextMenu}
-      className={`group relative flex items-center justify-between gap-3 px-3 py-2.5 rounded-2xl bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container)] dark:hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-outline-variant)]/80 transition-colors duration-150 cursor-grab active:cursor-grabbing select-none shadow-2xs ${
+      className={`group relative flex items-center justify-between gap-3 px-3 py-2.5 rounded-2xl bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container)] dark:hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-outline-variant)]/80 transition-colors duration-150 cursor-grab active:cursor-grabbing shadow-2xs touch-none ${
         isSelected
           ? '!border-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-primary)]/40 bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-highest)] shadow-xs'
           : ''
       } ${
-        isBeingDragged ? 'opacity-30 scale-98 border-dashed border-[var(--md-sys-color-primary)]' : ''
+        isBeingDragged
+          ? 'select-none opacity-40 scale-98 border-dashed border-[var(--md-sys-color-primary)]'
+          : ''
       }`}
     >
       {/* Left: Drag grip, Checkbox, Type Icon, Key, Title */}
-      <div className="flex items-center gap-2.5 min-w-0 flex-1 pointer-events-none">
-        <GripVertical className="w-3.5 h-3.5 text-[var(--md-sys-color-outline)] opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+      <div className="flex items-center gap-2 min-w-0 flex-1">
+        <div
+          title="Drag to reorder or move between sprints"
+          className="cursor-grab active:cursor-grabbing shrink-0 select-none flex items-center justify-center text-[var(--md-sys-color-outline)]/40 group-hover:text-[var(--md-sys-color-primary)] transition-colors"
+        >
+          <GripVertical className="w-3.5 h-3.5" />
+        </div>
         {renderSelectionCheckbox()}
-        <div className="shrink-0">{renderTypeIcon(issue.issueType)}</div>
+        <div className="shrink-0 select-none">{renderTypeIcon(issue.issueType)}</div>
 
         <a
           href={`/issues/${issue.key}`}
@@ -206,12 +228,12 @@ const AgileIssueRowComponent: React.FC<AgileIssueRowProps> = ({
             e.preventDefault();
             onClick(issue);
           }}
-          className="font-mono text-[11px] font-bold text-[var(--md-sys-color-primary)] hover:underline bg-[var(--md-sys-color-primary-container)]/40 px-2 py-0.5 rounded-full whitespace-nowrap shrink-0 pointer-events-auto"
+          className="font-mono text-[11px] font-bold text-[var(--md-sys-color-primary)] hover:underline bg-[var(--md-sys-color-primary-container)]/40 px-2 py-0.5 rounded-full whitespace-nowrap shrink-0 pointer-events-auto select-text"
         >
           {issue.key}
         </a>
 
-        <span className="text-xs font-semibold text-[var(--md-sys-color-on-surface)] group-hover:text-[var(--md-sys-color-primary)] transition-colors truncate">
+        <span className="text-xs font-semibold text-[var(--md-sys-color-on-surface)] group-hover:text-[var(--md-sys-color-primary)] transition-colors truncate select-text">
           {issue.title}
         </span>
       </div>

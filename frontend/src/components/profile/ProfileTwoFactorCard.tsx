@@ -60,7 +60,7 @@ export const ProfileTwoFactorCard: React.FC = () => {
                   Two-Step Verification (2FA)
                 </h3>
                 <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
-                  RFC 6238 TOTP authenticator app verification
+                  Authenticator app login verification
                 </p>
               </div>
             </div>
@@ -72,7 +72,7 @@ export const ProfileTwoFactorCard: React.FC = () => {
 
           {/* 2. Body Description */}
           <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] leading-relaxed">
-            Enhance your account security with Time-based One-Time Passcodes (TOTP) from Google Authenticator, Microsoft Authenticator, or 1Password.
+            Enhance your account security with one-time verification codes from an authenticator app (Google Authenticator, Microsoft Authenticator, or 1Password).
           </p>
 
           {twoFactorError && (
@@ -82,15 +82,15 @@ export const ProfileTwoFactorCard: React.FC = () => {
             </div>
           )}
 
-          {/* Technical Security Specification Chips */}
+          {/* Security Status Details */}
           <div className="p-3.5 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/20 space-y-2">
             <div className="flex items-center justify-between text-xs">
               <span className="text-[var(--md-sys-color-on-surface-variant)] font-medium flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
-                Standard:
+                Protection Status:
               </span>
-              <span className="font-mono text-[11px] font-semibold text-[var(--md-sys-color-on-surface)]">
-                RFC 6238 TOTP (SHA-1, 30s)
+              <span className="text-[11px] font-semibold text-[var(--md-sys-color-on-surface)]">
+                {user.twoFactorEnabled ? '2FA Active on Sign-in' : 'Not Configured'}
               </span>
             </div>
             <div className="flex items-center justify-between text-xs pt-1.5 border-t border-[var(--md-sys-color-outline-variant)]/10">
@@ -99,7 +99,7 @@ export const ProfileTwoFactorCard: React.FC = () => {
                 App Compatibility:
               </span>
               <span className="text-[11px] font-semibold text-[var(--md-sys-color-on-surface)]">
-                Google, Authy, Apple, 1Pass
+                Google, Microsoft, 1Password, Authy
               </span>
             </div>
           </div>

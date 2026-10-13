@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import type { IssueItem } from '../../api/types/index.js';
 import { issuesApi } from '../../api/modules/issues.api.js';
 import { MarkdownContent } from '../common/MarkdownContent.js';
@@ -22,13 +22,17 @@ export const IssueDetailDescription: React.FC<IssueDetailDescriptionProps> = ({
   const [savingDesc, setSavingDesc] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
-  useEffect(() => {
-    setTitleDraft(issue.title);
-  }, [issue.title]);
+  const [prevTitle, setPrevTitle] = useState(issue.title);
+  const [prevDesc, setPrevDesc] = useState(issue.description || '');
 
-  useEffect(() => {
+  if (issue.title !== prevTitle) {
+    setPrevTitle(issue.title);
+    setTitleDraft(issue.title);
+  }
+  if ((issue.description || '') !== prevDesc) {
+    setPrevDesc(issue.description || '');
     setDescDraft(issue.description || '');
-  }, [issue.description]);
+  }
 
   const handleSaveTitle = async () => {
     const trimmed = titleDraft.trim();

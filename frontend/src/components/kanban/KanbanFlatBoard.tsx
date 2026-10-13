@@ -20,6 +20,7 @@ import { DraggableKanbanCard } from './DraggableKanbanCard.js';
 import { Badge } from '../ui/index.js';
 import { Loader2, Plus, AlertCircle, Ban } from 'lucide-react';
 import { isAllowedTransition } from '../../utils/workflowTransitions.js';
+import { useIssueSelectionStore } from '../../store/useIssueSelectionStore.js';
 
 interface KanbanFlatBoardProps {
   issues: IssueItem[];
@@ -198,6 +199,7 @@ export const KanbanFlatBoard: React.FC<KanbanFlatBoardProps> = ({
   focusedIssueId,
 }) => {
   const [activeIssue, setActiveIssue] = useState<IssueItem | null>(null);
+  const { selectedIds, clearSelection } = useIssueSelectionStore();
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -232,8 +234,22 @@ export const KanbanFlatBoard: React.FC<KanbanFlatBoardProps> = ({
       targetStatus = over.data.current.issue?.status;
     }
 
-    if (
-      targetStatus &&
+    if (!targetStatus) return;
+
+    // Batch drag support
+    if (selectedIds.has(issue.id) && selectedIds.size > 1) {
+      selectedIds.forEach((id) => {
+        const item = issues.find((i) => i.id === id);
+        if (
+          item &&
+          item.status !== targetStatus &&
+          isAllowedTransition(item.status, targetStatus)
+        ) {
+          onStatusChange(id, targetStatus);
+        }
+      });
+      clearSelection();
+    } else if (
       targetStatus !== issue.status &&
       isAllowedTransition(issue.status, targetStatus)
     ) {
@@ -254,6 +270,13 @@ export const KanbanFlatBoard: React.FC<KanbanFlatBoardProps> = ({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
+      autoScroll={{
+        threshold: {
+          x: 0.15,
+          y: 0.15,
+        },
+        acceleration: 15,
+      }}
     >
       <div className="w-full pb-6 pt-1">
         {/* 5-Column Horizontal Container */}
@@ -288,13 +311,18 @@ export const KanbanFlatBoard: React.FC<KanbanFlatBoardProps> = ({
 
       <DragOverlay dropAnimation={{ duration: 180, easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)' }}>
         {activeIssue ? (
-          <div className="rotate-2 scale-102 shadow-2xl opacity-95 pointer-events-none w-[270px]">
+          <div className="rotate-2 scale-102 shadow-2xl opacity-95 pointer-events-none w-[270px] relative">
             <IssueCard
               issue={activeIssue}
               onClick={() => {}}
               density={settings.cardDensity}
               isDragging
             />
+            {selectedIds.has(activeIssue.id) && selectedIds.size > 1 && (
+              <span className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] text-xs font-bold shadow-md ring-2 ring-[var(--md-sys-color-surface)]">
+                +{selectedIds.size - 1} more
+              </span>
+            )}
           </div>
         ) : null}
       </DragOverlay>

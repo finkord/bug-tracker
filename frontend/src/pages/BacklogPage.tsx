@@ -1,8 +1,21 @@
 import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  closestCorners,
+  type DragStartEvent,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { AgileToolbar } from '../components/agile/AgileToolbar';
 import { SprintContainer } from '../components/agile/SprintContainer';
 import { BacklogSection } from '../components/agile/BacklogSection';
+import { AgileIssueRow } from '../components/agile/AgileIssueRow';
 import { ActiveSprintBoard } from '../components/agile/ActiveSprintBoard';
 import { SprintFormModal } from '../components/agile/SprintFormModal';
 import { CompleteSprintModal } from '../components/agile/CompleteSprintModal';
@@ -10,7 +23,10 @@ import { SprintAnalyticsModal } from '../components/kanban/SprintAnalyticsModal'
 import { IssueModal } from '../components/kanban/IssueModal';
 import { useAgileBacklog } from '../hooks/useAgileBacklog';
 import { useListKeyboardNavigation } from '../hooks';
+import { useUpdateIssueMutation } from '../api/queries';
 import { useAuth } from '../store';
+import { useIssueSelectionStore } from '../store/useIssueSelectionStore';
+import type { IssueItem } from '../api/client';
 import type {
   SprintDefinition,
   AgileViewMode,
@@ -119,6 +135,81 @@ export const BacklogPage: React.FC = () => {
   const [isCreateIssueOpen, setIsCreateIssueOpen] = useState<boolean>(false);
   const [createIssueSprintId, setCreateIssueSprintId] = useState<number | null>(null);
   const [sprintToDelete, setSprintToDelete] = useState<{ id: number; name: string } | null>(null);
+  const [activeIssue, setActiveIssue] = useState<IssueItem | null>(null);
+  const { selectedIds } = useIssueSelectionStore();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const issue = event.active.data.current?.issue as IssueItem | undefined;
+    setActiveIssue(issue || null);
+  };
+
+  const handleDragCancel = () => {
+    setActiveIssue(null);
+  };
+
+  const updateIssueMutation = useUpdateIssueMutation();
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveIssue(null);
+
+    if (!over) return;
+
+    const dragged = active.data.current?.issue as IssueItem | undefined;
+    if (!dragged) return;
+
+    const dragIds = selectedIds.has(dragged.id) ? Array.from(selectedIds) : [dragged.id];
+    const targetType = over.data.current?.type;
+
+    if (targetType === 'epic') {
+      const epicId = over.data.current?.epicId as number | undefined;
+      if (epicId && dragged.id !== epicId) {
+        dragIds.forEach((id) => {
+          if (id !== epicId) {
+            updateIssueMutation.mutate({
+              id,
+              data: { parentId: epicId },
+            });
+          }
+        });
+      }
+      return;
+    }
+
+    if (targetType === 'version') {
+      const versionId = over.data.current?.versionId as number | undefined;
+      if (versionId) {
+        dragIds.forEach((id) => {
+          updateIssueMutation.mutate({
+            id,
+            data: { fixVersionId: versionId },
+          });
+        });
+      }
+      return;
+    }
+
+    const targetSprintId = (over.data.current?.sprintId !== undefined
+      ? over.data.current.sprintId
+      : null) as number | null;
+
+    if ((dragged.sprintId ?? null) === targetSprintId) return;
+
+    dragIds.forEach((id) => {
+      handleMoveToSprint(id, targetSprintId);
+    });
+  };
 
   // J/K/Enter/O high-velocity list keyboard navigation
   useListKeyboardNavigation({
@@ -213,91 +304,125 @@ export const BacklogPage: React.FC = () => {
           />
         ) : (
           /* Backlog Planning View (Side Drawer + Stacked Sprints + Product Backlog) */
-          <div className="flex flex-col md:flex-row gap-4 items-start w-full pb-8">
-            {/* Left Rail: Epics & Releases Drawer */}
-            {drawerState !== 'closed' && (
-              <AgileBacklogLeftDrawer
-                projectId={selectedProjectId}
-                projectKey={activeProject?.key}
-                issues={issues}
-                activeDrawerTab={drawerState === 'versions' ? 'versions' : 'epics'}
-                onDrawerTabChange={(tab) => {
-                  setDrawerState(tab);
-                  try {
-                    localStorage.setItem(BACKLOG_DRAWER_STORAGE_KEY, tab);
-                  } catch {
-                    // Ignored
-                  }
-                }}
-                selectedEpicId={filters.epicId}
-                onSelectEpic={(epicId) => setFilters({ ...filters, epicId })}
-                selectedVersionId={filters.versionId}
-                onSelectVersion={(versionId) => setFilters({ ...filters, versionId })}
-                onClose={() => {
-                  setDrawerState('closed');
-                  try {
-                    localStorage.setItem(BACKLOG_DRAWER_STORAGE_KEY, 'closed');
-                  } catch {
-                    // Ignored
-                  }
-                }}
-                onCreateEpic={() => {
-                  setCreateIssueSprintId(null);
-                  setIsCreateIssueOpen(true);
-                }}
-              />
-            )}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCorners}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
+            autoScroll={{
+              threshold: {
+                x: 0.1,
+                y: 0.15,
+              },
+              acceleration: 15,
+            }}
+          >
+            <div className="flex flex-col md:flex-row gap-4 items-start w-full pb-8">
+              {/* Left Rail: Epics & Releases Drawer */}
+              {drawerState !== 'closed' && (
+                <AgileBacklogLeftDrawer
+                  projectId={selectedProjectId}
+                  projectKey={activeProject?.key}
+                  issues={issues}
+                  activeDrawerTab={drawerState === 'versions' ? 'versions' : 'epics'}
+                  onDrawerTabChange={(tab) => {
+                    setDrawerState(tab);
+                    try {
+                      localStorage.setItem(BACKLOG_DRAWER_STORAGE_KEY, tab);
+                    } catch {
+                      // Ignored
+                    }
+                  }}
+                  selectedEpicId={filters.epicId}
+                  onSelectEpic={(epicId) => setFilters({ ...filters, epicId })}
+                  selectedVersionId={filters.versionId}
+                  onSelectVersion={(versionId) => setFilters({ ...filters, versionId })}
+                  onClose={() => {
+                    setDrawerState('closed');
+                    try {
+                      localStorage.setItem(BACKLOG_DRAWER_STORAGE_KEY, 'closed');
+                    } catch {
+                      // Ignored
+                    }
+                  }}
+                  onCreateEpic={() => {
+                    setCreateIssueSprintId(null);
+                    setIsCreateIssueOpen(true);
+                  }}
+                />
+              )}
 
-            {/* Right Main Column: Stacked Sprints + Product Backlog */}
-            <div className="flex-1 min-w-0 w-full space-y-4">
-              {/* Stacked Sprint Containers */}
-              {sprintList.map((sprint) => {
-                const sprintIssues = filteredIssues.filter((i) => i.sprintId === sprint.id);
-                return (
-                  <SprintContainer
-                    key={sprint.id || sprint.name}
-                    sprint={sprint}
-                    issues={sprintIssues}
-                    availableSprints={sprintList}
-                    isCollapsed={!!collapsedSprints[sprint.name]}
-                    onToggleCollapse={() => handleToggleSprintCollapse(sprint.name)}
-                    onSelectIssue={handleOpenIssue}
-                    onMoveToSprint={handleMoveToSprint}
-                    onStartSprint={handleStartSprint}
-                    onCompleteSprint={(target) => {
-                      setCompletingSprint(target);
-                      setIsCompleteSprintOpen(true);
-                    }}
-                    onEditSprint={(s) => {
-                      setEditingSprint(s);
-                      setSprintFormMode('edit');
-                      setIsSprintFormOpen(true);
-                    }}
-                    onDeleteSprint={(sprintId, sprintName) => setSprintToDelete({ id: sprintId, name: sprintName })}
-                    onGoToActiveBoard={() => setViewMode('board')}
-                    onQuickCreateInSprint={(sId) => {
-                      setCreateIssueSprintId(sId);
-                      setIsCreateIssueOpen(true);
-                    }}
-                  />
-                );
-              })}
+              {/* Right Main Column: Stacked Sprints + Product Backlog */}
+              <div className="flex-1 min-w-0 w-full space-y-4">
+                {/* Stacked Sprint Containers */}
+                {sprintList.map((sprint) => {
+                  const sprintIssues = filteredIssues.filter((i) => i.sprintId === sprint.id);
+                  return (
+                    <SprintContainer
+                      key={sprint.id || sprint.name}
+                      sprint={sprint}
+                      issues={sprintIssues}
+                      availableSprints={sprintList}
+                      isCollapsed={!!collapsedSprints[sprint.name]}
+                      onToggleCollapse={() => handleToggleSprintCollapse(sprint.name)}
+                      onSelectIssue={handleOpenIssue}
+                      onMoveToSprint={handleMoveToSprint}
+                      onStartSprint={handleStartSprint}
+                      onCompleteSprint={(target) => {
+                        setCompletingSprint(target);
+                        setIsCompleteSprintOpen(true);
+                      }}
+                      onEditSprint={(s) => {
+                        setEditingSprint(s);
+                        setSprintFormMode('edit');
+                        setIsSprintFormOpen(true);
+                      }}
+                      onDeleteSprint={(sprintId, sprintName) => setSprintToDelete({ id: sprintId, name: sprintName })}
+                      onGoToActiveBoard={() => setViewMode('board')}
+                      onQuickCreateInSprint={(sId) => {
+                        setCreateIssueSprintId(sId);
+                        setIsCreateIssueOpen(true);
+                      }}
+                    />
+                  );
+                })}
 
-              {/* Product Backlog Section */}
-              <BacklogSection
-                issues={filteredIssues.filter((i) => !i.sprintId)}
-                availableSprints={sprintList}
-                isCollapsed={isBacklogCollapsed}
-                onToggleCollapse={() => setIsBacklogCollapsed((prev) => !prev)}
-                onSelectIssue={handleOpenIssue}
-                onMoveToSprint={handleMoveToSprint}
-                onQuickCreateInBacklog={() => {
-                  setCreateIssueSprintId(null);
-                  setIsCreateIssueOpen(true);
-                }}
-              />
+                {/* Product Backlog Section */}
+                <BacklogSection
+                  issues={filteredIssues.filter((i) => !i.sprintId)}
+                  availableSprints={sprintList}
+                  isCollapsed={isBacklogCollapsed}
+                  onToggleCollapse={() => setIsBacklogCollapsed((prev) => !prev)}
+                  onSelectIssue={handleOpenIssue}
+                  onMoveToSprint={handleMoveToSprint}
+                  onQuickCreateInBacklog={() => {
+                    setCreateIssueSprintId(null);
+                    setIsCreateIssueOpen(true);
+                  }}
+                />
+              </div>
             </div>
-          </div>
+
+            <DragOverlay dropAnimation={null}>
+              {activeIssue ? (
+                <div className="opacity-95 shadow-2xl rounded-2xl pointer-events-none border border-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-surface-container)] scale-[1.01]">
+                  <AgileIssueRow
+                    issue={activeIssue}
+                    availableSprints={sprintList}
+                    onClick={() => {}}
+                    onMoveToSprint={() => {}}
+                    disableDrag={true}
+                  />
+                  {selectedIds.has(activeIssue.id) && selectedIds.size > 1 && (
+                    <div className="absolute -top-2 -right-2 bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] text-xs font-bold px-2 py-0.5 rounded-full shadow-md">
+                      +{selectedIds.size - 1} more
+                    </div>
+                  )}
+                </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
         )}
       </div>
 

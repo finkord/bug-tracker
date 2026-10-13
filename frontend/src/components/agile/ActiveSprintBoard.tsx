@@ -260,6 +260,13 @@ export const ActiveSprintBoard: React.FC<ActiveSprintBoardProps> = ({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
+      autoScroll={{
+        threshold: {
+          x: 0.15,
+          y: 0.15,
+        },
+        acceleration: 15,
+      }}
     >
       <div className="w-full pb-8 pt-1 space-y-4">
         {/* Active Sprint Header Card */}

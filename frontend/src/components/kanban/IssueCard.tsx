@@ -107,7 +107,7 @@ const IssueCardComponent: React.FC<IssueCardProps> = ({
           ? 'bg-[var(--md-sys-color-primary)] border-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] shadow-2xs'
           : hasAnySelection
             ? 'opacity-80 hover:opacity-100 border-[var(--md-sys-color-outline)] bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container)] hover:border-[var(--md-sys-color-primary)]'
-            : 'opacity-0 group-hover:opacity-80 hover:!opacity-100 border-[var(--md-sys-color-outline)] bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container)] hover:border-[var(--md-sys-color-primary)]'
+            : 'opacity-60 hover:opacity-100 border-[var(--md-sys-color-outline-variant)]/80 bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container)] hover:border-[var(--md-sys-color-primary)]'
       }`}
     >
       {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
@@ -211,16 +211,23 @@ const IssueCardComponent: React.FC<IssueCardProps> = ({
       <div
         onClick={handleClick}
         onContextMenu={handleContextMenu}
-        className={`group relative bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container)] dark:hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-outline-variant)]/80 rounded-xl p-2 shadow-2xs hover:shadow-xs transition-colors duration-150 cursor-grab active:cursor-grabbing select-none flex items-center justify-between gap-2 ${
+        className={`group relative bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container)] dark:hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-outline-variant)]/80 rounded-xl p-2 shadow-2xs hover:shadow-xs transition-colors duration-150 ${
+          isBeingDragged
+            ? 'select-none cursor-grabbing opacity-30 scale-95 border-dashed border-[var(--md-sys-color-primary)]'
+            : 'cursor-pointer'
+        } ${
           isSelected
             ? '!border-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-primary)]/50 bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-highest)]'
             : ''
-        } ${
-          isBeingDragged ? 'opacity-30 scale-95 border-dashed border-[var(--md-sys-color-primary)]' : ''
         } ${isFocused ? 'ring-2 ring-[var(--md-sys-color-primary)] ring-offset-1 ring-offset-[var(--md-sys-color-surface)] shadow-md !border-[var(--md-sys-color-primary)]' : ''}`}
       >
-        <div className="flex items-center gap-1.5 min-w-0 flex-1 pointer-events-none">
-          <GripVertical className="w-3.5 h-3.5 text-[var(--md-sys-color-outline)] opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          <div
+            title="Drag to move"
+            className="cursor-grab active:cursor-grabbing shrink-0 select-none flex items-center justify-center text-[var(--md-sys-color-outline)]/40 group-hover:text-[var(--md-sys-color-primary)] transition-colors"
+          >
+            <GripVertical className="w-3.5 h-3.5" />
+          </div>
           {renderSelectionCheckbox()}
           <a
             href={`/issues/${issue.key}`}
@@ -229,7 +236,7 @@ const IssueCardComponent: React.FC<IssueCardProps> = ({
               e.preventDefault();
               onClick(issue);
             }}
-            className="font-mono text-[10px] font-bold text-[var(--md-sys-color-primary)] hover:underline shrink-0 pointer-events-auto"
+            className="font-mono text-[10px] font-bold text-[var(--md-sys-color-primary)] hover:underline shrink-0 pointer-events-auto select-text"
           >
             {issue.key}
           </a>
@@ -274,17 +281,21 @@ const IssueCardComponent: React.FC<IssueCardProps> = ({
       <div
         onClick={handleClick}
         onContextMenu={handleContextMenu}
-        className={`group relative bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container)] dark:hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-outline-variant)]/80 rounded-2xl p-2.5 shadow-2xs hover:shadow-xs transition-colors duration-150 cursor-grab active:cursor-grabbing select-none ${
+        className={`group relative bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container)] dark:hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-outline-variant)]/80 rounded-2xl p-2.5 shadow-2xs hover:shadow-xs transition-colors duration-150 ${
+          isBeingDragged
+            ? 'select-none cursor-grabbing opacity-30 scale-95 border-dashed border-[var(--md-sys-color-primary)]'
+            : 'cursor-pointer'
+        } ${
           isSelected
             ? '!border-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-primary)]/50 bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-highest)]'
             : ''
-        } ${
-          isBeingDragged ? 'opacity-30 scale-95 border-dashed border-[var(--md-sys-color-primary)]' : ''
         } ${isFocused ? 'ring-2 ring-[var(--md-sys-color-primary)] ring-offset-1 ring-offset-[var(--md-sys-color-surface)] shadow-md !border-[var(--md-sys-color-primary)]' : ''}`}
       >
-        <div className="flex items-center justify-between gap-1.5 mb-1.5 pointer-events-none">
-          <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+        {/* Top Header: Checkbox, Type Badge, Key, and Priority / Quick Actions */}
+        <div className="flex items-center justify-between gap-1.5 mb-1.5">
+          <div className="flex items-center gap-1.5 min-w-0 shrink-0">
             {renderSelectionCheckbox()}
+            {renderTypeBadge(issue.issueType, true)}
             <a
               href={`/issues/${issue.key}`}
               onClick={(e) => {
@@ -296,37 +307,9 @@ const IssueCardComponent: React.FC<IssueCardProps> = ({
             >
               {issue.key}
             </a>
-            {renderTypeBadge(issue.issueType, true)}
-            {issue.parent && (
-              <span
-                className="inline-flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] whitespace-nowrap shrink-0 truncate max-w-[80px]"
-                title={`Epic: ${issue.parent.title || issue.parent.key}`}
-              >
-                <Layers className="w-2.5 h-2.5 shrink-0" />
-                <span>{issue.parent.key}</span>
-              </span>
-            )}
-            {issue.component && (
-              <span
-                className="inline-flex items-center gap-0.5 text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] border border-[var(--md-sys-color-outline-variant)]/30 whitespace-nowrap shrink-0 truncate max-w-[80px]"
-                title={`Component: ${issue.component.name}`}
-              >
-                <Box className="w-2.5 h-2.5 shrink-0" />
-                <span>{issue.component.name}</span>
-              </span>
-            )}
-            {issue.fixVersion && (
-              <span
-                className="inline-flex items-center gap-0.5 text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--md-sys-color-tertiary-container)]/50 text-[var(--md-sys-color-on-tertiary-container)] whitespace-nowrap shrink-0 truncate max-w-[80px]"
-                title={`Version: ${issue.fixVersion.name}`}
-              >
-                <Milestone className="w-2.5 h-2.5 shrink-0" />
-                <span>{issue.fixVersion.name}</span>
-              </span>
-            )}
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 shrink-0 ml-auto">
             {renderPriorityBadge(issue.priority, true)}
             {onStatusChange && (
               <div className="pointer-events-auto" onClick={(e) => e.stopPropagation()}>
@@ -347,6 +330,39 @@ const IssueCardComponent: React.FC<IssueCardProps> = ({
             )}
           </div>
         </div>
+
+        {/* Metadata Chips Row: Epic, Component, FixVersion */}
+        {(issue.parent || issue.component || issue.fixVersion) && (
+          <div className="flex flex-wrap items-center gap-1 mb-1.5">
+            {issue.parent && (
+              <span
+                className="inline-flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] whitespace-nowrap shrink-0 truncate max-w-[90px]"
+                title={`Epic: ${issue.parent.title || issue.parent.key}`}
+              >
+                <Layers className="w-2.5 h-2.5 shrink-0" />
+                <span>{issue.parent.key}</span>
+              </span>
+            )}
+            {issue.component && (
+              <span
+                className="inline-flex items-center gap-0.5 text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] border border-[var(--md-sys-color-outline-variant)]/30 whitespace-nowrap shrink-0 truncate max-w-[90px]"
+                title={`Component: ${issue.component.name}`}
+              >
+                <Box className="w-2.5 h-2.5 shrink-0" />
+                <span>{issue.component.name}</span>
+              </span>
+            )}
+            {issue.fixVersion && (
+              <span
+                className="inline-flex items-center gap-0.5 text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--md-sys-color-tertiary-container)]/50 text-[var(--md-sys-color-on-tertiary-container)] whitespace-nowrap shrink-0 truncate max-w-[90px]"
+                title={`Version: ${issue.fixVersion.name}`}
+              >
+                <Milestone className="w-2.5 h-2.5 shrink-0" />
+                <span>{issue.fixVersion.name}</span>
+              </span>
+            )}
+          </div>
+        )}
 
         <h4 className="text-xs font-semibold text-[var(--md-sys-color-on-surface)] group-hover:text-[var(--md-sys-color-primary)] line-clamp-2 transition-colors mb-2 leading-snug">
           {issue.title}
@@ -423,18 +439,21 @@ const IssueCardComponent: React.FC<IssueCardProps> = ({
     <div
       onClick={handleClick}
       onContextMenu={handleContextMenu}
-      className={`group relative bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container)] dark:hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-outline-variant)]/80 rounded-2xl p-3.5 shadow-2xs hover:shadow-xs transition-colors duration-150 cursor-grab active:cursor-grabbing select-none ${
+      className={`group relative bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container)] dark:hover:bg-[var(--md-sys-color-surface-container-highest)] border border-[var(--md-sys-color-outline-variant)]/30 hover:border-[var(--md-sys-color-outline-variant)]/80 rounded-2xl p-3.5 shadow-2xs hover:shadow-xs transition-colors duration-150 ${
+        isBeingDragged
+          ? 'select-none cursor-grabbing opacity-30 scale-95 border-dashed border-[var(--md-sys-color-primary)]'
+          : 'cursor-pointer'
+      } ${
         isSelected
           ? '!border-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-primary)]/50 bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-highest)]'
           : ''
-      } ${
-        isBeingDragged ? 'opacity-30 scale-95 border-dashed border-[var(--md-sys-color-primary)]' : ''
       } ${isFocused ? 'ring-2 ring-[var(--md-sys-color-primary)] ring-offset-1 ring-offset-[var(--md-sys-color-surface)] shadow-md !border-[var(--md-sys-color-primary)]' : ''}`}
     >
-      {/* Top Header: Key, Sprint, Type, Quick Actions */}
-      <div className="flex items-center justify-between gap-1.5 mb-2">
-        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+      {/* Top Header: Checkbox, Type Badge, Key, and Quick Actions */}
+      <div className="flex items-center justify-between gap-1.5 mb-1.5">
+        <div className="flex items-center gap-1.5 min-w-0">
           {renderSelectionCheckbox('w-4 h-4')}
+          {renderTypeBadge(issue.issueType, true)}
           <a
             href={`/issues/${issue.key}`}
             onClick={(e) => {
@@ -446,42 +465,9 @@ const IssueCardComponent: React.FC<IssueCardProps> = ({
           >
             {issue.key}
           </a>
-          {issue.sprint?.name && (
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--md-sys-color-tertiary-container)] text-[var(--md-sys-color-on-tertiary-container)] whitespace-nowrap shrink-0 truncate max-w-[90px]">
-              {issue.sprint.name}
-            </span>
-          )}
-          {issue.parent && (
-            <span
-              className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] whitespace-nowrap shrink-0 truncate max-w-[110px]"
-              title={`Epic: ${issue.parent.title || issue.parent.key}`}
-            >
-              <Layers className="w-2.5 h-2.5 shrink-0" />
-              <span>{issue.parent.key}</span>
-            </span>
-          )}
-          {issue.component && (
-            <span
-              className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] border border-[var(--md-sys-color-outline-variant)]/30 whitespace-nowrap shrink-0 truncate max-w-[100px]"
-              title={`Component: ${issue.component.name}`}
-            >
-              <Box className="w-2.5 h-2.5 shrink-0" />
-              <span>{issue.component.name}</span>
-            </span>
-          )}
-          {issue.fixVersion && (
-            <span
-              className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--md-sys-color-tertiary-container)]/50 text-[var(--md-sys-color-on-tertiary-container)] whitespace-nowrap shrink-0 truncate max-w-[100px]"
-              title={`Fix Version: ${issue.fixVersion.name}`}
-            >
-              <Milestone className="w-2.5 h-2.5 shrink-0" />
-              <span>{issue.fixVersion.name}</span>
-            </span>
-          )}
         </div>
 
-        <div className="flex items-center gap-1 shrink-0">
-          {renderTypeBadge(issue.issueType)}
+        <div className="flex items-center gap-1 shrink-0 ml-auto">
           {onStatusChange && (
             <div onClick={(e) => e.stopPropagation()}>
               <Dropdown
@@ -502,14 +488,52 @@ const IssueCardComponent: React.FC<IssueCardProps> = ({
         </div>
       </div>
 
+      {/* Metadata Chips Row: Sprint, Epic, Component, FixVersion */}
+      {(issue.sprint?.name || issue.parent || issue.component || issue.fixVersion) && (
+        <div className="flex flex-wrap items-center gap-1 mb-2">
+          {issue.sprint?.name && (
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--md-sys-color-tertiary-container)] text-[var(--md-sys-color-on-tertiary-container)] whitespace-nowrap shrink-0 truncate max-w-[120px]">
+              {issue.sprint.name}
+            </span>
+          )}
+          {issue.parent && (
+            <span
+              className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)] whitespace-nowrap shrink-0 truncate max-w-[120px]"
+              title={`Epic: ${issue.parent.title || issue.parent.key}`}
+            >
+              <Layers className="w-2.5 h-2.5 shrink-0" />
+              <span>{issue.parent.key}</span>
+            </span>
+          )}
+          {issue.component && (
+            <span
+              className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] border border-[var(--md-sys-color-outline-variant)]/30 whitespace-nowrap shrink-0 truncate max-w-[110px]"
+              title={`Component: ${issue.component.name}`}
+            >
+              <Box className="w-2.5 h-2.5 shrink-0" />
+              <span>{issue.component.name}</span>
+            </span>
+          )}
+          {issue.fixVersion && (
+            <span
+              className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--md-sys-color-tertiary-container)]/50 text-[var(--md-sys-color-on-tertiary-container)] whitespace-nowrap shrink-0 truncate max-w-[110px]"
+              title={`Fix Version: ${issue.fixVersion.name}`}
+            >
+              <Milestone className="w-2.5 h-2.5 shrink-0" />
+              <span>{issue.fixVersion.name}</span>
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Title */}
-      <h4 className="text-sm font-semibold text-[var(--md-sys-color-on-surface)] group-hover:text-[var(--md-sys-color-primary)] line-clamp-2 transition-colors mb-1.5 leading-snug">
+      <h4 className="text-sm font-semibold text-[var(--md-sys-color-on-surface)] group-hover:text-[var(--md-sys-color-primary)] line-clamp-2 transition-colors mb-1.5 leading-snug select-text">
         {issue.title}
       </h4>
 
       {/* Description Preview */}
       {issue.description && (
-        <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] line-clamp-2 mb-2.5">
+        <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] line-clamp-1 mb-2.5 select-text">
           {issue.description}
         </p>
       )}

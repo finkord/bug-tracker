@@ -7,6 +7,10 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   Tooltip,
+  Button,
+  Tabs,
+  TabsList,
+  TabsTrigger,
 } from '../ui';
 import {
   FileSpreadsheet,
@@ -76,63 +80,51 @@ export const TimeTrackingToolbar: React.FC<TimeTrackingToolbarProps> = ({
           </div>
 
           {/* View Mode Segmented Pill Switcher */}
-          <div className="inline-flex items-center p-1 rounded-full bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/40 overflow-x-auto max-w-full">
-            <button
-              type="button"
-              onClick={() => onTabChange('matrix')}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'matrix'
-                  ? 'bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-primary)] shadow-xs'
-                  : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]'
-              }`}
-              title="Tempo-style Timesheet Matrix Grid"
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5" />
-              <span>Timesheet Matrix</span>
-            </button>
+          <Tabs
+            value={activeTab}
+            onValueChange={(val) => onTabChange(val as TimeTrackingTab)}
+          >
+            <TabsList variant="pills" className="rounded-full">
+              <TabsTrigger
+                role="button"
+                value="worklogs"
+                onClick={() => onTabChange('worklogs')}
+                variant="pills"
+                size="sm"
+                className="rounded-full gap-1.5 font-semibold"
+                title="My Personal Worklog History"
+              >
+                <Clock className="w-3.5 h-3.5" />
+                <span>My Logs</span>
+              </TabsTrigger>
 
-            <button
-              type="button"
-              onClick={() => onTabChange('calendar')}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'calendar'
-                  ? 'bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-primary)] shadow-xs'
-                  : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]'
-              }`}
-              title="Interactive Monthly Calendar"
-            >
-              <Calendar className="w-3.5 h-3.5" />
-              <span>Calendar</span>
-            </button>
+              <TabsTrigger
+                role="button"
+                value="matrix"
+                onClick={() => onTabChange('matrix')}
+                variant="pills"
+                size="sm"
+                className="rounded-full gap-1.5 font-semibold"
+                title="Tempo-style Timesheet Matrix Grid"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>Timesheet Matrix</span>
+              </TabsTrigger>
 
-            <button
-              type="button"
-              onClick={() => onTabChange('estimates')}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'estimates'
-                  ? 'bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-primary)] shadow-xs'
-                  : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]'
-              }`}
-              title="Issue Estimates vs Logged Progress"
-            >
-              <TrendingUp className="w-3.5 h-3.5" />
-              <span>Estimates & Progress</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => onTabChange('worklogs')}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'worklogs'
-                  ? 'bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-primary)] shadow-xs'
-                  : 'text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]'
-              }`}
-              title="My Personal Worklog History"
-            >
-              <Clock className="w-3.5 h-3.5" />
-              <span>My Logs</span>
-            </button>
-          </div>
+              <TabsTrigger
+                role="button"
+                value="calendar"
+                onClick={() => onTabChange('calendar')}
+                variant="pills"
+                size="sm"
+                className="rounded-full gap-1.5 font-semibold"
+                title="Interactive Monthly Calendar"
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                <span>Calendar</span>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
 
         {/* Right: Date Navigation, Range Toggle, Grouping, Actions */}
@@ -230,13 +222,14 @@ export const TimeTrackingToolbar: React.FC<TimeTrackingToolbarProps> = ({
           {/* Export Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button
+              <Button
                 type="button"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/40 text-xs font-semibold text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container-high)] transition-colors cursor-pointer"
+                variant="outline"
+                size="sm"
+                leftIcon={<Download className="w-3.5 h-3.5" />}
               >
-                <Download className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Export</span>
-              </button>
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-36">
               <DropdownMenuItem onClick={onExportCsv} className="text-xs cursor-pointer">
@@ -249,26 +242,28 @@ export const TimeTrackingToolbar: React.FC<TimeTrackingToolbarProps> = ({
           </DropdownMenu>
 
           {/* Log Work Action Button */}
-          <button
+          <Button
             type="button"
+            variant="filled"
+            size="sm"
             onClick={onOpenLogWork}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] text-xs font-bold hover:opacity-95 active:scale-95 transition-all shadow-xs cursor-pointer"
+            leftIcon={<PlusCircle className="w-4 h-4" />}
           >
-            <PlusCircle className="w-4 h-4" />
             <span>Log Work</span>
-          </button>
+          </Button>
 
           {/* Refresh Button */}
           <Tooltip content="Refresh timesheet data">
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon-sm"
               onClick={onRefresh}
               disabled={loading}
-              className="p-2 rounded-full text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] hover:bg-[var(--md-sys-color-surface-container-high)] transition-colors cursor-pointer disabled:opacity-50"
               aria-label="Refresh timesheets"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-[var(--md-sys-color-primary)]' : ''}`} />
-            </button>
+            </Button>
           </Tooltip>
         </div>
       </div>

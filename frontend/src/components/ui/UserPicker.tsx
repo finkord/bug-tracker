@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import * as PopoverPrimitive from '@radix-ui/react-popover';
 import { cn } from '../../utils/cn';
 import { Avatar } from '../common/Avatar';
 import { UserProfilePopover } from '../common/UserProfilePopover.js';
-import { Search, Check, UserPlus, UserX, ChevronDown, User } from 'lucide-react';
+import { Search, Check, UserPlus, UserX, ChevronDown, User, Loader2 } from 'lucide-react';
+import { api } from '../../api/client';
 
 export interface UserPickerUser {
   id: number;
@@ -11,12 +12,13 @@ export interface UserPickerUser {
   avatarUrl?: string | null;
   email?: string;
   systemRole?: string;
+  jobTitle?: string | null;
 }
 
 export interface UserPickerProps {
   value: number | null | undefined;
   onChange: (userId: number | null, user: UserPickerUser | null) => void;
-  users: UserPickerUser[];
+  users?: UserPickerUser[];
   fallbackUser?: UserPickerUser | null;
   currentUser?: UserPickerUser | null;
   currentUserId?: number;
@@ -34,7 +36,7 @@ export interface UserPickerProps {
 export const UserPicker: React.FC<UserPickerProps> = ({
   value,
   onChange,
-  users,
+  users = [],
   fallbackUser,
   currentUser: currentUserProp,
   currentUserId,
@@ -50,42 +52,152 @@ export const UserPicker: React.FC<UserPickerProps> = ({
 }) => {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [remoteUsers, setRemoteUsers] = useState<UserPickerUser[]>([]);
+  const [isSearchingRemote, setIsSearchingRemote] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
+
+  // Debounce search query for dynamic backend queries
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery.trim());
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Resolve nearest dialog container so wheel scrolling and portaling work inside modals
+  useEffect(() => {
+    if (open && triggerRef.current) {
+      const dialog = triggerRef.current.closest<HTMLElement>('[role="dialog"]');
+      setPortalContainer(dialog);
+    }
+  }, [open]);
+
+  const [cachedUsers, setCachedUsers] = useState<Map<number, UserPickerUser>>(() => {
+    const initial = new Map<number, UserPickerUser>();
+    if (fallbackUser) initial.set(fallbackUser.id, fallbackUser);
+    return initial;
+  });
+
+  // Keep fallback user in cached users if it updates
+  useEffect(() => {
+    if (fallbackUser) {
+      setCachedUsers((prev) => new Map(prev).set(fallbackUser.id, fallbackUser));
+    }
+  }, [fallbackUser]);
+
+  // Dynamic server-side search query when searching
+  useEffect(() => {
+    if (!open || !debouncedQuery) {
+      setRemoteUsers([]);
+      setIsSearchingRemote(false);
+      return;
+    }
+
+    let active = true;
+    setIsSearchingRemote(true);
+
+    api
+      .getAssignees({ search: debouncedQuery, limit: 100 })
+      .then((res) => {
+        if (active && res?.items) {
+          setRemoteUsers(res.items);
+          setCachedUsers((prev) => {
+            const next = new Map(prev);
+            res.items.forEach((u) => next.set(u.id, u));
+            return next;
+          });
+        }
+      })
+      .catch(() => {
+        // Resilient fallback in environments without assignees mock
+      })
+      .finally(() => {
+        if (active) {
+          setIsSearchingRemote(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [open, debouncedQuery]);
 
   const effectiveCurrentUserId = currentUserProp?.id || currentUserId;
 
   const resolvedCurrentUser = useMemo(() => {
     if (currentUserProp) return currentUserProp;
     if (!effectiveCurrentUserId) return null;
-    return users.find((u) => u.id === effectiveCurrentUserId) || null;
-  }, [currentUserProp, effectiveCurrentUserId, users]);
+    return (
+      users.find((u) => u.id === effectiveCurrentUserId) ||
+      cachedUsers.get(effectiveCurrentUserId) ||
+      remoteUsers.find((u) => u.id === effectiveCurrentUserId) ||
+      null
+    );
+  }, [currentUserProp, effectiveCurrentUserId, users, cachedUsers, remoteUsers]);
 
+  // Merge provided users, cached users, remote items, fallback user, and current user
   const allUsers = useMemo(() => {
-    if (resolvedCurrentUser && !users.some((u) => u.id === resolvedCurrentUser.id)) {
-      return [resolvedCurrentUser, ...users];
+    const map = new Map<number, UserPickerUser>();
+    (users || []).forEach((u) => map.set(u.id, u));
+    cachedUsers.forEach((u) => map.set(u.id, u));
+    remoteUsers.forEach((u) => map.set(u.id, u));
+    if (fallbackUser) {
+      map.set(fallbackUser.id, fallbackUser);
     }
-    return users;
-  }, [resolvedCurrentUser, users]);
+    if (resolvedCurrentUser) {
+      map.set(resolvedCurrentUser.id, resolvedCurrentUser);
+    }
+    return Array.from(map.values());
+  }, [users, cachedUsers, remoteUsers, fallbackUser, resolvedCurrentUser]);
+
+  // Resolve user info if value is set to an ID not currently in local arrays
+  useEffect(() => {
+    if (value && !allUsers.some((u) => u.id === value)) {
+      api
+        .getUserById(value)
+        .then((user) => {
+          if (user) {
+            setCachedUsers((prev) => new Map(prev).set(user.id, user));
+          }
+        })
+        .catch(() => {
+          // Ignore lookup failures in test/offline environments
+        });
+    }
+  }, [value, allUsers]);
 
   const selectedUser = useMemo(() => {
     if (!value) return null;
     const found = allUsers.find((u) => u.id === value);
     if (found) return found;
     if (fallbackUser && fallbackUser.id === value) return fallbackUser;
-    return null;
-  }, [value, allUsers, fallbackUser]);
+    return cachedUsers.get(value) || null;
+  }, [value, allUsers, fallbackUser, cachedUsers]);
 
   const filteredUsers = useMemo(() => {
     if (!searchQuery.trim()) return allUsers;
     const q = searchQuery.toLowerCase().trim();
-    return allUsers.filter(
-      (u) =>
-        (u.fullName && u.fullName.toLowerCase().includes(q)) ||
-        (u.email && u.email.toLowerCase().includes(q)) ||
-        (u.systemRole && u.systemRole.toLowerCase().includes(q)),
-    );
-  }, [allUsers, searchQuery]);
+    const map = new Map<number, UserPickerUser>();
+    // Include remote results
+    remoteUsers.forEach((u) => map.set(u.id, u));
+    // Also include any local users matching query
+    allUsers.forEach((u) => {
+      const matchesName = u.fullName && u.fullName.toLowerCase().includes(q);
+      const matchesEmail = u.email && u.email.toLowerCase().includes(q);
+      const matchesRole = u.systemRole && u.systemRole.toLowerCase().includes(q);
+      if (matchesName || matchesEmail || matchesRole) {
+        map.set(u.id, u);
+      }
+    });
+    return Array.from(map.values());
+  }, [allUsers, remoteUsers, searchQuery]);
 
   const handleSelectUser = (user: UserPickerUser | null) => {
+    if (user) {
+      setCachedUsers((prev) => new Map(prev).set(user.id, user));
+    }
     onChange(user ? user.id : null, user);
     setOpen(false);
     setSearchQuery('');
@@ -110,9 +222,10 @@ export const UserPicker: React.FC<UserPickerProps> = ({
   };
 
   return (
-    <PopoverPrimitive.Root open={open} onOpenChange={setOpen}>
+    <PopoverPrimitive.Root open={open} onOpenChange={setOpen} modal={false}>
       <PopoverPrimitive.Trigger asChild disabled={disabled}>
         <button
+          ref={triggerRef}
           type="button"
           className={cn(
             'inline-flex items-center justify-between text-left select-none transition-all duration-150',
@@ -180,10 +293,11 @@ export const UserPicker: React.FC<UserPickerProps> = ({
         </button>
       </PopoverPrimitive.Trigger>
 
-      <PopoverPrimitive.Portal>
+      <PopoverPrimitive.Portal container={portalContainer}>
         <PopoverPrimitive.Content
           align="start"
           sideOffset={4}
+          onWheel={(e) => e.stopPropagation()}
           className={cn(
             'z-50 w-64 overflow-hidden rounded-xl p-2 shadow-2xl',
             'bg-[var(--md-sys-color-surface-container-lowest)] dark:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)]',
@@ -193,7 +307,11 @@ export const UserPicker: React.FC<UserPickerProps> = ({
         >
           {/* Search Box */}
           <div className="relative mb-2">
-            <Search className="w-3.5 h-3.5 text-[var(--md-sys-color-outline)] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            {isSearchingRemote ? (
+              <Loader2 className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)] animate-spin absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            ) : (
+              <Search className="w-3.5 h-3.5 text-[var(--md-sys-color-outline)] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            )}
             <input
               type="text"
               value={searchQuery}
@@ -209,7 +327,16 @@ export const UserPicker: React.FC<UserPickerProps> = ({
             />
           </div>
 
-          <div className="max-h-56 overflow-y-auto space-y-0.5">
+          <div
+            className="max-h-56 overflow-y-auto overscroll-contain space-y-0.5"
+            onWheel={(e) => {
+              e.stopPropagation();
+              const el = e.currentTarget;
+              if (el && el.scrollHeight > el.clientHeight) {
+                el.scrollTop += e.deltaY;
+              }
+            }}
+          >
             {/* Assign To Me Option */}
             {showAssignToMe && resolvedCurrentUser && !isCurrentAssigned && (
               <button
@@ -256,7 +383,7 @@ export const UserPicker: React.FC<UserPickerProps> = ({
             {/* Filtered Users List */}
             {filteredUsers.length === 0 ? (
               <div className="py-4 text-center text-xs text-[var(--md-sys-color-outline)]">
-                No users found
+                {isSearchingRemote ? 'Searching users...' : 'No users found'}
               </div>
             ) : (
               filteredUsers.map((user) => {

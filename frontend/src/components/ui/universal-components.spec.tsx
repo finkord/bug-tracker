@@ -150,6 +150,93 @@ describe('UserPicker', () => {
     fireEvent.click(screen.getByText('Super Dev'));
     expect(onChange).toHaveBeenCalledWith(99, currentUser);
   });
+
+  it('filters users when searching and allows selecting filtered user', () => {
+    const onChange = vi.fn();
+    renderWithProviders(
+      <UserPicker
+        value={null}
+        onChange={onChange}
+        users={mockUsers}
+        placeholder="Unassigned"
+      />,
+    );
+
+    fireEvent.click(screen.getByText('Unassigned'));
+    expect(screen.getByText('Alice Smith')).toBeInTheDocument();
+    expect(screen.getByText('Bob Jones')).toBeInTheDocument();
+
+    const searchInput = screen.getByPlaceholderText('Search users...');
+    fireEvent.change(searchInput, { target: { value: 'Alice' } });
+
+    expect(screen.getByText('Alice Smith')).toBeInTheDocument();
+    expect(screen.queryByText('Bob Jones')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Alice Smith'));
+    expect(onChange).toHaveBeenCalledWith(1, mockUsers[0]);
+  });
+
+  it('stops propagation of mouse wheel events on scrollable user list container', () => {
+    renderWithProviders(
+      <UserPicker
+        value={null}
+        onChange={vi.fn()}
+        users={mockUsers}
+        placeholder="Unassigned"
+      />,
+    );
+
+    fireEvent.click(screen.getByText('Unassigned'));
+    const aliceItem = screen.getByText('Alice Smith');
+    const scrollContainer = aliceItem.closest('.overflow-y-auto');
+    expect(scrollContainer).toBeInTheDocument();
+
+    if (scrollContainer) {
+      const wheelEvent = new WheelEvent('wheel', { deltaY: 50, bubbles: true, cancelable: true });
+      const stopPropagationSpy = vi.spyOn(wheelEvent, 'stopPropagation');
+      scrollContainer.dispatchEvent(wheelEvent);
+      expect(stopPropagationSpy).toHaveBeenCalled();
+    }
+  });
+
+  it('retains picked user in trigger button after selection', () => {
+    let selectedVal: number | null = null;
+    let selectedUser: any = null;
+    const { rerender } = renderWithProviders(
+      <UserPicker
+        value={selectedVal}
+        onChange={(id, user) => {
+          selectedVal = id;
+          selectedUser = user;
+        }}
+        users={mockUsers}
+        placeholder="Unassigned"
+      />,
+    );
+
+    fireEvent.click(screen.getByText('Unassigned'));
+    fireEvent.click(screen.getByText('Bob Jones'));
+
+    expect(selectedVal).toBe(2);
+    expect(selectedUser?.fullName).toBe('Bob Jones');
+
+    // Rerender with updated value like parent form state
+    rerender(
+      <MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          <UserPicker
+            value={selectedVal}
+            onChange={vi.fn()}
+            users={mockUsers}
+            fallbackUser={selectedUser}
+            placeholder="Unassigned"
+          />
+        </QueryClientProvider>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('Bob Jones')).toBeInTheDocument();
+  });
 });
 
 describe('EmptyState', () => {

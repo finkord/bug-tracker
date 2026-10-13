@@ -114,7 +114,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   }
 
   return (
-    <div className="h-screen w-screen overflow-hidden flex bg-[var(--md-sys-color-surface-container-low)] text-[var(--md-sys-color-on-background)] transition-colors duration-200 select-none">
+    <div className="h-screen w-screen overflow-hidden flex bg-[var(--md-sys-color-surface-container-low)] text-[var(--md-sys-color-on-background)] transition-colors duration-200">
       {/* ─── Full-Height Super-Sidebar (y=0 to y=100vh) ────────────────────── */}
       <Sidebar />
 

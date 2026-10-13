@@ -62,7 +62,7 @@ export const ProfileSecurityCard: React.FC = () => {
                   Account Password
                 </h3>
                 <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)]">
-                  Argon2id cryptographic credential hashing & recovery
+                  Manage your password and sign-in credentials
                 </p>
               </div>
             </div>
@@ -75,8 +75,8 @@ export const ProfileSecurityCard: React.FC = () => {
           {/* 2. Body Description */}
           <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] leading-relaxed">
             {user.hasPassword
-              ? 'Your account password is encrypted with Argon2id. For security, password updates require generating a verification link sent to your registered email.'
-              : `Your account is authenticated via ${user.oauthProvider || 'OAuth'}. Set a master password to enable direct email and password sign-in.`}
+              ? 'Your account is secured with a password. For security, updates require a verification link sent to your registered email.'
+              : `Your account is authenticated via ${user.oauthProvider || 'OAuth'}. Set a password to enable direct email and password sign-in.`}
           </p>
 
           {/* Inline Feedback Banner */}
@@ -97,15 +97,15 @@ export const ProfileSecurityCard: React.FC = () => {
             </div>
           )}
 
-          {/* Technical Security Specification Chips */}
+          {/* Security Status Details */}
           <div className="p-3.5 rounded-2xl bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/20 space-y-2">
             <div className="flex items-center justify-between text-xs">
               <span className="text-[var(--md-sys-color-on-surface-variant)] font-medium flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
-                Algorithm:
+                Security Status:
               </span>
-              <span className="font-mono text-[11px] font-semibold text-[var(--md-sys-color-on-surface)]">
-                Argon2id (OWASP 19 MiB, 2 passes)
+              <span className="text-[11px] font-semibold text-[var(--md-sys-color-on-surface)]">
+                {user.hasPassword ? 'Password Protection Active' : 'Managed via OAuth Provider'}
               </span>
             </div>
             <div className="flex items-center justify-between text-xs pt-1.5 border-t border-[var(--md-sys-color-outline-variant)]/10">

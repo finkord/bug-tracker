@@ -276,55 +276,24 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     return { event: 'left:issue', room };
   }
 
-  // Broadcaster methods with strict room isolation (zero global leak)
+  // Broadcaster methods with strict room isolation (zero global leak, O(1) Redis pub-sub)
   async broadcastIssueCreated(issue: BroadcastIssuePayload): Promise<void> {
     if (!this.server) return;
-    const room = `project_${issue.projectId}`;
+    const room = issue.securityLevelId
+      ? `project_${issue.projectId}_sec_${issue.securityLevelId}`
+      : `project_${issue.projectId}`;
 
-    if (issue.securityLevelId) {
-      const sockets = await this.server.in(room).fetchSockets();
-      await Promise.all(
-        sockets.map(async (socket) => {
-          const socketUser = (socket.data as { user?: User })?.user;
-          if (!socketUser) return;
-          const perms = await this.permissionEvaluator.getEffectivePermissions(
-            socketUser.id,
-            issue.projectId,
-          );
-          if (perms[ProjectPermission.BROWSE_PROJECTS]) {
-            socket.emit('issue:created', issue);
-          }
-        }),
-      );
-    } else {
-      this.server.to(room).emit('issue:created', issue);
-    }
+    this.server.to(room).emit('issue:created', issue);
   }
 
   async broadcastIssueUpdated(issue: BroadcastIssuePayload): Promise<void> {
     if (!this.server) return;
-    const projectRoom = `project_${issue.projectId}`;
+    const projectRoom = issue.securityLevelId
+      ? `project_${issue.projectId}_sec_${issue.securityLevelId}`
+      : `project_${issue.projectId}`;
     const issueRoom = `issue_${issue.id}`;
 
-    if (issue.securityLevelId) {
-      const sockets = await this.server.in(projectRoom).fetchSockets();
-      await Promise.all(
-        sockets.map(async (socket) => {
-          const socketUser = (socket.data as { user?: User })?.user;
-          if (!socketUser) return;
-          const perms = await this.permissionEvaluator.getEffectivePermissions(
-            socketUser.id,
-            issue.projectId,
-          );
-          if (perms[ProjectPermission.BROWSE_PROJECTS]) {
-            socket.emit('issue:updated', issue);
-          }
-        }),
-      );
-    } else {
-      this.server.to(projectRoom).emit('issue:updated', issue);
-    }
-
+    this.server.to(projectRoom).emit('issue:updated', issue);
     // Clients inside issue room were already validated when joining
     this.server.to(issueRoom).emit('issue:updated', issue);
   }

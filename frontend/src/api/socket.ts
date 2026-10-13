@@ -12,19 +12,22 @@ class RealtimeSocketService {
 
   isConnected(): boolean { return this.connected; }
 
-  connect() {
+  connect(): Socket | null {
     if (this.socket && this.socket.connected) return this.socket;
     if (this.socket) {
       this.socket.disconnect();
     }
 
     const token = localStorage.getItem('accessToken');
+    if (!token) {
+      return null;
+    }
 
     this.socket = io(SOCKET_URL, {
       transports: ['websocket', 'polling'],
       withCredentials: true,
       auth: {
-        token: token ? (token.startsWith('Bearer ') ? token : `Bearer ${token}`) : undefined,
+        token: token.startsWith('Bearer ') ? token : `Bearer ${token}`,
       },
       reconnectionAttempts: 10,
       reconnectionDelay: 1000,
@@ -55,7 +58,7 @@ class RealtimeSocketService {
     }
   }
 
-  getSocket() {
+  getSocket(): Socket | null {
     if (!this.socket) {
       return this.connect();
     }
@@ -63,70 +66,70 @@ class RealtimeSocketService {
   }
 
   joinProject(projectId: number | string) {
-    this.getSocket().emit('join:project', { projectId });
+    this.getSocket()?.emit('join:project', { projectId });
   }
 
   leaveProject(projectId: number | string) {
-    this.getSocket().emit('leave:project', { projectId });
+    this.getSocket()?.emit('leave:project', { projectId });
   }
 
   joinIssue(issueId: number | string, user?: Partial<UserProfile> | null) {
-    this.getSocket().emit('join:issue', { issueId, user });
+    this.getSocket()?.emit('join:issue', { issueId, user });
   }
 
   leaveIssue(issueId: number | string) {
-    this.getSocket().emit('leave:issue', { issueId });
+    this.getSocket()?.emit('leave:issue', { issueId });
   }
 
   onIssueCreated(callback: (issue: IssueItem) => void) {
     const s = this.getSocket();
-    s.on('issue:created', callback);
-    return () => { s.off('issue:created', callback); };
+    s?.on('issue:created', callback);
+    return () => { s?.off('issue:created', callback); };
   }
 
   onIssueUpdated(callback: (issue: IssueItem) => void) {
     const s = this.getSocket();
-    s.on('issue:updated', callback);
-    return () => { s.off('issue:updated', callback); };
+    s?.on('issue:updated', callback);
+    return () => { s?.off('issue:updated', callback); };
   }
 
   onIssueDeleted(callback: (data: { issueId: number; projectId: number }) => void) {
     const s = this.getSocket();
-    s.on('issue:deleted', callback);
-    return () => { s.off('issue:deleted', callback); };
+    s?.on('issue:deleted', callback);
+    return () => { s?.off('issue:deleted', callback); };
   }
 
   onWorklogCreated(callback: (data: { issueId: number; projectId?: number; worklog: WorklogItem }) => void) {
     const s = this.getSocket();
-    s.on('worklog:created', callback);
-    return () => { s.off('worklog:created', callback); };
+    s?.on('worklog:created', callback);
+    return () => { s?.off('worklog:created', callback); };
   }
 
   onCommentCreated(callback: (data: { issueId: number; comment: IssueComment }) => void) {
     const s = this.getSocket();
-    s.on('comment:created', callback);
-    return () => { s.off('comment:created', callback); };
+    s?.on('comment:created', callback);
+    return () => { s?.off('comment:created', callback); };
   }
 
   onAttachmentUploaded(callback: (data: { issueId: number; attachment: AttachmentItem }) => void) {
     const s = this.getSocket();
-    s.on('attachment:uploaded', callback);
-    return () => { s.off('attachment:uploaded', callback); };
+    s?.on('attachment:uploaded', callback);
+    return () => { s?.off('attachment:uploaded', callback); };
   }
 
   onPresenceViewing(callback: (data: { user: Partial<UserProfile>; issueId: number | string }) => void) {
     const s = this.getSocket();
-    s.on('presence:viewing', callback);
-    return () => { s.off('presence:viewing', callback); };
+    s?.on('presence:viewing', callback);
+    return () => { s?.off('presence:viewing', callback); };
   }
 
   onNotificationNew(callback: (notification: any) => void) {
     const s = this.getSocket();
-    s.on('notification:new', callback);
-    s.on('notification:received', callback);
+    s?.on('notification:new', callback);
+    s?.on('notification:received', callback);
     return () => {
-      s.off('notification:new', callback);
-      s.off('notification:received', callback);
+      s?.off('notification:new', callback);
+      s?.off('notification:received', callback);
     };
   }
 }

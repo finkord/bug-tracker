@@ -95,6 +95,7 @@ export const AgileToolbar: React.FC<AgileToolbarProps> = ({
             <TabsList variant="pills" className="rounded-full">
               <TabsTrigger
                 value="backlog"
+                onClick={() => onViewModeChange('backlog')}
                 variant="pills"
                 size="sm"
                 className="rounded-full gap-1.5 font-semibold"
@@ -106,6 +107,7 @@ export const AgileToolbar: React.FC<AgileToolbarProps> = ({
 
               <TabsTrigger
                 value="board"
+                onClick={() => onViewModeChange('board')}
                 variant="pills"
                 size="sm"
                 className="rounded-full gap-1.5 font-semibold"
@@ -125,33 +127,29 @@ export const AgileToolbar: React.FC<AgileToolbarProps> = ({
           {/* Epics and Versions Drawer Toggles (When in Backlog planning mode) */}
           {viewMode === 'backlog' && onToggleDrawer && (
             <div className="flex items-center gap-1.5 ml-1">
-              <button
+              <Button
                 type="button"
+                variant={isDrawerOpen && drawerTab === 'epics' ? 'tonal' : 'ghost'}
+                size="sm"
                 onClick={() => onToggleDrawer('epics')}
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                  isDrawerOpen && drawerTab === 'epics'
-                    ? 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] ring-1 ring-[var(--md-sys-color-primary)]'
-                    : 'bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)]'
-                }`}
+                leftIcon={<Layers className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />}
+                className={isDrawerOpen && drawerTab === 'epics' ? 'ring-1 ring-[var(--md-sys-color-primary)]' : 'bg-[var(--md-sys-color-surface-container)]'}
                 title="Toggle Epics side panel"
               >
-                <Layers className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)]" />
-                <span>Epics</span>
-              </button>
+                Epics
+              </Button>
 
-              <button
+              <Button
                 type="button"
+                variant={isDrawerOpen && drawerTab === 'versions' ? 'tonal' : 'ghost'}
+                size="sm"
                 onClick={() => onToggleDrawer('versions')}
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                  isDrawerOpen && drawerTab === 'versions'
-                    ? 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] ring-1 ring-[var(--md-sys-color-primary)]'
-                    : 'bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] hover:text-[var(--md-sys-color-on-surface)]'
-                }`}
+                leftIcon={<Milestone className="w-3.5 h-3.5 text-[var(--md-sys-color-tertiary)]" />}
+                className={isDrawerOpen && drawerTab === 'versions' ? 'ring-1 ring-[var(--md-sys-color-primary)]' : 'bg-[var(--md-sys-color-surface-container)]'}
                 title="Toggle Releases / Versions side panel"
               >
-                <Milestone className="w-3.5 h-3.5 text-[var(--md-sys-color-tertiary)]" />
-                <span>Versions</span>
-              </button>
+                Versions
+              </Button>
             </div>
           )}
         </div>
@@ -181,15 +179,16 @@ export const AgileToolbar: React.FC<AgileToolbarProps> = ({
 
           {/* Refresh Button */}
           <Tooltip content="Refresh backlog issues">
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon-sm"
               onClick={onRefresh}
               disabled={loading}
-              className="p-2 rounded-full text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)] transition-colors cursor-pointer disabled:opacity-50"
               aria-label="Refresh issues"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            </button>
+            </Button>
           </Tooltip>
         </div>
       </div>
@@ -318,44 +317,38 @@ export const AgileToolbar: React.FC<AgileToolbarProps> = ({
 
         {/* Quick Filter Pills */}
         <div className="flex items-center gap-1.5 flex-wrap">
-          <button
+          <Button
             type="button"
+            variant={filters.onlyMine ? 'tonal' : 'ghost'}
+            size="sm"
             onClick={() => handleToggleQuickFilter('onlyMine')}
-            className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-              filters.onlyMine
-                ? 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] ring-1 ring-[var(--md-sys-color-primary)]'
-                : 'bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)]'
-            }`}
+            leftIcon={<User className="w-3 h-3" />}
+            className={filters.onlyMine ? 'ring-1 ring-[var(--md-sys-color-primary)]' : 'bg-[var(--md-sys-color-surface-container)]'}
           >
-            <User className="w-3 h-3" />
-            <span>Only My Issues</span>
-          </button>
+            Only My Issues
+          </Button>
 
-          <button
+          <Button
             type="button"
+            variant={filters.unassignedOnly ? 'tonal' : 'ghost'}
+            size="sm"
             onClick={() => handleToggleQuickFilter('unassignedOnly')}
-            className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-              filters.unassignedOnly
-                ? 'bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] ring-1 ring-[var(--md-sys-color-primary)]'
-                : 'bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)]'
-            }`}
+            leftIcon={<UserX className="w-3 h-3" />}
+            className={filters.unassignedOnly ? 'ring-1 ring-[var(--md-sys-color-primary)]' : 'bg-[var(--md-sys-color-surface-container)]'}
           >
-            <UserX className="w-3 h-3" />
-            <span>Unassigned</span>
-          </button>
+            Unassigned
+          </Button>
 
-          <button
+          <Button
             type="button"
+            variant={filters.highPriorityOnly ? 'danger-tonal' : 'ghost'}
+            size="sm"
             onClick={() => handleToggleQuickFilter('highPriorityOnly')}
-            className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-              filters.highPriorityOnly
-                ? 'bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] ring-1 ring-[var(--md-sys-color-error)]'
-                : 'bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)]'
-            }`}
+            leftIcon={<AlertTriangle className="w-3 h-3" />}
+            className={filters.highPriorityOnly ? 'ring-1 ring-[var(--md-sys-color-error)]' : 'bg-[var(--md-sys-color-surface-container)]'}
           >
-            <AlertTriangle className="w-3 h-3" />
-            <span>Crit / High</span>
-          </button>
+            Crit / High
+          </Button>
         </div>
       </div>
     </div>

@@ -302,7 +302,7 @@ describe('EventsGateway', () => {
       expect(mockServer.emit).not.toHaveBeenCalled();
     });
 
-    it('should filter recipients when issue has securityLevelId set', async () => {
+    it('should broadcast to isolated security-level room when issue has securityLevelId set', async () => {
       const confidentialIssue: BroadcastIssuePayload = {
         id: 200,
         projectId: 7,
@@ -310,29 +310,10 @@ describe('EventsGateway', () => {
         securityLevelId: 99,
       };
 
-      const socketAllowed: any = {
-        id: 'sock-allowed',
-        data: { user: { id: 1, email: 'lead@company.com' } },
-        emit: vi.fn(),
-      };
-      const socketForbidden: any = {
-        id: 'sock-forbidden',
-        data: { user: { id: 2, email: 'intern@company.com' } },
-        emit: vi.fn(),
-      };
-
-      mockRoomOperator.fetchSockets.mockResolvedValue([socketAllowed, socketForbidden]);
-      mockPermissionEvaluator.getEffectivePermissions.mockImplementation(
-        async (userId: number) => ({
-          [ProjectPermission.BROWSE_PROJECTS]: userId === 1,
-        }),
-      );
-
       await gateway.broadcastIssueCreated(confidentialIssue);
 
-      expect(mockServer.in).toHaveBeenCalledWith('project_7');
-      expect(socketAllowed.emit).toHaveBeenCalledWith('issue:created', confidentialIssue);
-      expect(socketForbidden.emit).not.toHaveBeenCalled();
+      expect(mockServer.to).toHaveBeenCalledWith('project_7_sec_99');
+      expect(mockRoomOperator.emit).toHaveBeenCalledWith('issue:created', confidentialIssue);
       expect(mockServer.emit).not.toHaveBeenCalled();
     });
   });

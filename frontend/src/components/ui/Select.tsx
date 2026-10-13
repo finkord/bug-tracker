@@ -50,6 +50,7 @@ export const SelectContent = React.forwardRef<
       ref={ref}
       position={position}
       sideOffset={6}
+      onWheel={(e) => e.stopPropagation()}
       className={cn(
         'relative z-50 min-w-[8rem] overflow-hidden rounded-2xl',
         'bg-[var(--md-sys-color-surface-container)] dark:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)]',

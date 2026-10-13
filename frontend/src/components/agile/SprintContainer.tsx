@@ -1,8 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React from 'react';
+import { useDroppable } from '@dnd-kit/core';
 import type { IssueItem } from '../../api/client.js';
 import type { SprintDefinition } from '../../types/agile.js';
 import { AgileIssueRow } from './AgileIssueRow.js';
-import { Badge, Button, Dropdown } from '../ui';
+import { Badge, Button, Dropdown, Tooltip } from '../ui';
 import {
   ChevronDown,
   ChevronRight,
@@ -50,43 +51,13 @@ export const SprintContainer: React.FC<SprintContainerProps> = ({
   onGoToActiveBoard,
   onQuickCreateInSprint,
 }) => {
-  const [isDragOver, setIsDragOver] = useState(false);
-  const dragCounter = useRef(0);
-
-  const handleDragEnter = (e: React.DragEvent) => {
-    e.preventDefault();
-    dragCounter.current += 1;
-    if (dragCounter.current === 1) {
-      setIsDragOver(true);
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    dragCounter.current -= 1;
-    if (dragCounter.current <= 0) {
-      dragCounter.current = 0;
-      setIsDragOver(false);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    dragCounter.current = 0;
-    setIsDragOver(false);
-    const issueIdStr = e.dataTransfer.getData('text/plain');
-    if (!issueIdStr) return;
-
-    const issueId = Number(issueIdStr);
-    if (sprint.id) {
-      onMoveToSprint(issueId, sprint.id);
-    }
-  };
+  const { setNodeRef, isOver } = useDroppable({
+    id: `sprint-${sprint.id}`,
+    data: {
+      type: 'sprint',
+      sprintId: sprint.id,
+    },
+  });
 
   const totalEstimate = issues.reduce((acc, i) => acc + (i.estimatedHours || 0), 0);
   const capacity = sprint.capacityHours || sprint.team?.sprintCapacityHours || 0;
@@ -123,19 +94,14 @@ export const SprintContainer: React.FC<SprintContainerProps> = ({
     },
   ];
 
-  const isHighlighted = isDragOver;
-
   return (
     <div
+      ref={setNodeRef}
       data-drop-zone="sprint"
       data-sprint-id={sprint.id}
-      onDragEnter={handleDragEnter}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
       className={`rounded-3xl border bg-[var(--md-sys-color-surface-container-low)] shadow-2xs overflow-hidden transition-colors duration-150 ${
-        isHighlighted
-          ? 'border-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-primary)]/40 bg-[var(--md-sys-color-primary-container)]/10'
+        isOver
+          ? 'border-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-primary)]/40 bg-[var(--md-sys-color-primary-container)]/10 shadow-xs'
           : 'border-[var(--md-sys-color-outline-variant)]/40 hover:border-[var(--md-sys-color-outline-variant)]/70'
       }`}
     >
@@ -233,25 +199,35 @@ export const SprintContainer: React.FC<SprintContainerProps> = ({
 
         {/* Right: Metrics + Action Buttons */}
         <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
-          {/* Status Breakdown Pills */}
-          <div className="hidden sm:flex items-center gap-1 text-[10px] font-bold">
-            <span className="px-2 py-0.5 rounded-full bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-on-surface)]" title="To Do">
-              {todoCount} To Do
-            </span>
-            <span className="px-2 py-0.5 rounded-full bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)]" title="In Progress & Review">
-              {inProgressCount} Progress
-            </span>
-            <span className="px-2 py-0.5 rounded-full bg-[var(--md-sys-color-success-container)] text-[var(--md-sys-color-on-success-container)]" title="Done">
-              {doneCount} Done
-            </span>
-          </div>
-
-          {/* Estimate Sum Badge */}
-          {totalEstimate > 0 && (
-            <Badge variant="neutral" size="sm" className="font-mono font-bold">
-              {totalEstimate}h total
-            </Badge>
-          )}
+          {/* Unified Sprint Metrics (Linear / Jira style) */}
+          <Tooltip content={`To Do: ${todoCount} | In Progress: ${inProgressCount} | Done: ${doneCount}${totalEstimate > 0 ? ` | Total: ${totalEstimate}h` : ''}`}>
+            <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-full bg-[var(--md-sys-color-surface-container-high)] text-xs font-mono font-medium text-[var(--md-sys-color-on-surface-variant)] shrink-0 cursor-default border border-[var(--md-sys-color-outline-variant)]/20 shadow-2xs">
+              <span>{issues.length} {issues.length === 1 ? 'ticket' : 'tickets'}</span>
+              {totalEstimate > 0 && <span>· {totalEstimate}h</span>}
+              {issues.length > 0 && (
+                <div className="w-14 h-1.5 rounded-full bg-[var(--md-sys-color-surface-container-highest)] flex overflow-hidden ml-1">
+                  {doneCount > 0 && (
+                    <div
+                      className="h-full bg-[var(--md-sys-color-success)]"
+                      style={{ width: `${(doneCount / issues.length) * 100}%` }}
+                    />
+                  )}
+                  {inProgressCount > 0 && (
+                    <div
+                      className="h-full bg-[var(--md-sys-color-primary)]"
+                      style={{ width: `${(inProgressCount / issues.length) * 100}%` }}
+                    />
+                  )}
+                  {todoCount > 0 && (
+                    <div
+                      className="h-full bg-[var(--md-sys-color-outline-variant)]/40"
+                      style={{ width: `${(todoCount / issues.length) * 100}%` }}
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+          </Tooltip>
 
           {/* Lifecycle Action: Start Sprint */}
           {sprint.status === 'PLANNED' && sprint.id && (

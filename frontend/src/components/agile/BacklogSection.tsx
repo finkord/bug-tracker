@@ -1,8 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React from 'react';
+import { useDroppable } from '@dnd-kit/core';
 import type { IssueItem } from '../../api/client.js';
 import type { SprintDefinition } from '../../types/agile.js';
 import { AgileIssueRow } from './AgileIssueRow.js';
-import { Badge } from '../ui';
+import { Badge, Button } from '../ui';
 import { ChevronDown, ChevronRight, Inbox, Plus } from 'lucide-react';
 
 interface BacklogSectionProps {
@@ -24,70 +25,38 @@ export const BacklogSection: React.FC<BacklogSectionProps> = ({
   onMoveToSprint,
   onQuickCreateInBacklog,
 }) => {
-  const [isDragOver, setIsDragOver] = useState(false);
-  const dragCounter = useRef(0);
-
-  const handleDragEnter = (e: React.DragEvent) => {
-    e.preventDefault();
-    dragCounter.current += 1;
-    if (dragCounter.current === 1) {
-      setIsDragOver(true);
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    dragCounter.current -= 1;
-    if (dragCounter.current <= 0) {
-      dragCounter.current = 0;
-      setIsDragOver(false);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    dragCounter.current = 0;
-    setIsDragOver(false);
-    const issueIdStr = e.dataTransfer.getData('text/plain');
-    if (!issueIdStr) return;
-
-    const issueId = Number(issueIdStr);
-    onMoveToSprint(issueId, null);
-  };
+  const { setNodeRef, isOver } = useDroppable({
+    id: 'backlog',
+    data: {
+      type: 'backlog',
+      sprintId: null,
+    },
+  });
 
   const totalEstimate = issues.reduce((acc, i) => acc + (i.estimatedHours || 0), 0);
 
-  const isHighlighted = isDragOver;
-
   return (
     <div
+      ref={setNodeRef}
       data-drop-zone="backlog"
-      onDragEnter={handleDragEnter}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
       className={`rounded-3xl border bg-[var(--md-sys-color-surface-container-low)] shadow-2xs overflow-hidden transition-colors duration-150 ${
-        isHighlighted
-          ? 'border-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-primary)]/40 bg-[var(--md-sys-color-primary-container)]/10'
+        isOver
+          ? 'border-[var(--md-sys-color-primary)] ring-2 ring-[var(--md-sys-color-primary)]/40 bg-[var(--md-sys-color-primary-container)]/10 shadow-xs'
           : 'border-[var(--md-sys-color-outline-variant)]/40 hover:border-[var(--md-sys-color-outline-variant)]/70'
       }`}
     >
       {/* Backlog Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-[var(--md-sys-color-surface-container)] border-b border-[var(--md-sys-color-outline-variant)]/30">
         <div className="flex items-center gap-3 min-w-0">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon-sm"
             onClick={onToggleCollapse}
             aria-label={isCollapsed ? 'Expand backlog' : 'Collapse backlog'}
-            className="p-1 rounded-lg text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] cursor-pointer shrink-0"
           >
             {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
+          </Button>
 
           <div className="flex items-center gap-2">
             <h2
@@ -109,14 +78,15 @@ export const BacklogSection: React.FC<BacklogSectionProps> = ({
             </Badge>
           )}
 
-          <button
+          <Button
             type="button"
+            variant="tonal"
+            size="sm"
             onClick={onQuickCreateInBacklog}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-primary)] text-xs font-semibold transition-colors cursor-pointer"
+            leftIcon={<Plus className="w-3.5 h-3.5" />}
           >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Create Issue</span>
-          </button>
+            Create Issue
+          </Button>
         </div>
       </div>
 
@@ -147,14 +117,16 @@ export const BacklogSection: React.FC<BacklogSectionProps> = ({
           )}
 
           {/* Quick Create in Backlog Trigger */}
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             onClick={onQuickCreateInBacklog}
-            className="w-full py-2 px-3 rounded-xl border border-dashed border-[var(--md-sys-color-outline-variant)]/50 hover:border-[var(--md-sys-color-primary)] hover:bg-[var(--md-sys-color-primary-container)]/10 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-primary)] text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
+            leftIcon={<Plus className="w-3.5 h-3.5" />}
+            className="w-full border-dashed"
           >
-            <Plus className="w-3.5 h-3.5 shrink-0" />
-            <span>Create Issue in Backlog</span>
-          </button>
+            Create Issue in Backlog
+          </Button>
         </div>
       )}
     </div>
