@@ -426,7 +426,9 @@ export const AdminUsersTab: React.FC = () => {
     },
     {
       id: 'actions',
-      header: () => <div className="w-full pr-1">Administrative Actions</div>,
+      size: 255,
+      minSize: 240,
+      header: () => <div className="w-full text-right pr-2">Administrative Actions</div>,
       enableSorting: false,
       cell: ({ row }) => {
         const u = row.original;
@@ -680,6 +682,7 @@ export const AdminUsersTab: React.FC = () => {
       <DataTable
         columns={columns}
         data={users}
+        tableClassName="min-w-[960px]"
         getRowId={(u) => String(u.id)}
         sorting={sorting}
         onSortingChange={setSorting}

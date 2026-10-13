@@ -61,7 +61,7 @@ export const AdminRbacTab: React.FC = () => {
 
   const handleSubTabChange = (val: string) => {
     const nextParams = new URLSearchParams(searchParams);
-    nextParams.set('tab', 'rbac');
+    nextParams.delete('tab');
     nextParams.set('subtab', val);
     setSearchParams(nextParams);
   };

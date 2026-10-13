@@ -5,6 +5,7 @@ import {
   LoginAuditLog,
   LoginAttemptStatus,
 } from './entities/login-audit-log.entity.js';
+import { FindLoginLogsQueryDto } from './dto/find-login-logs-query.dto.js';
 
 export interface RecordAttemptDto {
   userId?: number | null;
@@ -94,15 +95,34 @@ export class SecurityAuditService {
   }
 
   /**
-   * Retrieves paginated security login audit logs for administrator review.
+   * Retrieves paginated security login audit logs for administrator review with optional server-side search and status filtering.
    */
-  async getLoginLogs(page = 1, limit = 50): Promise<{ items: LoginAuditLog[]; total: number }> {
-    const [items, total] = await this.auditLogRepository.findAndCount({
-      order: { createdAt: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
-      relations: { user: true },
-    });
+  async getLoginLogs(
+    query: FindLoginLogsQueryDto = {},
+  ): Promise<{ items: LoginAuditLog[]; total: number }> {
+    const page = Math.max(1, query.page || 1);
+    const limit = Math.max(1, Math.min(100, query.limit || 50));
+
+    const qb = this.auditLogRepository
+      .createQueryBuilder('log')
+      .leftJoinAndSelect('log.user', 'user')
+      .orderBy('log.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    if (query.status) {
+      qb.andWhere('log.status = :status', { status: query.status });
+    }
+
+    if (query.search && query.search.trim()) {
+      const term = `%${query.search.trim()}%`;
+      qb.andWhere(
+        '(log.attemptedEmail ILIKE :term OR log.ipAddress ILIKE :term OR log.failureReason ILIKE :term)',
+        { term },
+      );
+    }
+
+    const [items, total] = await qb.getManyAndCount();
     return { items, total };
   }
 

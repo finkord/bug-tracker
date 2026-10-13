@@ -43,11 +43,25 @@ export const userQueries = {
       queryKey: [...userQueries.all, 'admin-stats'] as const,
       queryFn: () => api.getAdminStats(),
     }),
-  auditLogs: (page = 1, limit = 50) =>
-    queryOptions({
-      queryKey: [...userQueries.all, 'audit-logs', { page, limit }] as const,
-      queryFn: () => api.getLoginAuditLogs(page, limit),
-    }),
+  auditLogs: (
+    params: { page?: number; limit?: number; search?: string; status?: string } | number = 1,
+    maybeLimit = 50,
+  ) => {
+    const normalized =
+      typeof params === 'object' && params !== null
+        ? {
+            page: params.page ?? 1,
+            limit: params.limit ?? 50,
+            search: params.search || undefined,
+            status: params.status && params.status !== 'ALL' ? params.status : undefined,
+          }
+        : { page: params, limit: maybeLimit, search: undefined, status: undefined };
+
+    return queryOptions({
+      queryKey: [...userQueries.all, 'audit-logs', normalized] as const,
+      queryFn: () => api.getLoginAuditLogs(normalized),
+    });
+  },
   savedFilters: () =>
     queryOptions({
       queryKey: [...userQueries.all, 'saved-filters'] as const,
@@ -106,8 +120,11 @@ export function useAdminStatsQuery() {
   return useQuery(userQueries.stats());
 }
 
-export function useLoginAuditLogsQuery(page = 1, limit = 50) {
-  return useQuery(userQueries.auditLogs(page, limit));
+export function useLoginAuditLogsQuery(
+  params: { page?: number; limit?: number; search?: string; status?: string } | number = 1,
+  limit = 50,
+) {
+  return useQuery(userQueries.auditLogs(params, limit));
 }
 
 export function useSavedFiltersQuery() {

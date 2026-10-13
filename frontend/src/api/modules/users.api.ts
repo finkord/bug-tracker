@@ -159,8 +159,37 @@ export const usersApi = {
       method: 'DELETE',
     }),
 
-  getLoginAuditLogs: (page = 1, limit = 50) =>
-    request<{ items: LoginAuditLogItem[]; total: number }>(
-      `/admin/security/login-logs?page=${page}&limit=${limit}`,
-    ),
+  getLoginAuditLogs: (
+    params: { page?: number; limit?: number; search?: string; status?: string } | number = 1,
+    maybeLimit = 50,
+  ) => {
+    let page = 1;
+    let limit = 50;
+    let search: string | undefined;
+    let status: string | undefined;
+
+    if (typeof params === 'object' && params !== null) {
+      page = params.page ?? 1;
+      limit = params.limit ?? 50;
+      search = params.search;
+      status = params.status;
+    } else {
+      page = params;
+      limit = maybeLimit;
+    }
+
+    const queryParams = new URLSearchParams();
+    queryParams.set('page', String(page));
+    queryParams.set('limit', String(limit));
+    if (search && search.trim()) {
+      queryParams.set('search', search.trim());
+    }
+    if (status && status !== 'ALL') {
+      queryParams.set('status', status);
+    }
+
+    return request<{ items: LoginAuditLogItem[]; total: number }>(
+      `/admin/security/login-logs?${queryParams.toString()}`,
+    );
+  },
 };

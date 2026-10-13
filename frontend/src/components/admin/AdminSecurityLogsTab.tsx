@@ -26,6 +26,7 @@ import {
   Filter,
   Download,
 } from 'lucide-react';
+import { cn } from '../../utils/cn';
 
 interface ParsedUserAgent {
   browser: string;
@@ -84,7 +85,12 @@ export const AdminSecurityLogsTab: React.FC = () => {
   const [copiedEmailId, setCopiedEmailId] = useState<string | number | null>(null);
   const [copiedIpId, setCopiedIpId] = useState<string | number | null>(null);
 
-  const { data: logsData, isLoading, isFetching, refetch } = useLoginAuditLogsQuery(page, limit);
+  const { data: logsData, isLoading, isFetching, refetch } = useLoginAuditLogsQuery({
+    page,
+    limit,
+    search: searchTerm,
+    status: statusFilter,
+  });
 
   const logs = useMemo(() => logsData?.items || [], [logsData?.items]);
   const total = logsData?.total || 0;
@@ -110,22 +116,6 @@ export const AdminSecurityLogsTab: React.FC = () => {
     }
   };
 
-  const filteredLogs = useMemo(() => {
-    return logs.filter((log) => {
-      const matchesFilter = statusFilter === 'ALL' || log.status === statusFilter;
-      const term = searchTerm.trim().toLowerCase();
-      if (!term) return matchesFilter;
-
-      const matchesSearch =
-        log.attemptedEmail.toLowerCase().includes(term) ||
-        log.ipAddress.includes(term) ||
-        (log.failureReason && log.failureReason.toLowerCase().includes(term)) ||
-        (log.userAgent && log.userAgent.toLowerCase().includes(term));
-
-      return matchesFilter && matchesSearch;
-    });
-  }, [logs, statusFilter, searchTerm]);
-
   const handleCopyEmail = (id: string | number, email: string) => {
     navigator.clipboard.writeText(email);
     setCopiedEmailId(id);
@@ -139,10 +129,10 @@ export const AdminSecurityLogsTab: React.FC = () => {
   };
 
   const handleExportCsv = () => {
-    if (filteredLogs.length === 0) return;
+    if (logs.length === 0) return;
 
     const headers = ['ID', 'Status', 'Attempted Email', 'IP Address', 'Browser / Device', 'Failure Reason', 'Timestamp'];
-    const rows = filteredLogs.map((log) => [
+    const rows = logs.map((log) => [
       log.id,
       log.status,
       log.attemptedEmail,
@@ -279,8 +269,17 @@ export const AdminSecurityLogsTab: React.FC = () => {
       header: 'Telemetry Detail',
       cell: ({ row }) => {
         const reason = row.original.failureReason;
+        const isSuccess =
+          row.original.status === 'SUCCESS' || row.original.status === 'TWO_FACTOR_SUCCESS';
         return reason ? (
-          <span className="text-[var(--md-sys-color-error)] font-medium text-[11px]">
+          <span
+            className={cn(
+              'font-medium text-[11px]',
+              isSuccess
+                ? 'text-[var(--md-sys-color-on-surface-variant)]'
+                : 'text-[var(--md-sys-color-error)]',
+            )}
+          >
             {reason}
           </span>
         ) : (
@@ -384,13 +383,22 @@ export const AdminSecurityLogsTab: React.FC = () => {
                 type="text"
                 placeholder="Search by email, IP address, or reason..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setPage(1);
+                }}
                 className="w-full pl-9 pr-3 py-2 text-xs rounded-xl bg-[var(--md-sys-color-surface)] border border-[var(--md-sys-color-outline-variant)]/40 text-[var(--md-sys-color-on-surface)] placeholder:text-[var(--md-sys-color-on-surface-variant)] focus:outline-hidden focus:ring-2 focus:ring-[var(--md-sys-color-primary)]"
               />
             </div>
 
             <div className="w-full sm:w-52">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <Select
+                value={statusFilter}
+                onValueChange={(val) => {
+                  setStatusFilter(val);
+                  setPage(1);
+                }}
+              >
                 <SelectTrigger className="h-9 text-xs rounded-xl bg-[var(--md-sys-color-surface)]">
                   <SelectValue placeholder="All Outcomes" />
                 </SelectTrigger>
@@ -413,7 +421,7 @@ export const AdminSecurityLogsTab: React.FC = () => {
               variant="outline"
               size="sm"
               onClick={handleExportCsv}
-              disabled={filteredLogs.length === 0}
+              disabled={logs.length === 0}
               leftIcon={<Download className="w-3.5 h-3.5" />}
               title="Export filtered logs to CSV"
             >
@@ -435,7 +443,8 @@ export const AdminSecurityLogsTab: React.FC = () => {
       {/* Unified Forensic DataTable */}
       <DataTable
         columns={columns}
-        data={filteredLogs}
+        data={logs}
+        tableClassName="min-w-[950px]"
         getRowId={(l) => String(l.id)}
         page={page}
         pageSize={limit}

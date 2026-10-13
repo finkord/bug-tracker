@@ -138,12 +138,12 @@ export const HeaderBreadcrumbs: React.FC = () => {
 
   // 3. Admin Center subpages: Admin Center > [Section]
   if (path.startsWith('/admin')) {
-    let sectionTitle = 'User Directory';
+    let sectionTitle = 'Users & Identity';
     if (path.startsWith('/admin/teams')) sectionTitle = 'Scrum Teams';
-    else if (path.startsWith('/admin/rbac')) sectionTitle = 'Roles & Permissions';
-    else if (path.startsWith('/admin/security')) sectionTitle = 'Audit & Security Logs';
-    else if (path.startsWith('/admin/projects')) sectionTitle = 'Workspace Projects';
-    else if (path.startsWith('/admin/announcements')) sectionTitle = 'DevOps Announcements';
+    else if (path.startsWith('/admin/rbac')) sectionTitle = 'Access Control & RBAC';
+    else if (path.startsWith('/admin/security')) sectionTitle = 'Security & Audit Logs';
+    else if (path.startsWith('/admin/projects')) sectionTitle = 'Projects Governance';
+    else if (path.startsWith('/admin/announcements')) sectionTitle = 'System Announcements';
 
     return (
       <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)] min-w-0">

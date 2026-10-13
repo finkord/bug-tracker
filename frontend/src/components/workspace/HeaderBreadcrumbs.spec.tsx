@@ -80,14 +80,26 @@ describe('HeaderBreadcrumbs Component', () => {
   });
 
   it('renders two-level breadcrumb for admin console subpages', () => {
-    render(
-      <MemoryRouter initialEntries={['/admin/teams']}>
-        <HeaderBreadcrumbs />
-      </MemoryRouter>,
-    );
+    const pages = [
+      { path: '/admin/users', title: 'Users & Identity' },
+      { path: '/admin/teams', title: 'Scrum Teams' },
+      { path: '/admin/rbac', title: 'Access Control & RBAC' },
+      { path: '/admin/security', title: 'Security & Audit Logs' },
+      { path: '/admin/projects', title: 'Projects Governance' },
+      { path: '/admin/announcements', title: 'System Announcements' },
+    ];
 
-    expect(screen.getByRole('link', { name: /admin center/i })).toHaveAttribute('href', '/admin/users');
-    expect(screen.getByText('Scrum Teams')).toBeInTheDocument();
+    for (const { path, title } of pages) {
+      const { unmount } = render(
+        <MemoryRouter initialEntries={[path]}>
+          <HeaderBreadcrumbs />
+        </MemoryRouter>,
+      );
+
+      expect(screen.getByRole('link', { name: /admin center/i })).toHaveAttribute('href', '/admin/users');
+      expect(screen.getByText(title)).toBeInTheDocument();
+      unmount();
+    }
   });
 
   it('renders two-level breadcrumb for user account pages', () => {

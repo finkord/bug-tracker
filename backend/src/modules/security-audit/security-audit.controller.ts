@@ -3,15 +3,14 @@ import {
   Get,
   Query,
   UseGuards,
-  ParseIntPipe,
-  DefaultValuePipe,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { SecurityAuditService } from './security-audit.service.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../../common/guards/roles.guard.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { SystemRole } from '../users/entities/user.entity.js';
+import { FindLoginLogsQueryDto } from './dto/find-login-logs-query.dto.js';
 
 @ApiTags('Admin Security')
 @ApiBearerAuth('JWT-auth')
@@ -25,14 +24,9 @@ export class SecurityAuditController {
   @ApiOperation({
     summary: 'View user login audit logs',
     description:
-      'Allows administrators to inspect who attempted to authenticate, IP addresses, timestamps, and status outcomes.',
+      'Allows administrators to inspect who attempted to authenticate, IP addresses, timestamps, and status outcomes with optional search and status filtering.',
   })
-  @ApiQuery({ name: 'page', required: false, type: Number })
-  @ApiQuery({ name: 'limit', required: false, type: Number })
-  async getLoginLogs(
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page = 1,
-    @Query('limit', new DefaultValuePipe(50), ParseIntPipe) limit = 50,
-  ) {
-    return this.securityAuditService.getLoginLogs(page, limit);
+  async getLoginLogs(@Query() query: FindLoginLogsQueryDto) {
+    return this.securityAuditService.getLoginLogs(query);
   }
 }

@@ -81,7 +81,7 @@ describe('AdminSecurityLogsTab', () => {
     expect(screen.getByText('Invalid credentials')).toBeInTheDocument();
   });
 
-  it('filters rows based on user input in search field', () => {
+  it('passes search input to audit logs query and resets page', () => {
     vi.mocked(queries.useLoginAuditLogsQuery).mockReturnValue({
       data: {
         items: [
@@ -94,17 +94,8 @@ describe('AdminSecurityLogsTab', () => {
             userAgent: 'Firefox',
             createdAt: '2026-09-30T07:00:00Z',
           },
-          {
-            id: 'log-2',
-            attemptedEmail: 'bob@company.com',
-            ipAddress: '10.0.0.2',
-            status: 'ACCOUNT_LOCKED',
-            failureReason: 'Account locked due to failed attempts',
-            userAgent: 'Chrome',
-            createdAt: '2026-09-30T07:05:00Z',
-          },
         ],
-        total: 2,
+        total: 1,
         page: 1,
         limit: 25,
       },
@@ -118,8 +109,12 @@ describe('AdminSecurityLogsTab', () => {
     const searchInput = screen.getByPlaceholderText(/Search by email, IP address, or reason/i);
     fireEvent.change(searchInput, { target: { value: 'alice' } });
 
-    expect(screen.getByText('alice@company.com')).toBeInTheDocument();
-    expect(screen.queryByText('bob@company.com')).not.toBeInTheDocument();
+    expect(queries.useLoginAuditLogsQuery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        search: 'alice',
+        page: 1,
+      }),
+    );
   });
 
   it('provides copy email action and CSV export button', () => {
