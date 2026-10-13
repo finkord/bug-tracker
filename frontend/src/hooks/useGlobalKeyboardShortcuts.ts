@@ -31,9 +31,6 @@ export const useGlobalKeyboardShortcuts = (enabled: boolean = true) => {
     isShortcutsOpen,
     openShortcuts,
     closeShortcuts,
-    isQuickSearchOpen,
-    openQuickSearch,
-    closeQuickSearch,
   } = useModalStore();
 
   const toggleSidebar = useSidebarStore((state) => state.toggleSidebar);
@@ -49,24 +46,12 @@ export const useGlobalKeyboardShortcuts = (enabled: boolean = true) => {
           closeShortcuts();
           return;
         }
-        if (isQuickSearchOpen) {
-          e.preventDefault();
-          closeQuickSearch();
-          return;
-        }
       }
 
       // Sidebar toggle shortcut: Cmd+B / Ctrl+B
       if ((e.metaKey || e.ctrlKey) && (e.key === 'b' || e.key === 'B')) {
         e.preventDefault();
         toggleSidebar();
-        return;
-      }
-
-      // Universal Command Palette shortcut: Cmd+K / Ctrl+K
-      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
-        e.preventDefault();
-        openQuickSearch();
         return;
       }
 
@@ -96,12 +81,6 @@ export const useGlobalKeyboardShortcuts = (enabled: boolean = true) => {
         openShortcuts();
         return;
       }
-
-      if (e.key === '/') {
-        e.preventDefault();
-        openQuickSearch();
-        return;
-      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -110,12 +89,9 @@ export const useGlobalKeyboardShortcuts = (enabled: boolean = true) => {
     enabled,
     isCreateIssueOpen,
     isShortcutsOpen,
-    isQuickSearchOpen,
     openCreateIssue,
     openShortcuts,
     closeShortcuts,
-    openQuickSearch,
-    closeQuickSearch,
     toggleSidebar,
   ]);
 };

@@ -8,7 +8,6 @@ describe('useGlobalKeyboardShortcuts', () => {
     useModalStore.setState({
       isCreateIssueOpen: false,
       isShortcutsOpen: false,
-      isQuickSearchOpen: false,
     });
     useSidebarStore.setState({
       collapsed: false,
@@ -81,16 +80,5 @@ describe('useGlobalKeyboardShortcuts', () => {
       window.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', ctrlKey: true, bubbles: true }));
     });
     expect(useSidebarStore.getState().collapsed).toBe(false);
-  });
-
-  it('triggers quick search / command palette on Cmd+K / Ctrl+K', () => {
-    renderHook(() => useGlobalKeyboardShortcuts(true));
-
-    expect(useModalStore.getState().isQuickSearchOpen).toBe(false);
-
-    act(() => {
-      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }));
-    });
-    expect(useModalStore.getState().isQuickSearchOpen).toBe(true);
   });
 });

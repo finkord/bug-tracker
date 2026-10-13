@@ -7,7 +7,6 @@ describe('useModalStore', () => {
       isCreateIssueOpen: false,
       createIssueDefaults: undefined,
       isShortcutsOpen: false,
-      isQuickSearchOpen: false,
     });
   });
 
@@ -31,15 +30,5 @@ describe('useModalStore', () => {
 
     useModalStore.getState().closeShortcuts();
     expect(useModalStore.getState().isShortcutsOpen).toBe(false);
-  });
-
-  it('manages quick search palette state', () => {
-    expect(useModalStore.getState().isQuickSearchOpen).toBe(false);
-
-    useModalStore.getState().openQuickSearch();
-    expect(useModalStore.getState().isQuickSearchOpen).toBe(true);
-
-    useModalStore.getState().closeQuickSearch();
-    expect(useModalStore.getState().isQuickSearchOpen).toBe(false);
   });
 });

@@ -97,14 +97,11 @@ export class JqlParserService {
         if (!trimmed) continue;
 
         // IN / NOT IN: field (NOT IN|IN) (...)
-        const inMatch = trimmed.match(/^([a-zA-Z0-9_]+)\s+(NOT\s+IN|IN)\s*\(([^)]+)\)$/i);
+        const inMatch = trimmed.match(/^([a-zA-Z0-9_]+)\s+(NOT\s+IN|IN)\s*\(([\s\S]*)\)$/i);
         if (inMatch) {
           const field = this.normalizeField(inMatch[1]);
           const op = inMatch[2].toUpperCase().replace(/\s+/, ' ') === 'NOT IN' ? 'not in' : 'in';
-          const values = inMatch[3]
-            .split(',')
-            .map((v) => this.cleanValue(v))
-            .filter(Boolean);
+          const values = this.splitListValues(inMatch[3]).filter(Boolean);
           conditions.push({ field, operator: op, value: values });
           continue;
         }
@@ -229,6 +226,45 @@ export class JqlParserService {
         }
 
         case 'assignee': {
+          if (operator === 'in' || operator === 'not in') {
+            const list = Array.isArray(value) ? value : [value];
+            const isNegated = operator === 'not in';
+            const ids: number[] = [];
+            let includeMe = false;
+            let includeUnassigned = false;
+
+            for (const item of list) {
+              const valLower = String(item).toLowerCase();
+              if (valLower === 'currentuser()' || valLower === 'me') {
+                includeMe = true;
+              } else if (valLower === 'unassigned' || valLower === 'empty') {
+                includeUnassigned = true;
+              } else if (/^\d+$/.test(String(item))) {
+                ids.push(Number(item));
+              }
+            }
+
+            const subConditions: string[] = [];
+            const params: Record<string, any> = {};
+            if (ids.length > 0) {
+              subConditions.push(`issue.assigneeId IN (:...${pName}AssigneeIds)`);
+              params[`${pName}AssigneeIds`] = ids;
+            }
+            if (includeMe) {
+              subConditions.push(`issue.assigneeId = :${pName}CurrentUid`);
+              params[`${pName}CurrentUid`] = currentUserId || -1;
+            }
+            if (includeUnassigned) {
+              subConditions.push(`issue.assigneeId IS NULL`);
+            }
+
+            if (subConditions.length > 0) {
+              const expr = subConditions.join(' OR ');
+              qb.andWhere(isNegated ? `NOT (${expr})` : `(${expr})`, params);
+            }
+            break;
+          }
+
           const valLower = String(value).toLowerCase();
           const isCurrentUser = valLower === 'currentuser()' || valLower === 'me';
           const isUnassigned = valLower === 'unassigned' || valLower === 'empty';
@@ -260,6 +296,39 @@ export class JqlParserService {
         }
 
         case 'reporter': {
+          if (operator === 'in' || operator === 'not in') {
+            const list = Array.isArray(value) ? value : [value];
+            const isNegated = operator === 'not in';
+            const ids: number[] = [];
+            let includeMe = false;
+
+            for (const item of list) {
+              const valLower = String(item).toLowerCase();
+              if (valLower === 'currentuser()' || valLower === 'me') {
+                includeMe = true;
+              } else if (/^\d+$/.test(String(item))) {
+                ids.push(Number(item));
+              }
+            }
+
+            const subConditions: string[] = [];
+            const params: Record<string, any> = {};
+            if (ids.length > 0) {
+              subConditions.push(`issue.reporterId IN (:...${pName}ReporterIds)`);
+              params[`${pName}ReporterIds`] = ids;
+            }
+            if (includeMe) {
+              subConditions.push(`issue.reporterId = :${pName}CurrentUid`);
+              params[`${pName}CurrentUid`] = currentUserId || -1;
+            }
+
+            if (subConditions.length > 0) {
+              const expr = subConditions.join(' OR ');
+              qb.andWhere(isNegated ? `NOT (${expr})` : `(${expr})`, params);
+            }
+            break;
+          }
+
           const valLower = String(value).toLowerCase();
           const isCurrentUser = valLower === 'currentuser()' || valLower === 'me';
 
@@ -282,11 +351,66 @@ export class JqlParserService {
         }
 
         case 'sprint': {
-          if (operator === 'is') {
+          const valLower = String(value).toLowerCase();
+          if (operator === 'is' || valLower === 'empty' || valLower === 'backlog') {
             qb.andWhere(`issue.sprintId IS NULL`);
-          } else if (operator === 'is not') {
+            break;
+          }
+          if (operator === 'is not') {
             qb.andWhere(`issue.sprintId IS NOT NULL`);
-          } else if (operator === '=') {
+            break;
+          }
+          if (operator === 'in' || operator === 'not in') {
+            const list = Array.isArray(value) ? value : [value];
+            const isNegated = operator === 'not in';
+            const sprintIds: number[] = [];
+            const sprintNames: string[] = [];
+            let includeActive = false;
+            let includeEmpty = false;
+
+            for (const item of list) {
+              const itemLower = String(item).toLowerCase();
+              if (itemLower === 'active' || itemLower === 'opensprints()') {
+                includeActive = true;
+              } else if (itemLower === 'empty' || itemLower === 'backlog') {
+                includeEmpty = true;
+              } else if (/^\d+$/.test(String(item))) {
+                sprintIds.push(Number(item));
+              } else {
+                sprintNames.push(String(item));
+              }
+            }
+
+            const sprintClauses: string[] = [];
+            const params: Record<string, any> = {};
+            if (sprintIds.length > 0) {
+              sprintClauses.push(`issue.sprintId IN (:...${pName}SprintIds)`);
+              params[`${pName}SprintIds`] = sprintIds;
+            }
+            if (sprintNames.length > 0) {
+              sprintClauses.push(`sprint.name IN (:...${pName}SprintNames)`);
+              params[`${pName}SprintNames`] = sprintNames;
+            }
+            if (includeActive) {
+              sprintClauses.push(`sprint.status = 'ACTIVE'`);
+            }
+            if (includeEmpty) {
+              sprintClauses.push(`issue.sprintId IS NULL`);
+            }
+
+            if (sprintClauses.length > 0) {
+              const expr = sprintClauses.join(' OR ');
+              qb.andWhere(isNegated ? `NOT (${expr})` : `(${expr})`, params);
+            }
+            break;
+          }
+
+          if (valLower === 'active' || valLower === 'opensprints()') {
+            qb.andWhere(operator === '!=' ? `(sprint.status != 'ACTIVE' OR sprint.status IS NULL)` : `sprint.status = 'ACTIVE'`);
+            break;
+          }
+
+          if (operator === '=') {
             if (/^\d+$/.test(String(value))) {
               qb.andWhere(`issue.sprintId = :${pName}SprintId`, { [`${pName}SprintId`]: Number(value) });
             } else {
@@ -305,17 +429,46 @@ export class JqlParserService {
         case 'text': {
           const rawTerm = String(value).trim();
           const likeTerm = `%${rawTerm.toLowerCase()}%`;
-          qb.andWhere(
-            `(to_tsvector('english', coalesce(issue.title, '') || ' ' || coalesce(issue.description, '')) @@ plainto_tsquery('english', :${pName}Raw) OR LOWER(issue.title) LIKE :${pName}Like OR LOWER(project.key) LIKE :${pName}Like)`,
-            {
-              [`${pName}Raw`]: rawTerm,
-              [`${pName}Like`]: likeTerm,
-            },
-          );
+          const isNegated = operator === '!~';
+          const textExpr = `(to_tsvector('english', coalesce(issue.title, '') || ' ' || coalesce(issue.description, '')) @@ plainto_tsquery('english', :${pName}Raw) OR LOWER(issue.title) LIKE :${pName}Like OR LOWER(project.key) LIKE :${pName}Like)`;
+          qb.andWhere(isNegated ? `NOT (${textExpr})` : textExpr, {
+            [`${pName}Raw`]: rawTerm,
+            [`${pName}Like`]: likeTerm,
+          });
           break;
         }
 
         case 'key': {
+          if (operator === 'in' || operator === 'not in') {
+            const list = Array.isArray(value) ? value : [value];
+            const isNegated = operator === 'not in';
+            const keyOrNumClauses: string[] = [];
+            const params: Record<string, any> = {};
+
+            list.forEach((item, kIdx) => {
+              const itemRaw = String(item).trim().toUpperCase();
+              const match = itemRaw.match(/^([A-Z0-9_-]+)-(\d+)$/);
+              if (match) {
+                const [, pKey, numStr] = match;
+                const pKeyParam = `${pName}_pk_${kIdx}`;
+                const numParam = `${pName}_nm_${kIdx}`;
+                params[pKeyParam] = pKey;
+                params[numParam] = parseInt(numStr, 10);
+                keyOrNumClauses.push(`(UPPER(project.key) = :${pKeyParam} AND issue.issueNum = :${numParam})`);
+              } else if (/^\d+$/.test(itemRaw)) {
+                const idParam = `${pName}_id_${kIdx}`;
+                params[idParam] = parseInt(itemRaw, 10);
+                keyOrNumClauses.push(`(issue.id = :${idParam})`);
+              }
+            });
+
+            if (keyOrNumClauses.length > 0) {
+              const joined = keyOrNumClauses.join(' OR ');
+              qb.andWhere(isNegated ? `NOT (${joined})` : `(${joined})`, params);
+            }
+            break;
+          }
+
           const keyRaw = String(value).trim().toUpperCase();
           const match = keyRaw.match(/^([A-Z0-9_-]+)-(\d+)$/);
           if (match) {
@@ -408,6 +561,40 @@ export class JqlParserService {
       res = res.slice(1, -1);
     }
     return res.trim();
+  }
+
+  private splitListValues(listStr: string): string[] {
+    const values: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    let quoteChar = '';
+    let parenDepth = 0;
+
+    for (let i = 0; i < listStr.length; i++) {
+      const ch = listStr[i];
+      if ((ch === '"' || ch === "'") && (!inQuotes || quoteChar === ch)) {
+        inQuotes = !inQuotes;
+        quoteChar = inQuotes ? ch : '';
+        current += ch;
+      } else if (!inQuotes && ch === '(') {
+        parenDepth++;
+        current += ch;
+      } else if (!inQuotes && ch === ')') {
+        parenDepth = Math.max(0, parenDepth - 1);
+        current += ch;
+      } else if (!inQuotes && ch === ',' && parenDepth === 0) {
+        if (current.trim()) {
+          values.push(this.cleanValue(current));
+        }
+        current = '';
+      } else {
+        current += ch;
+      }
+    }
+    if (current.trim()) {
+      values.push(this.cleanValue(current));
+    }
+    return values;
   }
 
   private splitClauses(queryPart: string): string[] {

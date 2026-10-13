@@ -15,10 +15,6 @@ export interface ModalState {
   isShortcutsOpen: boolean;
   openShortcuts: () => void;
   closeShortcuts: () => void;
-
-  isQuickSearchOpen: boolean;
-  openQuickSearch: () => void;
-  closeQuickSearch: () => void;
 }
 
 export const useModalStore = create<ModalState>((set) => ({
@@ -30,10 +26,6 @@ export const useModalStore = create<ModalState>((set) => ({
   isShortcutsOpen: false,
   openShortcuts: () => set({ isShortcutsOpen: true }),
   closeShortcuts: () => set({ isShortcutsOpen: false }),
-
-  isQuickSearchOpen: false,
-  openQuickSearch: () => set({ isQuickSearchOpen: true }),
-  closeQuickSearch: () => set({ isQuickSearchOpen: false }),
 }));
 
 export const useModals = () => useModalStore();

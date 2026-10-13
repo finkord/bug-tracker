@@ -36,20 +36,26 @@ export function buildJqlFromFilters(options: JqlBuilderOptions): string {
   }
 
   if (options.assignee && options.assignee !== 'ALL') {
-    if (options.assignee === 'currentUser()') {
+    const rawAssignee = options.assignee.trim();
+    const lower = rawAssignee.toLowerCase();
+    if (lower === 'currentuser()' || lower === 'me') {
       clauses.push('assignee = currentUser()');
-    } else if (options.assignee === 'unassigned') {
-      clauses.push('assignee = "unassigned"');
+    } else if (lower === 'unassigned' || lower === 'empty') {
+      clauses.push('assignee is EMPTY');
     } else {
-      clauses.push(`assignee = "${options.assignee}"`);
+      clauses.push(`assignee = "${rawAssignee}"`);
     }
   }
 
   if (options.sprint && options.sprint !== 'ALL') {
-    if (options.sprint === 'EMPTY' || options.sprint === 'backlog') {
+    const rawSprint = options.sprint.trim();
+    const lower = rawSprint.toLowerCase();
+    if (lower === 'empty' || lower === 'backlog' || lower === 'none') {
       clauses.push('sprint is EMPTY');
+    } else if (lower === 'active' || lower === 'opensprints()') {
+      clauses.push('sprint = active');
     } else {
-      clauses.push(`sprint = "${options.sprint}"`);
+      clauses.push(`sprint = "${rawSprint}"`);
     }
   }
 

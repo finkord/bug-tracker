@@ -271,7 +271,7 @@
 | `profile/`         | Profile card, EditProfileModal (AvatarPicker), 2FA wizard |
 | `time/`            | Time tracking calendar, MyWorklogsTable (DataTable)       |
 | `search/`          | Advanced search filters, SearchResultsTable (DataTable)  |
-| `workspace/`       | Project cards, QuickSearchModal (cmdk headless menu)     |
+| `workspace/`       | Project cards, WorkspaceHeader, HeaderBreadcrumbs        |
 | `home/`            | Dashboard home widgets                                   |
 | `common/`          | ProtectedRoute, ErrorBoundary, Loading skeletons         |
 | `public/`          | Public-facing wrappers (unauthenticated layout)          |

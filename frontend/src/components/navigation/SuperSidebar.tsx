@@ -27,8 +27,8 @@ export const SuperSidebar: React.FC<SuperSidebarProps> = () => {
   } = useSidebar();
   const location = useLocation();
 
-  const { isCreateIssueOpen, isShortcutsOpen, isQuickSearchOpen } = useModalStore();
-  const isAnyModalOpen = isCreateIssueOpen || isShortcutsOpen || isQuickSearchOpen;
+  const { isCreateIssueOpen, isShortcutsOpen } = useModalStore();
+  const isAnyModalOpen = isCreateIssueOpen || isShortcutsOpen;
 
   const { data: projects = [] } = useProjectsQuery({ enabled: !!user });
 
