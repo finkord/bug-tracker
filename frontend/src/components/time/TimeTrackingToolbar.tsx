@@ -22,6 +22,7 @@ import {
   PlusCircle,
   RefreshCw,
   Users,
+  FolderKanban,
 } from 'lucide-react';
 
 interface TimeTrackingToolbarProps {
@@ -42,6 +43,9 @@ interface TimeTrackingToolbarProps {
   onExportJson: () => void;
   onRefresh: () => void;
   loading: boolean;
+  projects?: Array<{ id: number; key: string; name: string }>;
+  selectedProjectId?: number;
+  onProjectChange?: (projectId?: number) => void;
 }
 
 export const TimeTrackingToolbar: React.FC<TimeTrackingToolbarProps> = ({
@@ -62,6 +66,9 @@ export const TimeTrackingToolbar: React.FC<TimeTrackingToolbarProps> = ({
   onExportJson,
   onRefresh,
   loading,
+  projects,
+  selectedProjectId,
+  onProjectChange,
 }) => {
   return (
     <div className="flex flex-col gap-3 pb-3 border-b border-[var(--md-sys-color-outline-variant)]">
@@ -126,8 +133,34 @@ export const TimeTrackingToolbar: React.FC<TimeTrackingToolbarProps> = ({
           </Tabs>
         </div>
 
-        {/* Right: Date Navigation, Range Toggle, Grouping, Actions */}
+        {/* Right: Project Filter, Date Navigation, Range Toggle, Grouping, Actions */}
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Project Scope Filter */}
+          {projects && projects.length > 0 && (
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/40 text-xs">
+              <FolderKanban className="w-3.5 h-3.5 text-[var(--md-sys-color-primary)] shrink-0" />
+              <select
+                value={selectedProjectId ? String(selectedProjectId) : ''}
+                onChange={(e) => onProjectChange?.(e.target.value ? Number(e.target.value) : undefined)}
+                className="bg-transparent text-xs font-semibold text-[var(--md-sys-color-on-surface)] focus:outline-hidden cursor-pointer pr-1"
+                aria-label="Filter timesheets by project"
+              >
+                <option value="" className="bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)]">
+                  All Projects
+                </option>
+                {projects.map((p) => (
+                  <option
+                    key={p.id}
+                    value={String(p.id)}
+                    className="bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)]"
+                  >
+                    {p.name} ({p.key})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Period Range Navigator */}
           <div className="inline-flex items-center gap-1 p-0.5 rounded-full bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/40">
             <button

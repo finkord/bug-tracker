@@ -16,6 +16,7 @@ vi.mock('../api/queries', () => ({
   useMyWorklogsQuery: (page?: number, limit?: number) =>
     mockUseMyWorklogsQuery(page, limit),
   useIssuesQuery: () => mockUseIssuesQuery(),
+  useProjectsQuery: () => ({ data: [{ id: 1, key: 'PLAT', name: 'Platform Core' }] }),
   useDeleteWorklogMutation: () => ({ mutateAsync: mockDeleteWorklogMutation }),
   useAssignIssueToMeMutation: () => ({ mutateAsync: vi.fn() }),
   useUpdateIssueStatusMutation: () => ({ mutateAsync: vi.fn() }),
@@ -118,7 +119,7 @@ describe('TimeTrackingPage', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByRole('heading', { name: /Time Tracking/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Team Timesheets/i })).toBeInTheDocument();
     expect(screen.getByText('Today:')).toBeInTheDocument();
     expect(screen.getAllByText('4.5h').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('This Week:')).toBeInTheDocument();

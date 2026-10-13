@@ -1,11 +1,13 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   useWorklogStatsQuery,
   useTeamTimesheetMatrixQuery,
   useMyWorklogsQuery,
   useDeleteWorklogMutation,
   useIssuesQuery,
+  useProjectsQuery,
 } from '../api/queries';
+import { useActiveProjectStore } from '../store/useActiveProjectStore';
 import type {
   TimeTrackingTab,
   DateRangeMode,
@@ -100,6 +102,20 @@ export const TimeTrackingPage: React.FC = () => {
     return currentDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
   }, [rangeMode, currentDate, dateRange]);
 
+  const { data: projects = [] } = useProjectsQuery();
+  const { activeProjectId } = useActiveProjectStore();
+  const [selectedProjectId, setSelectedProjectId] = useState<number | undefined>(
+    () => activeProjectId ?? undefined
+  );
+
+  const prevActiveProjectIdRef = useRef(activeProjectId);
+  useEffect(() => {
+    if (activeProjectId !== prevActiveProjectIdRef.current) {
+      prevActiveProjectIdRef.current = activeProjectId;
+      setSelectedProjectId(activeProjectId ?? undefined);
+    }
+  }, [activeProjectId]);
+
   // TanStack Query Hooks for server state
   const {
     data: stats = null,
@@ -111,7 +127,7 @@ export const TimeTrackingPage: React.FC = () => {
     data: matrix = null,
     isLoading: matrixLoading,
     refetch: refetchMatrix,
-  } = useTeamTimesheetMatrixQuery(dateRange.startDate, dateRange.endDate, undefined, undefined, groupBy);
+  } = useTeamTimesheetMatrixQuery(dateRange.startDate, dateRange.endDate, selectedProjectId, undefined, groupBy);
 
   const [myLogsPage, setMyLogsPage] = useState<number>(1);
   const [myLogsLimit, setMyLogsLimit] = useState<number>(20);
@@ -268,6 +284,9 @@ export const TimeTrackingPage: React.FC = () => {
           onExportJson={handleExportJson}
           onRefresh={handleRefresh}
           loading={loading}
+          projects={projects}
+          selectedProjectId={selectedProjectId}
+          onProjectChange={setSelectedProjectId}
         />
 
         {/* Tab 1: Timesheet Matrix Grid */}
