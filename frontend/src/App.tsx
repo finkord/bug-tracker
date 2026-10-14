@@ -123,10 +123,8 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         {user && <WorkspaceHeader />}
 
         {/* ─── Elevated Main Canvas Card (Optical Curve Metaphor) ──────────── */}
-        <main
-          id="main-content"
-          tabIndex={-1}
-          className={`flex-1 min-w-0 outline-none focus:outline-none focus-visible:outline-none overflow-y-auto overflow-x-hidden mb-1 sm:mb-2 md:mb-3 bg-[var(--md-sys-color-background)] rounded-xl sm:rounded-2xl md:rounded-3xl border border-[var(--md-sys-color-outline-variant)]/25 shadow-xs transition-[margin,colors] duration-200 ease-in-out flex flex-col ${
+        <div
+          className={`flex-1 min-w-0 mb-1 sm:mb-2 md:mb-3 bg-[var(--md-sys-color-background)] rounded-xl sm:rounded-2xl md:rounded-3xl border border-[var(--md-sys-color-outline-variant)]/25 shadow-xs overflow-hidden transition-[margin,colors] duration-200 ease-in-out flex flex-col ${
             isZeroPxSidebar
               ? 'mx-1 sm:mx-2 md:mx-3'
               : 'mr-1 sm:mr-2 md:mr-3 ml-0'
@@ -134,35 +132,41 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             !user ? 'mt-1 sm:mt-2 md:mt-3' : ''
           }`}
         >
-          {/* Global Broadcast Announcement Banner inside main page area */}
-          <WorkspaceBroadcastBanner />
+          <main
+            id="main-content"
+            tabIndex={-1}
+            className="flex-1 min-w-0 outline-none focus:outline-none focus-visible:outline-none overflow-y-auto overflow-x-hidden flex flex-col h-full"
+          >
+            {/* Global Broadcast Announcement Banner inside main page area */}
+            <WorkspaceBroadcastBanner />
 
-          {/* Mobile Top Strip for Guest Navigation (md:hidden) */}
-          {!user && (
-            <div className="md:hidden sticky top-0 z-30 px-4 h-14 shrink-0 flex items-center justify-between border-b border-[var(--md-sys-color-outline-variant)]/15 bg-[var(--md-sys-color-surface-container-low)]/90 backdrop-blur-md">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] flex items-center justify-center shadow-xs">
-                  <Shield className="w-4 h-4" />
+            {/* Mobile Top Strip for Guest Navigation (md:hidden) */}
+            {!user && (
+              <div className="md:hidden sticky top-0 z-30 px-4 h-14 shrink-0 flex items-center justify-between border-b border-[var(--md-sys-color-outline-variant)]/15 bg-[var(--md-sys-color-surface-container-low)]/90 backdrop-blur-md">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] flex items-center justify-center shadow-xs">
+                    <Shield className="w-4 h-4" />
+                  </div>
+                  <span className="font-bold text-sm tracking-tight text-[var(--md-sys-color-on-surface)]">
+                    BugTracker
+                  </span>
                 </div>
-                <span className="font-bold text-sm tracking-tight text-[var(--md-sys-color-on-surface)]">
-                  BugTracker
-                </span>
+                <button
+                  type="button"
+                  onClick={toggleMobile}
+                  className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] flex items-center justify-center transition-colors cursor-pointer border border-[var(--md-sys-color-outline-variant)]/20 shadow-2xs"
+                  aria-label="Open navigation menu"
+                >
+                  <Menu className="w-4 h-4" />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={toggleMobile}
-                className="w-9 h-9 rounded-xl bg-[var(--md-sys-color-surface-container)] hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface)] flex items-center justify-center transition-colors cursor-pointer border border-[var(--md-sys-color-outline-variant)]/20 shadow-2xs"
-                aria-label="Open navigation menu"
-              >
-                <Menu className="w-4 h-4" />
-              </button>
-            </div>
-          )}
+            )}
 
-          <div className="flex-1 min-w-0 flex flex-col">{children}</div>
+            <div className="flex-1 min-w-0 flex flex-col">{children}</div>
 
-          {!user && <Footer />}
-        </main>
+            {!user && <Footer />}
+          </main>
+        </div>
       </div>
       <KeyboardShortcutsModal />
     </div>
