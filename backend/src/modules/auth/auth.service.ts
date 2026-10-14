@@ -32,8 +32,8 @@ export class AuthService {
     private readonly oauthService: OAuthService,
   ) {}
 
-  async register(dto: RegisterDto, ipAddress: string) {
-    return this.localAuthService.register(dto, ipAddress);
+  async register(dto: RegisterDto, ipAddress: string, clientBaseUrl?: string) {
+    return this.localAuthService.register(dto, ipAddress, clientBaseUrl);
   }
 
   async activateAccount(token: string) {
@@ -64,8 +64,8 @@ export class AuthService {
     return this.twoFactorAuthService.verify2fa(dto, ipAddress, userAgent);
   }
 
-  async forgotPassword(dto: ForgotPasswordDto) {
-    return this.passwordResetService.forgotPassword(dto);
+  async forgotPassword(dto: ForgotPasswordDto, clientBaseUrl?: string) {
+    return this.passwordResetService.forgotPassword(dto, clientBaseUrl);
   }
 
   async resetPassword(dto: ResetPasswordDto) {

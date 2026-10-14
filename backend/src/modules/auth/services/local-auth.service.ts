@@ -45,7 +45,7 @@ export class LocalAuthService {
    * Registers a new user with complex password policy, CAPTCHA, and email activation link.
    * Utilizes RFC 9106 / OWASP recommended Argon2id parameters to avoid thread pool starvation.
    */
-  async register(dto: RegisterDto, ipAddress: string) {
+  async register(dto: RegisterDto, ipAddress: string, clientBaseUrl?: string) {
     const isCaptchaValid = await this.captchaService.validateToken(
       dto.captchaToken,
       ipAddress,
@@ -77,7 +77,8 @@ export class LocalAuthService {
       oauthProvider: OAuthProvider.LOCAL,
     });
 
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:5173');
+    const fallbackUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:5173');
+    const frontendUrl = (clientBaseUrl || fallbackUrl).replace(/\/+$/, '');
     const activationUrl = `${frontendUrl}/activate?token=${activationToken}`;
 
     const textContent = `Hello ${newUser.fullName},

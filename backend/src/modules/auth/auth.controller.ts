@@ -89,14 +89,44 @@ export class AuthController {
     });
   }
 
+  private extractClientBaseUrl(req: Request): string {
+    const origin = req.headers['origin'];
+    if (typeof origin === 'string' && origin.trim()) {
+      return origin.trim().replace(/\/+$/, '');
+    }
+
+    const referer = req.headers['referer'];
+    if (typeof referer === 'string' && referer.trim()) {
+      try {
+        const parsed = new URL(referer.trim());
+        return parsed.origin.replace(/\/+$/, '');
+      } catch {
+        // Fall back to host headers
+      }
+    }
+
+    const xForwardedHost = req.headers['x-forwarded-host'];
+    const rawHost = typeof xForwardedHost === 'string' ? xForwardedHost : req.headers['host'];
+    if (typeof rawHost === 'string' && rawHost.trim()) {
+      const host = rawHost.split(',')[0].trim();
+      const protoHeader = req.headers['x-forwarded-proto'];
+      const proto = (typeof protoHeader === 'string' ? protoHeader.split(',')[0].trim() : req.protocol) || 'http';
+      return `${proto}://${host}`.replace(/\/+$/, '');
+    }
+
+    const fallback = this.configService.get<string>('FRONTEND_URL', 'http://localhost:5173');
+    return fallback.replace(/\/+$/, '');
+  }
+
   @Post('register')
   @ApiOperation({
     summary: 'Register new user account',
     description:
       'Validates complex password policy, verifies CAPTCHA token, and dispatches email activation link.',
   })
-  async register(@Body() dto: RegisterDto, @Ip() ip: string) {
-    return this.authService.register(dto, ip);
+  async register(@Body() dto: RegisterDto, @Ip() ip: string, @Req() req: Request) {
+    const clientBaseUrl = this.extractClientBaseUrl(req);
+    return this.authService.register(dto, ip, clientBaseUrl);
   }
 
   @Get('activate')
@@ -207,8 +237,9 @@ export class AuthController {
     description:
       'Dispatches an email containing a 15-minute cryptographic reset token to the user.',
   })
-  async forgotPassword(@Body() dto: ForgotPasswordDto) {
-    return this.authService.forgotPassword(dto);
+  async forgotPassword(@Body() dto: ForgotPasswordDto, @Req() req: Request) {
+    const clientBaseUrl = this.extractClientBaseUrl(req);
+    return this.authService.forgotPassword(dto, clientBaseUrl);
   }
 
   @Post('reset-password')

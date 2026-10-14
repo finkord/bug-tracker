@@ -28,7 +28,7 @@ export class PasswordResetService {
   /**
    * Dispatches password recovery link with time-limited single-use token.
    */
-  async forgotPassword(dto: ForgotPasswordDto) {
+  async forgotPassword(dto: ForgotPasswordDto, clientBaseUrl?: string) {
     const user = await this.usersService.findByEmail(dto.email);
     if (!user) {
       // Anti-enumeration security: return generic success message
@@ -43,7 +43,8 @@ export class PasswordResetService {
       resetPasswordExpiresAt: resetExpiresAt,
     });
 
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:5173');
+    const fallbackUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:5173');
+    const frontendUrl = (clientBaseUrl || fallbackUrl).replace(/\/+$/, '');
     const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
 
     const textContent = `Hello ${user.fullName},
