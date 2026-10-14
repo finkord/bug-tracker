@@ -214,6 +214,7 @@ export const PreferencesPage: React.FC = () => {
             {/* Option 1: Hidden (0px) - Default */}
             <button
               type="button"
+              data-testid="collapse-mode-hidden"
               onClick={() => handleCollapseModeChange('hidden')}
               className={`p-4 rounded-2xl border text-left flex flex-col justify-between gap-3 transition-all cursor-pointer ${
                 collapseMode === 'hidden'
@@ -239,6 +240,7 @@ export const PreferencesPage: React.FC = () => {
             {/* Option 2: Rail (60px) */}
             <button
               type="button"
+              data-testid="collapse-mode-rail"
               onClick={() => handleCollapseModeChange('rail')}
               className={`p-4 rounded-2xl border text-left flex flex-col justify-between gap-3 transition-all cursor-pointer ${
                 collapseMode === 'rail'

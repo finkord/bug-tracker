@@ -202,43 +202,96 @@ export const SuperSidebar: React.FC<SuperSidebarProps> = () => {
       ? Number(urlProjectIdentifier)
       : undefined);
 
-  // Close flyout when Escape key is pressed
+  // Close flyout when pointerdown occurs outside flyout or on Escape key
   useEffect(() => {
     if (!isFlyout) return;
+    const handlePointerDown = (e: PointerEvent) => {
+      if (asideRef.current && !asideRef.current.contains(e.target as Node)) {
+        setIsHovered(false);
+        setIsClosing(false);
+      }
+    };
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setIsHovered(false);
+        setIsClosing(false);
       }
     };
+    window.addEventListener('pointerdown', handlePointerDown);
     window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
+    return () => {
+      window.removeEventListener('pointerdown', handlePointerDown);
+      window.removeEventListener('keydown', handleEscape);
+    };
   }, [isFlyout]);
 
   const handleCloseFlyout = () => {
     setIsHovered(false);
+    setIsClosing(false);
   };
+
+  const renderSidebarContent = (isCollapsed: boolean) => (
+    <div className="flex flex-col h-full shrink-0 w-60 min-w-[240px]">
+      {/* Row 1: Brand Header Logo & Name (44px, matching WorkspaceHeader) */}
+      <SidebarBrandHeader
+        collapsed={isCollapsed}
+        onNavigate={handleCloseFlyout}
+      />
+
+      {/* Row 2: Workspace Project Switcher */}
+      {user && (
+        <div className="shrink-0 py-1.5">
+          <SidebarProjectSwitcher
+            projects={projects}
+            activeProject={effectiveActiveProject}
+            collapsed={isCollapsed}
+            onNavigate={handleCloseFlyout}
+            onOpenChange={handleMenuOpenChange}
+          />
+        </div>
+      )}
+
+      <SidebarNavList
+        user={user}
+        activeProject={effectiveActiveProject}
+        projectId={effectiveActiveProjectId}
+        collapsed={isCollapsed}
+        showCollapsedLabels={showCollapsedLabels}
+        onNavigate={handleCloseFlyout}
+      />
+
+      <SidebarBottomActions
+        collapsed={isCollapsed}
+        onNavigate={handleCloseFlyout}
+        onOpenChange={handleMenuOpenChange}
+      />
+    </div>
+  );
 
   return (
     <>
       {/* ─── Desktop Super-Sidebar (Layout Flow Placeholder + Floating Flyout) ─── */}
       <div
-        className={`hidden md:block shrink-0 relative transition-[width] duration-200 ease-in-out ${isFlyout ? '' : 'overflow-hidden'
-          } ${collapsed
+        className={`hidden md:block shrink-0 relative transition-[width] duration-200 ease-in-out ${
+          isFlyout ? '' : 'overflow-hidden'
+        } ${
+          collapsed
             ? collapseMode === 'hidden'
               ? 'w-0'
               : 'w-[60px]'
             : 'w-60'
-          }`}
+        }`}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
         {/* Generous edge trigger strip and centered indicator pill when collapsed to 0px */}
-        {collapsed && collapseMode === 'hidden' && !isAnyModalOpen && !isFlyout && (
+        {collapsed && collapseMode === 'hidden' && !isAnyModalOpen && (
           <div
             data-testid="sidebar-hover-trigger"
             className="fixed left-0 top-0 h-screen w-6 z-20 cursor-pointer group flex items-center"
             onMouseEnter={handleMouseEnter}
-            aria-label="Hover to reveal sidebar"
+            onClick={toggleSidebar}
+            aria-label="Hover to reveal sidebar, click to expand"
           >
             {/* Centered Edge Indicator Pill */}
             <div
@@ -254,58 +307,28 @@ export const SuperSidebar: React.FC<SuperSidebarProps> = () => {
           ref={asideRef}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
-          className={`flex flex-col h-screen select-none overflow-hidden transition-[box-shadow] duration-200 ease-in-out ${isFlyout
-              ? `fixed left-0 top-0 w-60 z-40 shadow-2xl bg-[var(--md-sys-color-surface-container)] border-r border-[var(--md-sys-color-outline-variant)]/40 ${collapseMode === 'hidden'
-                ? isClosing
-                  ? 'animate-sidebar-slide-out'
-                  : 'animate-sidebar-slide-in'
-                : isClosing
-                  ? 'animate-sidebar-rail-collapse'
-                  : 'animate-sidebar-rail-expand'
-              }`
-              : collapsed
-                ? collapseMode === 'hidden'
-                  ? 'w-0 pointer-events-none bg-[var(--md-sys-color-surface-container-low)]'
-                  : 'w-[60px] bg-[var(--md-sys-color-surface-container-low)]'
-                : 'w-60 bg-[var(--md-sys-color-surface-container-low)]'
-            }`}
+          className={`flex flex-col h-screen select-none overflow-hidden ${
+            isFlyout
+              ? `fixed left-0 top-0 w-60 z-40 shadow-2xl bg-[var(--md-sys-color-surface-container)] border-r border-[var(--md-sys-color-outline-variant)]/40 ${
+                  collapseMode === 'hidden'
+                    ? isClosing
+                      ? 'animate-sidebar-slide-out'
+                      : 'animate-sidebar-slide-in'
+                    : isClosing
+                      ? 'animate-sidebar-rail-collapse'
+                      : 'animate-sidebar-rail-expand'
+                }`
+              : `transition-[width] duration-200 ease-in-out bg-[var(--md-sys-color-surface-container-low)] ${
+                  collapsed
+                    ? collapseMode === 'hidden'
+                      ? 'w-0 pointer-events-none'
+                      : 'w-[60px]'
+                    : 'w-60'
+                }`
+          }`}
           aria-label="Main Navigation"
         >
-          <div className="flex flex-col h-full shrink-0 w-60 min-w-[240px]">
-            {/* Row 1: Brand Header Logo & Name (44px, matching WorkspaceHeader) */}
-            <SidebarBrandHeader
-              collapsed={effectiveCollapsed}
-              onNavigate={handleCloseFlyout}
-            />
-
-            {/* Row 2: Workspace Project Switcher */}
-            {user && (
-              <div className="shrink-0 py-1.5">
-                <SidebarProjectSwitcher
-                  projects={projects}
-                  activeProject={effectiveActiveProject}
-                  collapsed={effectiveCollapsed}
-                  onNavigate={handleCloseFlyout}
-                  onOpenChange={handleMenuOpenChange}
-                />
-              </div>
-            )}
-
-            <SidebarNavList
-              user={user}
-              activeProject={effectiveActiveProject}
-              projectId={effectiveActiveProjectId}
-              collapsed={effectiveCollapsed}
-              showCollapsedLabels={showCollapsedLabels}
-              onNavigate={handleCloseFlyout}
-            />
-
-            <SidebarBottomActions
-              collapsed={effectiveCollapsed}
-              onNavigate={handleCloseFlyout}
-              onOpenChange={handleMenuOpenChange}
-            />
-          </div>
+          {renderSidebarContent(effectiveCollapsed)}
         </aside>
       </div>
 
