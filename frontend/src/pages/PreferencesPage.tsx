@@ -27,9 +27,6 @@ const BRAND_PALETTE: Array<{ id: BrandStyle; label: string; bg: string }> = [
 
 export const PreferencesPage: React.FC = () => {
   const {
-    showCollapsedLabels,
-    setShowCollapsedLabels,
-    toggleCollapsedLabels,
     collapseMode,
     setCollapseMode,
     brandStyle,
@@ -54,9 +51,6 @@ export const PreferencesPage: React.FC = () => {
           updatePrefsMutation.mutate({ theme });
         }
       }
-      if (typeof serverPrefs.showCollapsedLabels === 'boolean' && serverPrefs.showCollapsedLabels !== showCollapsedLabels) {
-        setShowCollapsedLabels(serverPrefs.showCollapsedLabels);
-      }
       if (typeof serverPrefs.collapseMode === 'string' && serverPrefs.collapseMode !== collapseMode) {
         setCollapseMode(serverPrefs.collapseMode as 'rail' | 'hidden');
       }
@@ -65,12 +59,6 @@ export const PreferencesPage: React.FC = () => {
       }
     }
   }, [serverPrefs]);
-
-  const handleToggleLabels = () => {
-    const nextVal = !showCollapsedLabels;
-    toggleCollapsedLabels();
-    updatePrefsMutation.mutate({ showCollapsedLabels: nextVal });
-  };
 
   const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
     setTheme(newTheme);
@@ -265,63 +253,7 @@ export const PreferencesPage: React.FC = () => {
           </div>
         </Card>
 
-        {/* 3. Collapsed Sidebar Text Labels (Disabled by default) */}
-        <Card className="p-6 space-y-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm font-bold text-[var(--md-sys-color-on-surface)]">
-                  Collapsed Sidebar Text Labels
-                </h2>
-                <Badge variant="neutral" size="sm" className="font-mono text-[10px]">
-                  Navigation
-                </Badge>
-              </div>
-              <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] leading-relaxed">
-                Display tiny labels below icons in rail mode. Disabled by default for maximum compactness.
-              </p>
-            </div>
-
-            {/* Unified Toggle Switch */}
-            <button
-              type="button"
-              role="switch"
-              aria-checked={showCollapsedLabels}
-              onClick={handleToggleLabels}
-              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                showCollapsedLabels
-                  ? 'bg-[var(--md-sys-color-primary)]'
-                  : 'bg-[var(--md-sys-color-surface-container-highest)]'
-              }`}
-            >
-              <span
-                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                  showCollapsedLabels ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
-            </button>
-          </div>
-
-          <div className="pt-2 border-t border-[var(--md-sys-color-outline-variant)]/15 flex items-center justify-between text-xs">
-            <span className="text-[var(--md-sys-color-on-surface-variant)]">
-              Status: <strong className="text-[var(--md-sys-color-on-surface)]">{showCollapsedLabels ? 'Labels Enabled' : 'Disabled (Default)'}</strong>
-            </span>
-            {showCollapsedLabels && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setShowCollapsedLabels(false);
-                  updatePrefsMutation.mutate({ showCollapsedLabels: false });
-                }}
-              >
-                Reset to Default
-              </Button>
-            )}
-          </div>
-        </Card>
-
-        {/* 4. Brand Logo Color Palette */}
+        {/* 3. Brand Logo Color Palette */}
         <Card className="p-6 space-y-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">

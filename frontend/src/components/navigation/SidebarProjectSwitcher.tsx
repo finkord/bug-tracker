@@ -42,13 +42,13 @@ export const SidebarProjectSwitcher: React.FC<SidebarProjectSwitcherProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const recentProjects = useActiveProjectStore((state) => state.recentProjects);
 
-  // Close dropdown whenever sidebar collapse state changes (e.g. flyout dismisses or hotkey toggles)
+  // Close dropdown whenever sidebar collapse state transitions to true (e.g. flyout unhovers or user triggers collapse)
   React.useEffect(() => {
-    if (isOpen) {
+    if (collapsed && isOpen) {
       setIsOpen(false);
       onOpenChange?.(false);
     }
-  }, [collapsed]);
+  }, [collapsed, isOpen, onOpenChange]);
 
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open);
@@ -228,7 +228,7 @@ export const SidebarProjectSwitcher: React.FC<SidebarProjectSwitcherProps> = ({
 
   return (
     <div className="shrink-0 px-3 flex items-center">
-      <DropdownMenu open={isOpen} onOpenChange={handleOpenChange}>
+      <DropdownMenu open={isOpen} onOpenChange={handleOpenChange} modal={false}>
         <Tooltip content={collapsed ? projectName : undefined} side="right" sideOffset={8}>
           <DropdownMenuTrigger asChild>
             <button

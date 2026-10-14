@@ -23,7 +23,6 @@ export const SuperSidebar: React.FC<SuperSidebarProps> = () => {
     toggleSidebar,
     mobileOpen,
     closeMobile,
-    showCollapsedLabels,
   } = useSidebar();
   const location = useLocation();
 
@@ -61,6 +60,13 @@ export const SuperSidebar: React.FC<SuperSidebarProps> = () => {
     if (e?.relatedTarget instanceof Node && asideRef.current?.contains(e.relatedTarget)) {
       return;
     }
+    // If relatedTarget is inside a Radix dropdown portal, ignore leave event
+    if (
+      e?.relatedTarget instanceof Element &&
+      Boolean(e.relatedTarget.closest('[data-radix-popper-content-wrapper], [role="menu"]'))
+    ) {
+      return;
+    }
     if (enterTimerRef.current) {
       clearTimeout(enterTimerRef.current);
       enterTimerRef.current = null;
@@ -89,12 +95,16 @@ export const SuperSidebar: React.FC<SuperSidebarProps> = () => {
     } else {
       if (leaveTimerRef.current) {
         clearTimeout(leaveTimerRef.current);
+        leaveTimerRef.current = null;
       }
-      setIsClosing(true);
-      leaveTimerRef.current = setTimeout(() => {
-        setIsClosing(false);
-        setIsHovered(false);
-      }, 150);
+      // If mouse is still hovering over the aside, keep flyout open smoothly without flicker
+      if (!asideRef.current?.matches(':hover')) {
+        setIsClosing(true);
+        leaveTimerRef.current = setTimeout(() => {
+          setIsClosing(false);
+          setIsHovered(false);
+        }, 150);
+      }
     }
   };
 
@@ -206,12 +216,29 @@ export const SuperSidebar: React.FC<SuperSidebarProps> = () => {
   useEffect(() => {
     if (!isFlyout) return;
     const handlePointerDown = (e: PointerEvent) => {
-      if (asideRef.current && !asideRef.current.contains(e.target as Node)) {
-        setIsHovered(false);
-        setIsClosing(false);
+      // Ignore clicks inside the aside element
+      if (asideRef.current?.contains(e.target as Node)) {
+        return;
       }
+      // Ignore clicks inside any Radix dropdown content or portals
+      if (
+        e.target instanceof Element &&
+        Boolean(e.target.closest('[data-radix-popper-content-wrapper], [role="menu"]'))
+      ) {
+        return;
+      }
+      // If an internal dropdown menu is open, let Radix handle outside dismiss without abruptly closing flyout
+      if (isMenuOpen) {
+        return;
+      }
+      setIsHovered(false);
+      setIsClosing(false);
     };
     const handleEscape = (e: KeyboardEvent) => {
+      // If a dropdown menu is open, let Radix handle Escape to close the menu first
+      if (isMenuOpen) {
+        return;
+      }
       if (e.key === 'Escape') {
         setIsHovered(false);
         setIsClosing(false);
@@ -223,7 +250,7 @@ export const SuperSidebar: React.FC<SuperSidebarProps> = () => {
       window.removeEventListener('pointerdown', handlePointerDown);
       window.removeEventListener('keydown', handleEscape);
     };
-  }, [isFlyout]);
+  }, [isFlyout, isMenuOpen]);
 
   const handleCloseFlyout = () => {
     setIsHovered(false);
@@ -256,7 +283,6 @@ export const SuperSidebar: React.FC<SuperSidebarProps> = () => {
         activeProject={effectiveActiveProject}
         projectId={effectiveActiveProjectId}
         collapsed={isCollapsed}
-        showCollapsedLabels={showCollapsedLabels}
         onNavigate={handleCloseFlyout}
       />
 

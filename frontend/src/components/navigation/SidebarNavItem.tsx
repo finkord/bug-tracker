@@ -5,7 +5,6 @@ import { Tooltip } from '../ui/Tooltip';
 
 export interface NavItemConfig {
   label: string;
-  shortLabel: string;
   path: string;
   icon: LucideIcon;
   exact?: boolean;
@@ -15,7 +14,6 @@ export interface NavItemConfig {
 interface SidebarNavItemProps {
   item: NavItemConfig;
   collapsed?: boolean;
-  showCollapsedLabels?: boolean;
   onNavigate?: () => void;
 }
 
@@ -26,7 +24,6 @@ interface SidebarNavItemProps {
 export const SidebarNavItem: React.FC<SidebarNavItemProps> = ({
   item,
   collapsed = false,
-  showCollapsedLabels = false,
   onNavigate,
 }) => {
   const location = useLocation();
@@ -37,8 +34,6 @@ export const SidebarNavItem: React.FC<SidebarNavItemProps> = ({
     : item.exact
     ? location.pathname === item.path
     : location.pathname.startsWith(item.path);
-
-  const isRailWithMicroLabel = collapsed && showCollapsedLabels;
 
   return (
     <Tooltip content={collapsed ? item.label : undefined} side="right" sideOffset={8}>
@@ -56,11 +51,7 @@ export const SidebarNavItem: React.FC<SidebarNavItemProps> = ({
         aria-label={item.label}
       >
         {/* Strictly anchored 36x36px icon slot permanently aligned at X=30px center line */}
-        <div
-          className={`w-9 h-9 shrink-0 flex ${
-            isRailWithMicroLabel ? 'flex-col justify-center' : 'items-center justify-center'
-          }`}
-        >
+        <div className="w-9 h-9 shrink-0 flex items-center justify-center">
           <Icon
             className={`w-4 h-4 shrink-0 transition-colors ${
               isActive
@@ -68,11 +59,6 @@ export const SidebarNavItem: React.FC<SidebarNavItemProps> = ({
                 : 'text-[var(--md-sys-color-on-surface-variant)] group-hover:text-[var(--md-sys-color-on-surface)]'
             }`}
           />
-          {isRailWithMicroLabel && (
-            <span className="text-[9px] leading-tight mt-0.5 font-medium truncate max-w-[32px]">
-              {item.shortLabel}
-            </span>
-          )}
         </div>
 
         {/* Smoothly collapsing text label without layout shift */}

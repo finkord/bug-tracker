@@ -42,13 +42,13 @@ export const SidebarBottomActions: React.FC<SidebarBottomActionsProps> = ({
   const { user, logout } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = React.useState(false);
 
-  // Close dropdown whenever sidebar collapse state changes (e.g. flyout dismisses or hotkey toggles)
+  // Close dropdown whenever sidebar collapse state transitions to true (e.g. flyout unhovers or user triggers collapse)
   React.useEffect(() => {
-    if (isProfileOpen) {
+    if (collapsed && isProfileOpen) {
       setIsProfileOpen(false);
       onOpenChange?.(false);
     }
-  }, [collapsed]);
+  }, [collapsed, isProfileOpen, onOpenChange]);
 
   const handleProfileOpenChange = (open: boolean) => {
     setIsProfileOpen(open);
@@ -93,7 +93,7 @@ export const SidebarBottomActions: React.FC<SidebarBottomActionsProps> = ({
     user?.groups?.some((g: string) => ['administrators', 'admin', 'admins'].includes(g.toLowerCase()));
 
   const userProfileMenu = user ? (
-    <DropdownMenu open={isProfileOpen} onOpenChange={handleProfileOpenChange}>
+    <DropdownMenu open={isProfileOpen} onOpenChange={handleProfileOpenChange} modal={false}>
       <DropdownMenuTrigger asChild>
         <button
           type="button"

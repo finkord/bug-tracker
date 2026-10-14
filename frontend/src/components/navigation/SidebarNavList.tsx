@@ -19,7 +19,6 @@ interface SidebarNavListProps {
   activeProject?: ProjectItem;
   projectId?: number;
   collapsed?: boolean;
-  showCollapsedLabels?: boolean;
   onNavigate?: () => void;
 }
 
@@ -36,14 +35,12 @@ export const SidebarNavList: React.FC<SidebarNavListProps> = ({
   activeProject,
   projectId,
   collapsed = false,
-  showCollapsedLabels = false,
   onNavigate,
 }) => {
   if (!user) {
     const guestItems: NavItemConfig[] = [
       {
         label: 'Overview',
-        shortLabel: 'Home',
         path: '/',
         icon: LayoutDashboard,
         exact: true,
@@ -51,7 +48,6 @@ export const SidebarNavList: React.FC<SidebarNavListProps> = ({
       },
       {
         label: 'Sign In',
-        shortLabel: 'Login',
         path: '/login',
         icon: LogIn,
         exact: true,
@@ -59,7 +55,6 @@ export const SidebarNavList: React.FC<SidebarNavListProps> = ({
       },
       {
         label: 'Create Account',
-        shortLabel: 'Register',
         path: '/register',
         icon: UserPlus,
         exact: true,
@@ -67,7 +62,6 @@ export const SidebarNavList: React.FC<SidebarNavListProps> = ({
       },
       {
         label: 'Forgot Password',
-        shortLabel: 'Reset',
         path: '/forgot-password',
         icon: KeyRound,
         exact: true,
@@ -82,7 +76,6 @@ export const SidebarNavList: React.FC<SidebarNavListProps> = ({
             key={item.label}
             item={item}
             collapsed={collapsed}
-            showCollapsedLabels={showCollapsedLabels}
             onNavigate={onNavigate}
           />
         ))}
@@ -99,7 +92,6 @@ export const SidebarNavList: React.FC<SidebarNavListProps> = ({
     ? [
         {
           label: 'Overview',
-          shortLabel: 'Overview',
           path: `/projects/${projectIdentifier}`,
           exact: true,
           icon: Compass,
@@ -109,28 +101,24 @@ export const SidebarNavList: React.FC<SidebarNavListProps> = ({
         },
         {
           label: 'Kanban Board',
-          shortLabel: 'Kanban',
           path: `/projects/${projectIdentifier}/board`,
           icon: Kanban,
           activeMatch: (p) => p.includes('/board'),
         },
         {
           label: 'Backlog & Sprints',
-          shortLabel: 'Backlog',
           path: `/projects/${projectIdentifier}/backlog`,
           icon: Layers,
           activeMatch: (p) => p.includes('/backlog'),
         },
         {
           label: 'Team Timesheets',
-          shortLabel: 'Timesheets',
           path: `/projects/${projectIdentifier}/timesheets`,
           icon: Clock,
           activeMatch: (p) => p.includes('/timesheets'),
         },
         {
           label: 'Project Settings',
-          shortLabel: 'Settings',
           path: `/projects/${projectIdentifier}/settings`,
           icon: Settings,
           activeMatch: (p) => p.includes('/settings'),
@@ -142,7 +130,6 @@ export const SidebarNavList: React.FC<SidebarNavListProps> = ({
   const personalNavItems: NavItemConfig[] = [
     {
       label: 'Dashboard',
-      shortLabel: 'Dash',
       path: '/dashboard',
       exact: true,
       icon: LayoutDashboard,
@@ -150,7 +137,6 @@ export const SidebarNavList: React.FC<SidebarNavListProps> = ({
     },
     {
       label: 'Search',
-      shortLabel: 'Search',
       path: '/search',
       icon: Search,
       activeMatch: (p) => p.startsWith('/search'),
@@ -161,7 +147,6 @@ export const SidebarNavList: React.FC<SidebarNavListProps> = ({
   const timesheetNavItems: NavItemConfig[] = [
     {
       label: 'Team Timesheets',
-      shortLabel: 'Timesheets',
       path: '/time-tracking',
       icon: Clock,
       activeMatch: (p) => p.startsWith('/time-tracking'),
@@ -189,7 +174,6 @@ export const SidebarNavList: React.FC<SidebarNavListProps> = ({
               key={item.label}
               item={item}
               collapsed={collapsed}
-              showCollapsedLabels={showCollapsedLabels}
               onNavigate={onNavigate}
             />
           ))}
@@ -221,7 +205,6 @@ export const SidebarNavList: React.FC<SidebarNavListProps> = ({
             key={item.label}
             item={item}
             collapsed={collapsed}
-            showCollapsedLabels={showCollapsedLabels}
             onNavigate={onNavigate}
           />
         ))}
@@ -250,7 +233,6 @@ export const SidebarNavList: React.FC<SidebarNavListProps> = ({
                 key={item.label}
                 item={item}
                 collapsed={collapsed}
-                showCollapsedLabels={showCollapsedLabels}
                 onNavigate={onNavigate}
               />
             ))}

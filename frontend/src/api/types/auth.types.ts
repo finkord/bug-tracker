@@ -4,7 +4,6 @@ export type SystemRole = components['schemas']['UpdateUserRoleDto']['role'];
 
 export interface UserPreferences {
   theme?: 'light' | 'dark';
-  showCollapsedLabels?: boolean;
   emailNotifications?: boolean;
   compactMode?: boolean;
   [key: string]: unknown;

@@ -17,15 +17,12 @@ export interface SidebarState {
   collapsed: boolean;
   collapseMode: 'rail' | 'hidden';
   mobileOpen: boolean;
-  showCollapsedLabels: boolean;
   brandStyle: BrandStyle;
   toggleSidebar: () => void;
   setCollapsed: (collapsed: boolean) => void;
   setCollapseMode: (mode: 'rail' | 'hidden') => void;
   toggleMobile: () => void;
   closeMobile: () => void;
-  setShowCollapsedLabels: (show: boolean) => void;
-  toggleCollapsedLabels: () => void;
   setBrandStyle: (style: BrandStyle) => void;
 }
 
@@ -35,16 +32,12 @@ export const useSidebarStore = create<SidebarState>()(
       collapsed: false,
       collapseMode: 'hidden',
       mobileOpen: false,
-      showCollapsedLabels: false,
       brandStyle: 'vibrant',
       toggleSidebar: () => set((state) => ({ collapsed: !state.collapsed })),
       setCollapsed: (collapsed: boolean) => set({ collapsed }),
       setCollapseMode: (collapseMode: 'rail' | 'hidden') => set({ collapseMode }),
       toggleMobile: () => set((state) => ({ mobileOpen: !state.mobileOpen })),
       closeMobile: () => set({ mobileOpen: false }),
-      setShowCollapsedLabels: (showCollapsedLabels: boolean) => set({ showCollapsedLabels }),
-      toggleCollapsedLabels: () =>
-        set((state) => ({ showCollapsedLabels: !state.showCollapsedLabels })),
       setBrandStyle: (brandStyle: BrandStyle) => set({ brandStyle }),
     }),
     {
@@ -52,7 +45,6 @@ export const useSidebarStore = create<SidebarState>()(
       partialize: (state) => ({
         collapsed: state.collapsed,
         collapseMode: state.collapseMode,
-        showCollapsedLabels: state.showCollapsedLabels,
         brandStyle: state.brandStyle,
       }),
     },
@@ -62,4 +54,8 @@ export const useSidebarStore = create<SidebarState>()(
 /**
  * Drop-in backward-compatible hook selector for existing components.
  */
-export const useSidebar = () => useSidebarStore();
+export function useSidebar(): SidebarState;
+export function useSidebar<T>(selector: (state: SidebarState) => T): T;
+export function useSidebar<T>(selector?: (state: SidebarState) => T): SidebarState | T {
+  return selector ? useSidebarStore(selector) : useSidebarStore();
+}

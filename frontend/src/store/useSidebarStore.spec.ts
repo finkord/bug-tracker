@@ -6,7 +6,6 @@ describe('useSidebarStore', () => {
     useSidebarStore.setState({
       collapsed: false,
       mobileOpen: false,
-      showCollapsedLabels: false,
     });
   });
 
@@ -14,7 +13,6 @@ describe('useSidebarStore', () => {
     const state = useSidebarStore.getState();
     expect(state.collapsed).toBe(false);
     expect(state.mobileOpen).toBe(false);
-    expect(state.showCollapsedLabels).toBe(false);
   });
 
   it('should toggle collapse state correctly', () => {
@@ -49,13 +47,6 @@ describe('useSidebarStore', () => {
     expect(useSidebarStore.getState().mobileOpen).toBe(false);
   });
 
-  it('should toggle and set showCollapsedLabels', () => {
-    useSidebarStore.getState().setShowCollapsedLabels(true);
-    expect(useSidebarStore.getState().showCollapsedLabels).toBe(true);
-
-    useSidebarStore.getState().toggleCollapsedLabels();
-    expect(useSidebarStore.getState().showCollapsedLabels).toBe(false);
-  });
 
   it('should set collapseMode correctly', () => {
     expect(useSidebarStore.getState().collapseMode).toBe('hidden');

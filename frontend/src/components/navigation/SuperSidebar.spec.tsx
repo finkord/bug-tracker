@@ -189,4 +189,53 @@ describe('SuperSidebar Flyout Overlay', () => {
     expect(aside).not.toHaveClass('fixed');
     expect(aside).toHaveClass('w-[60px]');
   });
+
+  it('keeps flyout stable when project dropdown is opened and closed without flickering', () => {
+    const { container } = render(
+      <MemoryRouter>
+        <SuperSidebar />
+      </MemoryRouter>,
+    );
+
+    const aside = container.querySelector('aside')!;
+    const sidebarWrapper = aside.parentElement!;
+
+    // 1. Hover to expand rail flyout
+    fireEvent.mouseEnter(sidebarWrapper);
+    act(() => {
+      vi.advanceTimersByTime(110);
+    });
+    expect(aside).toHaveClass('fixed');
+    expect(aside).toHaveClass('w-60');
+
+    // 2. Open project switcher dropdown
+    const switcher = screen.getByRole('button', { name: /switch active project/i });
+    fireEvent.pointerDown(switcher, { button: 0 });
+    fireEvent.keyDown(switcher, { key: 'ArrowDown' });
+
+    expect(screen.getByPlaceholderText('Find project...')).toBeInTheDocument();
+    // Flyout remains open and fixed while dropdown is active
+    expect(aside).toHaveClass('fixed');
+
+    // 3. Close dropdown via Escape on the focused input
+    const input = screen.getByPlaceholderText('Find project...');
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect(screen.queryByPlaceholderText('Find project...')).not.toBeInTheDocument();
+
+    // Fast forward past menu close timer
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
+
+    // Flyout should still be stably open if hover is maintained
+    // (no immediate collapse to 60px while mouse remains on aside)
+    // Now simulate mouse leaving aside to canvas
+    fireEvent.mouseLeave(aside);
+    act(() => {
+      vi.advanceTimersByTime(160);
+    });
+
+    expect(aside).not.toHaveClass('fixed');
+    expect(aside).toHaveClass('w-[60px]');
+  });
 });

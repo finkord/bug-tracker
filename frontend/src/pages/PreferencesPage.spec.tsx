@@ -3,16 +3,13 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { PreferencesPage } from './PreferencesPage';
 
-let mockServerPrefs: Record<string, unknown> | undefined = { theme: 'dark', showCollapsedLabels: false };
+let mockServerPrefs: Record<string, unknown> | undefined = { theme: 'dark' };
 let mockActiveTheme = 'dark';
 const mockSetTheme = vi.fn();
 const mockMutate = vi.fn();
 
 vi.mock('../store', () => ({
   useSidebar: () => ({
-    showCollapsedLabels: false,
-    setShowCollapsedLabels: vi.fn(),
-    toggleCollapsedLabels: vi.fn(),
     collapseMode: 'rail',
     setCollapseMode: vi.fn(),
     brandStyle: 'vibrant',
@@ -38,7 +35,7 @@ vi.mock('../api/queries', () => ({
 describe('PreferencesPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockServerPrefs = { theme: 'dark', showCollapsedLabels: false };
+    mockServerPrefs = { theme: 'dark' };
     mockActiveTheme = 'dark';
     localStorage.clear();
   });
@@ -64,7 +61,6 @@ describe('PreferencesPage', () => {
     );
 
     expect(screen.getByRole('heading', { name: /^Preferences$/i })).toBeInTheDocument();
-    expect(screen.getByText(/Collapsed Sidebar Text Labels/i)).toBeInTheDocument();
     expect(screen.getByText(/Brand Logo Color & Style/i)).toBeInTheDocument();
     expect(screen.getByText(/Visual Theme/i)).toBeInTheDocument();
     expect(screen.getByText(/Sidebar Collapse Behavior/i)).toBeInTheDocument();
@@ -73,7 +69,7 @@ describe('PreferencesPage', () => {
   it('does not overwrite active local light theme when server returns dark, and syncs local theme to server', () => {
     localStorage.setItem('theme', JSON.stringify({ state: { theme: 'light' } }));
     mockActiveTheme = 'light';
-    mockServerPrefs = { theme: 'dark', showCollapsedLabels: false };
+    mockServerPrefs = { theme: 'dark' };
 
     render(
       <MemoryRouter>
@@ -89,7 +85,7 @@ describe('PreferencesPage', () => {
 
   it('adopts server theme when no local theme was stored in localStorage', () => {
     mockActiveTheme = 'dark';
-    mockServerPrefs = { theme: 'light', showCollapsedLabels: false };
+    mockServerPrefs = { theme: 'light' };
 
     render(
       <MemoryRouter>
