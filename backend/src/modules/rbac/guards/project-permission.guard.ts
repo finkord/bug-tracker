@@ -11,6 +11,7 @@ import { REQUIRE_PROJECT_PERMISSION_KEY } from '../decorators/require-permission
 import { ProjectPermission } from '../entities/permission-grant.entity.js';
 import { PermissionEvaluatorService } from '../services/permission-evaluator.service.js';
 import { Issue } from '../../issues/entities/issue.entity.js';
+import { IssueLink } from '../../issues/entities/issue-link.entity.js';
 import { Project } from '../../projects/entities/project.entity.js';
 import { Team } from '../../teams/entities/team.entity.js';
 
@@ -91,7 +92,7 @@ export class ProjectPermissionGuard implements CanActivate {
     }
 
     // 3. Resolve from :id depending on route context
-    if (request.params?.id) {
+    if (!projectId && request.params?.id) {
       const rawId = String(request.params.id).trim();
       const url = request.originalUrl || request.url || '';
       if (url.includes('/projects/')) {
@@ -149,7 +150,22 @@ export class ProjectPermissionGuard implements CanActivate {
       }
     }
 
-    // 4. If issueId is known but projectId is not, resolve issue from DB
+    // 4. Resolve from :linkId (e.g. DELETE /issues/links/:linkId)
+    if (!projectId && request.params?.linkId) {
+      const linkId = Number(request.params.linkId);
+      if (!Number.isNaN(linkId)) {
+        const link = await this.dataSource.getRepository(IssueLink).findOne({
+          where: { id: linkId },
+          relations: { sourceIssue: true },
+        });
+        if (link?.sourceIssue) {
+          projectId = link.sourceIssue.projectId;
+          issueId = link.sourceIssueId;
+        }
+      }
+    }
+
+    // 5. If issueId is known but projectId is not, resolve issue from DB
     if (!projectId && issueId && !Number.isNaN(issueId)) {
       const issue = await this.dataSource.getRepository(Issue).findOne({
         where: { id: issueId },

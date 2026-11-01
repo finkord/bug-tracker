@@ -5,7 +5,7 @@ import { Repository } from 'typeorm';
 import { Attachment } from '../entities/attachment.entity.js';
 import { Issue } from '../entities/issue.entity.js';
 import { User } from '../../users/entities/user.entity.js';
-import { SeaweedFsService, type UploadedFileInput } from './seaweedfs.service.js';
+import { SeaweedFsService, type UploadedFileInput } from '../../storage/services/seaweedfs.service.js';
 import { EventsGateway } from '../../events/events.gateway.js';
 
 /**

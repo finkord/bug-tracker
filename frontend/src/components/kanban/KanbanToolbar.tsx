@@ -185,6 +185,24 @@ export const KanbanToolbar: React.FC<KanbanToolbarProps> = ({
                     <span>Feature</span>
                   </span>
                 </SelectItem>
+                <SelectItem value="STORY">
+                  <span className="flex items-center gap-2">
+                    <BookmarkPlus className="w-3.5 h-3.5 text-[#0052CC] shrink-0" />
+                    <span>Story</span>
+                  </span>
+                </SelectItem>
+                <SelectItem value="EPIC">
+                  <span className="flex items-center gap-2">
+                    <Layers className="w-3.5 h-3.5 text-[#6554C0] shrink-0" />
+                    <span>Epic</span>
+                  </span>
+                </SelectItem>
+                <SelectItem value="SUBTASK">
+                  <span className="flex items-center gap-2">
+                    <CheckSquare className="w-3.5 h-3.5 text-[var(--md-sys-color-outline)] shrink-0" />
+                    <span>Subtask</span>
+                  </span>
+                </SelectItem>
                 <SelectItem value="IMPROVEMENT">
                   <span className="flex items-center gap-2">
                     <Zap className="w-3.5 h-3.5 text-[var(--md-sys-color-tertiary)] shrink-0" />

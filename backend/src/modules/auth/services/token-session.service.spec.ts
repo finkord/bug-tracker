@@ -167,7 +167,7 @@ describe('TokenSessionService', () => {
     });
 
     it('should extract sub from token on logoutByToken and invalidate session', async () => {
-      mockJwtService.decode.mockReturnValue({ sub: 42 });
+      mockJwtService.verify.mockReturnValue({ sub: 42 });
 
       const result = await service.logoutByToken('some_bearer_jwt');
 

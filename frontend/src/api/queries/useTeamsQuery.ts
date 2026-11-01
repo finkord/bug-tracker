@@ -12,8 +12,8 @@ export const teamQueries = {
   lists: () => [...teamQueries.all, 'list'] as const,
   list: (projectId?: number) =>
     queryOptions({
-      queryKey: [...teamQueries.lists(), { projectId }] as const,
-      queryFn: () => api.getTeams(projectId),
+      queryKey: [...teamQueries.lists(), { projectId: projectId && projectId > 0 ? projectId : undefined }] as const,
+      queryFn: () => api.getTeams(projectId && projectId > 0 ? projectId : undefined),
     }),
   details: () => [...teamQueries.all, 'detail'] as const,
   detail: (id: number) =>

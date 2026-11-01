@@ -22,6 +22,7 @@ import { NotificationsService } from '../../notifications/notifications.service.
 import { NotificationType } from '../../notifications/entities/notification.entity.js';
 import { WebhooksService } from '../../webhooks/webhooks.service.js';
 import { WorkflowTransitionDto, WORKFLOW_TRANSITIONS } from '../dto/workflow-transition.dto.js';
+import { IssueStateFactory } from '../states/index.js';
 import type { IssueHistoryItemDto } from '../dto/issue-history.dto.js';
 import type {
   IssueSummaryDto,
@@ -62,6 +63,7 @@ export class IssueCoreService {
     private readonly notificationsService?: NotificationsService,
     @Optional()
     private readonly webhooksService?: WebhooksService,
+    private readonly stateFactory: IssueStateFactory = new IssueStateFactory(),
   ) {
     const port = this.configService.get<number>('PORT', 3000);
     const host = this.configService.get<string>('BACKEND_URL', `http://localhost:${port}`);
@@ -157,7 +159,7 @@ export class IssueCoreService {
    */
   async findAll(query: ListIssuesQueryDto, user?: User): Promise<PaginatedIssuesResponseDto> {
     const page = Math.max(1, Number(query.page) || 1);
-    const limit = Math.min(100, Math.max(1, Number(query.limit) || 50));
+    const limit = Math.min(250, Math.max(1, Number(query.limit) || 50));
 
     // 1. Enforce tenant project isolation and row-level security if user is provided
     let accessibleProjectIds: number[] | 'ALL' = 'ALL';
@@ -184,6 +186,9 @@ export class IssueCoreService {
       .leftJoinAndSelect('epic.project', 'epicProject')
       .leftJoinAndSelect('issue.parent', 'parent')
       .leftJoinAndSelect('parent.project', 'parentProject')
+      .leftJoinAndSelect('issue.component', 'component')
+      .leftJoinAndSelect('issue.fixVersion', 'fixVersion')
+      .leftJoinAndSelect('issue.subtasks', 'subtasks')
       .loadRelationIdAndMap('issue.commentIds', 'issue.comments');
 
     if (user) {
@@ -616,15 +621,8 @@ export class IssueCoreService {
       return this.findById(id);
     }
 
-    const allowedTransitions = WORKFLOW_TRANSITIONS[issue.status] || [];
-    const isTransitionAllowed = allowedTransitions.some((t) => t.toStatus === status);
-
-    if (!isTransitionAllowed) {
-      const allowedTargets = allowedTransitions.map((t) => t.toStatus).join(', ') || 'none';
-      throw new BadRequestException(
-        `Cannot transition issue from ${issue.status} to ${status}. Allowed target status(es): ${allowedTargets}`,
-      );
-    }
+    // Validate transition using polymorphic state machine (State Pattern)
+    this.stateFactory.validateTransition(issue.status, status);
 
     const previousStatus = issue.status;
     await this.issueRepository.update(id, { status });
@@ -688,7 +686,7 @@ export class IssueCoreService {
       throw new NotFoundException(`Issue with ID #${id} not found`);
     }
 
-    return WORKFLOW_TRANSITIONS[issue.status] || [];
+    return [...this.stateFactory.getTransitions(issue.status)] as WorkflowTransitionDto[];
   }
 
   /**
@@ -1127,8 +1125,12 @@ export class IssueCoreService {
       }
     }
 
-    // Validate sprint if moving to sprint
+    // Validate sprint if moving to sprint and prevent EPIC sprint assignment (Defect 4 fix)
     if (dto.sprintId !== undefined && dto.sprintId !== null) {
+      const epicIssue = issues.find((i) => i.issueType === IssueType.EPIC);
+      if (epicIssue) {
+        throw new BadRequestException('Epics cannot be assigned directly to sprints');
+      }
       const sprint = await this.sprintRepository.findOne({
         where: { id: dto.sprintId },
       });
@@ -1140,6 +1142,13 @@ export class IssueCoreService {
         throw new BadRequestException(
           `Issue #${invalidProjectIssue.id} does not belong to the sprint's project #${sprint.projectId}`,
         );
+      }
+    }
+
+    // Validate status transitions if transitioning statuses in bulk (State Pattern)
+    if (dto.status !== undefined) {
+      for (const issue of issues) {
+        this.stateFactory.validateTransition(issue.status, dto.status);
       }
     }
 

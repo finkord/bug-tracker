@@ -18,6 +18,14 @@ import { IssueSecurityGrant } from '../rbac/entities/issue-security-grant.entity
 import { Sprint } from '../sprints/entities/sprint.entity.js';
 import { Team } from '../teams/entities/team.entity.js';
 import { TeamMember } from '../teams/entities/team-member.entity.js';
+import { ProjectComponent } from '../projects/entities/project-component.entity.js';
+import { ProjectVersion } from '../projects/entities/project-version.entity.js';
+import { ProjectQuickFilter } from '../projects/entities/quick-filter.entity.js';
+import { VcsPullRequest } from '../vcs/entities/vcs-pull-request.entity.js';
+import { ProjectWebhook } from '../webhooks/entities/project-webhook.entity.js';
+import { IssueHistory } from '../issues/entities/issue-history.entity.js';
+import { Notification } from '../notifications/entities/notification.entity.js';
+import { SavedFilter } from '../users/entities/saved-filter.entity.js';
 import { SeedService } from './seed.service.js';
 import { SystemInitService } from './system-init.service.js';
 import { SystemBannerService } from './system-banner.service.js';
@@ -46,6 +54,14 @@ import { EventsModule } from '../events/events.module.js';
       IssueSecurityScheme,
       IssueSecurityLevel,
       IssueSecurityGrant,
+      ProjectComponent,
+      ProjectVersion,
+      ProjectQuickFilter,
+      VcsPullRequest,
+      ProjectWebhook,
+      IssueHistory,
+      Notification,
+      SavedFilter,
     ]),
   ],
   controllers: [SystemBannerController],

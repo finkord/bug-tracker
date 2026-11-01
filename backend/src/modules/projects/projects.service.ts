@@ -355,8 +355,19 @@ export class ProjectsService {
     if (dto.description !== undefined) project.description = dto.description?.trim() || null;
     if (dto.avatarUrl !== undefined) project.avatarUrl = dto.avatarUrl ? dto.avatarUrl.trim() : null;
     if (dto.wipLimits !== undefined) project.wipLimits = dto.wipLimits;
-    if (dto.leadId !== undefined && dto.leadId !== null) {
-      project.leadId = dto.leadId;
+    if (dto.leadId !== undefined) {
+      if (dto.leadId !== null) {
+        const leadUser = await this.dataSource.getRepository(User).findOne({
+          where: { id: dto.leadId },
+        });
+        if (!leadUser) {
+          throw new NotFoundException(`User #${dto.leadId} not found`);
+        }
+        project.leadId = leadUser.id;
+        project.lead = leadUser;
+      } else {
+        throw new BadRequestException('Project lead cannot be null');
+      }
     }
 
     return this.projectRepository.save(project);

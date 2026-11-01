@@ -9,6 +9,7 @@ vi.mock('../../api/queries', () => ({
   useProjectsQuery: vi.fn(),
   useUsersQuery: vi.fn(),
   useCreateProjectMutation: vi.fn(),
+  useUpdateProjectMutation: vi.fn(),
   useDeleteProjectMutation: vi.fn(),
   useUserDetailQuery: vi.fn(),
 }));
@@ -73,6 +74,11 @@ describe('AdminProjectsTab Component', () => {
       mutateAsync: vi.fn(),
       isPending: false,
     } as unknown as ReturnType<typeof queries.useCreateProjectMutation>);
+
+    vi.mocked(queries.useUpdateProjectMutation).mockReturnValue({
+      mutateAsync: vi.fn(),
+      isPending: false,
+    } as unknown as ReturnType<typeof queries.useUpdateProjectMutation>);
 
     vi.mocked(queries.useDeleteProjectMutation).mockReturnValue({
       mutateAsync: vi.fn(),

@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useDroppable } from '@dnd-kit/core';
 import type { IssueItem, ProjectVersionItem } from '../../api/types';
-import { useProjectVersionsQuery } from '../../api/queries';
+import { useProjectVersionsQuery, useIssuesQuery } from '../../api/queries';
 import { Badge, Button, Tabs, TabsList, TabsTrigger } from '../ui';
 import {
   Layers,
@@ -10,6 +11,7 @@ import {
   X,
   Filter,
   Calendar,
+  ExternalLink,
 } from 'lucide-react';
 
 export type BacklogDrawerTab = 'epics' | 'versions';
@@ -45,6 +47,7 @@ const EpicDroppableItem: React.FC<EpicDroppableItemProps> = ({
   isSelected,
   onSelectEpic,
 }) => {
+  const navigate = useNavigate();
   const { setNodeRef } = useDroppable({
     id: `drawer-epic-${epic.id}`,
     data: {
@@ -74,21 +77,34 @@ const EpicDroppableItem: React.FC<EpicDroppableItemProps> = ({
       }`}
     >
       <div className="flex items-center justify-between gap-1">
-        <span
-          className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider"
-          style={{
-            backgroundColor: epic.epicColor ? `${epic.epicColor}22` : 'var(--md-sys-color-tertiary-container)',
-            color: epic.epicColor || 'var(--md-sys-color-on-tertiary-container)',
-          }}
-        >
-          {epic.key}
-        </span>
-        <span className="text-[10px] text-[var(--md-sys-color-on-surface-variant)] font-mono">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span
+            className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider shrink-0"
+            style={{
+              backgroundColor: epic.epicColor ? `${epic.epicColor}22` : 'var(--md-sys-color-tertiary-container)',
+              color: epic.epicColor || 'var(--md-sys-color-on-tertiary-container)',
+            }}
+          >
+            {epic.key}
+          </span>
+          <button
+            type="button"
+            title={`Open details for ${epic.key}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/issues/${epic.key}`);
+            }}
+            className="p-0.5 hover:text-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-surface-variant)] transition-colors rounded-sm"
+          >
+            <ExternalLink className="w-3 h-3" />
+          </button>
+        </div>
+        <span className="text-[10px] text-[var(--md-sys-color-on-surface-variant)] font-mono shrink-0">
           {completedChildCount}/{childIssues.length} done
         </span>
       </div>
 
-      <div className="text-xs font-semibold text-[var(--md-sys-color-on-surface)] truncate">
+      <div className="text-xs font-semibold text-[var(--md-sys-color-on-surface)] truncate" title={epic.title}>
         {epic.title}
       </div>
 
@@ -290,9 +306,15 @@ const AgileBacklogLeftDrawerComponent: React.FC<AgileBacklogLeftDrawerProps> = (
   onCreateEpic,
 }) => {
   const { data: versions = [] } = useProjectVersionsQuery(projectId);
+  const { data: epicsData } = useIssuesQuery({ projectId, issueType: 'EPIC', limit: 100 });
 
-  // Extract all Epics in project (memoized to avoid re-filtering every render)
-  const epics = useMemo(() => issues.filter((i) => i.issueType === 'EPIC'), [issues]);
+  // Extract all Epics in project (using dedicated query to avoid truncation)
+  const epics = useMemo<IssueItem[]>(() => {
+    if (epicsData?.items && Array.isArray(epicsData.items) && epicsData.items.length > 0) {
+      return epicsData.items;
+    }
+    return issues.filter((i) => i.issueType === 'EPIC');
+  }, [epicsData, issues]);
 
   const issuesByEpicId = useMemo(() => {
     const map = new Map<number, IssueItem[]>();

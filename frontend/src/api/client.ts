@@ -7,6 +7,8 @@ import { rbacApi } from './modules/rbac.api.js';
 import { sprintsApi } from './modules/sprints.api.js';
 import { teamsApi } from './modules/teams.api.js';
 import { systemApi } from './modules/system.api.js';
+import { notificationsApi } from './modules/notifications.api.js';
+import { webhooksApi } from './modules/webhooks.api.js';
 
 export * from './types/index.js';
 export * from './http.js';
@@ -25,4 +27,6 @@ export const api = {
   ...sprintsApi,
   ...teamsApi,
   ...systemApi,
+  ...notificationsApi,
+  ...webhooksApi,
 };

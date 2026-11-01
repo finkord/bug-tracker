@@ -538,7 +538,7 @@ export class UsersService {
 
     const qb = this.usersRepository
       .createQueryBuilder('user')
-      .where('user.isBlocked = false')
+      .where('user.isBlocked = false AND user.isActivated = true')
       .select([
         'user.id',
         'user.fullName',

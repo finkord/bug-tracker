@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Patch,
   Delete,
   Param,
@@ -55,6 +56,7 @@ export class SprintsController {
     return this.sprintsService.createSprint(projectId, dto);
   }
 
+  @Put(':id')
   @Patch(':id')
   @RequireProjectPermission(ProjectPermission.ADMINISTER_PROJECTS)
   @ApiOperation({ summary: 'Update sprint details (name, goal, dates)' })

@@ -75,7 +75,13 @@ const mockSummary = {
 vi.mock('../api/queries', () => ({
   useProjectsQuery: () => ({ data: [mockProject], isLoading: false }),
   useProjectSummaryQuery: () => ({ data: mockSummary, isLoading: false }),
-  useIssuesQuery: () => ({ data: { items: mockIssues, total: 2 }, isLoading: false }),
+  useIssuesQuery: (params?: { issueType?: string }) => ({
+    data: {
+      items: params?.issueType === 'EPIC' ? [] : mockIssues,
+      total: params?.issueType === 'EPIC' ? 0 : mockIssues.length,
+    },
+    isLoading: false,
+  }),
   useProjectSprintsQuery: () => ({ data: mockSprints, isLoading: false }),
   useTeamsQuery: () => ({ data: [], isLoading: false }),
   useIssueDetailQuery: () => ({ data: mockIssues[0], isLoading: false }),

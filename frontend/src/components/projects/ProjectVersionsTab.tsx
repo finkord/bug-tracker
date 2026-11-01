@@ -35,6 +35,7 @@ export const ProjectVersionsTab: React.FC<ProjectVersionsTabProps> = ({ projectI
   const [startDate, setStartDate] = useState('');
   const [releaseDate, setReleaseDate] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [versionToDelete, setVersionToDelete] = useState<ProjectVersionItem | null>(null);
 
@@ -74,26 +75,28 @@ export const ProjectVersionsTab: React.FC<ProjectVersionsTabProps> = ({ projectI
   const handleRelease = async (version: ProjectVersionItem) => {
     const today = new Date().toISOString().split('T')[0];
     try {
+      setActionError(null);
       await releaseMutation.mutateAsync({
         projectId,
         versionId: version.id,
         payload: { releaseDate: today },
       });
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Failed to release version');
+      setActionError(err instanceof Error ? err.message : 'Failed to release version');
     }
   };
 
   const handleArchive = async (version: ProjectVersionItem) => {
     const nextStatus = version.status === 'ARCHIVED' ? 'UNRELEASED' : 'ARCHIVED';
     try {
+      setActionError(null);
       await updateMutation.mutateAsync({
         projectId,
         versionId: version.id,
         payload: { status: nextStatus },
       });
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Failed to update version status');
+      setActionError(err instanceof Error ? err.message : 'Failed to update version status');
     }
   };
 
@@ -104,10 +107,12 @@ export const ProjectVersionsTab: React.FC<ProjectVersionsTabProps> = ({ projectI
   const confirmDelete = async () => {
     if (!versionToDelete) return;
     try {
+      setActionError(null);
       await deleteMutation.mutateAsync({ projectId, versionId: versionToDelete.id });
       setVersionToDelete(null);
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Failed to delete version');
+      setActionError(err instanceof Error ? err.message : 'Failed to delete version');
+      setVersionToDelete(null);
     }
   };
 
@@ -244,13 +249,33 @@ export const ProjectVersionsTab: React.FC<ProjectVersionsTabProps> = ({ projectI
         <Button
           variant="primary"
           size="sm"
-          onClick={() => setModalOpen(true)}
+          onClick={() => {
+            setError(null);
+            setActionError(null);
+            setModalOpen(true);
+          }}
           leftIcon={<Plus className="w-4 h-4" />}
           className="shrink-0"
         >
           New Version
         </Button>
       </div>
+
+      {actionError && (
+        <div className="p-3 rounded-xl bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] text-xs flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{actionError}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActionError(null)}
+            className="text-xs font-bold hover:underline cursor-pointer"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Table */}
       <DataTable

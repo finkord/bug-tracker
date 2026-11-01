@@ -206,7 +206,7 @@ export const BacklogPage: React.FC = () => {
     } catch {
       // Ignored
     }
-    return 'closed'; // Default collapsed on desktop (Jira-aligned)
+    return 'epics'; // Default to epics drawer open for immediate visibility
   });
 
   const handleToggleDrawer = useCallback((tab: 'epics' | 'versions') => {
@@ -431,6 +431,11 @@ export const BacklogPage: React.FC = () => {
     const targetSprintId = (over.data.current?.sprintId !== undefined
       ? over.data.current.sprintId
       : null) as number | null;
+
+    if (targetSprintId !== null && (dragged.issueType === 'EPIC' || dragIds.some((id) => issues.find((i) => i.id === id)?.issueType === 'EPIC'))) {
+      setError('Epics cannot be assigned to sprints. Assign child issues or stories instead.');
+      return;
+    }
 
     if ((dragged.sprintId ?? null) === targetSprintId) return;
 

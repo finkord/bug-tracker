@@ -5,6 +5,7 @@ import type { ProjectItem } from '../../api/client.js';
 import {
   useProjectsQuery,
   useCreateProjectMutation,
+  useUpdateProjectMutation,
   useDeleteProjectMutation,
   useUsersQuery,
 } from '../../api/queries';
@@ -36,6 +37,7 @@ export const AdminProjectsTab: React.FC = () => {
   const allUsers = usersData?.items || [];
 
   const createProjectMutation = useCreateProjectMutation();
+  const updateProjectMutation = useUpdateProjectMutation();
   const deleteProjectMutation = useDeleteProjectMutation();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -60,11 +62,18 @@ export const AdminProjectsTab: React.FC = () => {
     if (!newProjectName.trim() || !newProjectKey.trim()) return;
 
     try {
-      await createProjectMutation.mutateAsync({
+      const created = await createProjectMutation.mutateAsync({
         name: newProjectName.trim(),
         key: newProjectKey.trim().toUpperCase(),
         description: newProjectDesc.trim() || undefined,
       });
+
+      if (newProjectLeadId) {
+        await updateProjectMutation.mutateAsync({
+          id: created.id,
+          data: { leadId: Number(newProjectLeadId) },
+        });
+      }
 
       setCreateModalOpen(false);
       setNewProjectName('');

@@ -127,6 +127,10 @@ export const ProjectOverviewPage: React.FC = () => {
   const { data: teams = [] } = useTeamsQuery(effectiveProjectId);
   const { data: components = [] } = useProjectComponentsQuery(effectiveProjectId);
   const { data: versions = [] } = useProjectVersionsQuery(effectiveProjectId);
+  const { data: epicsData } = useIssuesQuery(
+    effectiveProjectId ? { projectId: effectiveProjectId, issueType: 'EPIC', limit: 20 } : undefined,
+  );
+  const projectEpics = epicsData?.items ?? [];
 
   const unreleasedVersions = useMemo(
     () => versions.filter((v) => v.status === 'UNRELEASED'),
@@ -434,6 +438,98 @@ export const ProjectOverviewPage: React.FC = () => {
                 >
                   <span>Plan and start a sprint in Backlog</span>
                   <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            )}
+          </Card>
+
+          {/* Project Epics Progress Section */}
+          <Card
+            variant="outlined"
+            padding="lg"
+            rounded="2xl"
+            className="bg-[var(--md-sys-color-surface-container)] border border-[var(--md-sys-color-outline-variant)]/30 space-y-3.5 shadow-2xs"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-black text-[var(--md-sys-color-on-surface)] flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-[var(--md-sys-color-primary)]" />
+                  <span>Project Epics</span>
+                </h2>
+                <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] mt-0.5">
+                  High-level strategic initiatives and delivery status
+                </p>
+              </div>
+              <Link
+                to={`/projects/${projectKey}/backlog`}
+                className="text-xs font-semibold text-[var(--md-sys-color-primary)] hover:underline flex items-center gap-1"
+              >
+                <span>View Backlog Epics</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+
+            {projectEpics.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                {projectEpics.map((epic) => (
+                  <div
+                    key={epic.id}
+                    className="p-3.5 rounded-2xl bg-[var(--md-sys-color-surface-container-high)] border border-[var(--md-sys-color-outline-variant)]/20 hover:border-[var(--md-sys-color-primary)]/40 transition-colors space-y-2"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span
+                          className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0"
+                          style={{
+                            backgroundColor: epic.epicColor ? `${epic.epicColor}22` : 'var(--md-sys-color-primary-container)',
+                            color: epic.epicColor || 'var(--md-sys-color-primary)',
+                          }}
+                        >
+                          {epic.key}
+                        </span>
+                        <Link
+                          to={`/issues/${epic.key}`}
+                          className="text-xs font-bold text-[var(--md-sys-color-on-surface)] hover:text-[var(--md-sys-color-primary)] truncate transition-colors"
+                          title={epic.title}
+                        >
+                          {epic.title}
+                        </Link>
+                      </div>
+                      <Badge variant={mapStatusVariant(epic.status)} size="sm">
+                        {epic.status}
+                      </Badge>
+                    </div>
+
+                    {epic.description && (
+                      <p className="text-[11px] text-[var(--md-sys-color-on-surface-variant)] line-clamp-2">
+                        {epic.description}
+                      </p>
+                    )}
+
+                    <div className="flex items-center justify-between pt-1.5 border-t border-[var(--md-sys-color-outline-variant)]/10 text-[10px] text-[var(--md-sys-color-on-surface-variant)]">
+                      <span>Priority: {epic.priority}</span>
+                      <Link
+                        to={`/issues/${epic.key}`}
+                        className="font-semibold text-[var(--md-sys-color-primary)] hover:underline inline-flex items-center gap-1"
+                      >
+                        <span>Details</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-6 text-center space-y-2">
+                <p className="text-xs text-[var(--md-sys-color-on-surface-variant)]">
+                  No epics created yet for this project workspace.
+                </p>
+                <Link
+                  to={`/projects/${projectKey}/backlog`}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--md-sys-color-primary)] hover:underline"
+                >
+                  <span>Open Backlog to create an Epic</span>
+                  <ArrowRight className="w-3 h-3" />
                 </Link>
               </div>
             )}

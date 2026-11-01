@@ -62,6 +62,7 @@ export class NotificationsService {
       .createQueryBuilder('n')
       .leftJoinAndSelect('n.actor', 'actor')
       .leftJoinAndSelect('n.issue', 'issue')
+      .leftJoinAndSelect('issue.project', 'project')
       .where('n.userId = :userId', { userId });
 
     if (unreadOnly) {

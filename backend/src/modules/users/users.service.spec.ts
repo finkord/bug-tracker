@@ -454,7 +454,7 @@ describe('UsersService - Root Administrator Protections', () => {
 
       const result = await service.findAssignees();
 
-      expect(mockQb.where).toHaveBeenCalledWith('user.isBlocked = false');
+      expect(mockQb.where).toHaveBeenCalledWith('user.isBlocked = false AND user.isActivated = true');
       expect(mockQb.skip).toHaveBeenCalledWith(0);
       expect(mockQb.take).toHaveBeenCalledWith(50);
       expect(result.items).toHaveLength(1);

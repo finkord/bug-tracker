@@ -22,6 +22,7 @@ Welcome to the central documentation hub for **BugTracker**. This directory serv
 | **Forensic Audit** | LoginAuditLog, IP analysis | [`backend/src/modules/security-audit/`](../backend/src/modules/security-audit) | [`backend/security-audit.md`](backend/security-audit.md) |
 | **WebSockets** | Socket.IO, Real-Time Board | [`backend/src/modules/events/`](../backend/src/modules/events) | [`backend/events.md`](backend/events.md) |
 | **Notifications & Triage** | In-app alerts, unread counts, snooze | [`backend/src/modules/notifications/`](../backend/src/modules/notifications) | [`backend/notifications.md`](backend/notifications.md) |
+| **Outbound Webhooks** | Strategy Pattern, Discord, Slack, Generic | [`backend/src/modules/webhooks/`](../backend/src/modules/webhooks) | [`backend/webhooks.md`](backend/webhooks.md) |
 | **Admin Operations** | Health, Metrics, User Control | [`backend/src/modules/admin/`](../backend/src/modules/admin) | [`backend/admin.md`](backend/admin.md) |
 | **Database Seeding** | Universal CLI, 100-500+ Users, Scalable Sprints | [`backend/src/database/seed.ts`](../backend/src/database/seed.ts) | [`backend/seeding.md`](backend/seeding.md) |
 | **Frontend Core** | React 19, Zustand, Query | [`frontend/src/App.tsx`](../frontend/src/App.tsx) | [`frontend/overview.md`](frontend/overview.md) |

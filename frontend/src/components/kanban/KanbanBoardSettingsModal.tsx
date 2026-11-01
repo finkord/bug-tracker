@@ -83,7 +83,8 @@ export const KanbanBoardSettingsModal: React.FC<KanbanBoardSettingsModalProps> =
       await deleteFilterMutation.mutateAsync({ projectId, filterId: filterToDelete.id });
       setFilterToDelete(null);
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Failed to delete filter');
+      setFilterError(err instanceof Error ? err.message : 'Failed to delete filter');
+      setFilterToDelete(null);
     }
   };
 

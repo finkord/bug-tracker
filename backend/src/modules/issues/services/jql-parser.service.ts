@@ -188,39 +188,39 @@ export class JqlParserService {
 
         case 'status': {
           if (operator === '=') {
-            qb.andWhere(`UPPER(issue.status) = UPPER(:${pName})`, { [pName]: String(value) });
+            qb.andWhere(`UPPER(issue.status::text) = UPPER(:${pName})`, { [pName]: String(value) });
           } else if (operator === '!=') {
-            qb.andWhere(`UPPER(issue.status) != UPPER(:${pName})`, { [pName]: String(value) });
+            qb.andWhere(`UPPER(issue.status::text) != UPPER(:${pName})`, { [pName]: String(value) });
           } else if (operator === 'in' && Array.isArray(value)) {
-            qb.andWhere(`UPPER(issue.status) IN (:...${pName})`, { [pName]: value.map((v) => String(v).toUpperCase()) });
+            qb.andWhere(`UPPER(issue.status::text) IN (:...${pName})`, { [pName]: value.map((v) => String(v).toUpperCase()) });
           } else if (operator === 'not in' && Array.isArray(value)) {
-            qb.andWhere(`UPPER(issue.status) NOT IN (:...${pName})`, { [pName]: value.map((v) => String(v).toUpperCase()) });
+            qb.andWhere(`UPPER(issue.status::text) NOT IN (:...${pName})`, { [pName]: value.map((v) => String(v).toUpperCase()) });
           }
           break;
         }
 
         case 'priority': {
           if (operator === '=') {
-            qb.andWhere(`UPPER(issue.priority) = UPPER(:${pName})`, { [pName]: String(value) });
+            qb.andWhere(`UPPER(issue.priority::text) = UPPER(:${pName})`, { [pName]: String(value) });
           } else if (operator === '!=') {
-            qb.andWhere(`UPPER(issue.priority) != UPPER(:${pName})`, { [pName]: String(value) });
+            qb.andWhere(`UPPER(issue.priority::text) != UPPER(:${pName})`, { [pName]: String(value) });
           } else if (operator === 'in' && Array.isArray(value)) {
-            qb.andWhere(`UPPER(issue.priority) IN (:...${pName})`, { [pName]: value.map((v) => String(v).toUpperCase()) });
+            qb.andWhere(`UPPER(issue.priority::text) IN (:...${pName})`, { [pName]: value.map((v) => String(v).toUpperCase()) });
           } else if (operator === 'not in' && Array.isArray(value)) {
-            qb.andWhere(`UPPER(issue.priority) NOT IN (:...${pName})`, { [pName]: value.map((v) => String(v).toUpperCase()) });
+            qb.andWhere(`UPPER(issue.priority::text) NOT IN (:...${pName})`, { [pName]: value.map((v) => String(v).toUpperCase()) });
           }
           break;
         }
 
         case 'issueType': {
           if (operator === '=') {
-            qb.andWhere(`UPPER(issue.issueType) = UPPER(:${pName})`, { [pName]: String(value) });
+            qb.andWhere(`UPPER(issue.issueType::text) = UPPER(:${pName})`, { [pName]: String(value) });
           } else if (operator === '!=') {
-            qb.andWhere(`UPPER(issue.issueType) != UPPER(:${pName})`, { [pName]: String(value) });
+            qb.andWhere(`UPPER(issue.issueType::text) != UPPER(:${pName})`, { [pName]: String(value) });
           } else if (operator === 'in' && Array.isArray(value)) {
-            qb.andWhere(`UPPER(issue.issueType) IN (:...${pName})`, { [pName]: value.map((v) => String(v).toUpperCase()) });
+            qb.andWhere(`UPPER(issue.issueType::text) IN (:...${pName})`, { [pName]: value.map((v) => String(v).toUpperCase()) });
           } else if (operator === 'not in' && Array.isArray(value)) {
-            qb.andWhere(`UPPER(issue.issueType) NOT IN (:...${pName})`, { [pName]: value.map((v) => String(v).toUpperCase()) });
+            qb.andWhere(`UPPER(issue.issueType::text) NOT IN (:...${pName})`, { [pName]: value.map((v) => String(v).toUpperCase()) });
           }
           break;
         }

@@ -33,7 +33,10 @@ export function useAgileBacklog(selectedProjectId: number | null) {
 
   // TanStack Query for issues in selected project with enterprise 100-item batching
   const issueFilter = useMemo(
-    () => (selectedProjectId ? { projectId: selectedProjectId, limit: 100 } : undefined),
+    () =>
+      selectedProjectId && selectedProjectId > 0
+        ? { projectId: selectedProjectId, limit: 100 }
+        : undefined,
     [selectedProjectId],
   );
 
@@ -42,7 +45,9 @@ export function useAgileBacklog(selectedProjectId: number | null) {
     isLoading: issuesLoading,
     error: issuesError,
     refetch: refetchIssues,
-  } = useIssuesQuery(issueFilter);
+  } = useIssuesQuery(issueFilter, {
+    enabled: Boolean(selectedProjectId && selectedProjectId > 0),
+  });
   const issues = useMemo(() => issuesData?.items ?? [], [issuesData?.items]);
 
   // TanStack Query for sprints in selected project
@@ -51,7 +56,9 @@ export function useAgileBacklog(selectedProjectId: number | null) {
     isLoading: sprintsLoading,
     error: sprintsError,
     refetch: refetchSprints,
-  } = useProjectSprintsQuery(selectedProjectId ?? undefined);
+  } = useProjectSprintsQuery(
+    selectedProjectId && selectedProjectId > 0 ? selectedProjectId : undefined,
+  );
 
   // Sprint & Issue mutations
   const createSprintMutation = useCreateSprintMutation();
@@ -91,7 +98,7 @@ export function useAgileBacklog(selectedProjectId: number | null) {
     };
   });
 
-  const loading = issuesLoading || sprintsLoading;
+  const loading = issuesLoading || sprintsLoading || !selectedProjectId;
 
   // Real-time WebSocket synchronization with TanStack Query Cache
   useEffect(() => {
@@ -171,6 +178,8 @@ export function useAgileBacklog(selectedProjectId: number | null) {
   // Filtered issues computation
   const filteredIssues = useMemo(() => {
     return issues.filter((issue) => {
+      // In Scrum/Backlog, Epics live in the dedicated Epic Drawer and should not clutter sprint backlogs unless explicitly filtered
+      if (issue.issueType === 'EPIC' && filters.filterType !== 'EPIC') return false;
       if (filters.filterType !== 'ALL' && issue.issueType !== filters.filterType) return false;
       if (filters.filterPriority !== 'ALL' && issue.priority !== filters.filterPriority) return false;
       if (filters.onlyMine && user && issue.assignee?.id !== user.id) return false;

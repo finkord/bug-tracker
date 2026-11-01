@@ -96,6 +96,21 @@ The backend uses NestJS 12 in a modular monolith structure.
 - **RbacModule**: Calculates project role assignments, permission schemes, and issue security schemes.
 - **SecurityAuditModule**: Writes security audit logs for authentication events and role changes.
 - **EventsModule**: Distributes WebSocket events across cluster instances through Redis.
+- **WebhooksModule**: Dispatches outbound event notifications to external services using the Strategy design pattern.
+
+### 5.3 Architectural Design Patterns
+
+The backend applies proven behavioral design patterns to decouple complex subsystems:
+
+1. **Strategy Pattern (Outbound Webhooks)**:
+   - The `WebhookPayloadStrategy` interface defines a uniform serialization contract.
+   - `WebhookFormatterRegistry` registers concrete strategy classes (`GenericWebhookStrategy`, `DiscordWebhookStrategy`, `SlackWebhookStrategy`).
+   - Adding new webhook formats does not modify `WebhooksService` source code, adhering to the Open-Closed Principle.
+
+2. **State Pattern (Issue Lifecycle)**:
+   - The `IssueState` interface encapsulates status rules, permitted transitions, and entry/exit hooks.
+   - `IssueStateFactory` instantiates and switches between discrete state classes (`OpenIssueState`, `InProgressIssueState`, `ReviewIssueState`, `ResolvedIssueState`, `ClosedIssueState`).
+   - Automatically manages lifecycle timestamps (`resolvedAt`) and prevents illegal status transition bypasses.
 
 ---
 
@@ -199,7 +214,19 @@ The issue lifecycle follows an explicit Finite State Machine:
 4. `RESOLVED` to `CLOSED` or `OPEN`
 5. `CLOSED` to `OPEN`
 
-Direct transitions between incompatible states are rejected by both frontend validation and backend guards.
+### 9.1 State Pattern Implementation
+
+The backend implements the State design pattern for issue lifecycle management.
+The `IssueStateFactory` resolves concrete state classes based on the current status of an issue.
+Each state class implements the `IssueState` interface:
+- `OpenIssueState`: Validates transitions to `IN_PROGRESS`.
+- `InProgressIssueState`: Validates transitions to `OPEN`, `REVIEW`, and `RESOLVED`.
+- `ReviewIssueState`: Validates transitions to `IN_PROGRESS` and `RESOLVED`.
+- `ResolvedIssueState`: Validates transitions to `IN_PROGRESS` and `CLOSED`. Sets `resolvedAt` timestamp on entry.
+- `ClosedIssueState`: Validates transitions to `OPEN`. Clears `resolvedAt` timestamp on exit.
+
+The state classes execute side effects on entry and exit.
+The design encapsulates transition validation rules inside dedicated state classes.
 
 ---
 
@@ -263,3 +290,26 @@ cd frontend && npx oxlint
 cd backend && npm run build
 cd frontend && npm run build
 ```
+
+---
+
+## 12. Strategy Pattern Architecture for Webhook Payloads
+
+The webhook subsystem uses the Strategy design pattern to format external event notifications.
+The `WebhookFormatterRegistry` registers and resolves strategies based on the webhook format identifier:
+- `GenericWebhookStrategy`: Formats JSON payloads and generates HMAC-SHA256 signatures.
+- `DiscordWebhookStrategy`: Formats payloads into Discord rich embed structures with color codes.
+- `SlackWebhookStrategy`: Formats payloads into Slack Block Kit interactive message structures.
+
+The `WebhooksService` delegates payload serialization to the registry.
+Adding new webhook targets does not require modifications to `WebhooksService`.
+
+---
+
+## 13. Agile Domain Hierarchy and Epic Management
+
+The project domain structure supports complete enterprise Agile workflows:
+- **Epics**: Large feature initiatives grouping child stories, tasks, and bugs.
+- **Components**: Architectural subsystems assigned to specific lead developers.
+- **Releases and Fix Versions**: Release milestones with scheduled start and release dates.
+- **Quick Filters**: Dynamic project board views powered by custom JQL filter queries.

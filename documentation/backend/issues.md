@@ -6,8 +6,8 @@ The `IssuesModule` is the core work-item engine of BugTracker, handling tickets,
 
 ## 1. Domain Capabilities
 
-### Issue Lifecycles (FSM)
-Issues transition across discrete states enforced by `WORKFLOW_TRANSITIONS`:
+### Issue Lifecycles and State Pattern (`IssueStateFactory`)
+Issue lifecycle transitions are enforced through the object-oriented State design pattern (`IssueStateFactory`):
 ```
 [ OPEN ] <───────────────────────────┐
   │   ▲                              │
@@ -16,14 +16,17 @@ Issues transition across discrete states enforced by `WORKFLOW_TRANSITIONS`:
   │                     │             │               ▲
   └─────────────────────┴─────────────┴───────────────┘
 ```
-- `OPEN` -> `IN_PROGRESS`, `RESOLVED`, `CLOSED`
-- `IN_PROGRESS` -> `REVIEW`, `RESOLVED`, `OPEN`
-- `REVIEW` -> `RESOLVED`, `IN_PROGRESS`
-- `RESOLVED` -> `CLOSED`, `OPEN`, `IN_PROGRESS`
-- `CLOSED` -> `OPEN`
+- `OPEN` (`OpenIssueState`) -> `IN_PROGRESS`
+- `IN_PROGRESS` (`InProgressIssueState`) -> `OPEN`, `REVIEW`, `RESOLVED`
+- `REVIEW` (`ReviewIssueState`) -> `IN_PROGRESS`, `RESOLVED`
+- `RESOLVED` (`ResolvedIssueState`) -> `IN_PROGRESS`, `CLOSED` (automatically sets `resolvedAt` timestamp on enter, clears on exit)
+- `CLOSED` (`ClosedIssueState`) -> `OPEN` (sets `resolvedAt` timestamp on enter, clears on exit)
+
+Each state object implements the `IssueState` interface (`canTransitionTo`, `onEnter`, `onExit`), eliminating procedural switch statements and preventing illegal state bypasses.
 
 Supported Issue Types: `BUG`, `TASK`, `STORY`, `EPIC`, `SUBTASK`.  
 Supported Priorities: `LOW`, `MEDIUM`, `HIGH`, `CRITICAL`.
+Query Limit: The API supports paginated queries up to 250 tickets per page (`limit: 250`).
 
 ### Subsystems Handled
 

@@ -230,14 +230,32 @@ const AgileIssueRowContentComponent: React.FC<AgileIssueRowContentProps> = ({
           <span
             className="inline-flex items-center gap-1 font-mono text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0"
             style={{
-              backgroundColor: issue.epic.color ? `${issue.epic.color}22` : 'var(--md-sys-color-tertiary-container)',
-              color: issue.epic.color || 'var(--md-sys-color-on-tertiary-container)',
-              border: `1px solid ${issue.epic.color ? `${issue.epic.color}44` : 'var(--md-sys-color-outline-variant)'}`,
+              backgroundColor: (issue.epic.epicColor || issue.epic.color) ? `${issue.epic.epicColor || issue.epic.color}22` : 'var(--md-sys-color-tertiary-container)',
+              color: (issue.epic.epicColor || issue.epic.color) || 'var(--md-sys-color-on-tertiary-container)',
+              border: `1px solid ${(issue.epic.epicColor || issue.epic.color) ? `${issue.epic.epicColor || issue.epic.color}44` : 'var(--md-sys-color-outline-variant)'}`,
             }}
             title={`Epic: ${issue.epic.title || issue.epic.key}`}
           >
             <Zap className="w-2.5 h-2.5" />
             <span className="truncate max-w-[120px]">{issue.epic.title || issue.epic.key}</span>
+          </span>
+        )}
+
+        {issue.component && (
+          <span
+            className="hidden lg:inline-flex items-center text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] shrink-0 truncate max-w-[100px]"
+            title={`Component: ${issue.component.name}`}
+          >
+            {issue.component.name}
+          </span>
+        )}
+
+        {issue.fixVersion && (
+          <span
+            className="hidden lg:inline-flex items-center text-[9px] font-mono font-medium px-1.5 py-0.5 rounded-md bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] shrink-0"
+            title={`Fix Version: ${issue.fixVersion.name}`}
+          >
+            {issue.fixVersion.name}
           </span>
         )}
 
@@ -268,13 +286,13 @@ const AgileIssueRowContentComponent: React.FC<AgileIssueRowContentProps> = ({
         )}
 
         {/* Subtask Counter */}
-        {(issue.subtasksCount || 0) > 0 && (
+        {((issue.subtasksCount || issue.subtasks?.length || 0) > 0) && (
           <span
             className="inline-flex items-center gap-1 font-mono text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--md-sys-color-secondary-container)]/40 text-[var(--md-sys-color-secondary)] shrink-0"
-            title={`${issue.subtasksCount} subtask(s)`}
+            title={`${issue.subtasksCount || issue.subtasks?.length} subtask(s)`}
           >
             <GitCommitHorizontal className="w-3 h-3" />
-            <span>{issue.subtasksCount}</span>
+            <span>{issue.subtasksCount || issue.subtasks?.length}</span>
           </span>
         )}
 

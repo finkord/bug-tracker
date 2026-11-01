@@ -64,12 +64,12 @@ export class ListIssuesQueryDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ example: 25, default: 50, description: 'Items per page (max 100)' })
+  @ApiPropertyOptional({ example: 50, default: 50, description: 'Items per page (max 250)' })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(100)
+  @Max(250)
   limit?: number = 50;
 
   @ApiPropertyOptional({ example: 'createdAt', description: 'Sort field (createdAt, updatedAt, priority, key, title)' })

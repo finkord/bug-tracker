@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThanOrEqual, Not } from 'typeorm';
+import { Repository, MoreThanOrEqual } from 'typeorm';
 import {
   LoginAuditLog,
   LoginAttemptStatus,
@@ -57,6 +57,8 @@ function parseDeviceType(userAgent: string): 'desktop' | 'mobile' | 'tablet' {
 
 @Injectable()
 export class SecurityAuditService {
+  private readonly revokedSessionIds = new Set<number>();
+
   constructor(
     @InjectRepository(LoginAuditLog)
     private readonly auditLogRepository: Repository<LoginAuditLog>,
@@ -145,6 +147,7 @@ export class SecurityAuditService {
 
     const sessionsMap = new Map<string, LoginAuditLog>();
     for (const log of logs) {
+      if (this.revokedSessionIds.has(log.id)) continue;
       const key = `${log.ipAddress}_${log.userAgent || 'unknown'}`;
       if (!sessionsMap.has(key)) {
         sessionsMap.set(key, log);
@@ -194,15 +197,15 @@ export class SecurityAuditService {
   }
 
   /**
-   * Revokes a specific session for a user.
+   * Revokes a specific session for a user without deleting immutable historical audit logs.
    */
   async revokeSession(userId: number, sessionId: number): Promise<{ success: boolean; message: string }> {
-    await this.auditLogRepository.delete({ id: sessionId, userId });
+    this.revokedSessionIds.add(sessionId);
     return { success: true, message: 'Session successfully revoked' };
   }
 
   /**
-   * Revokes all sessions for a user except the active one.
+   * Revokes all sessions for a user except the active one without deleting immutable historical audit logs.
    */
   async revokeOtherSessions(
     userId: number,
@@ -211,13 +214,13 @@ export class SecurityAuditService {
   ): Promise<{ success: boolean; revokedCount: number }> {
     const sessions = await this.getUserSessions(userId, currentIp, currentUserAgent);
     const currentSession = sessions.find((s) => s.isCurrent);
-    if (currentSession) {
-      const res = await this.auditLogRepository.delete({
-        userId,
-        id: Not(currentSession.id),
-      });
-      return { success: true, revokedCount: res.affected || 0 };
+    let revokedCount = 0;
+    for (const s of sessions) {
+      if (!currentSession || s.id !== currentSession.id) {
+        this.revokedSessionIds.add(s.id);
+        revokedCount++;
+      }
     }
-    return { success: true, revokedCount: 0 };
+    return { success: true, revokedCount };
   }
 }

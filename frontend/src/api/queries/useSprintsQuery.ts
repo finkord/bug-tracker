@@ -13,7 +13,7 @@ export const sprintQueries = {
     queryOptions({
       queryKey: [...sprintQueries.all, 'project', projectId, { teamId }] as const,
       queryFn: () => api.getProjectSprints(projectId!, teamId),
-      enabled: typeof projectId === 'number' && !isNaN(projectId),
+      enabled: typeof projectId === 'number' && !isNaN(projectId) && projectId > 0,
     }),
   burndown: (projectId?: number, sprintId?: number) =>
     queryOptions({

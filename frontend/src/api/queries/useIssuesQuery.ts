@@ -71,8 +71,11 @@ export const issueKeys = {
   transitions: (issueId: number) => issueQueries.transitions(issueId).queryKey,
 };
 
-export function useIssuesQuery(filters?: GetIssuesParams) {
-  return useQuery(issueQueries.list(filters));
+export function useIssuesQuery(filters?: GetIssuesParams, options?: { enabled?: boolean }) {
+  return useQuery({
+    ...issueQueries.list(filters),
+    ...(options?.enabled !== undefined ? { enabled: options.enabled } : {}),
+  });
 }
 
 export function useIssueDetailQuery(keyOrId?: string | number) {

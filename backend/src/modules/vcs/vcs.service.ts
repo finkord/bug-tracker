@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { VcsPullRequest, VcsProvider, VcsPullRequestStatus } from './entities/vcs-pull-request.entity.js';
 import { Issue, IssueStatus } from '../issues/entities/issue.entity.js';
 import { IssueHistory } from '../issues/entities/issue-history.entity.js';
+import { IssueStateFactory } from '../issues/states/index.js';
 import { EventsGateway } from '../events/events.gateway.js';
 import { GithubWebhookPayloadDto, GitlabWebhookPayloadDto } from './dto/vcs-webhook.dto.js';
 
@@ -19,6 +20,7 @@ export class VcsService {
     @InjectRepository(IssueHistory)
     private readonly issueHistoryRepository: Repository<IssueHistory>,
     private readonly eventsGateway: EventsGateway,
+    private readonly stateFactory: IssueStateFactory = new IssueStateFactory(),
   ) {}
 
   /**
@@ -90,9 +92,9 @@ export class VcsService {
         continue;
       }
 
-      // Upsert VcsPullRequest record
+      // Upsert VcsPullRequest record per issue context (prevents multi-issue overwrite)
       let vcsPr = await this.vcsPrRepository.findOne({
-        where: { repository, prNumber },
+        where: { issueId: issue.id, repository, prNumber },
       });
 
       if (!vcsPr) {
@@ -121,10 +123,16 @@ export class VcsService {
       const saved = await this.vcsPrRepository.save(vcsPr);
       savedPrs.push(saved);
 
-      // Automated state transitions based on PR lifecycle
-      if ((action === 'opened' || action === 'reopened') && (issue.status === IssueStatus.OPEN || issue.status === IssueStatus.IN_PROGRESS)) {
+      // Automated state transitions based on PR lifecycle via State Pattern
+      const targetStatus = isMerged
+        ? this.stateFactory.resolvePullRequestTransition(issue.status, 'merged')
+        : (action === 'opened' || action === 'reopened')
+        ? this.stateFactory.resolvePullRequestTransition(issue.status, 'opened')
+        : null;
+
+      if (targetStatus && targetStatus !== issue.status) {
         const oldStatus = issue.status;
-        issue.status = IssueStatus.REVIEW;
+        issue.status = targetStatus;
         await this.issueRepository.save(issue);
 
         await this.issueHistoryRepository.save(
@@ -133,29 +141,12 @@ export class VcsService {
             userId: null,
             field: 'status',
             oldValue: oldStatus,
-            newValue: IssueStatus.REVIEW,
+            newValue: targetStatus,
           }),
         );
 
         await this.eventsGateway.broadcastIssueUpdated(issue);
-        this.logger.log(`Auto-transitioned issue ${key} to REVIEW on PR #${prNumber} open`);
-      } else if (isMerged && issue.status !== IssueStatus.RESOLVED && issue.status !== IssueStatus.CLOSED) {
-        const oldStatus = issue.status;
-        issue.status = IssueStatus.RESOLVED;
-        await this.issueRepository.save(issue);
-
-        await this.issueHistoryRepository.save(
-          this.issueHistoryRepository.create({
-            issueId: issue.id,
-            userId: null,
-            field: 'status',
-            oldValue: oldStatus,
-            newValue: IssueStatus.RESOLVED,
-          }),
-        );
-
-        await this.eventsGateway.broadcastIssueUpdated(issue);
-        this.logger.log(`Auto-transitioned issue ${key} to RESOLVED on PR #${prNumber} merge`);
+        this.logger.log(`Auto-transitioned issue ${key} to ${targetStatus} on PR #${prNumber} ${isMerged ? 'merge' : 'open'}`);
       }
     }
 
@@ -222,7 +213,7 @@ export class VcsService {
       if (!issue) continue;
 
       let vcsPr = await this.vcsPrRepository.findOne({
-        where: { repository, prNumber },
+        where: { issueId: issue.id, repository, prNumber },
       });
 
       if (!vcsPr) {
@@ -251,9 +242,16 @@ export class VcsService {
       const saved = await this.vcsPrRepository.save(vcsPr);
       savedPrs.push(saved);
 
-      if ((action === 'open' || action === 'reopen') && (issue.status === IssueStatus.OPEN || issue.status === IssueStatus.IN_PROGRESS)) {
+      const isMerged = status === VcsPullRequestStatus.MERGED;
+      const targetStatus = isMerged
+        ? this.stateFactory.resolvePullRequestTransition(issue.status, 'merged')
+        : (action === 'open' || action === 'reopen')
+        ? this.stateFactory.resolvePullRequestTransition(issue.status, 'opened')
+        : null;
+
+      if (targetStatus && targetStatus !== issue.status) {
         const oldStatus = issue.status;
-        issue.status = IssueStatus.REVIEW;
+        issue.status = targetStatus;
         await this.issueRepository.save(issue);
 
         await this.issueHistoryRepository.save(
@@ -262,29 +260,12 @@ export class VcsService {
             userId: null,
             field: 'status',
             oldValue: oldStatus,
-            newValue: IssueStatus.REVIEW,
+            newValue: targetStatus,
           }),
         );
 
         await this.eventsGateway.broadcastIssueUpdated(issue);
-        this.logger.log(`Auto-transitioned issue ${key} to REVIEW on GitLab MR #${prNumber} open`);
-      } else if (status === VcsPullRequestStatus.MERGED && issue.status !== IssueStatus.RESOLVED && issue.status !== IssueStatus.CLOSED) {
-        const oldStatus = issue.status;
-        issue.status = IssueStatus.RESOLVED;
-        await this.issueRepository.save(issue);
-
-        await this.issueHistoryRepository.save(
-          this.issueHistoryRepository.create({
-            issueId: issue.id,
-            userId: null,
-            field: 'status',
-            oldValue: oldStatus,
-            newValue: IssueStatus.RESOLVED,
-          }),
-        );
-
-        await this.eventsGateway.broadcastIssueUpdated(issue);
-        this.logger.log(`Auto-transitioned issue ${key} to RESOLVED on GitLab MR #${prNumber} merge`);
+        this.logger.log(`Auto-transitioned issue ${key} to ${targetStatus} on GitLab MR #${prNumber} ${isMerged ? 'merge' : 'open'}`);
       }
     }
 

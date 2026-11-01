@@ -18,8 +18,10 @@ import { IssueWorklogService } from './services/issue-worklog.service.js';
 import { IssueLinksService } from './services/issue-links.service.js';
 import { IssueCommentsService } from './services/issue-comments.service.js';
 import { IssueAttachmentsService } from './services/issue-attachments.service.js';
-import { SeaweedFsService } from './services/seaweedfs.service.js';
+import { StorageModule } from '../storage/storage.module.js';
+import { SeaweedFsService } from '../storage/services/seaweedfs.service.js';
 import { JqlParserService } from './services/jql-parser.service.js';
+import { IssueStateFactory } from './states/index.js';
 import { RbacModule } from '../rbac/rbac.module.js';
 import { NotificationsModule } from '../notifications/notifications.module.js';
 import { WebhooksModule } from '../webhooks/webhooks.module.js';
@@ -42,6 +44,7 @@ import { WebhooksModule } from '../webhooks/webhooks.module.js';
     RbacModule,
     NotificationsModule,
     WebhooksModule,
+    StorageModule,
   ],
   controllers: [IssuesController],
   providers: [
@@ -53,6 +56,7 @@ import { WebhooksModule } from '../webhooks/webhooks.module.js';
     IssuesService,
     SeaweedFsService,
     JqlParserService,
+    IssueStateFactory,
   ],
   exports: [
     IssueCoreService,
@@ -63,6 +67,7 @@ import { WebhooksModule } from '../webhooks/webhooks.module.js';
     IssuesService,
     SeaweedFsService,
     JqlParserService,
+    IssueStateFactory,
   ],
 })
 export class IssuesModule {}

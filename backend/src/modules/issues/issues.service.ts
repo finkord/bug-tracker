@@ -7,7 +7,7 @@ import { CreateIssueLinkDto } from './dto/create-issue-link.dto.js';
 import { ListIssuesQueryDto } from './dto/list-issues-query.dto.js';
 import { LogWorkDto } from './dto/log-work.dto.js';
 import { BulkUpdateIssuesDto, BulkDeleteIssuesDto, type BulkOperationResultDto } from './dto/bulk-issue.dto.js';
-import { type UploadedFileInput } from './services/seaweedfs.service.js';
+import { type UploadedFileInput } from '../storage/services/seaweedfs.service.js';
 import { IssueCoreService } from './services/issue-core.service.js';
 import { IssueWorklogService } from './services/issue-worklog.service.js';
 import { IssueLinksService } from './services/issue-links.service.js';

@@ -5,6 +5,7 @@ import { ProjectWebhook } from './entities/project-webhook.entity.js';
 import { Project } from '../projects/entities/project.entity.js';
 import { WebhooksController } from './webhooks.controller.js';
 import { WebhooksService } from './webhooks.service.js';
+import { WebhookFormatterRegistry } from './strategies/index.js';
 import { RbacModule } from '../rbac/rbac.module.js';
 
 @Module({
@@ -14,7 +15,7 @@ import { RbacModule } from '../rbac/rbac.module.js';
     RbacModule,
   ],
   controllers: [WebhooksController],
-  providers: [WebhooksService],
-  exports: [WebhooksService],
+  providers: [WebhooksService, WebhookFormatterRegistry],
+  exports: [WebhooksService, WebhookFormatterRegistry],
 })
 export class WebhooksModule {}

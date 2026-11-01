@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as argon2 from 'argon2';
@@ -26,6 +26,14 @@ import { faker } from '@faker-js/faker';
 import { Sprint, SprintStatus } from '../sprints/entities/sprint.entity.js';
 import { Team } from '../teams/entities/team.entity.js';
 import { TeamMember, TeamMemberRole } from '../teams/entities/team-member.entity.js';
+import { ProjectComponent } from '../projects/entities/project-component.entity.js';
+import { ProjectVersion, ProjectVersionStatus } from '../projects/entities/project-version.entity.js';
+import { ProjectQuickFilter } from '../projects/entities/quick-filter.entity.js';
+import { VcsPullRequest, VcsProvider, VcsPullRequestStatus } from '../vcs/entities/vcs-pull-request.entity.js';
+import { ProjectWebhook } from '../webhooks/entities/project-webhook.entity.js';
+import { IssueHistory } from '../issues/entities/issue-history.entity.js';
+import { Notification, NotificationType } from '../notifications/entities/notification.entity.js';
+import { SavedFilter } from '../users/entities/saved-filter.entity.js';
 
 export interface SeedOptions {
   clean?: boolean;
@@ -77,6 +85,30 @@ export class SeedService {
     private readonly securityLevelRepository: Repository<IssueSecurityLevel>,
     @InjectRepository(IssueSecurityGrant)
     private readonly securityGrantRepository: Repository<IssueSecurityGrant>,
+    @Optional()
+    @InjectRepository(ProjectComponent)
+    private readonly componentRepository?: Repository<ProjectComponent>,
+    @Optional()
+    @InjectRepository(ProjectVersion)
+    private readonly versionRepository?: Repository<ProjectVersion>,
+    @Optional()
+    @InjectRepository(ProjectQuickFilter)
+    private readonly quickFilterRepository?: Repository<ProjectQuickFilter>,
+    @Optional()
+    @InjectRepository(VcsPullRequest)
+    private readonly vcsPrRepository?: Repository<VcsPullRequest>,
+    @Optional()
+    @InjectRepository(ProjectWebhook)
+    private readonly webhookRepository?: Repository<ProjectWebhook>,
+    @Optional()
+    @InjectRepository(IssueHistory)
+    private readonly historyRepository?: Repository<IssueHistory>,
+    @Optional()
+    @InjectRepository(Notification)
+    private readonly notificationRepository?: Repository<Notification>,
+    @Optional()
+    @InjectRepository(SavedFilter)
+    private readonly savedFilterRepository?: Repository<SavedFilter>,
   ) {}
 
   /**
@@ -145,6 +177,10 @@ export class SeedService {
     const commentsCount = await this.seedComments(issuesMap, usersMap);
     this.logger.log(`Seeded ${commentsCount} issue comments.`);
 
+    // 10. Seed Extended Domain Entities (Components, Versions, QuickFilters, VCS PRs, Webhooks, Histories, Notifications, SavedFilters)
+    await this.seedExtendedDomainEntities(projectsMap, usersMap, issuesMap);
+    this.logger.log('Seeded extended domain entities (components, versions, quick filters, VCS pull requests, webhooks, histories, notifications, saved filters).');
+
     return {
       projectsCount: Object.keys(projectsMap).length,
       usersCount: Object.keys(usersMap).length,
@@ -160,7 +196,31 @@ export class SeedService {
   }
 
   private async cleanDatabase() {
-    // Delete in dependency order
+    // Delete in dependency order including extended domain tables
+    if (this.notificationRepository) {
+      await this.notificationRepository.createQueryBuilder().delete().from(Notification).execute();
+    }
+    if (this.historyRepository) {
+      await this.historyRepository.createQueryBuilder().delete().from(IssueHistory).execute();
+    }
+    if (this.vcsPrRepository) {
+      await this.vcsPrRepository.createQueryBuilder().delete().from(VcsPullRequest).execute();
+    }
+    if (this.webhookRepository) {
+      await this.webhookRepository.createQueryBuilder().delete().from(ProjectWebhook).execute();
+    }
+    if (this.savedFilterRepository) {
+      await this.savedFilterRepository.createQueryBuilder().delete().from(SavedFilter).execute();
+    }
+    if (this.quickFilterRepository) {
+      await this.quickFilterRepository.createQueryBuilder().delete().from(ProjectQuickFilter).execute();
+    }
+    if (this.versionRepository) {
+      await this.versionRepository.createQueryBuilder().delete().from(ProjectVersion).execute();
+    }
+    if (this.componentRepository) {
+      await this.componentRepository.createQueryBuilder().delete().from(ProjectComponent).execute();
+    }
     await this.securityGrantRepository.createQueryBuilder().delete().from(IssueSecurityGrant).execute();
     await this.securityLevelRepository.createQueryBuilder().delete().from(IssueSecurityLevel).execute();
     await this.securitySchemeRepository.createQueryBuilder().delete().from(IssueSecurityScheme).execute();
@@ -787,6 +847,7 @@ export class SeedService {
       epicKey?: string;
       parentKey?: string;
       epicColor?: string;
+      epicName?: string;
     }> = [
       // ================= UI TEAM TICKETS =================
       {
@@ -802,6 +863,7 @@ export class SeedService {
         reporterKey: 'volodymyr',
         assigneeKey: 'sonya',
         epicColor: '#6554C0',
+        epicName: 'Design System',
       },
       {
         projectKey: 'UI',
@@ -833,19 +895,6 @@ export class SeedService {
       },
       {
         projectKey: 'UI',
-        issueNum: 3,
-        title: 'Implement keyboard navigation shortcuts for issue triage (J/K/Enter)',
-        description: 'Add global hotkeys allowing triage engineers to navigate between issues and open detail modals without mouse clicks.',
-        issueType: IssueType.FEATURE,
-        status: IssueStatus.IN_PROGRESS,
-        priority: IssuePriority.HIGH,
-        estimatedHours: 12,
-        sprint: 'Sprint 2 (Active)',
-        reporterKey: 'volodymyr',
-        assigneeKey: 'daniel',
-      },
-      {
-        projectKey: 'UI',
         issueNum: 4,
         title: 'Verify WCAG 2.1 AA color contrast compliance across dark theme tokens',
         description: 'Run automated axe-core audits to ensure all text variants against surface-container background tokens meet 4.5:1 ratio.',
@@ -856,6 +905,7 @@ export class SeedService {
         sprint: 'Sprint 2 (Active)',
         reporterKey: 'sophia',
         assigneeKey: 'lucas',
+        epicKey: 'UI-1',
       },
       {
         projectKey: 'UI',
@@ -925,6 +975,19 @@ export class SeedService {
       {
         projectKey: 'UI',
         issueNum: 10,
+        title: 'Implement keyboard navigation shortcuts for issue triage (J/K/Enter)',
+        description: 'Add global hotkeys allowing triage engineers to navigate between issues and open detail modals without mouse clicks.',
+        issueType: IssueType.FEATURE,
+        status: IssueStatus.IN_PROGRESS,
+        priority: IssuePriority.HIGH,
+        estimatedHours: 12,
+        sprint: 'Sprint 2 (Active)',
+        reporterKey: 'volodymyr',
+        assigneeKey: 'daniel',
+      },
+      {
+        projectKey: 'UI',
+        issueNum: 11,
         title: 'Multi-select bulk issue updater for sprint planning triage',
         description: 'Allow holding Shift/Cmd to select multiple issue cards and change status, priority, or sprint in one batch action.',
         issueType: IssueType.FEATURE,
@@ -937,7 +1000,7 @@ export class SeedService {
       },
       {
         projectKey: 'UI',
-        issueNum: 11,
+        issueNum: 12,
         title: 'Customizable widget layout for personal engineer dashboard',
         description: 'Add drag-and-drop grid system allowing users to rearrange My Tasks, Recent Comments, and Time Tracking Summary cards.',
         issueType: IssueType.IMPROVEMENT,
@@ -947,6 +1010,34 @@ export class SeedService {
         sprint: null, // Backlog
         reporterKey: 'sonya',
         assigneeKey: null,
+      },
+      {
+        projectKey: 'UI',
+        issueNum: 13,
+        title: 'Define dark mode color token contrast test matrix',
+        description: 'Create test fixtures covering button, input, dialog, and badge surface contrast against background tokens.',
+        issueType: IssueType.SUBTASK,
+        status: IssueStatus.IN_PROGRESS,
+        priority: IssuePriority.HIGH,
+        estimatedHours: 4,
+        sprint: 'Sprint 2 (Active)',
+        reporterKey: 'volodymyr',
+        assigneeKey: 'lucas',
+        parentKey: 'UI-3',
+      },
+      {
+        projectKey: 'UI',
+        issueNum: 14,
+        title: 'Client-side debounce for WebSocket card movement',
+        description: 'Prevent sending redundant drag position updates across socket rooms during active dragging.',
+        issueType: IssueType.SUBTASK,
+        status: IssueStatus.IN_PROGRESS,
+        priority: IssuePriority.HIGH,
+        estimatedHours: 4,
+        sprint: 'Sprint 2 (Active)',
+        reporterKey: 'volodymyr',
+        assigneeKey: 'volodymyr',
+        parentKey: 'UI-5',
       },
 
       // ================= CORE TEAM TICKETS =================
@@ -963,6 +1054,7 @@ export class SeedService {
         reporterKey: 'alex',
         assigneeKey: 'marcus',
         epicColor: '#0052CC',
+        epicName: 'Core Security',
       },
       {
         projectKey: 'CORE',
@@ -1004,6 +1096,7 @@ export class SeedService {
         sprint: 'Sprint 2 (Active)',
         reporterKey: 'alex',
         assigneeKey: 'dmitry',
+        epicKey: 'CORE-1',
       },
       {
         projectKey: 'CORE',
@@ -1097,11 +1190,40 @@ export class SeedService {
         assigneeKey: 'taras',
         parentKey: 'CORE-2',
       },
+      {
+        projectKey: 'CORE',
+        issueNum: 12,
+        title: 'Verify PostgreSQL row-level locking under 50 concurrent transactions',
+        description: 'Execute stress test script validating FOR UPDATE row lock serialization on refresh token records.',
+        issueType: IssueType.SUBTASK,
+        status: IssueStatus.IN_PROGRESS,
+        priority: IssuePriority.HIGH,
+        estimatedHours: 4,
+        sprint: 'Sprint 2 (Active)',
+        reporterKey: 'alex',
+        assigneeKey: 'taras',
+        parentKey: 'CORE-2',
+      },
 
       // ================= MONOPS TEAM TICKETS =================
       {
         projectKey: 'MON',
         issueNum: 1,
+        title: 'Distributed Observability, Telemetry & Real-Time Metrics Pipeline',
+        description: 'Unified telemetry architecture combining Prometheus metrics, OpenTelemetry distributed tracing, and Loki log aggregation.',
+        issueType: IssueType.EPIC,
+        status: IssueStatus.IN_PROGRESS,
+        priority: IssuePriority.HIGH,
+        estimatedHours: 40,
+        sprint: null,
+        reporterKey: 'sarah',
+        assigneeKey: 'kevin',
+        epicColor: '#FFAB00',
+        epicName: 'Observability',
+      },
+      {
+        projectKey: 'MON',
+        issueNum: 2,
         title: 'Prometheus metrics scrape endpoint for API request latency (p50/p95/p99)',
         description: 'Expose /metrics endpoint with histogram metrics capturing NestJS HTTP request duration and active DB connection pool counts.',
         issueType: IssueType.FEATURE,
@@ -1111,10 +1233,11 @@ export class SeedService {
         sprint: 'Sprint 1 (Completed)',
         reporterKey: 'sarah',
         assigneeKey: 'ethan',
+        epicKey: 'MON-1',
       },
       {
         projectKey: 'MON',
-        issueNum: 2,
+        issueNum: 3,
         title: 'OpenTelemetry trace context propagation across microservices',
         description: 'Inject W3C traceparent headers in outbound HTTP client requests to enable end-to-end distributed transaction tracing.',
         issueType: IssueType.FEATURE,
@@ -1124,10 +1247,11 @@ export class SeedService {
         sprint: 'Sprint 2 (Active)',
         reporterKey: 'sarah',
         assigneeKey: 'kevin',
+        epicKey: 'MON-1',
       },
       {
         projectKey: 'MON',
-        issueNum: 3,
+        issueNum: 4,
         title: 'Grafana dashboard for database slow queries and connection starvation',
         description: 'Build real-time visualization dashboard tracking queries exceeding 250ms threshold and TypeORM transaction acquire wait times.',
         issueType: IssueType.TASK,
@@ -1137,10 +1261,11 @@ export class SeedService {
         sprint: 'Sprint 2 (Active)',
         reporterKey: 'sarah',
         assigneeKey: 'yuliia',
+        epicKey: 'MON-1',
       },
       {
         projectKey: 'MON',
-        issueNum: 4,
+        issueNum: 5,
         title: 'Alertmanager escalation route for error rate spike (>2% 5xx in 5m)',
         description: 'Configure automated PagerDuty/Slack routing rules when 5xx error rate crosses 2% over a 5-minute rolling window.',
         issueType: IssueType.TASK,
@@ -1150,10 +1275,11 @@ export class SeedService {
         sprint: 'Sprint 2 (Active)',
         reporterKey: 'ethan',
         assigneeKey: 'noah',
+        epicKey: 'MON-1',
       },
       {
         projectKey: 'MON',
-        issueNum: 5,
+        issueNum: 6,
         title: 'Synthetics health check probe for user login endpoint',
         description: 'Deploy headless browser synthetic probe testing user login flow every 60 seconds from multiple geographic regions.',
         issueType: IssueType.IMPROVEMENT,
@@ -1166,7 +1292,7 @@ export class SeedService {
       },
       {
         projectKey: 'MON',
-        issueNum: 6,
+        issueNum: 7,
         title: 'Loki distributed log aggregation pipeline for container stderr/stdout',
         description: 'Deploy Promtail DaemonSet streaming structured JSON logs from Kubernetes nodes into Grafana Loki.',
         issueType: IssueType.FEATURE,
@@ -1176,10 +1302,11 @@ export class SeedService {
         sprint: 'Sprint 2 (Active)',
         reporterKey: 'sarah',
         assigneeKey: 'noah',
+        epicKey: 'MON-1',
       },
       {
         projectKey: 'MON',
-        issueNum: 7,
+        issueNum: 8,
         title: 'Blackbox exporter probe for external SSL certificate expiration alerts',
         description: 'Set up automated alerts when wildcard TLS certificates have less than 14 days before expiration.',
         issueType: IssueType.TASK,
@@ -1192,7 +1319,7 @@ export class SeedService {
       },
       {
         projectKey: 'MON',
-        issueNum: 8,
+        issueNum: 9,
         title: 'SLA uptime percentage calculation dashboard for enterprise customers',
         description: 'Calculate monthly rolling 99.9% uptime compliance with drill-down views for scheduled maintenance windows.',
         issueType: IssueType.IMPROVEMENT,
@@ -1205,7 +1332,7 @@ export class SeedService {
       },
       {
         projectKey: 'MON',
-        issueNum: 9,
+        issueNum: 10,
         title: 'Chaos engineering pod kill drill during peak traffic simulation',
         description: 'Execute Chaos Mesh automated pod deletion to verify Kubernetes replica set recovery under 200 RPS load.',
         issueType: IssueType.TASK,
@@ -1216,11 +1343,40 @@ export class SeedService {
         reporterKey: 'sarah',
         assigneeKey: 'maya',
       },
+      {
+        projectKey: 'MON',
+        issueNum: 11,
+        title: 'Inject traceparent headers into Axios interceptor',
+        description: 'Propagate W3C distributed trace headers in all downstream internal REST API calls.',
+        issueType: IssueType.SUBTASK,
+        status: IssueStatus.IN_PROGRESS,
+        priority: IssuePriority.HIGH,
+        estimatedHours: 4,
+        sprint: 'Sprint 2 (Active)',
+        reporterKey: 'sarah',
+        assigneeKey: 'kevin',
+        parentKey: 'MON-3',
+      },
 
       // ================= INFRAOPS TEAM TICKETS =================
       {
         projectKey: 'INFRA',
         issueNum: 1,
+        title: 'High-Availability Container Orchestration & Cloud Infrastructure',
+        description: 'Enterprise Kubernetes cluster provisioning, GitOps deployment pipeline, and Redis Sentinel high-availability state store.',
+        issueType: IssueType.EPIC,
+        status: IssueStatus.IN_PROGRESS,
+        priority: IssuePriority.CRITICAL,
+        estimatedHours: 40,
+        sprint: null,
+        reporterKey: 'david',
+        assigneeKey: 'brandon',
+        epicColor: '#00875A',
+        epicName: 'Cloud & K8s',
+      },
+      {
+        projectKey: 'INFRA',
+        issueNum: 2,
         title: 'Provision Kubernetes ingress controller with automated TLS cert-manager',
         description: 'Deploy NGINX Ingress controller with Let\'s Encrypt ACME cluster issuer for zero-touch SSL certificate renewals.',
         issueType: IssueType.TASK,
@@ -1230,10 +1386,11 @@ export class SeedService {
         sprint: 'Sprint 1 (Completed)',
         reporterKey: 'david',
         assigneeKey: 'brandon',
+        epicKey: 'INFRA-1',
       },
       {
         projectKey: 'INFRA',
-        issueNum: 2,
+        issueNum: 3,
         title: 'Deploy Redis Sentinel cluster for high-availability session caching',
         description: 'Set up 3-node Redis cluster with automatic master failover to support distributed session caching and rate limiter state.',
         issueType: IssueType.FEATURE,
@@ -1243,10 +1400,11 @@ export class SeedService {
         sprint: 'Sprint 2 (Active)',
         reporterKey: 'david',
         assigneeKey: 'chloe',
+        epicKey: 'INFRA-1',
       },
       {
         projectKey: 'INFRA',
-        issueNum: 3,
+        issueNum: 4,
         title: 'Terraform module for PostgreSQL automated point-in-time recovery (PITR)',
         description: 'Automate WAL archiving to S3 bucket with 30-day retention policy and automated daily restore verification drills.',
         issueType: IssueType.TASK,
@@ -1256,10 +1414,11 @@ export class SeedService {
         sprint: 'Sprint 2 (Active)',
         reporterKey: 'david',
         assigneeKey: 'andrii',
+        epicKey: 'INFRA-1',
       },
       {
         projectKey: 'INFRA',
-        issueNum: 4,
+        issueNum: 5,
         title: 'Docker multi-stage build optimization to reduce production image size',
         description: 'Optimize Dockerfile layers to reduce final Node.js runtime image size from 850MB down to under 180MB using Alpine base.',
         issueType: IssueType.IMPROVEMENT,
@@ -1272,7 +1431,7 @@ export class SeedService {
       },
       {
         projectKey: 'INFRA',
-        issueNum: 5,
+        issueNum: 6,
         title: 'Automated blue-green deployment pipeline with canary health checks',
         description: 'Implement GitHub Actions deployment workflow routing 10% traffic to canary pods before promoting release to 100%.',
         issueType: IssueType.FEATURE,
@@ -1282,10 +1441,11 @@ export class SeedService {
         sprint: 'Sprint 3 (Upcoming)',
         reporterKey: 'david',
         assigneeKey: 'brandon',
+        epicKey: 'INFRA-1',
       },
       {
         projectKey: 'INFRA',
-        issueNum: 6,
+        issueNum: 7,
         title: 'HashiCorp Vault secret injection via Kubernetes CSI Secret Store driver',
         description: 'Eliminate plain environment variables by mounting dynamic database credentials directly from Vault into pod filesystems.',
         issueType: IssueType.FEATURE,
@@ -1298,7 +1458,7 @@ export class SeedService {
       },
       {
         projectKey: 'INFRA',
-        issueNum: 7,
+        issueNum: 8,
         title: 'Kubernetes Horizontal Pod Autoscaler (HPA) CPU & Custom Metric policies',
         description: 'Configure HPA to autoscale backend pods between 3 and 15 replicas based on CPU >70% or active HTTP connection queues.',
         issueType: IssueType.IMPROVEMENT,
@@ -1311,7 +1471,7 @@ export class SeedService {
       },
       {
         projectKey: 'INFRA',
-        issueNum: 8,
+        issueNum: 9,
         title: 'Staging database sanitization anonymizer script for developers',
         description: 'Automate masking of user emails and PII in database dumps before restoring to developer local environments.',
         issueType: IssueType.TASK,
@@ -1322,11 +1482,40 @@ export class SeedService {
         reporterKey: 'benjamin',
         assigneeKey: 'chloe',
       },
+      {
+        projectKey: 'INFRA',
+        issueNum: 10,
+        title: 'Redis Sentinel sentinel.conf quorum configuration verification',
+        description: 'Verify 2-of-3 quorum consensus timing during abrupt node shutdown.',
+        issueType: IssueType.SUBTASK,
+        status: IssueStatus.IN_PROGRESS,
+        priority: IssuePriority.HIGH,
+        estimatedHours: 4,
+        sprint: 'Sprint 2 (Active)',
+        reporterKey: 'david',
+        assigneeKey: 'chloe',
+        parentKey: 'INFRA-3',
+      },
 
       // ================= NETOPS TEAM TICKETS =================
       {
         projectKey: 'NET',
         issueNum: 1,
+        title: 'Zero-Trust Network Architecture & Enterprise Identity Federation',
+        description: 'End-to-end network security hardening including TLS 1.3 enforcement, distributed rate limiting, and Okta SAML 2.0 SSO.',
+        issueType: IssueType.EPIC,
+        status: IssueStatus.IN_PROGRESS,
+        priority: IssuePriority.CRITICAL,
+        estimatedHours: 40,
+        sprint: null,
+        reporterKey: 'elena',
+        assigneeKey: 'ryan',
+        epicColor: '#DE350B',
+        epicName: 'Zero Trust',
+      },
+      {
+        projectKey: 'NET',
+        issueNum: 2,
         title: 'Cloudflare Turnstile captcha validation challenge timeout handling',
         description: 'Handle edge-case network dropouts during Turnstile token validation by adding fallback verification retries.',
         issueType: IssueType.BUG,
@@ -1336,10 +1525,11 @@ export class SeedService {
         sprint: 'Sprint 1 (Completed)',
         reporterKey: 'elena',
         assigneeKey: 'ryan',
+        epicKey: 'NET-1',
       },
       {
         projectKey: 'NET',
-        issueNum: 2,
+        issueNum: 3,
         title: 'Enforce TLS 1.3 cipher suite hardening across API endpoints',
         description: 'Disable deprecated TLS 1.0/1.1 protocols and weak CBC cipher suites to achieve A+ rating on Qualys SSL Labs audit.',
         issueType: IssueType.TASK,
@@ -1349,10 +1539,11 @@ export class SeedService {
         sprint: 'Sprint 2 (Active)',
         reporterKey: 'elena',
         assigneeKey: 'arthur',
+        epicKey: 'NET-1',
       },
       {
         projectKey: 'NET',
-        issueNum: 3,
+        issueNum: 4,
         title: 'Rate limiter bypass mitigation on password reset initiation endpoint',
         description: 'Implement distributed IP & email token bucket throttling to protect against automated credential stuffing attacks.',
         issueType: IssueType.BUG,
@@ -1362,10 +1553,11 @@ export class SeedService {
         sprint: 'Sprint 2 (Active)',
         reporterKey: 'maxim',
         assigneeKey: 'maxim',
+        epicKey: 'NET-1',
       },
       {
         projectKey: 'NET',
-        issueNum: 4,
+        issueNum: 5,
         title: 'TOTP 2FA secret generation entropy audit and RFC 6238 compliance',
         description: 'Verify crypto.randomBytes entropy source used for base32 TOTP secret generation complies with NIST SP 800-63B standards.',
         issueType: IssueType.TASK,
@@ -1375,10 +1567,11 @@ export class SeedService {
         sprint: 'Sprint 2 (Active)',
         reporterKey: 'grace',
         assigneeKey: 'oksana',
+        epicKey: 'NET-1',
       },
       {
         projectKey: 'NET',
-        issueNum: 5,
+        issueNum: 6,
         title: 'Security incident response playbook for leaked service credentials',
         description: 'Document step-by-step containment, key revocation, and post-mortem protocol for compromised API tokens.',
         issueType: IssueType.TASK,
@@ -1391,7 +1584,7 @@ export class SeedService {
       },
       {
         projectKey: 'NET',
-        issueNum: 6,
+        issueNum: 7,
         title: 'Content Security Policy (CSP) header nonce injection against XSS',
         description: 'Implement strict script-src nonce generation in NestJS helmet middleware to prevent script injection vulnerabilities.',
         issueType: IssueType.IMPROVEMENT,
@@ -1401,10 +1594,11 @@ export class SeedService {
         sprint: 'Sprint 2 (Active)',
         reporterKey: 'elena',
         assigneeKey: 'ryan',
+        epicKey: 'NET-1',
       },
       {
         projectKey: 'NET',
-        issueNum: 7,
+        issueNum: 8,
         title: 'Automated container vulnerability scanning using Trivy in CI pipeline',
         description: 'Block pull request merges if base OS packages contain Critical or High CVEs with available upstream patches.',
         issueType: IssueType.FEATURE,
@@ -1417,7 +1611,7 @@ export class SeedService {
       },
       {
         projectKey: 'NET',
-        issueNum: 8,
+        issueNum: 9,
         title: 'Enterprise SAML 2.0 / Okta Single Sign-On (SSO) integration spike',
         description: 'Design identity federation schema mapping Okta group assertions to BugTracker RBAC role permissions.',
         issueType: IssueType.FEATURE,
@@ -1427,6 +1621,21 @@ export class SeedService {
         sprint: null, // Backlog
         reporterKey: 'elena',
         assigneeKey: 'oksana',
+        epicKey: 'NET-1',
+      },
+      {
+        projectKey: 'NET',
+        issueNum: 10,
+        title: 'Verify TLS 1.3 cipher suites with OpenSSL s_client',
+        description: 'Run automated handshake audit verifying rejection of TLS 1.2 CBC cipher suites.',
+        issueType: IssueType.SUBTASK,
+        status: IssueStatus.IN_PROGRESS,
+        priority: IssuePriority.HIGH,
+        estimatedHours: 4,
+        sprint: 'Sprint 2 (Active)',
+        reporterKey: 'elena',
+        assigneeKey: 'arthur',
+        parentKey: 'NET-3',
       },
     ];
 
@@ -1544,6 +1753,17 @@ export class SeedService {
       const allProjectKeys = Object.keys(projects);
       const allUsersList = Object.values(users);
 
+      const epicsByProject: Record<string, Issue[]> = {};
+      for (const iss of Object.values(result)) {
+        if (iss.issueType === IssueType.EPIC) {
+          const pKey = iss.project?.key || Object.keys(projects).find((k) => projects[k].id === iss.projectId);
+          if (pKey) {
+            epicsByProject[pKey] = epicsByProject[pKey] || [];
+            epicsByProject[pKey].push(iss);
+          }
+        }
+      }
+
       const actionVerbs = [
         'Implement', 'Refactor', 'Optimize', 'Fix race condition in', 'Add unit tests for',
         'Upgrade', 'Investigate latency in', 'Design architecture for', 'Enhance caching on',
@@ -1631,6 +1851,12 @@ export class SeedService {
           faker.helpers.arrayElement(['backend', 'frontend', 'security', 'infra', 'performance', 'database']),
         ];
 
+        // Link ~65% of faker issues to an epic in the same project
+        const pEpics = epicsByProject[projKey] || [];
+        const assignedEpicId = pEpics.length > 0 && faker.number.int({ min: 1, max: 100 }) <= 65
+          ? faker.helpers.arrayElement(pEpics).id
+          : null;
+
         const issue = this.issueRepository.create({
           projectId: project.id,
           project,
@@ -1643,6 +1869,7 @@ export class SeedService {
           estimatedHours: estHours,
           loggedHours: 0,
           sprintId: assignedSprintId,
+          epicId: assignedEpicId,
           reporterId: reporter.id,
           reporter,
           assigneeId: assignee ? assignee.id : null,
@@ -1681,23 +1908,23 @@ export class SeedService {
       { sourceKey: 'CORE-4', targetKey: 'UI-10', linkType: IssueLinkType.RELATES_TO },
 
       // INFRA blocks MON & CORE
-      { sourceKey: 'INFRA-2', targetKey: 'CORE-2', linkType: IssueLinkType.BLOCKS },
-      { sourceKey: 'INFRA-1', targetKey: 'MON-1', linkType: IssueLinkType.BLOCKS },
-      { sourceKey: 'INFRA-3', targetKey: 'MON-3', linkType: IssueLinkType.RELATES_TO },
-      { sourceKey: 'INFRA-6', targetKey: 'CORE-5', linkType: IssueLinkType.BLOCKS },
-      { sourceKey: 'INFRA-5', targetKey: 'MON-9', linkType: IssueLinkType.RELATES_TO },
+      { sourceKey: 'INFRA-3', targetKey: 'CORE-2', linkType: IssueLinkType.BLOCKS },
+      { sourceKey: 'INFRA-2', targetKey: 'MON-2', linkType: IssueLinkType.BLOCKS },
+      { sourceKey: 'INFRA-4', targetKey: 'MON-4', linkType: IssueLinkType.RELATES_TO },
+      { sourceKey: 'INFRA-7', targetKey: 'CORE-5', linkType: IssueLinkType.BLOCKS },
+      { sourceKey: 'INFRA-6', targetKey: 'MON-10', linkType: IssueLinkType.RELATES_TO },
 
       // NET blocks CORE & UI
-      { sourceKey: 'NET-1', targetKey: 'UI-5', linkType: IssueLinkType.RELATES_TO },
-      { sourceKey: 'NET-3', targetKey: 'CORE-2', linkType: IssueLinkType.BLOCKS },
-      { sourceKey: 'NET-2', targetKey: 'INFRA-1', linkType: IssueLinkType.RELATES_TO },
-      { sourceKey: 'NET-6', targetKey: 'UI-6', linkType: IssueLinkType.RELATES_TO },
-      { sourceKey: 'NET-7', targetKey: 'INFRA-4', linkType: IssueLinkType.BLOCKS },
+      { sourceKey: 'NET-2', targetKey: 'UI-5', linkType: IssueLinkType.RELATES_TO },
+      { sourceKey: 'NET-4', targetKey: 'CORE-2', linkType: IssueLinkType.BLOCKS },
+      { sourceKey: 'NET-3', targetKey: 'INFRA-2', linkType: IssueLinkType.RELATES_TO },
+      { sourceKey: 'NET-7', targetKey: 'UI-6', linkType: IssueLinkType.RELATES_TO },
+      { sourceKey: 'NET-8', targetKey: 'INFRA-5', linkType: IssueLinkType.BLOCKS },
 
       // MON monitors & relates
-      { sourceKey: 'MON-2', targetKey: 'CORE-3', linkType: IssueLinkType.RELATES_TO },
-      { sourceKey: 'MON-4', targetKey: 'INFRA-2', linkType: IssueLinkType.IS_BLOCKED_BY },
-      { sourceKey: 'MON-6', targetKey: 'INFRA-5', linkType: IssueLinkType.RELATES_TO },
+      { sourceKey: 'MON-3', targetKey: 'CORE-3', linkType: IssueLinkType.RELATES_TO },
+      { sourceKey: 'MON-5', targetKey: 'INFRA-3', linkType: IssueLinkType.IS_BLOCKED_BY },
+      { sourceKey: 'MON-7', targetKey: 'INFRA-6', linkType: IssueLinkType.RELATES_TO },
     ];
 
     let count = 0;
@@ -1754,85 +1981,85 @@ export class SeedService {
       { issueKey: 'UI-6', userKey: 'olena', hours: 3.5, dateLogged: getDateOffset(0), description: 'Integrated PopperJS hover tooltip in Timesheet matrix day cells' },
       { issueKey: 'CORE-2', userKey: 'taras', hours: 6.0, dateLogged: getDateOffset(0), description: 'Implemented row-level pessimistic locking in token refresh service' },
       { issueKey: 'CORE-5', userKey: 'rachel', hours: 4.0, dateLogged: getDateOffset(0), description: 'Configured SeaweedFS volume streaming buffer endpoint' },
-      { issueKey: 'MON-2', userKey: 'kevin', hours: 4.5, dateLogged: getDateOffset(0), description: 'Instrumented OpenTelemetry trace spans in incoming request interceptors' },
-      { issueKey: 'MON-6', userKey: 'noah', hours: 5.0, dateLogged: getDateOffset(0), description: 'Configured Promtail DaemonSet to parse structured JSON log lines' },
-      { issueKey: 'INFRA-2', userKey: 'chloe', hours: 5.0, dateLogged: getDateOffset(0), description: 'Configured Redis Sentinel quorum configuration on cluster nodes' },
-      { issueKey: 'INFRA-3', userKey: 'andrii', hours: 4.0, dateLogged: getDateOffset(0), description: 'Drafted S3 lifecycle policies for Postgres WAL backup retention' },
-      { issueKey: 'NET-3', userKey: 'maxim', hours: 3.5, dateLogged: getDateOffset(0), description: 'Added sliding window rate limiting for authentication challenge tokens' },
-      { issueKey: 'NET-6', userKey: 'ryan', hours: 4.0, dateLogged: getDateOffset(0), description: 'Constructed CSP nonce injector middleware for server-rendered HTML' },
+      { issueKey: 'MON-3', userKey: 'kevin', hours: 4.5, dateLogged: getDateOffset(0), description: 'Instrumented OpenTelemetry trace spans in incoming request interceptors' },
+      { issueKey: 'MON-7', userKey: 'noah', hours: 5.0, dateLogged: getDateOffset(0), description: 'Configured Promtail DaemonSet to parse structured JSON log lines' },
+      { issueKey: 'INFRA-3', userKey: 'chloe', hours: 5.0, dateLogged: getDateOffset(0), description: 'Configured Redis Sentinel quorum configuration on cluster nodes' },
+      { issueKey: 'INFRA-4', userKey: 'andrii', hours: 4.0, dateLogged: getDateOffset(0), description: 'Drafted S3 lifecycle policies for Postgres WAL backup retention' },
+      { issueKey: 'NET-4', userKey: 'maxim', hours: 3.5, dateLogged: getDateOffset(0), description: 'Added sliding window rate limiting for authentication challenge tokens' },
+      { issueKey: 'NET-7', userKey: 'ryan', hours: 4.0, dateLogged: getDateOffset(0), description: 'Constructed CSP nonce injector middleware for server-rendered HTML' },
 
       // Yesterday (1 day ago)
-      { issueKey: 'UI-3', userKey: 'daniel', hours: 5.0, dateLogged: getDateOffset(1), description: 'Wired J/K keyboard shortcut handlers and focus trap logic' },
+      { issueKey: 'UI-10', userKey: 'daniel', hours: 5.0, dateLogged: getDateOffset(1), description: 'Wired J/K keyboard shortcut handlers and focus trap logic' },
       { issueKey: 'UI-4', userKey: 'lucas', hours: 4.0, dateLogged: getDateOffset(1), description: 'Axe-core automated accessibility audits on surface container tokens' },
       { issueKey: 'UI-6', userKey: 'sonya', hours: 4.5, dateLogged: getDateOffset(1), description: 'Created day cell interactive hover preview component & styling' },
       { issueKey: 'CORE-3', userKey: 'marcus', hours: 7.0, dateLogged: getDateOffset(1), description: 'Built inverted index document generator for full-text search' },
       { issueKey: 'CORE-4', userKey: 'dmitry', hours: 4.0, dateLogged: getDateOffset(1), description: 'Wrote unit tests for webhook signature HMAC-SHA256 generator' },
-      { issueKey: 'MON-3', userKey: 'yuliia', hours: 6.0, dateLogged: getDateOffset(1), description: 'Constructed Grafana panels for database connection pool wait durations' },
-      { issueKey: 'MON-4', userKey: 'ethan', hours: 3.5, dateLogged: getDateOffset(1), description: 'Configured PagerDuty on-call webhook payload templates' },
-      { issueKey: 'INFRA-4', userKey: 'victor', hours: 3.0, dateLogged: getDateOffset(1), description: 'Audited Alpine Linux base image packages for minimal CVE surface' },
-      { issueKey: 'NET-2', userKey: 'arthur', hours: 4.0, dateLogged: getDateOffset(1), description: 'Hardened cipher suites to TLS_AES_256_GCM_SHA384 and TLS_CHACHA20_POLY1305' },
-      { issueKey: 'NET-4', userKey: 'grace', hours: 3.0, dateLogged: getDateOffset(1), description: 'Ran cryptographic entropy validation tests against /dev/urandom output' },
+      { issueKey: 'MON-4', userKey: 'yuliia', hours: 6.0, dateLogged: getDateOffset(1), description: 'Constructed Grafana panels for database connection pool wait durations' },
+      { issueKey: 'MON-5', userKey: 'ethan', hours: 3.5, dateLogged: getDateOffset(1), description: 'Configured PagerDuty on-call webhook payload templates' },
+      { issueKey: 'INFRA-5', userKey: 'victor', hours: 3.0, dateLogged: getDateOffset(1), description: 'Audited Alpine Linux base image packages for minimal CVE surface' },
+      { issueKey: 'NET-3', userKey: 'arthur', hours: 4.0, dateLogged: getDateOffset(1), description: 'Hardened cipher suites to TLS_AES_256_GCM_SHA384 and TLS_CHACHA20_POLY1305' },
+      { issueKey: 'NET-5', userKey: 'grace', hours: 3.0, dateLogged: getDateOffset(1), description: 'Ran cryptographic entropy validation tests against /dev/urandom output' },
 
       // 2 days ago
       { issueKey: 'UI-5', userKey: 'volodymyr', hours: 8.0, dateLogged: getDateOffset(2), description: 'Refactored sprint kanban live board drag event listeners' },
-      { issueKey: 'UI-3', userKey: 'daniel', hours: 4.0, dateLogged: getDateOffset(2), description: 'Added ESC key listener to dismiss open detail panels' },
+      { issueKey: 'UI-10', userKey: 'daniel', hours: 4.0, dateLogged: getDateOffset(2), description: 'Added ESC key listener to dismiss open detail panels' },
       { issueKey: 'CORE-4', userKey: 'dmitry', hours: 6.5, dateLogged: getDateOffset(2), description: 'Implemented exponential backoff retry queue with dead letter exchange' },
       { issueKey: 'CORE-2', userKey: 'taras', hours: 4.0, dateLogged: getDateOffset(2), description: 'Benchmarked row-locking overhead under 500 concurrent token refreshes' },
-      { issueKey: 'INFRA-3', userKey: 'andrii', hours: 5.5, dateLogged: getDateOffset(2), description: 'Terraform script for automated WAL archive uploads to S3 bucket' },
-      { issueKey: 'INFRA-2', userKey: 'david', hours: 3.5, dateLogged: getDateOffset(2), description: 'Architecture review of Redis failover switchover thresholds' },
-      { issueKey: 'MON-4', userKey: 'noah', hours: 4.0, dateLogged: getDateOffset(2), description: 'Configured Alertmanager routing tree for severity critical alarms' },
-      { issueKey: 'MON-2', userKey: 'kevin', hours: 5.0, dateLogged: getDateOffset(2), description: 'Added baggage header propagation for user ID and tenant context' },
-      { issueKey: 'NET-4', userKey: 'oksana', hours: 3.0, dateLogged: getDateOffset(2), description: 'Validated crypto.randomBytes entropy generation for TOTP secrets' },
-      { issueKey: 'NET-3', userKey: 'maxim', hours: 4.5, dateLogged: getDateOffset(2), description: 'Simulated brute-force login attack on staging environment' },
+      { issueKey: 'INFRA-4', userKey: 'andrii', hours: 5.5, dateLogged: getDateOffset(2), description: 'Terraform script for automated WAL archive uploads to S3 bucket' },
+      { issueKey: 'INFRA-3', userKey: 'david', hours: 3.5, dateLogged: getDateOffset(2), description: 'Architecture review of Redis failover switchover thresholds' },
+      { issueKey: 'MON-5', userKey: 'noah', hours: 4.0, dateLogged: getDateOffset(2), description: 'Configured Alertmanager routing tree for severity critical alarms' },
+      { issueKey: 'MON-3', userKey: 'kevin', hours: 5.0, dateLogged: getDateOffset(2), description: 'Added baggage header propagation for user ID and tenant context' },
+      { issueKey: 'NET-5', userKey: 'oksana', hours: 3.0, dateLogged: getDateOffset(2), description: 'Validated crypto.randomBytes entropy generation for TOTP secrets' },
+      { issueKey: 'NET-4', userKey: 'maxim', hours: 4.5, dateLogged: getDateOffset(2), description: 'Simulated brute-force login attack on staging environment' },
 
       // 3 days ago
       { issueKey: 'UI-1', userKey: 'sonya', hours: 6.0, dateLogged: getDateOffset(3), description: 'Adjusted Kanban column width calculations for 4K ultrawide viewports' },
       { issueKey: 'UI-4', userKey: 'sophia', hours: 2.0, dateLogged: getDateOffset(3), description: 'Created automated Cypress test suite for theme contrast verification' },
       { issueKey: 'CORE-1', userKey: 'marcus', hours: 4.0, dateLogged: getDateOffset(3), description: 'Created composite index on login audit log table' },
       { issueKey: 'CORE-3', userKey: 'alex', hours: 3.0, dateLogged: getDateOffset(3), description: 'Reviewed query parser architecture for search indexing' },
-      { issueKey: 'MON-1', userKey: 'ethan', hours: 5.0, dateLogged: getDateOffset(3), description: 'Configured Prometheus scrape job and metric exposition endpoint' },
-      { issueKey: 'MON-3', userKey: 'sarah', hours: 3.5, dateLogged: getDateOffset(3), description: 'Defined SLI metrics for database query latency percentiles' },
-      { issueKey: 'INFRA-1', userKey: 'brandon', hours: 7.0, dateLogged: getDateOffset(3), description: 'Deployed NGINX Ingress controller in Kubernetes staging namespace' },
-      { issueKey: 'NET-1', userKey: 'ryan', hours: 4.0, dateLogged: getDateOffset(3), description: 'Implemented Cloudflare Turnstile token validation fallback handler' },
-      { issueKey: 'NET-6', userKey: 'elena', hours: 2.5, dateLogged: getDateOffset(3), description: 'Drafted company-wide CSP policy specifications' },
+      { issueKey: 'MON-2', userKey: 'ethan', hours: 5.0, dateLogged: getDateOffset(3), description: 'Configured Prometheus scrape job and metric exposition endpoint' },
+      { issueKey: 'MON-4', userKey: 'sarah', hours: 3.5, dateLogged: getDateOffset(3), description: 'Defined SLI metrics for database query latency percentiles' },
+      { issueKey: 'INFRA-2', userKey: 'brandon', hours: 7.0, dateLogged: getDateOffset(3), description: 'Deployed NGINX Ingress controller in Kubernetes staging namespace' },
+      { issueKey: 'NET-2', userKey: 'ryan', hours: 4.0, dateLogged: getDateOffset(3), description: 'Implemented Cloudflare Turnstile token validation fallback handler' },
+      { issueKey: 'NET-7', userKey: 'elena', hours: 2.5, dateLogged: getDateOffset(3), description: 'Drafted company-wide CSP policy specifications' },
 
       // 4 days ago
       { issueKey: 'UI-2', userKey: 'lucas', hours: 5.0, dateLogged: getDateOffset(4), description: 'Fixed iOS Safari backdrop filter blur opacity bug' },
-      { issueKey: 'UI-3', userKey: 'daniel', hours: 4.0, dateLogged: getDateOffset(4), description: 'Drafted unit tests for keyboard navigation state machine' },
+      { issueKey: 'UI-10', userKey: 'daniel', hours: 4.0, dateLogged: getDateOffset(4), description: 'Drafted unit tests for keyboard navigation state machine' },
       { issueKey: 'CORE-2', userKey: 'taras', hours: 3.5, dateLogged: getDateOffset(4), description: 'Conducted load test on concurrent token refresh requests' },
       { issueKey: 'CORE-5', userKey: 'rachel', hours: 5.0, dateLogged: getDateOffset(4), description: 'Built SeaweedFS client adapter with connection retries' },
-      { issueKey: 'INFRA-2', userKey: 'chloe', hours: 6.0, dateLogged: getDateOffset(4), description: 'Tested Redis cluster split-brain auto-healing scenarios' },
-      { issueKey: 'MON-2', userKey: 'kevin', hours: 4.0, dateLogged: getDateOffset(4), description: 'Added Jaeger span tags for database query execution' },
-      { issueKey: 'NET-2', userKey: 'arthur', hours: 5.0, dateLogged: getDateOffset(4), description: 'Ran SSL Labs scan against staging environment' },
+      { issueKey: 'INFRA-3', userKey: 'chloe', hours: 6.0, dateLogged: getDateOffset(4), description: 'Tested Redis cluster split-brain auto-healing scenarios' },
+      { issueKey: 'MON-3', userKey: 'kevin', hours: 4.0, dateLogged: getDateOffset(4), description: 'Added Jaeger span tags for database query execution' },
+      { issueKey: 'NET-3', userKey: 'arthur', hours: 5.0, dateLogged: getDateOffset(4), description: 'Ran SSL Labs scan against staging environment' },
 
       // 5 to 7 days ago (Week 1 of active sprint)
-      { issueKey: 'MON-2', userKey: 'kevin', hours: 6.0, dateLogged: getDateOffset(5), description: 'Integrated OpenTelemetry trace context propagation across services' },
-      { issueKey: 'INFRA-2', userKey: 'chloe', hours: 8.0, dateLogged: getDateOffset(5), description: 'Benchmarked Redis Sentinel failover switch times under load' },
+      { issueKey: 'MON-3', userKey: 'kevin', hours: 6.0, dateLogged: getDateOffset(5), description: 'Integrated OpenTelemetry trace context propagation across services' },
+      { issueKey: 'INFRA-3', userKey: 'chloe', hours: 8.0, dateLogged: getDateOffset(5), description: 'Benchmarked Redis Sentinel failover switch times under load' },
       { issueKey: 'UI-5', userKey: 'volodymyr', hours: 6.0, dateLogged: getDateOffset(5), description: 'Drafted WebSocket room subscription protocol for sprint boards' },
       { issueKey: 'CORE-3', userKey: 'marcus', hours: 5.5, dateLogged: getDateOffset(6), description: 'Configured Lucene tokenizers and lowercase filter chain' },
-      { issueKey: 'NET-3', userKey: 'maxim', hours: 4.5, dateLogged: getDateOffset(6), description: 'Audited authentication endpoints for brute-force vulnerability' },
+      { issueKey: 'NET-4', userKey: 'maxim', hours: 4.5, dateLogged: getDateOffset(6), description: 'Audited authentication endpoints for brute-force vulnerability' },
       { issueKey: 'CORE-3', userKey: 'marcus', hours: 7.5, dateLogged: getDateOffset(7), description: 'Implemented Lucene query parser and token filter pipeline' },
       { issueKey: 'UI-5', userKey: 'volodymyr', hours: 6.0, dateLogged: getDateOffset(7), description: 'Engineered optimistic UI card moving logic on drag drop' },
-      { issueKey: 'INFRA-3', userKey: 'andrii', hours: 4.0, dateLogged: getDateOffset(7), description: 'Wrote automated Postgres backup restore verification test' },
+      { issueKey: 'INFRA-4', userKey: 'andrii', hours: 4.0, dateLogged: getDateOffset(7), description: 'Wrote automated Postgres backup restore verification test' },
 
       // 8 to 14 days ago (Previous Sprint / Week 2)
-      { issueKey: 'INFRA-4', userKey: 'victor', hours: 4.0, dateLogged: getDateOffset(8), description: 'Refactored Docker multi-stage build layers to reduce container image size' },
-      { issueKey: 'MON-3', userKey: 'yuliia', hours: 3.0, dateLogged: getDateOffset(9), description: 'Added query execution latency histogram visualizers' },
+      { issueKey: 'INFRA-5', userKey: 'victor', hours: 4.0, dateLogged: getDateOffset(8), description: 'Refactored Docker multi-stage build layers to reduce container image size' },
+      { issueKey: 'MON-4', userKey: 'yuliia', hours: 3.0, dateLogged: getDateOffset(9), description: 'Added query execution latency histogram visualizers' },
       { issueKey: 'CORE-1', userKey: 'marcus', hours: 2.0, dateLogged: getDateOffset(10), description: 'Validated query plan using EXPLAIN ANALYZE on audit table' },
       { issueKey: 'UI-1', userKey: 'sonya', hours: 4.0, dateLogged: getDateOffset(11), description: 'Created flexbox swimlane grid responsive breakpoints' },
       { issueKey: 'UI-2', userKey: 'sophia', hours: 3.0, dateLogged: getDateOffset(12), description: 'Reproduced Safari backdrop filter glitch on iPhone 14 test device' },
-      { issueKey: 'INFRA-1', userKey: 'david', hours: 5.0, dateLogged: getDateOffset(12), description: 'Reviewed Ingress controller architecture and TLS cert-manager specs' },
-      { issueKey: 'NET-1', userKey: 'ryan', hours: 4.0, dateLogged: getDateOffset(13), description: 'Wired Cloudflare Turnstile frontend widget callback handlers' },
-      { issueKey: 'MON-1', userKey: 'ethan', hours: 4.5, dateLogged: getDateOffset(14), description: 'Defined Prometheus latency buckets: 10ms, 50ms, 100ms, 250ms, 1s' },
+      { issueKey: 'INFRA-2', userKey: 'david', hours: 5.0, dateLogged: getDateOffset(12), description: 'Reviewed Ingress controller architecture and TLS cert-manager specs' },
+      { issueKey: 'NET-2', userKey: 'ryan', hours: 4.0, dateLogged: getDateOffset(13), description: 'Wired Cloudflare Turnstile frontend widget callback handlers' },
+      { issueKey: 'MON-2', userKey: 'ethan', hours: 4.5, dateLogged: getDateOffset(14), description: 'Defined Prometheus latency buckets: 10ms, 50ms, 100ms, 250ms, 1s' },
       { issueKey: 'CORE-9', userKey: 'dmitry', hours: 6.0, dateLogged: getDateOffset(14), description: 'Decorated all REST API controllers with Swagger ApiOperation tags' },
 
       // 15 to 21 days ago (Sprint 1 foundation / Week 3)
-      { issueKey: 'INFRA-7', userKey: 'brandon', hours: 4.0, dateLogged: getDateOffset(15), description: 'Configured Kubernetes HPA manifest for auto-scaling' },
-      { issueKey: 'MON-7', userKey: 'ethan', hours: 4.0, dateLogged: getDateOffset(16), description: 'Configured Blackbox exporter probe for domain SSL cert monitor' },
+      { issueKey: 'INFRA-8', userKey: 'brandon', hours: 4.0, dateLogged: getDateOffset(15), description: 'Configured Kubernetes HPA manifest for auto-scaling' },
+      { issueKey: 'MON-8', userKey: 'ethan', hours: 4.0, dateLogged: getDateOffset(16), description: 'Configured Blackbox exporter probe for domain SSL cert monitor' },
       { issueKey: 'CORE-9', userKey: 'alex', hours: 3.0, dateLogged: getDateOffset(17), description: 'Approved Swagger documentation generation schema' },
       { issueKey: 'UI-1', userKey: 'lucas', hours: 4.0, dateLogged: getDateOffset(18), description: 'CSS Grid swimlane column styling and horizontal scrollbar polish' },
-      { issueKey: 'INFRA-1', userKey: 'brandon', hours: 6.0, dateLogged: getDateOffset(19), description: 'Configured cert-manager ClusterIssuer with Let\'s Encrypt production endpoint' },
-      { issueKey: 'NET-1', userKey: 'elena', hours: 3.5, dateLogged: getDateOffset(20), description: 'Penetration testing on Turnstile bypass vectors' },
+      { issueKey: 'INFRA-2', userKey: 'brandon', hours: 6.0, dateLogged: getDateOffset(19), description: 'Configured cert-manager ClusterIssuer with Let\'s Encrypt production endpoint' },
+      { issueKey: 'NET-2', userKey: 'elena', hours: 3.5, dateLogged: getDateOffset(20), description: 'Penetration testing on Turnstile bypass vectors' },
       { issueKey: 'CORE-1', userKey: 'marcus', hours: 5.0, dateLogged: getDateOffset(21), description: 'Initial schema migration for login_audit_logs index' },
     ];
 
@@ -1886,10 +2113,10 @@ export class SeedService {
       { issueKey: 'CORE-2', userKey: 'alex', text: 'Please ensure row-level locking includes timeout configuration to avoid deadlocks.' },
       { issueKey: 'CORE-2', userKey: 'taras', text: 'Implemented 2000ms lock timeout with automatic retry on serialization failure.' },
       { issueKey: 'CORE-5', userKey: 'alex', text: 'SeaweedFS master volume failover tested. Storage volume writes automatically redirect on node failure.' },
-      { issueKey: 'MON-2', userKey: 'sarah', text: 'Trace context propagation is working across all downstream RPCs. Ready for staging deploy.' },
-      { issueKey: 'INFRA-2', userKey: 'david', text: 'Redis Sentinel failover switch tested under simulated network partition. Recovered in under 1.2s.' },
-      { issueKey: 'NET-3', userKey: 'elena', text: 'Security review approved. Rate limiting rules successfully mitigated brute force token guessing.' },
-      { issueKey: 'NET-6', userKey: 'maxim', text: 'Strict CSP policy passed automated XSS penetration tests. No inline script violations found.' },
+      { issueKey: 'MON-3', userKey: 'sarah', text: 'Trace context propagation is working across all downstream RPCs. Ready for staging deploy.' },
+      { issueKey: 'INFRA-3', userKey: 'david', text: 'Redis Sentinel failover switch tested under simulated network partition. Recovered in under 1.2s.' },
+      { issueKey: 'NET-4', userKey: 'elena', text: 'Security review approved. Rate limiting rules successfully mitigated brute force token guessing.' },
+      { issueKey: 'NET-7', userKey: 'maxim', text: 'Strict CSP policy passed automated XSS penetration tests. No inline script violations found.' },
     ];
 
     let count = 0;
@@ -1913,4 +2140,342 @@ export class SeedService {
 
     return count;
   }
+
+  private async seedExtendedDomainEntities(
+    projects: Record<string, Project>,
+    users: Record<string, User>,
+    issues: Record<string, Issue>,
+  ): Promise<void> {
+    const adminUser = users['admin'] || Object.values(users)[0];
+    const volodymyr = users['volodymyr'] || adminUser;
+
+    // 1. Project Components & Versions
+    const componentsByProject: Record<string, ProjectComponent[]> = {};
+    const versionsByProject: Record<string, ProjectVersion[]> = {};
+
+    const rawComponentsConfig: Record<string, Array<{ name: string; description: string; leadKey?: string }>> = {
+      UI: [
+        { name: 'Design System', description: 'M3 tokens, styles, and reusable UI components', leadKey: 'sonya' },
+        { name: 'Kanban Board', description: 'Drag-and-drop workflow management canvas', leadKey: 'volodymyr' },
+        { name: 'Navigation & Layout', description: 'Responsive shell, sidebar, and headers', leadKey: 'lucas' },
+      ],
+      CORE: [
+        { name: 'Authentication Tier', description: 'OAuth2, JWT tokens, and Argon2id hashing', leadKey: 'alex' },
+        { name: 'Distributed Storage', description: 'SeaweedFS chunk storage and attachment pipeline', leadKey: 'rachel' },
+        { name: 'Search Engine', description: 'Lucene full-text indexing and query execution', leadKey: 'marcus' },
+      ],
+      MON: [
+        { name: 'Metrics Collector', description: 'Prometheus scrapers and metric exporters', leadKey: 'sarah' },
+        { name: 'Trace Instrumentation', description: 'OpenTelemetry distributed spans', leadKey: 'kevin' },
+        { name: 'Visualization Dashboards', description: 'Grafana dashboards and panels', leadKey: 'yuliia' },
+      ],
+      INFRA: [
+        { name: 'Kubernetes Platform', description: 'EKS cluster configuration and Helm manifests', leadKey: 'david' },
+        { name: 'Redis Cache Tier', description: 'High-availability Redis Sentinel cluster', leadKey: 'chloe' },
+        { name: 'CI/CD Pipelines', description: 'GitHub Actions automated build and test workflows', leadKey: 'brandon' },
+      ],
+      NET: [
+        { name: 'Security Gateway', description: 'Reverse proxy, WAF, and rate limiting', leadKey: 'elena' },
+        { name: 'TLS & Encryption', description: 'TLS 1.3 cipher suite enforcement and cert-manager', leadKey: 'arthur' },
+        { name: 'Identity Federation', description: 'Okta SAML 2.0 and enterprise SSO', leadKey: 'maxim' },
+      ],
+    };
+
+    for (const [projKey, proj] of Object.entries(projects)) {
+      // Components
+      if (this.componentRepository) {
+        componentsByProject[projKey] = [];
+        const compConfigs = rawComponentsConfig[projKey] || [
+          { name: `${proj.key} Core`, description: 'Core functional modules' },
+          { name: `${proj.key} API`, description: 'External API endpoints' },
+        ];
+        for (const cfg of compConfigs) {
+          const lead = cfg.leadKey && users[cfg.leadKey] ? users[cfg.leadKey] : null;
+          const comp = this.componentRepository.create({
+            name: cfg.name,
+            description: cfg.description,
+            projectId: proj.id,
+            leadId: lead ? lead.id : null,
+          });
+          const savedComp = await this.componentRepository.save(comp);
+          componentsByProject[projKey].push(savedComp);
+        }
+      }
+
+      // Versions
+      if (this.versionRepository) {
+        versionsByProject[projKey] = [];
+        const v1 = this.versionRepository.create({
+          projectId: proj.id,
+          name: 'v1.0.0',
+          description: 'Initial production release and foundational baseline',
+          status: ProjectVersionStatus.RELEASED,
+          releaseDate: '2026-08-14',
+          startDate: '2026-08-01',
+        });
+        const savedV1 = await this.versionRepository.save(v1);
+        versionsByProject[projKey].push(savedV1);
+
+        const v11 = this.versionRepository.create({
+          projectId: proj.id,
+          name: 'v1.1.0',
+          description: 'Performance enhancements and stability updates',
+          status: ProjectVersionStatus.UNRELEASED,
+          releaseDate: '2026-09-15',
+          startDate: '2026-08-15',
+        });
+        const savedV11 = await this.versionRepository.save(v11);
+        versionsByProject[projKey].push(savedV11);
+
+        const v20 = this.versionRepository.create({
+          projectId: proj.id,
+          name: 'v2.0.0',
+          description: 'Next-generation architecture and enterprise scalability',
+          status: ProjectVersionStatus.UNRELEASED,
+          releaseDate: '2026-12-31',
+          startDate: '2026-09-16',
+        });
+        const savedV20 = await this.versionRepository.save(v20);
+        versionsByProject[projKey].push(savedV20);
+      }
+
+      // Quick Filters
+      if (this.quickFilterRepository) {
+        const qf1 = this.quickFilterRepository.create({
+          projectId: proj.id,
+          name: 'My Open Issues',
+          jqlQuery: 'assignee = currentUser() AND status != "CLOSED"',
+          description: 'Issues assigned to current active engineer',
+          position: 0,
+        });
+        const qf2 = this.quickFilterRepository.create({
+          projectId: proj.id,
+          name: 'Critical Defects',
+          jqlQuery: 'priority = "CRITICAL" AND issueType = "BUG"',
+          description: 'High-severity production blocking defects',
+          position: 1,
+        });
+        const qf3 = this.quickFilterRepository.create({
+          projectId: proj.id,
+          name: 'Needs Code Review',
+          jqlQuery: 'status = "REVIEW"',
+          description: 'Pull requests and tickets pending peer review',
+          position: 2,
+        });
+        await this.quickFilterRepository.save([qf1, qf2, qf3]);
+      }
+
+      // Webhooks
+      if (this.webhookRepository) {
+        const webhookConfigs: Record<string, { name: string; url: string }> = {
+          UI: { name: 'Frontend Slack Channel', url: 'https://hooks.slack.com/services/T001/B001/ui-team-feed' },
+          CORE: { name: 'Core Architecture Discord', url: 'https://discord.com/api/webhooks/12345/core-engineering' },
+          INFRA: { name: 'DevOps Incident Alert Webhook', url: 'https://ops.bugtracker.local/webhooks/infra-events' },
+        };
+        const whCfg = webhookConfigs[projKey];
+        if (whCfg) {
+          const webhook = this.webhookRepository.create({
+            projectId: proj.id,
+            name: whCfg.name,
+            url: whCfg.url,
+            secret: `whsec_${projKey.toLowerCase()}_production_token_99`,
+            events: ['issue.created', 'issue.updated', 'issue.deleted'],
+            isActive: true,
+          });
+          await this.webhookRepository.save(webhook);
+        }
+      }
+    }
+
+    // 2. Link some issues to components and fix versions
+    for (const [key, issue] of Object.entries(issues)) {
+      const projKey = key.split('-')[0];
+      const comps = componentsByProject[projKey];
+      const vers = versionsByProject[projKey];
+
+      const updates: Partial<Issue> = {};
+      if (comps && comps.length > 0 && issue.issueNum % 2 === 0) {
+        updates.componentId = comps[issue.issueNum % comps.length].id;
+      }
+      if (vers && vers.length > 0 && issue.issueNum % 3 === 0) {
+        updates.fixVersionId = vers[issue.issueNum % vers.length].id;
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await this.issueRepository.update(issue.id, updates);
+      }
+    }
+
+    // 3. VCS Pull Requests
+    if (this.vcsPrRepository) {
+      const samplePrs = [
+        {
+          issueKey: 'UI-2',
+          provider: VcsProvider.GITHUB,
+          repository: 'bugtracker/frontend-ui',
+          prNumber: 102,
+          title: 'fix(drawer): resolve backdrop blur opacity flicker on iOS Safari',
+          url: 'https://github.com/bugtracker/frontend-ui/pull/102',
+          status: VcsPullRequestStatus.MERGED,
+          sourceBranch: 'fix/safari-backdrop-blur',
+          targetBranch: 'main',
+          authorUsername: 'lucas',
+        },
+        {
+          issueKey: 'UI-5',
+          provider: VcsProvider.GITHUB,
+          repository: 'bugtracker/frontend-ui',
+          prNumber: 105,
+          title: 'feat(kanban): live WebSocket sprint sync and active card broadcast',
+          url: 'https://github.com/bugtracker/frontend-ui/pull/105',
+          status: VcsPullRequestStatus.OPEN,
+          sourceBranch: 'feat/sprint-live-sync',
+          targetBranch: 'main',
+          authorUsername: 'volodymyr',
+        },
+        {
+          issueKey: 'CORE-2',
+          provider: VcsProvider.GITHUB,
+          repository: 'bugtracker/backend-core',
+          prNumber: 204,
+          title: 'fix(auth): implement SELECT FOR UPDATE row locking during token rotation',
+          url: 'https://github.com/bugtracker/backend-core/pull/204',
+          status: VcsPullRequestStatus.OPEN,
+          sourceBranch: 'fix/token-rotation-race',
+          targetBranch: 'main',
+          authorUsername: 'taras',
+        },
+        {
+          issueKey: 'INFRA-3',
+          provider: VcsProvider.GITLAB,
+          repository: 'bugtracker/infrastructure',
+          prNumber: 38,
+          title: 'feat(redis): 3-node Redis Sentinel cluster configuration',
+          url: 'https://gitlab.com/bugtracker/infrastructure/-/merge_requests/38',
+          status: VcsPullRequestStatus.OPEN,
+          sourceBranch: 'feature/redis-sentinel-quorum',
+          targetBranch: 'master',
+          authorUsername: 'chloe',
+        },
+      ];
+
+      for (const prItem of samplePrs) {
+        const iss = issues[prItem.issueKey];
+        if (!iss) continue;
+
+        const pr = this.vcsPrRepository.create({
+          issue: iss,
+          issueId: iss.id,
+          provider: prItem.provider,
+          repository: prItem.repository,
+          prNumber: prItem.prNumber,
+          title: prItem.title,
+          url: prItem.url,
+          status: prItem.status,
+          sourceBranch: prItem.sourceBranch,
+          targetBranch: prItem.targetBranch,
+          authorUsername: prItem.authorUsername,
+        });
+        await this.vcsPrRepository.save(pr);
+      }
+    }
+
+    // 4. Issue Histories
+    if (this.historyRepository) {
+      const historyItems = [
+        { issueKey: 'UI-2', userKey: 'sophia', field: 'status', oldValue: 'OPEN', newValue: 'IN_PROGRESS' },
+        { issueKey: 'UI-2', userKey: 'lucas', field: 'status', oldValue: 'IN_PROGRESS', newValue: 'CLOSED' },
+        { issueKey: 'UI-5', userKey: 'volodymyr', field: 'priority', oldValue: 'HIGH', newValue: 'CRITICAL' },
+        { issueKey: 'CORE-2', userKey: 'taras', field: 'status', oldValue: 'OPEN', newValue: 'IN_PROGRESS' },
+        { issueKey: 'INFRA-2', userKey: 'brandon', field: 'status', oldValue: 'IN_PROGRESS', newValue: 'CLOSED' },
+      ];
+
+      for (const h of historyItems) {
+        const iss = issues[h.issueKey];
+        const u = users[h.userKey] || adminUser;
+        if (!iss) continue;
+
+        const history = this.historyRepository.create({
+          issueId: iss.id,
+          userId: u.id,
+          field: h.field,
+          oldValue: h.oldValue,
+          newValue: h.newValue,
+        });
+        await this.historyRepository.save(history);
+      }
+    }
+
+    // 5. Notifications
+    if (this.notificationRepository) {
+      const targetUser = volodymyr;
+      const sampleNotifications = [
+        {
+          userId: targetUser.id,
+          type: NotificationType.ASSIGNED,
+          title: 'Assigned to UI-5',
+          message: 'You were assigned to Live WebSocket sync indicator for concurrent sprint edits',
+          issueId: issues['UI-5']?.id || null,
+          actorId: adminUser.id,
+          isRead: false,
+        },
+        {
+          userId: targetUser.id,
+          type: NotificationType.COMMENT_ADDED,
+          title: 'New comment on UI-5',
+          message: 'Sonya left a comment: WebSocket connection pooling verified in Chrome and Safari.',
+          issueId: issues['UI-5']?.id || null,
+          actorId: users['sonya']?.id || adminUser.id,
+          isRead: true,
+        },
+        {
+          userId: targetUser.id,
+          type: NotificationType.STATUS_CHANGED,
+          title: 'Status changed on UI-2',
+          message: 'Lucas marked UI-2 as CLOSED',
+          issueId: issues['UI-2']?.id || null,
+          actorId: users['lucas']?.id || adminUser.id,
+          isRead: true,
+        },
+      ];
+
+      for (const n of sampleNotifications) {
+        const notif = this.notificationRepository.create(n);
+        await this.notificationRepository.save(notif);
+      }
+    }
+
+    // 6. Saved Filters
+    if (this.savedFilterRepository) {
+      const userFilters = [
+        {
+          userId: volodymyr.id,
+          name: 'My High Priority Tasks',
+          description: 'Current tasks assigned to me requiring immediate attention',
+          isFavorite: true,
+          query: 'assignee = currentUser() AND priority IN ("HIGH", "CRITICAL") AND status != "CLOSED"',
+        },
+        {
+          userId: volodymyr.id,
+          name: 'Active Sprint UI Issues',
+          description: 'All UI workspace tickets in currently running sprint',
+          isFavorite: true,
+          query: 'project = "UI" AND sprint in (openSprints())',
+        },
+        {
+          userId: adminUser.id,
+          name: 'Critical Production Bugs',
+          description: 'System-wide open critical severity bugs',
+          isFavorite: false,
+          query: 'priority = "CRITICAL" AND issueType = "BUG" AND status != "CLOSED"',
+        },
+      ];
+
+      for (const sf of userFilters) {
+        const filter = this.savedFilterRepository.create(sf);
+        await this.savedFilterRepository.save(filter);
+      }
+    }
+  }
 }
+

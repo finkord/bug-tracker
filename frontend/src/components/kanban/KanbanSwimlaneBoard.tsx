@@ -33,6 +33,7 @@ import {
   AlertCircle,
   Layers,
   Flame,
+  ExternalLink,
 } from 'lucide-react';
 
 export interface KanbanSwimlaneBoardProps {
@@ -79,7 +80,7 @@ interface EpicSwimlaneGroup extends BaseSwimlaneGroup {
   type: 'epic';
   parentId: number | null;
   epicId?: number | null;
-  parentIssue: { id: number; key: string; title: string; issueType?: IssueType; color?: string | null } | null;
+  parentIssue: { id: number; key: string; title: string; issueType?: IssueType; color?: string | null; epicColor?: string | null } | null;
 }
 
 interface ExpediteSwimlaneGroup extends BaseSwimlaneGroup {
@@ -363,7 +364,14 @@ const SwimlaneGroupRowComponent: React.FC<SwimlaneGroupRowProps> = ({
           )}
 
           {group.type === 'epic' && (
-            <div className="w-8 h-8 rounded-xl bg-[var(--md-sys-color-primary-container)]/40 border border-[var(--md-sys-color-primary)]/30 flex items-center justify-center text-[var(--md-sys-color-primary)] shrink-0">
+            <div
+              className="w-8 h-8 rounded-xl border flex items-center justify-center shrink-0"
+              style={{
+                backgroundColor: group.parentIssue?.epicColor ? `${group.parentIssue.epicColor}22` : 'var(--md-sys-color-primary-container)',
+                borderColor: group.parentIssue?.epicColor || 'var(--md-sys-color-primary)',
+                color: group.parentIssue?.epicColor || 'var(--md-sys-color-primary)',
+              }}
+            >
               <Layers className="w-4 h-4" />
             </div>
           )}
@@ -387,6 +395,21 @@ const SwimlaneGroupRowComponent: React.FC<SwimlaneGroupRowProps> = ({
               <h3 className="text-xs sm:text-sm font-bold text-[var(--md-sys-color-on-surface)] truncate">
                 {group.title}
               </h3>
+              {group.type === 'epic' && group.parentIssue?.key && (
+                <a
+                  href={`/issues/${group.parentIssue.key}`}
+                  onClick={(e) => e.stopPropagation()}
+                  title={`Open details for ${group.parentIssue.key}`}
+                  className="inline-flex items-center gap-1 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-full hover:underline shrink-0"
+                  style={{
+                    backgroundColor: group.parentIssue?.epicColor ? `${group.parentIssue.epicColor}22` : 'var(--md-sys-color-surface-container-highest)',
+                    color: group.parentIssue?.epicColor || 'var(--md-sys-color-primary)',
+                  }}
+                >
+                  <span>{group.parentIssue.key}</span>
+                  <ExternalLink className="w-2.5 h-2.5" />
+                </a>
+              )}
               {group.type === 'assignee' && group.assignee?.systemRole && (
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-on-surface-variant)] font-semibold shrink-0">
                   {group.assignee.systemRole}
@@ -408,6 +431,22 @@ const SwimlaneGroupRowComponent: React.FC<SwimlaneGroupRowProps> = ({
 
         {/* Right: Issue Counts & Stats */}
         <div className="flex items-center gap-3">
+          {group.type === 'epic' && group.issues.length > 0 && (
+            <div className="hidden sm:flex items-center gap-2">
+              <div className="w-20 sm:w-28 h-2 bg-[var(--md-sys-color-surface-container-highest)] rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-300"
+                  style={{
+                    width: `${Math.round((group.issues.filter((i) => i.status === 'RESOLVED' || i.status === 'CLOSED').length / group.issues.length) * 100)}%`,
+                    backgroundColor: group.parentIssue?.epicColor || 'var(--md-sys-color-primary)',
+                  }}
+                />
+              </div>
+              <span className="text-[10px] font-mono text-[var(--md-sys-color-on-surface-variant)] shrink-0">
+                {Math.round((group.issues.filter((i) => i.status === 'RESOLVED' || i.status === 'CLOSED').length / group.issues.length) * 100)}%
+              </span>
+            </div>
+          )}
           <div className="flex items-center gap-1.5 text-xs text-[var(--md-sys-color-on-surface-variant)]">
             <span className="font-bold text-[var(--md-sys-color-on-surface)]">{group.issues.length}</span>
             <span>{group.issues.length === 1 ? 'ticket' : 'tickets'}</span>
@@ -534,18 +573,18 @@ export const KanbanSwimlaneBoard: React.FC<KanbanSwimlaneBoardProps> = ({
       };
 
       for (const issue of issues) {
-        const ep = issue.epic || (issue.parentId && issue.parent ? issue.parent : null);
         const epId = issue.epicId || issue.parentId;
-        if (epId && ep) {
+        const ep = issue.epic || (issue.parentId && issue.parent ? issue.parent : null) || (epId ? issues.find((i) => i.id === epId) : null);
+        if (epId) {
           if (!parentMap.has(epId)) {
             parentMap.set(epId, {
               type: 'epic',
               key: `epic-${epId}`,
-              title: `${ep.key}: ${ep.title || 'Untitled Epic'}`,
-              subtitle: `Epic container #${epId}`,
+              title: ep ? `${ep.key}: ${ep.title || 'Untitled Epic'}` : `Epic #${epId}`,
+              subtitle: ep?.key ? `Epic ${ep.key}` : `Epic container #${epId}`,
               parentId: epId,
               epicId: epId,
-              parentIssue: ep,
+              parentIssue: ep || null,
               issues: [],
               issuesByColumn: createColumnBuckets(),
             });

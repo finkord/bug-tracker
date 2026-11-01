@@ -162,12 +162,12 @@ export class TokenSessionService {
   async logoutByToken(token?: string): Promise<{ message: string }> {
     if (token) {
       try {
-        const decoded = this.jwtService.decode(token) as { sub?: number } | null;
+        const decoded = this.jwtService.verify(token) as { sub?: number } | null;
         if (decoded?.sub) {
           return await this.logout(decoded.sub);
         }
       } catch {
-        // Token could not be decoded, proceed gracefully
+        // Token invalid, unverified or expired, proceed gracefully
       }
     }
     return { message: 'Successfully logged out' };

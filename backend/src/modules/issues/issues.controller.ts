@@ -21,7 +21,7 @@ import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiOkResponse } from '@nestjs/swagger';
 import { IssuesService } from './issues.service.js';
-import { SeaweedFsService, type UploadedFileInput } from './services/seaweedfs.service.js';
+import { SeaweedFsService, type UploadedFileInput } from '../storage/services/seaweedfs.service.js';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { User } from '../users/entities/user.entity.js';

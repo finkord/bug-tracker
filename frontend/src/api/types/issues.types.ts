@@ -126,8 +126,10 @@ export interface IssueItem {
     key: string;
     title: string;
     color?: string | null;
+    epicColor?: string | null;
   } | null;
   epicColor?: string | null;
+  epicName?: string | null;
   subtasks?: IssueItem[];
   epicIssues?: IssueItem[];
   order?: number;
@@ -151,6 +153,7 @@ export interface CreateIssuePayload {
   labels?: string[];
   parentId?: number | null;
   epicId?: number | null;
+  epicName?: string | null;
   epicColor?: string | null;
   order?: number;
 }

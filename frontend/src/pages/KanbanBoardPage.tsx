@@ -85,16 +85,17 @@ export const KanbanBoardPage: React.FC = () => {
 
   // TanStack Query for issues
   const issueFilter = useMemo(
-    () => ({ projectId: selectedProjectId, limit: 100 }),
+    () => (selectedProjectId > 0 ? { projectId: selectedProjectId, limit: 100 } : undefined),
     [selectedProjectId],
   );
 
   const {
     data: issuesData,
-    isLoading: loading,
+    isLoading: issuesLoading,
     refetch: loadIssues,
-  } = useIssuesQuery(issueFilter);
+  } = useIssuesQuery(issueFilter, { enabled: selectedProjectId > 0 });
   const issues = useMemo(() => issuesData?.items ?? [], [issuesData?.items]);
+  const loading = issuesLoading || (!selectedProjectId && Boolean(projectId));
 
   const updateStatusMutation = useUpdateIssueStatusMutation();
   const updateIssueMutation = useUpdateIssueMutation();

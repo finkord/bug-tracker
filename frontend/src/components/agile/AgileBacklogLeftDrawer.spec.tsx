@@ -1,8 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { AgileBacklogLeftDrawer } from './AgileBacklogLeftDrawer';
 import type { IssueItem } from '../../api/client';
+
+const renderDrawer = (ui: React.ReactElement) => render(<MemoryRouter>{ui}</MemoryRouter>);
 
 // Mock Tanstack queries used inside drawer
 vi.mock('../../api/queries', () => ({
@@ -11,6 +14,13 @@ vi.mock('../../api/queries', () => ({
       { id: 1, name: 'v1.0.0', status: 'RELEASED', releaseDate: '2026-03-01' },
       { id: 2, name: 'v2.0.0', status: 'UNRELEASED', releaseDate: '2026-06-01' },
     ],
+    isLoading: false,
+  }),
+  useIssuesQuery: (params?: { issueType?: string }) => ({
+    data: {
+      items: params?.issueType === 'EPIC' ? mockIssues.filter((i) => i.issueType === 'EPIC') : mockIssues,
+      total: mockIssues.length,
+    },
     isLoading: false,
   }),
   useUpdateIssueMutation: () => ({
@@ -93,7 +103,7 @@ describe('AgileBacklogLeftDrawer Component', () => {
     const onClose = vi.fn();
     const onCreateEpic = vi.fn();
 
-    render(
+    renderDrawer(
       <AgileBacklogLeftDrawer
         projectId={1}
         projectKey="TEST"
@@ -124,7 +134,7 @@ describe('AgileBacklogLeftDrawer Component', () => {
     const onDrawerTabChange = vi.fn();
     const onClose = vi.fn();
 
-    render(
+    renderDrawer(
       <AgileBacklogLeftDrawer
         projectId={1}
         projectKey="TEST"
@@ -153,7 +163,7 @@ describe('AgileBacklogLeftDrawer Component', () => {
     const onDrawerTabChange = vi.fn();
     const onClose = vi.fn();
 
-    render(
+    renderDrawer(
       <AgileBacklogLeftDrawer
         projectId={1}
         projectKey="TEST"
@@ -183,7 +193,7 @@ describe('AgileBacklogLeftDrawer Component', () => {
   it('calls onClose when collapse button is clicked', () => {
     const onClose = vi.fn();
 
-    render(
+    renderDrawer(
       <AgileBacklogLeftDrawer
         projectId={1}
         projectKey="TEST"
@@ -207,7 +217,7 @@ describe('AgileBacklogLeftDrawer Component', () => {
   it('filters by Issues without Epic when No Epic droppable is clicked', () => {
     const onSelectEpic = vi.fn();
 
-    render(
+    renderDrawer(
       <AgileBacklogLeftDrawer
         projectId={1}
         projectKey="TEST"
@@ -232,7 +242,7 @@ describe('AgileBacklogLeftDrawer Component', () => {
   it('filters by Issues without Version when No Version droppable is clicked', () => {
     const onSelectVersion = vi.fn();
 
-    render(
+    renderDrawer(
       <AgileBacklogLeftDrawer
         projectId={1}
         projectKey="TEST"

@@ -38,6 +38,7 @@ export const ProjectComponentsTab: React.FC<ProjectComponentsTabProps> = ({
   const [leadId, setLeadId] = useState<number | ''>('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [componentToDelete, setComponentToDelete] = useState<{ id: number; name: string } | null>(null);
 
   const handleOpenCreate = () => {
@@ -109,10 +110,12 @@ export const ProjectComponentsTab: React.FC<ProjectComponentsTabProps> = ({
   const confirmDelete = async () => {
     if (!componentToDelete) return;
     try {
+      setActionError(null);
       await deleteMutation.mutateAsync({ projectId, componentId: componentToDelete.id });
       setComponentToDelete(null);
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Failed to delete component');
+      setActionError(err instanceof Error ? err.message : 'Failed to delete component');
+      setComponentToDelete(null);
     }
   };
 
@@ -211,6 +214,22 @@ export const ProjectComponentsTab: React.FC<ProjectComponentsTabProps> = ({
           Add Component
         </Button>
       </div>
+
+      {actionError && (
+        <div className="p-3 rounded-xl bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] text-xs flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{actionError}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActionError(null)}
+            className="text-xs font-bold hover:underline cursor-pointer"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Table */}
       <DataTable

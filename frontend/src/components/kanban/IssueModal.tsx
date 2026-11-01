@@ -89,6 +89,7 @@ export const IssueModal: React.FC<IssueModalProps> = ({
   const [epicId, setEpicId] = useState<string>(defaultEpicId ? String(defaultEpicId) : '');
   const [parentId, setParentId] = useState<string>(defaultParentId ? String(defaultParentId) : '');
   const [epicColor, setEpicColor] = useState<string>('#6554C0');
+  const [epicName, setEpicName] = useState<string>('');
   const [createAnother, setCreateAnother] = useState<boolean>(false);
   const [showMoreFields, setShowMoreFields] = useState<boolean>(false);
 
@@ -134,6 +135,7 @@ export const IssueModal: React.FC<IssueModalProps> = ({
       setEpicId(editingIssue.epicId ? String(editingIssue.epicId) : '');
       setParentId(editingIssue.parentId ? String(editingIssue.parentId) : '');
       setEpicColor(editingIssue.epicColor || '#6554C0');
+      setEpicName((editingIssue as { epicName?: string }).epicName || '');
       const hasExtra = Boolean(
         editingIssue.sprintId ||
         (editingIssue.estimatedHours && editingIssue.estimatedHours > 0) ||
@@ -157,6 +159,7 @@ export const IssueModal: React.FC<IssueModalProps> = ({
       setEpicId(defaultEpicId ? String(defaultEpicId) : '');
       setParentId(defaultParentId ? String(defaultParentId) : '');
       setEpicColor('#6554C0');
+      setEpicName('');
       setShowMoreFields(Boolean(defaultSprintId));
     }
     setValidationError(null);
@@ -216,7 +219,7 @@ export const IssueModal: React.FC<IssueModalProps> = ({
           issueType,
           priority,
           estimatedHours: parsedHours,
-          sprintId: parsedSprintId,
+          sprintId: issueType === 'EPIC' ? null : parsedSprintId,
           assigneeId: assigneeId === '' ? undefined : Number(assigneeId),
           componentId: parsedComponentId,
           fixVersionId: parsedFixVersionId,
@@ -224,6 +227,7 @@ export const IssueModal: React.FC<IssueModalProps> = ({
           epicId: issueType === 'EPIC' ? null : parsedEpicId,
           parentId: issueType === 'SUBTASK' ? parsedParentId : null,
           epicColor: issueType === 'EPIC' ? epicColor : undefined,
+          epicName: issueType === 'EPIC' ? (epicName.trim() || undefined) : undefined,
         });
       } else {
         saved = await api.createIssue({
@@ -233,7 +237,7 @@ export const IssueModal: React.FC<IssueModalProps> = ({
           issueType,
           priority,
           estimatedHours: parsedHours,
-          sprintId: parsedSprintId,
+          sprintId: issueType === 'EPIC' ? null : parsedSprintId,
           assigneeId: assigneeId === '' ? undefined : Number(assigneeId),
           componentId: parsedComponentId,
           fixVersionId: parsedFixVersionId,
@@ -241,6 +245,7 @@ export const IssueModal: React.FC<IssueModalProps> = ({
           epicId: issueType === 'EPIC' ? null : parsedEpicId,
           parentId: issueType === 'SUBTASK' ? parsedParentId : null,
           epicColor: issueType === 'EPIC' ? epicColor : undefined,
+          epicName: issueType === 'EPIC' ? (epicName.trim() || undefined) : undefined,
         });
       }
 
@@ -338,34 +343,43 @@ export const IssueModal: React.FC<IssueModalProps> = ({
           />
         </div>
 
-        {/* Hierarchy field: Epic Link for standard issues, Parent Task for subtasks, Epic Color for epics */}
+        {/* Hierarchy field: Epic Link for standard issues, Parent Task for subtasks, Epic Color & Name for epics */}
         {issueType === 'EPIC' && (
-          <div className="space-y-1.5 p-3 rounded-2xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/40">
-            <label className="text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider block">
-              Epic Color Badge
-            </label>
-            <div className="flex items-center gap-2">
-              {['#6554C0', '#0052CC', '#00875A', '#FFAB00', '#DE350B', '#00B8D9'].map((color) => (
-                <button
-                  key={color}
-                  type="button"
-                  onClick={() => setEpicColor(color)}
-                  className={`w-6 h-6 rounded-full transition-all cursor-pointer ${
-                    epicColor === color
-                      ? 'ring-2 ring-offset-2 ring-[var(--md-sys-color-primary)] scale-110'
-                      : 'hover:scale-105'
-                  }`}
-                  style={{ backgroundColor: color }}
-                  title={color}
+          <div className="space-y-3 p-3.5 rounded-2xl bg-[var(--md-sys-color-surface-container-low)] border border-[var(--md-sys-color-outline-variant)]/40">
+            <Input
+              label="Epic Short Name"
+              placeholder="e.g. Design System, Observability, Cloud & K8s"
+              value={epicName}
+              onChange={(e) => setEpicName(e.target.value)}
+              helperText="Short distinctive name used on cards and backlog drawer"
+            />
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wider block">
+                Epic Color Badge
+              </label>
+              <div className="flex items-center gap-2">
+                {['#6554C0', '#0052CC', '#00875A', '#FFAB00', '#DE350B', '#00B8D9'].map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    onClick={() => setEpicColor(color)}
+                    className={`w-6 h-6 rounded-full transition-all cursor-pointer ${
+                      epicColor === color
+                        ? 'ring-2 ring-offset-2 ring-[var(--md-sys-color-primary)] scale-110'
+                        : 'hover:scale-105'
+                    }`}
+                    style={{ backgroundColor: color }}
+                    title={color}
+                  />
+                ))}
+                <input
+                  type="color"
+                  value={epicColor}
+                  onChange={(e) => setEpicColor(e.target.value)}
+                  className="w-7 h-7 rounded-lg border border-[var(--md-sys-color-outline-variant)] cursor-pointer bg-transparent"
+                  title="Custom Color"
                 />
-              ))}
-              <input
-                type="color"
-                value={epicColor}
-                onChange={(e) => setEpicColor(e.target.value)}
-                className="w-7 h-7 rounded-lg border border-[var(--md-sys-color-outline-variant)] cursor-pointer bg-transparent"
-                title="Custom Color"
-              />
+              </div>
             </div>
           </div>
         )}
@@ -514,14 +528,17 @@ export const IssueModal: React.FC<IssueModalProps> = ({
 
                 <SelectField
                   label="Sprint"
-                  value={sprintId}
+                  value={issueType === 'EPIC' ? '' : sprintId}
+                  disabled={issueType === 'EPIC'}
                   onValueChange={(val) => setSprintId(val)}
                   options={[
-                    { value: '', label: 'Product Backlog (No Sprint)' },
-                    ...projectSprints.map((s) => ({
-                      value: String(s.id),
-                      label: `${s.name} (${s.status})`,
-                    })),
+                    { value: '', label: issueType === 'EPIC' ? 'Epics cannot be assigned to Sprints' : 'Product Backlog (No Sprint)' },
+                    ...(issueType === 'EPIC'
+                      ? []
+                      : projectSprints.map((s) => ({
+                          value: String(s.id),
+                          label: `${s.name} (${s.status})`,
+                        }))),
                   ]}
                 />
               </div>
